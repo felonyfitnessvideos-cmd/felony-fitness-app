@@ -1,0 +1,59 @@
+/* Main container for the entire app screen */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background-color: var(--background-color);
+}
+
+/* This is the main content area that will now scroll */
+.main-content {
+  flex-grow: 1; /* Allows this area to take up all available vertical space */
+  overflow-y: auto; /* Enables vertical scrolling ONLY when content overflows */
+  /* Hide scrollbar for a cleaner, more native-app-like feel */
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.main-content::-webkit-scrollbar {
+  display: none;
+}
+
+
+/* Bottom navigation bar styling */
+.bottom-nav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  background-color: var(--card-color);
+  border-top: 1px solid var(--border-color);
+  padding: 0.5rem 0;
+  height: 60px; /* Fixed height for the nav bar */
+  z-index: 100;
+}
+
+.nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  text-decoration: none;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+}
+
+.nav-link span {
+  font-size: 0.75rem;
+  margin-top: 4px;
+}
+
+/* Style for the currently active navigation link */
+.nav-link.active {
+  color: var(--accent-color);
+}
+```
+

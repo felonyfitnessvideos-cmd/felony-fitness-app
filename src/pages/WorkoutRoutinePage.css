@@ -1,0 +1,104 @@
+.workout-routines-container {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 70px); /* Full height minus nav bar */
+  box-sizing: border-box;
+}
+
+.routines-content {
+  flex-grow: 1; /* Allows this area to take up available space */
+  overflow-y: auto; /* Enables scrolling ONLY when content overflows */
+  padding-bottom: 1rem; /* Space at the bottom of the scroll */
+  /* Hide scrollbar for a cleaner look */
+  -ms-overflow-style: none;  
+  scrollbar-width: none;
+}
+.routines-content::-webkit-scrollbar {
+  display: none;
+}
+
+
+.create-routine-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 350px;
+  padding: 1rem;
+  background-color: var(--accent-color);
+  color: white;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 12px;
+  margin: 0 auto 2rem auto; /* Center the button */
+  transition: background-color 0.2s;
+}
+
+.create-routine-button:hover {
+  background-color: var(--accent-color-hover);
+}
+
+.routine-list {
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto; /* Center the list */
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.routine-card {
+  background-color: var(--card-color);
+  padding: 1rem;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--border-color);
+}
+
+.routine-info h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.status-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  color: #22c55e; /* Green for active */
+}
+
+.status-badge.inactive {
+  color: var(--text-secondary);
+}
+
+.routine-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.action-button, .routine-actions button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+}
+
+.action-button.danger {
+  color: #e53e3e;
+}
+
+.no-routines-message {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+}
+

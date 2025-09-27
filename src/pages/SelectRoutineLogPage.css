@@ -1,0 +1,70 @@
+.select-routine-container {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 70px); /* Full height minus nav bar */
+  box-sizing: border-box;
+}
+
+.routines-scroll-area {
+  flex-grow: 1; /* Allows this area to take up available space */
+  overflow-y: auto; /* Enables scrolling ONLY when content overflows */
+  padding-bottom: 1rem; /* Space at the bottom of the scroll */
+  /* Hide scrollbar for a cleaner look */
+  -ms-overflow-style: none;  
+  scrollbar-width: none;
+}
+
+.routines-scroll-area::-webkit-scrollbar {
+  display: none;
+}
+
+.routine-selection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto; /* Center the list */
+}
+
+.routine-selection-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background-color: var(--card-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.25rem;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.routine-selection-card:hover {
+  background-color: #4a5568;
+  transform: translateY(-2px);
+}
+
+.routine-card-info h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.2rem;
+}
+
+.routine-card-info span {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.arrow-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.no-routines-message {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+}

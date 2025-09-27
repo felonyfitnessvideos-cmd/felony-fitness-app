@@ -1,0 +1,144 @@
+/* FILE: DashboardPage.css */
+/* --- */
+/* DESCRIPTION: The .dashboard-container has been updated to enable scrolling. */
+
+/* START CHANGE: Added height and overflow-y to enable scrolling */
+.dashboard-container {
+  height: 100%; /* Allows the container to fill its parent (the main content area) */
+  overflow-y: auto; /* Enables a vertical scrollbar ONLY when content overflows */
+  padding: 1rem;
+  /* Add extra space at the bottom so the last card isn't hidden by the nav bar when you scroll down */
+  padding-bottom: 6rem; 
+  text-align: left;
+}
+/* END CHANGE */
+
+.dashboard-header {
+  position: relative;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.dashboard-header h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  margin: 0;
+}
+
+.logout-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: #4a5568;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.header-underline {
+  width: 50px;
+  height: 4px;
+  background-color: #f97316; /* Orange accent */
+  border-radius: 2px;
+  margin: 0.5rem auto 0;
+}
+
+/* Base card styling */
+.dashboard-card {
+  background-color: #2d3748; /* Dark card background */
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-decoration: none;
+  color: white;
+  display: block;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Nutrition Card Specifics */
+.nutrition-card .card-header span {
+  font-size: 1.5rem;
+}
+
+.nutrition-stats {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.nutrition-stats .stat .value {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.nutrition-stats .stat .label {
+  font-size: 0.75rem;
+  color: #a0aec0; /* Lighter text for labels */
+}
+
+/* --- Progress Bar Styles --- */
+.progress-bars-container {
+  display: flex;
+  justify-content: space-around;
+  gap: 1rem;
+}
+
+.progress-bar-wrapper {
+  flex: 1;
+  background-color: #4a5568; /* Darker bar background */
+  border-radius: 5px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  background-color: #f97316; /* Orange progress */
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.3s ease-in-out;
+}
+
+
+/* Training Card Specifics */
+.training-calories {
+  color: #f97316; /* Orange accent */
+  font-weight: bold;
+}
+
+.training-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+/* Goals Card Specifics */
+.goal-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  padding: 0.25rem 0;
+}
+
+/* Quote Card Specifics */
+.quote-card {
+  text-align: center;
+  font-style: italic;
+  color: #a0aec0;
+}

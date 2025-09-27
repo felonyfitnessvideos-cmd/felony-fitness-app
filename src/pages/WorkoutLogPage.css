@@ -1,0 +1,219 @@
+.workout-log-page-container {
+  padding: 1rem;
+  padding-bottom: 80px; /* Add padding at the bottom to ensure space above the nav bar */
+}
+
+.log-toggle-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.log-toggle {
+  display: inline-flex;
+  background-color: #1a202c;
+  border-radius: 9999px;
+  padding: 0.25rem;
+  border: 1px solid #2d3748;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: #a0aec0;
+  padding: 0.4rem 1.2rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.toggle-btn.active {
+  background-color: #f97316;
+  color: white;
+}
+
+.thumbnail-scroller {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  -ms-overflow-style: none;  
+  scrollbar-width: none;
+}
+
+.thumbnail-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.thumbnail-btn {
+  background: none;
+  border: 2px solid #4a5568;
+  border-radius: 8px;
+  padding: 2px; /* Fixes the cutoff issue */
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.2s;
+}
+
+.thumbnail-btn.selected {
+  border-color: #f97316;
+}
+
+.thumbnail-btn img {
+  width: 50px;
+  height: 50px;
+  border-radius: 6px;
+  object-fit: cover;
+  display: block;
+}
+
+.current-exercise-name {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  color: #fde68a;
+  text-transform: uppercase;
+}
+
+.log-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.input-group {
+  text-align: center;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+  color: #a0aec0;
+  font-size: 0.8rem;
+}
+
+.input-group input {
+  width: 100%;
+  background-color: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 8px;
+  padding: 0.6rem;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.save-set-button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #f97316;
+  color: white;
+  font-weight: 800;
+  font-size: 1rem;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.log-history-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem; /* Add space before the finish button */
+}
+
+.log-history-column h3 {
+  text-align: center;
+  margin-bottom: 0.75rem;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.log-history-column ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.log-history-column li {
+  background-color: #2d3748;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.edit-set-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+.edit-set-form input {
+  width: 45px;
+  background-color: #1a202c;
+  border: 1px solid #63b3ed;
+  color: white;
+  border-radius: 4px;
+  padding: 0.25rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+.edit-set-form span {
+    color: #a0aec0;
+    font-size: 0.8rem;
+}
+.edit-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+}
+.edit-action-btn.save { color: #22c55e; }
+.edit-action-btn.cancel { color: #e53e3e; }
+
+.set-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.set-actions button {
+  background: none;
+  border: none;
+  color: #a0aec0;
+  cursor: pointer;
+}
+
+/* The finish button now just sits at the end of the content */
+.finish-button {
+  width: 100%;
+  padding: 0.8rem;
+  background-color: #16a34a;
+  color: white;
+  font-weight: 800;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.no-data-message, .chart-container {
+  padding: 2rem;
+  text-align: center;
+  color: #a0aec0;
+}
