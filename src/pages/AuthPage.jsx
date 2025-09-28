@@ -1,4 +1,4 @@
-// START OF COMPLETE FILE AuthPage.jsx
+// FILE: src/pages/AuthPage.jsx
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient.js';
@@ -52,7 +52,8 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
-          redirectTo: window.location.origin + '/dashboard',
+          // It's better to configure this in the Supabase UI, but can be set here.
+          redirectTo: window.location.origin,
         },
       });
       if (error) throw error;
@@ -64,7 +65,6 @@ function AuthPage() {
   };
 
   return (
-    // The structure is correct. The eye icon button is inside the wrapper div.
     <div className="auth-page-wrapper"> 
       <div className="auth-container">
         <div className="auth-header">
@@ -77,9 +77,11 @@ function AuthPage() {
           <button onClick={() => handleSocialAuth('google')} disabled={loading}>
             <FaGoogle size={20} /> Continue with Google
           </button>
-          <button onClick={() => alert("Microsoft auth not configured.")} disabled={loading}>
+          {/* START CHANGE: Replaced the alert with the correct function call */}
+          <button onClick={() => handleSocialAuth('azure')} disabled={loading}>
             <FaMicrosoft size={20} /> Continue with Microsoft
           </button>
+          {/* END CHANGE */}
           <button onClick={() => alert("Facebook auth not configured.")} disabled={loading}>
             <FaFacebook size={20} /> Continue with Facebook
           </button>
@@ -105,7 +107,6 @@ function AuthPage() {
           </div>
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            {/* This wrapper div is key for the CSS to work */}
             <div className="input-with-icon password-input-wrapper">
               {!password && <Lock size={18} />}
               <input
@@ -146,5 +147,3 @@ function AuthPage() {
 }
 
 export default AuthPage;
-
-// END OF COMPLETE FILE AuthPage.jsx
