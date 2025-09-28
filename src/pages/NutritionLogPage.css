@@ -1,9 +1,31 @@
+/* --- START CHANGES --- */
+
+/* Make the main container the primary scrolling area */
 .nutrition-log-container {
+  height: 100%; /* Fill the parent container (e.g., main-content) */
+  overflow-y: auto; /* Enable vertical scrolling for the whole page */
   padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 70px);
+  /* Add plenty of bottom padding so the last item isn't hidden by the main nav bar */
+  padding-bottom: 8rem; 
 }
+
+/* Remove the inner scrolling behavior from the list */
+.logged-items-list {
+  /* flex-grow and overflow-y have been removed */
+  /* This element will now grow naturally with its content */
+  margin-top: 1.5rem; /* Added for spacing */
+}
+
+/* Let the footer sit naturally at the end of the content */
+.calorie-status-footer {
+  /* margin-top: auto has been removed */
+  padding-top: 1.5rem;
+  border-top: 1px solid #4a5568;
+}
+
+/* --- END CHANGES --- */
+
+
 .meal-tabs {
   display: flex;
   justify-content: space-between;
@@ -83,10 +105,6 @@
 .food-search-item:hover {
   background-color: #4a5568;
 }
-.logged-items-list {
-  flex-grow: 1;
-  overflow-y: auto;
-}
 .no-items-message {
   text-align: center;
   color: #a0aec0;
@@ -114,11 +132,6 @@
   font-size: 1rem;
   font-weight: bold;
   color: #fde68a;
-}
-.calorie-status-footer {
-  margin-top: auto;
-  padding-top: 1rem;
-  border-top: 1px solid #4a5568;
 }
 .calorie-info {
   display: flex;
@@ -190,7 +203,6 @@
   font-weight: 600;
   cursor: pointer;
 }
-/* Add this to the bottom of NutritionLogPage.css */
 .water-log-card {
   background-color: #2d3748;
   border-radius: 12px;
@@ -209,7 +221,7 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  flex-grow: 1; /* Pushes the total to the right */
+  flex-grow: 1;
 }
 
 .water-log-header span {
