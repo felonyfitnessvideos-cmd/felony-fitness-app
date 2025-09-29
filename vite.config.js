@@ -14,6 +14,7 @@ export default defineConfig({
         short_name: 'FelonyFit',
         description: 'Your personal fitness and nutrition tracker.',
         theme_color: '#1a202c',
+		orientation: 'portrait',
         icons: [
           {
             src: 'pwa-192x192.png',

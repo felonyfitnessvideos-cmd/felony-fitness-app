@@ -217,6 +217,7 @@ const COMMON_FOODS = [
   { name: 'Navy Beans', type: 'volume' },
   { name: 'Edamame', type: 'volume' },
 
+/* --- Comment out this section for the first run, then uncomment for the second run ---
   // More Vegetables
   { name: 'Red Potato', type: 'item' },
   { name: 'Yukon Gold Potato', type: 'item' },
@@ -287,6 +288,7 @@ const COMMON_FOODS = [
   { name: 'Apple Pie', type: 'item' },
   { name: 'Cheesecake', type: 'item' },
   { name: 'Jello', type: 'volume' },
+  */
 ];
 
 const SERVING_SIZES = {

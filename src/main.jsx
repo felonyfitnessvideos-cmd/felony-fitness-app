@@ -23,6 +23,7 @@ import EditRoutinePage from './pages/EditRoutinePage.jsx';
 import NutritionGoalsPage from './pages/NutritionGoalsPage.jsx';
 import NutritionLogPage from './pages/NutritionLogPage.jsx';
 import NutritionRecsPage from './pages/NutritionRecsPage.jsx';
+import ProfilePage from './pages/ProfilePage';
 Modal.setAppElement('#root'); 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -53,6 +54,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/nutrition/goals" element={<NutritionGoalsPage />} />
           <Route path="/nutrition/log" element={<NutritionLogPage />} />
           <Route path="/nutrition/recommendations" element={<NutritionRecsPage />} />
+		  <Route path="profile" element={<ProfilePage />} />
         </Route>
       </Routes>
     </BrowserRouter>

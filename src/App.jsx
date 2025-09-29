@@ -1,9 +1,10 @@
+// FILE: App.jsx
+
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Home, Dumbbell, Apple, TrendingUp, ClipboardList } from 'lucide-react'; // 1. Import icons
+// --- CHANGED: Swapped ClipboardList for the User icon ---
+import { Home, Dumbbell, Apple, TrendingUp, User } from 'lucide-react';
 import './App.css';
-
-// 2. All the old SVG icon components have been removed
 
 function App() {
   return (
@@ -12,12 +13,12 @@ function App() {
         <Outlet />
       </main>
       <nav className="bottom-nav">
-        {/* 3. Use the imported icons directly as components */}
         <NavLink to="/dashboard" className="nav-link"><Home /><span>Dashboard</span></NavLink>
         <NavLink to="/workouts" className="nav-link"><Dumbbell /><span>Workouts</span></NavLink>
         <NavLink to="/nutrition" className="nav-link"><Apple /><span>Nutrition</span></NavLink>
         <NavLink to="/progress" className="nav-link"><TrendingUp /><span>Progress</span></NavLink>
-        <NavLink to="/my-plan" className="nav-link"><ClipboardList /><span>My Plan</span></NavLink>
+        {/* --- CHANGED: Replaced "My Plan" with "Profile" --- */}
+        <NavLink to="/profile" className="nav-link"><User /><span>Profile</span></NavLink>
       </nav>
     </div>
   );
