@@ -55,7 +55,6 @@ const motivationalQuotes = [
   "Own your morning. Elevate your life.",
   "You don't find willpower, you create it.",
   "Be stronger than your strongest excuse.",
-  
 ];
 
 function DashboardPage() {
@@ -68,7 +67,6 @@ function DashboardPage() {
   const [activeGoals, setActiveGoals] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // CORRECTED: This function is now more robust.
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -77,9 +75,16 @@ function DashboardPage() {
       const today = new Date().toISOString().split('T')[0];
       const [profileRes, nutritionRes, workoutRes, goalsRes] = await Promise.all([
         supabase.from('user_profiles').select('*').eq('id', user.id).single(),
-        supabase.from('nutrition_logs').select('*, foods(*), water_oz_consumed').eq('user_id', user.id).gte('log_date', `${today} 00:00:00`).lte('log_date', `${today} 23:59:59`),
-        // CORRECTED: Removed .single() to handle days with zero workouts
-        supabase.from('workout_logs').select('*').eq('user_id', user.id).gte('log_date', `${today} 00:00:00`).lte('log_date', `${today} 23:59:59`).limit(1),
+        
+        // --- START CHANGE 1: Update the query to fetch the pdcaas_score ---
+        supabase.from('nutrition_logs')
+          .select('*, food_servings(*, foods(pdcaas_score)), water_oz_consumed')
+          .eq('user_id', user.id)
+          .gte('log_date', `${today} 00:00:00`)
+          .lte('log_date', `${today} 23:59:59`),
+        // --- END CHANGE 1 ---
+          
+        supabase.from('workout_logs').select('*').eq('user_id', user.id).gte('created_at', `${today} 00:00:00`).lte('created_at', `${today} 23:59:59`).order('created_at', { ascending: false }).limit(1),
         supabase.from('goals').select('*').eq('user_id', user.id)
       ]);
 
@@ -93,18 +98,28 @@ function DashboardPage() {
 
       const todaysLogs = nutritionRes.data || [];
       let totalCalories = 0, totalProtein = 0, totalWater = 0;
+      
+      // --- START CHANGE 2: Update calculation logic to check PDCAAS score ---
       todaysLogs.forEach(log => {
-        if (log.foods) {
-          totalCalories += (log.foods.calories_per_serving || 0) * log.quantity_consumed;
-          totalProtein += (log.foods.protein_g_per_serving || 0) * log.quantity_consumed;
+        if (log.food_servings) {
+          totalCalories += (log.food_servings.calories || 0) * log.quantity_consumed;
+          
+          const proteinAmount = (log.food_servings.protein_g || 0) * log.quantity_consumed;
+          const pdcaas = log.food_servings.foods?.pdcaas_score;
+
+          // Only count protein if the score is > 0.7 or if the score is not set (null/undefined)
+          if (pdcaas === null || pdcaas === undefined || pdcaas > 0.7) {
+            totalProtein += proteinAmount;
+          }
         }
         if (log.water_oz_consumed) {
           totalWater += log.water_oz_consumed;
         }
       });
+      // --- END CHANGE 2 ---
+
       setNutrition({ calories: Math.round(totalCalories), protein: Math.round(totalProtein), water: totalWater });
       
-      // CORRECTED: Check if any workout logs were returned before accessing them
       if (workoutRes.data && workoutRes.data.length > 0) {
         const todaysWorkout = workoutRes.data[0];
         setTraining({
@@ -113,7 +128,6 @@ function DashboardPage() {
           calories: todaysWorkout.calories_burned || 0
         });
       } else {
-        // If no workout today, default to Rest Day
         setTraining({ name: 'Rest Day', duration: 0, calories: 0 });
       }
 
@@ -210,4 +224,3 @@ function DashboardPage() {
 }
 
 export default DashboardPage;
-

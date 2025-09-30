@@ -1,17 +1,9 @@
-// FILE: src/pages/WorkoutLogPage.jsx
-// ---
-// DESCRIPTION: This is the final version with two major enhancements:
-// 1. "Today" logs now correctly group all sessions from the current calendar day.
-// 2. A custom modal now replaces the browser alert when finishing a workout.
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import RestTimerModal from '../components/RestTimerModal.jsx';
-// START CHANGE: Import the new SuccessModal component
 import SuccessModal from '../components/SuccessModal.jsx';
-// END CHANGE
 import { Dumbbell, BarChart2, Edit2, Trash2, Check, X } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import './WorkoutLogPage.css';
@@ -32,72 +24,64 @@ function WorkoutLogPage() {
   const [chartData, setChartData] = useState([]);
   const [editingSet, setEditingSet] = useState(null);
   const [editSetValue, setEditSetValue] = useState({ weight: '', reps: '' });
-
-  // START CHANGE: Add state for the new success modal
   const [isSuccessModalOpen, setSuccessModalOpen] = useState(false);
-  // END CHANGE
+  const [shouldAdvance, setShouldAdvance] = useState(false);
 
   const selectedExercise = useMemo(() => routine?.routine_exercises[selectedExerciseIndex]?.exercises, [routine, selectedExerciseIndex]);
 
-  useEffect(() => {
-    const fetchAndStartWorkout = async () => {
-      try {
-        setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("User not found");
+  const fetchAndStartWorkout = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not found");
 
-        const { data: routineData, error: routineError } = await supabase
-          .from('workout_routines')
-          .select(`*, routine_exercises(*, exercises(*, muscle_groups(name)))`)
-          .eq('id', routineId)
-          .single();
-        if (routineError) throw routineError;
-        setRoutine(routineData);
+      const { data: routineData, error: routineError } = await supabase
+        .from('workout_routines')
+        .select(`*, routine_exercises(target_sets, exercises(*, muscle_groups(name)))`)
+        .eq('id', routineId)
+        .single();
+      if (routineError) throw routineError;
+      if (!routine) setRoutine(routineData);
 
-        // START CHANGE: Updated logic to handle all of today's logs correctly.
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
 
-        const { data: todaysLogs, error: todaysLogsError } = await supabase
-          .from('workout_logs')
-          .select('id, is_complete, workout_log_entries(*)')
-          .eq('user_id', user.id)
-          .eq('routine_id', routineId)
-          .gte('created_at', todayStart.toISOString());
-        
-        if (todaysLogsError) throw todaysLogsError;
-        
-        const todaysEntriesMap = {};
-        let activeLog = todaysLogs.find(log => !log.is_complete);
-        
-        // Aggregate all entries from today, both complete and incomplete logs
-        todaysLogs.forEach(log => {
-          log.workout_log_entries.forEach(entry => {
-            if (!todaysEntriesMap[entry.exercise_id]) todaysEntriesMap[entry.exercise_id] = [];
-            todaysEntriesMap[entry.exercise_id].push(entry);
-          });
+      const { data: todaysLogs, error: todaysLogsError } = await supabase
+        .from('workout_logs')
+        .select('id, is_complete, workout_log_entries(*)')
+        .eq('user_id', user.id)
+        .eq('routine_id', routineId)
+        .gte('created_at', todayStart.toISOString());
+      
+      if (todaysLogsError) throw todaysLogsError;
+      
+      const todaysEntriesMap = {};
+      let activeLog = todaysLogs.find(log => !log.is_complete);
+      
+      todaysLogs.forEach(log => {
+        log.workout_log_entries.sort((a, b) => a.set_number - b.set_number);
+        log.workout_log_entries.forEach(entry => {
+          if (!todaysEntriesMap[entry.exercise_id]) todaysEntriesMap[entry.exercise_id] = [];
+          todaysEntriesMap[entry.exercise_id].push(entry);
         });
-        setTodaysLog(todaysEntriesMap);
+      });
+      setTodaysLog(todaysEntriesMap);
 
-        let currentLogId;
-        if (activeLog) {
-          // If there's an incomplete log from today, resume it
-          console.log(`Resuming existing workout log with ID: ${activeLog.id}`);
-          currentLogId = activeLog.id;
-        } else {
-          // If all of today's logs are complete, or there are none, create a new one
-          const { data: newLog, error: newLogError } = await supabase
-            .from('workout_logs')
-            .insert({ user_id: user.id, routine_id: routineId, is_complete: false })
-            .select('id')
-            .single();
-          if (newLogError) throw newLogError;
-          console.log(`Started new workout log with ID: ${newLog.id}`);
-          currentLogId = newLog.id;
-        }
-        setWorkoutLogId(currentLogId);
-        // END CHANGE
+      let currentLogId;
+      if (activeLog) {
+        currentLogId = activeLog.id;
+      } else {
+        const { data: newLog, error: newLogError } = await supabase
+          .from('workout_logs')
+          .insert({ user_id: user.id, routine_id: routineId, is_complete: false })
+          .select('id')
+          .single();
+        if (newLogError) throw newLogError;
+        currentLogId = newLog.id;
+      }
+      setWorkoutLogId(currentLogId);
 
+      if (!previousLog || Object.keys(previousLog).length === 0) {
         if (routineData && routineData.routine_exercises) {
           const prevLogMap = {};
           await Promise.all(routineData.routine_exercises.map(async (item) => {
@@ -107,7 +91,6 @@ function WorkoutLogPage() {
               p_exercise_id: exerciseId,
             });
             if (error) {
-              console.error(`Error fetching last session for exercise ${exerciseId}:`, error);
               prevLogMap[exerciseId] = [];
             } else {
               prevLogMap[exerciseId] = data;
@@ -115,27 +98,46 @@ function WorkoutLogPage() {
           }));
           setPreviousLog(prevLogMap);
         }
-
-        setStartTime(new Date());
-      } catch (error) {
-        console.error("A critical error occurred while fetching workout data:", error);
-      } finally {
-        setLoading(false);
       }
-    };
+      if (!startTime) setStartTime(new Date());
+    } catch (error) {
+      console.error("A critical error occurred while fetching workout data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [routineId, routine, previousLog, startTime]);
+
+  useEffect(() => {
     fetchAndStartWorkout();
-  }, [routineId]);
+  }, [fetchAndStartWorkout]);
   
   const fetchChartData = useCallback(async () => {
-    // This function is unchanged
+    if (!selectedExercise) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data, error } = await supabase
+      .from('workout_log_entries')
+      .select('created_at, weight_lifted_lbs')
+      .eq('exercise_id', selectedExercise.id)
+      .order('created_at', { ascending: true });
+    if (error) {
+      console.error("Error fetching chart data:", error);
+    } else {
+      const formattedData = data.map(log => ({
+        date: new Date(log.created_at).toLocaleDateString(),
+        weight: log.weight_lifted_lbs,
+      }));
+      setChartData(formattedData);
+    }
   }, [selectedExercise]);
 
   useEffect(() => {
-    // This function is unchanged
+    if (activeView === 'chart') {
+      fetchChartData();
+    }
   }, [activeView, selectedExercise, fetchChartData]);
 
   const handleSaveSet = async () => {
-    // This function is unchanged from the last version
     if (!currentSet.reps || !currentSet.weight || !workoutLogId || !selectedExercise) return;
     const newSetPayload = {
       log_id: workoutLogId,
@@ -154,20 +156,36 @@ function WorkoutLogPage() {
       alert("Could not save set. Please try again.");
       return;
     }
-    setTodaysLog(prev => ({
-      ...prev,
-      [selectedExercise.id]: [...(prev[selectedExercise.id] || []), newEntry]
-    }));
+    
+    const newTodaysLog = {
+      ...todaysLog,
+      [selectedExercise.id]: [...(todaysLog[selectedExercise.id] || []), newEntry]
+    };
+    setTodaysLog(newTodaysLog);
     setCurrentSet({ weight: currentSet.weight, reps: currentSet.reps });
+
+    const targetSets = routine.routine_exercises[selectedExerciseIndex]?.target_sets;
+    const completedSets = newTodaysLog[selectedExercise.id].length;
+
+    if (targetSets && completedSets >= targetSets) {
+      setShouldAdvance(true);
+    }
+    
     setIsTimerOpen(true);
   };
 
-  // START CHANGE: handleFinishWorkout now opens the success modal instead of an alert.
-  const handleFinishWorkout = async () => {
-    if (!workoutLogId) {
-      console.error("Finish Workout Error: No workout log ID available.");
-      return alert("Error: Could not find the workout session to finish.");
+  const handleTimerClose = () => {
+    setIsTimerOpen(false);
+    if (shouldAdvance) {
+      if (selectedExerciseIndex < routine.routine_exercises.length - 1) {
+        setSelectedExerciseIndex(prevIndex => prevIndex + 1);
+      }
+      setShouldAdvance(false);
     }
+  };
+
+  const handleFinishWorkout = async () => {
+    if (!workoutLogId) return;
     const duration_minutes = Math.round((new Date() - startTime) / 60000);
     const { error } = await supabase
       .from('workout_logs')
@@ -182,37 +200,63 @@ function WorkoutLogPage() {
       console.error("Supabase error updating main log:", error);
       return alert(`Error finishing workout: ${error.message}`);
     }
-    setSuccessModalOpen(true); // Open the modal on success
+    setSuccessModalOpen(true);
   };
-  // END CHANGE
   
-  // START CHANGE: New handler for closing the modal and navigating.
   const handleCloseSuccessModal = () => {
     setSuccessModalOpen(false);
     navigate('/dashboard');
   };
-  // END CHANGE
 
-  const handleDeleteSet = async (exerciseId, setIndexToDelete, entryId) => {
-    // This function is unchanged
+  const handleDeleteSet = async (entryId) => {
+    const { error } = await supabase
+      .from('workout_log_entries')
+      .delete()
+      .eq('id', entryId);
+    if (error) {
+      console.error("Error deleting set:", error);
+      alert("Could not delete set.");
+      return;
+    }
+    await fetchAndStartWorkout();
   };
 
-  const handleEditSetClick = (exerciseId, setIndex, set) => {
-    // This function is unchanged
+  const handleEditSetClick = (set) => {
+    setEditingSet({ entryId: set.id });
+    setEditSetValue({ weight: set.weight_lifted_lbs, reps: set.reps_completed });
   };
 
   const handleUpdateSet = async () => {
-    // This function is unchanged
+    if (!editingSet) return;
+    const { entryId } = editingSet;
+    const updatedPayload = {
+      weight_lifted_lbs: parseInt(editSetValue.weight, 10),
+      reps_completed: parseInt(editSetValue.reps, 10),
+    };
+    const { error } = await supabase
+      .from('workout_log_entries')
+      .update(updatedPayload)
+      .eq('id', entryId);
+      
+    if (error) {
+      console.error("Error updating set:", error);
+      alert("Could not update set.");
+      return;
+    }
+    setEditingSet(null);
+    await fetchAndStartWorkout();
   };
 
   const handleCancelEdit = () => setEditingSet(null);
 
   if (loading) return <div style={{color: 'white', padding: '2rem'}}>Loading Workout...</div>;
 
+  const isLastExercise = routine && selectedExerciseIndex === routine.routine_exercises.length - 1;
+
   return (
     <div className="workout-log-page-container">
       <SubPageHeader title={routine?.routine_name || 'Workout'} icon={<Dumbbell size={28} />} iconColor="#f97316" backTo="/workouts/select-routine-log" />
-      {/* Page content remains the same */}
+      
       <div className="log-scroll-area">
         <div className="log-toggle-header">
             <div className="log-toggle">
@@ -245,9 +289,9 @@ function WorkoutLogPage() {
                 <div className="log-history-column">
                     <h3>Today</h3>
                     <ul>
-                        {(todaysLog[selectedExercise?.id] || []).map((set, index) => (
+                        {(todaysLog[selectedExercise?.id] || []).map((set) => (
                         <li key={set.id}>
-                            {editingSet?.entryId === set.id ? (
+                            {editingSet && editingSet.entryId === set.id ? (
                                 <div className="edit-set-form">
                                     <input type="number" value={editSetValue.weight} onChange={(e) => setEditSetValue(prev => ({...prev, weight: e.target.value}))} />
                                     <span>lbs x</span>
@@ -259,8 +303,8 @@ function WorkoutLogPage() {
                                 <>
                                 <span>{set.weight_lifted_lbs} lbs x {set.reps_completed}</span>
                                 <div className="set-actions">
-                                    <button onClick={() => handleEditSetClick(selectedExercise.id, index, set)}><Edit2 size={14}/></button>
-                                    <button onClick={() => handleDeleteSet(selectedExercise.id, index, set.id)}><Trash2 size={14}/></button>
+                                    <button onClick={() => handleEditSetClick(set)}><Edit2 size={14}/></button>
+                                    <button onClick={() => handleDeleteSet(set.id)}><Trash2 size={14}/></button>
                                 </div>
                                 </>
                             )}
@@ -280,23 +324,37 @@ function WorkoutLogPage() {
         </>
         ) : (
           <div className="chart-container">
-            {/* Chart UI is unchanged */}
+            {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                    <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                        <CartesianGrid stroke="#4a5568" strokeDasharray="3 3" />
+                        <XAxis dataKey="date" stroke="#a0aec0" />
+                        <YAxis stroke="#a0aec0" />
+                        <Tooltip contentStyle={{ backgroundColor: '#2d3748', border: '1px solid #4a5568' }} />
+                        <Line type="monotone" dataKey="weight" stroke="#f97316" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }} />
+                    </LineChart>
+                </ResponsiveContainer>
+            ) : (
+                <p className="no-data-message">No progress data available for this exercise yet.</p>
+            )}
         </div>
         )}
       </div>
-      <div className="finish-workout-footer">
+
+      {isLastExercise && (
+        <div className="finish-workout-footer">
           <button className="finish-button" onClick={handleFinishWorkout}>Finish Workout</button>
-      </div>
-      <RestTimerModal isOpen={isTimerOpen} onClose={() => setIsTimerOpen(false)} />
+        </div>
+      )}
+
+      <RestTimerModal isOpen={isTimerOpen} onClose={handleTimerClose} />
       
-      {/* START CHANGE: Add the SuccessModal to the page */}
       <SuccessModal 
         isOpen={isSuccessModalOpen}
         onClose={handleCloseSuccessModal}
         title="Workout Saved!"
         message="Your progress has been saved successfully."
       />
-      {/* END CHANGE */}
     </div>
   );
 }

@@ -121,14 +121,35 @@ function EditRoutinePage() {
         .insert({ routine_name: routineName, user_id: user.id })
         .select('id').single();
       if (routineError) return alert(`Error: ${routineError.message}`);
-      const exercisesToInsert = routineExercises.map(ex => ({ routine_id: newRoutine.id, exercise_id: ex.id, sets: ex.sets, reps: ex.reps }));
+      
+      // --- START CHANGE: Also save to target_sets column ---
+      const exercisesToInsert = routineExercises.map(ex => ({ 
+        routine_id: newRoutine.id, 
+        exercise_id: ex.id, 
+        sets: ex.sets, 
+        reps: ex.reps,
+        target_sets: ex.sets // Add this line
+      }));
+      // --- END CHANGE ---
+
       const { error: exercisesError } = await supabase.from('routine_exercises').insert(exercisesToInsert);
       if (exercisesError) return alert(`Error: ${exercisesError.message}`);
     } else {
       const { error: routineError } = await supabase.from('workout_routines').update({ routine_name: routineName }).eq('id', routineId);
       if (routineError) return alert(`Error: ${routineError.message}`);
+      
       await supabase.from('routine_exercises').delete().eq('routine_id', routineId);
-      const exercisesToInsert = routineExercises.map(ex => ({ routine_id: routineId, exercise_id: ex.id, sets: ex.sets, reps: ex.reps }));
+      
+      // --- START CHANGE: Also save to target_sets column ---
+      const exercisesToInsert = routineExercises.map(ex => ({ 
+        routine_id: routineId, 
+        exercise_id: ex.id, 
+        sets: ex.sets, 
+        reps: ex.reps,
+        target_sets: ex.sets // Add this line
+      }));
+      // --- END CHANGE ---
+
       const { error: exercisesError } = await supabase.from('routine_exercises').insert(exercisesToInsert);
       if (exercisesError) return alert(`Error: ${exercisesError.message}`);
     }
