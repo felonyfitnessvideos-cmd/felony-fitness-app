@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
-import { TrendingUp, Dumbbell, Flame, CheckCircle, BarChart3 } from 'lucide-react';
+import { TrendingUp, Dumbbell, Flame, CheckCircle, BarChart3, Apple as AppleIcon } from 'lucide-react';
 import { LineChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart } from 'recharts';
 import './ProgressPage.css';
 
 function ProgressPage() {
-  const [stats, setStats] = useState({ totalWorkouts: 0, avgDuration: 0, activeGoals: 0 });
+  const [stats, setStats] = useState({ totalWorkouts: 0, avgDuration: 0, avgCalories: 0, avgBurn: 0, activeGoals: 0 });
   const [nutritionTrends, setNutritionTrends] = useState([]);
   const [workoutDurationTrends, setWorkoutDurationTrends] = useState([]);
   const [goals, setGoals] = useState([]);
@@ -17,12 +17,15 @@ function ProgressPage() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
-      // Fetch all data concurrently for speed
       const [workoutLogsRes, nutritionLogsRes, goalsRes] = await Promise.all([
-        // CORRECTED: Uses 'log_date' instead of 'created_at'
-        supabase.from('workout_logs').select('duration_minutes, log_date').eq('user_id', user.id),
-        // CORRECTED: Uses 'log_date' and specifies the join correctly
-        supabase.from('nutrition_logs').select('log_date, quantity_consumed, foods(calories_per_serving)').eq('user_id', user.id),
+        // --- START CHANGE 1: Fetch created_at and calories_burned ---
+        supabase.from('workout_logs').select('duration_minutes, created_at, calories_burned').eq('user_id', user.id),
+        // --- END CHANGE 1 ---
+        
+        // --- START CHANGE 2: Fetch from the correct food_servings table ---
+        supabase.from('nutrition_logs').select('log_date, quantity_consumed, food_servings(calories)').eq('user_id', user.id),
+        // --- END CHANGE 2 ---
+
         supabase.from('goals').select('*').eq('user_id', user.id)
       ]);
 
@@ -34,14 +37,19 @@ function ProgressPage() {
       const totalDuration = workoutLogs.reduce((sum, log) => sum + (log.duration_minutes || 0), 0);
       const avgDuration = totalWorkouts > 0 ? Math.round(totalDuration / totalWorkouts) : 0;
       
-      // Process Workout Duration Chart Data
+      // --- START CHANGE 3: Process calories_burned and use created_at ---
       const durationMap = new Map();
+      const burnMap = new Map();
       workoutLogs.forEach(log => {
-        // CORRECTED: Uses 'log_date'
-        const date = new Date(log.log_date).toLocaleDateString();
+        const date = new Date(log.created_at).toLocaleDateString(); // Use created_at
         durationMap.set(date, (durationMap.get(date) || 0) + log.duration_minutes);
+        burnMap.set(date, (burnMap.get(date) || 0) + log.calories_burned);
       });
       setWorkoutDurationTrends(Array.from(durationMap, ([date, duration]) => ({ date, duration })));
+      // Calculate average daily burn from the processed map
+      const totalBurn = Array.from(burnMap.values()).reduce((sum, val) => sum + val, 0);
+      const avgBurn = burnMap.size > 0 ? Math.round(totalBurn / burnMap.size) : 0;
+      // --- END CHANGE 3 ---
 
       // Process Nutrition Trends Chart Data
       const nutritionLogs = nutritionLogsRes.data || [];
@@ -49,19 +57,24 @@ function ProgressPage() {
 
       const calorieMap = new Map();
       nutritionLogs.forEach(log => {
-        // CORRECTED: Uses 'log_date'
         const date = new Date(log.log_date).toLocaleDateString();
-        const calories = (log.foods?.calories_per_serving || 0) * (log.quantity_consumed || 0);
+        // --- START CHANGE 4: Calculate calories from the correct object ---
+        const calories = (log.food_servings?.calories || 0) * (log.quantity_consumed || 0);
+        // --- END CHANGE 4 ---
         calorieMap.set(date, (calorieMap.get(date) || 0) + calories);
       });
       setNutritionTrends(Array.from(calorieMap, ([date, calories]) => ({ date, calories: Math.round(calories) })));
-
+      // Calculate average daily calories from the processed map
+      const totalCalories = Array.from(calorieMap.values()).reduce((sum, val) => sum + val, 0);
+      const avgCalories = calorieMap.size > 0 ? Math.round(totalCalories / calorieMap.size) : 0;
+      
       // Process Goals
       const activeGoals = goalsRes.data || [];
       if(goalsRes.error) console.error("Goals Error:", goalsRes.error);
       setGoals(activeGoals);
       
-      setStats({ totalWorkouts, avgDuration, activeGoals: activeGoals.length });
+      // Update all stats
+      setStats({ totalWorkouts, avgDuration, avgCalories, avgBurn, activeGoals: activeGoals.length });
     }
     setLoading(false);
   }, []);
@@ -79,13 +92,15 @@ function ProgressPage() {
       <div className="stats-grid">
         <div className="stat-card"><BarChart3 size={24} /> <span>{stats.totalWorkouts}</span> Total Workouts</div>
         <div className="stat-card"><Dumbbell size={24} /> <span>{stats.avgDuration} min</span> Avg Duration</div>
-        <div className="stat-card"><Flame size={24} /> <span>{nutritionTrends.length > 0 ? Math.round(nutritionTrends.reduce((a, b) => a + b.calories, 0) / nutritionTrends.length) : 0}</span> Avg Daily Burn</div>
-        <div className="stat-card"><CheckCircle size={24} /> <span>{stats.activeGoals}</span> Active Goals</div>
+        {/* --- START CHANGE 5: Correctly label Avg Calories Eaten and Avg Daily Burn --- */}
+        <div className="stat-card"><AppleIcon size={24} /> <span>{stats.avgCalories}</span> Avg Cals Eaten</div>
+        <div className="stat-card"><Flame size={24} /> <span>{stats.avgBurn}</span> Avg Daily Burn</div>
+        {/* --- END CHANGE 5 --- */}
       </div>
 
       <div className="chart-grid">
         <div className="chart-card">
-          <h3>Nutrition Trends (Calories)</h3>
+          <h3>Nutrition Trends (Calories Eaten)</h3>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={nutritionTrends}>
               <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
@@ -93,7 +108,7 @@ function ProgressPage() {
               <YAxis stroke="#a0aec0" fontSize={12} />
               <Tooltip contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #4a5568' }} />
               <Legend />
-              <Line type="monotone" dataKey="calories" stroke="#8884d8" strokeWidth={2} />
+              <Line type="monotone" dataKey="calories" name="Calories Eaten" stroke="#8884d8" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -106,7 +121,7 @@ function ProgressPage() {
               <YAxis stroke="#a0aec0" fontSize={12} />
               <Tooltip contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #4a5568' }} />
               <Legend />
-              <Bar dataKey="duration" fill="#82ca9d" />
+              <Bar dataKey="duration" name="Duration (min)" fill="#82ca9d" />
             </BarChart>
           </ResponsiveContainer>
         </div>

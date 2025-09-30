@@ -75,15 +75,7 @@ function DashboardPage() {
       const today = new Date().toISOString().split('T')[0];
       const [profileRes, nutritionRes, workoutRes, goalsRes] = await Promise.all([
         supabase.from('user_profiles').select('*').eq('id', user.id).single(),
-        
-        // --- START CHANGE 1: Update the query to fetch the pdcaas_score ---
-        supabase.from('nutrition_logs')
-          .select('*, food_servings(*, foods(pdcaas_score)), water_oz_consumed')
-          .eq('user_id', user.id)
-          .gte('log_date', `${today} 00:00:00`)
-          .lte('log_date', `${today} 23:59:59`),
-        // --- END CHANGE 1 ---
-          
+        supabase.from('nutrition_logs').select('*, food_servings(*, foods(pdcaas_score)), water_oz_consumed').eq('user_id', user.id).gte('log_date', `${today} 00:00:00`).lte('log_date', `${today} 23:59:59`),
         supabase.from('workout_logs').select('*').eq('user_id', user.id).gte('created_at', `${today} 00:00:00`).lte('created_at', `${today} 23:59:59`).order('created_at', { ascending: false }).limit(1),
         supabase.from('goals').select('*').eq('user_id', user.id)
       ]);
@@ -99,15 +91,11 @@ function DashboardPage() {
       const todaysLogs = nutritionRes.data || [];
       let totalCalories = 0, totalProtein = 0, totalWater = 0;
       
-      // --- START CHANGE 2: Update calculation logic to check PDCAAS score ---
       todaysLogs.forEach(log => {
         if (log.food_servings) {
           totalCalories += (log.food_servings.calories || 0) * log.quantity_consumed;
-          
           const proteinAmount = (log.food_servings.protein_g || 0) * log.quantity_consumed;
           const pdcaas = log.food_servings.foods?.pdcaas_score;
-
-          // Only count protein if the score is > 0.7 or if the score is not set (null/undefined)
           if (pdcaas === null || pdcaas === undefined || pdcaas > 0.7) {
             totalProtein += proteinAmount;
           }
@@ -116,7 +104,6 @@ function DashboardPage() {
           totalWater += log.water_oz_consumed;
         }
       });
-      // --- END CHANGE 2 ---
 
       setNutrition({ calories: Math.round(totalCalories), protein: Math.round(totalProtein), water: totalWater });
       
@@ -149,7 +136,14 @@ function DashboardPage() {
     navigate('/');
   };
 
-  const calorieProgress = goals.calories > 0 ? (nutrition.calories / goals.calories) * 100 : 0;
+  // --- START: Calorie logic updates ---
+  const netCalories = nutrition.calories - training.calories;
+
+  // Progress bar is now based on an adjusted goal (Goal + Calories Burned)
+  const adjustedCalorieGoal = goals.calories + training.calories;
+  const calorieProgress = adjustedCalorieGoal > 0 ? (nutrition.calories / adjustedCalorieGoal) * 100 : 0;
+  // --- END: Calorie logic updates ---
+
   const proteinProgress = goals.protein > 0 ? (nutrition.protein / goals.protein) * 100 : 0;
   const waterProgress = goals.water > 0 ? (nutrition.water / goals.water) * 100 : 0;
 
@@ -167,10 +161,12 @@ function DashboardPage() {
           <h3>Nutrition</h3>
         </div>
         <div className="nutrition-stats">
+          {/* --- START: Calorie stat updated to "Net" --- */}
           <div className="stat">
-            <span className="value">{nutrition.calories}</span>
-            <span className="label">Calories</span>
+            <span className="value">{netCalories}</span>
+            <span className="label">Net Calories</span>
           </div>
+          {/* --- END: Calorie stat updated to "Net" --- */}
           <div className="stat">
             <span className="value">{nutrition.protein}g</span>
             <span className="label">Protein</span>

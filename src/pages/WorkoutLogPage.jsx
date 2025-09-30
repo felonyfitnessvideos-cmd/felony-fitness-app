@@ -26,6 +26,7 @@ function WorkoutLogPage() {
   const [editSetValue, setEditSetValue] = useState({ weight: '', reps: '' });
   const [isSuccessModalOpen, setSuccessModalOpen] = useState(false);
   const [shouldAdvance, setShouldAdvance] = useState(false);
+  const [userWeightLbs, setUserWeightLbs] = useState(150); // Default weight in case none is logged
 
   const selectedExercise = useMemo(() => routine?.routine_exercises[selectedExerciseIndex]?.exercises, [routine, selectedExerciseIndex]);
 
@@ -34,6 +35,19 @@ function WorkoutLogPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not found");
+
+      // Fetch user's latest weight for calorie calculation
+      const { data: metricsData, error: metricsError } = await supabase
+        .from('body_metrics')
+        .select('weight_lbs')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (metricsData && metricsData.weight_lbs) {
+        setUserWeightLbs(metricsData.weight_lbs);
+      }
 
       const { data: routineData, error: routineError } = await supabase
         .from('workout_routines')
@@ -146,27 +160,18 @@ function WorkoutLogPage() {
       reps_completed: parseInt(currentSet.reps, 10),
       weight_lifted_lbs: parseInt(currentSet.weight, 10),
     };
-    const { data: newEntry, error } = await supabase
-      .from('workout_log_entries')
-      .insert(newSetPayload)
-      .select()
-      .single();
+    const { data: newEntry, error } = await supabase.from('workout_log_entries').insert(newSetPayload).select().single();
     if (error) {
-      console.error("Error saving set:", error);
       alert("Could not save set. Please try again.");
       return;
     }
     
-    const newTodaysLog = {
-      ...todaysLog,
-      [selectedExercise.id]: [...(todaysLog[selectedExercise.id] || []), newEntry]
-    };
+    const newTodaysLog = { ...todaysLog, [selectedExercise.id]: [...(todaysLog[selectedExercise.id] || []), newEntry] };
     setTodaysLog(newTodaysLog);
     setCurrentSet({ weight: currentSet.weight, reps: currentSet.reps });
 
     const targetSets = routine.routine_exercises[selectedExerciseIndex]?.target_sets;
     const completedSets = newTodaysLog[selectedExercise.id].length;
-
     if (targetSets && completedSets >= targetSets) {
       setShouldAdvance(true);
     }
@@ -186,18 +191,26 @@ function WorkoutLogPage() {
 
   const handleFinishWorkout = async () => {
     if (!workoutLogId) return;
+
     const duration_minutes = Math.round((new Date() - startTime) / 60000);
+    
+    const MET_VALUE = 5.0; // General MET for weight lifting
+    const weight_kg = userWeightLbs * 0.453592;
+    const duration_hours = duration_minutes / 60;
+    const calories_burned = Math.round(MET_VALUE * weight_kg * duration_hours);
+
     const { error } = await supabase
       .from('workout_logs')
       .update({
         is_complete: true,
         duration_minutes: duration_minutes,
         ended_at: new Date().toISOString(),
-        notes: routine.routine_name
+        notes: routine.routine_name,
+        calories_burned: calories_burned
       })
       .eq('id', workoutLogId);
+
     if (error) {
-      console.error("Supabase error updating main log:", error);
       return alert(`Error finishing workout: ${error.message}`);
     }
     setSuccessModalOpen(true);
@@ -214,7 +227,6 @@ function WorkoutLogPage() {
       .delete()
       .eq('id', entryId);
     if (error) {
-      console.error("Error deleting set:", error);
       alert("Could not delete set.");
       return;
     }
@@ -239,7 +251,6 @@ function WorkoutLogPage() {
       .eq('id', entryId);
       
     if (error) {
-      console.error("Error updating set:", error);
       alert("Could not update set.");
       return;
     }
