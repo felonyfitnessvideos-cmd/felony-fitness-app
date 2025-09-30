@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
-import { Dumbbell, Zap } from 'lucide-react';
+// --- Add Lightbulb icon to imports ---
+import { Dumbbell, Zap, Lightbulb } from 'lucide-react';
 import './WorkoutRecsPage.css';
 
 function WorkoutRecsPage() {
@@ -23,7 +24,6 @@ function WorkoutRecsPage() {
       return;
     }
 
-    // This invokes the new edge function you will create
     const { data, error } = await supabase.functions.invoke('generate-workout-recommendations', {
       body: { userId: user.id },
     });
@@ -51,6 +51,14 @@ function WorkoutRecsPage() {
             <Zap size={48} className="intro-icon" />
             <h2>Personalized Insights</h2>
             <p>Get AI-powered recommendations based on your recent workouts, nutrition, and goals.</p>
+            
+            {/* --- START: Added Pro Tip Message --- */}
+            <div className="pro-tip">
+              <Lightbulb size={16} />
+              <span>The more you log, the smarter your recommendations will become.</span>
+            </div>
+            {/* --- END: Added Pro Tip Message --- */}
+
             <button onClick={handleGenerateRecs}>Generate My Recommendations</button>
           </div>
         )}

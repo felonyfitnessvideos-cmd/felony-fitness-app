@@ -22,6 +22,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 // Start small for testing, then expand this list as needed.
 const COMMON_FOODS = [
   // Proteins
+  /* --- Comment out this section for the first run, then uncomment for the second run ---
   { name: 'Chicken Breast', type: 'meat' },
   { name: 'Ground Beef', type: 'meat' },
   { name: 'Salmon', type: 'meat' },
@@ -144,6 +145,7 @@ const COMMON_FOODS = [
   { name: 'Green Beans', type: 'volume' },
   { name: 'Peas', type: 'volume' },
   { name: 'Sweet Corn', type: 'volume' },
+  */
   { name: 'Mushroom', type: 'volume' },
   { name: 'Celery', type: 'item' },
   { name: 'Zucchini', type: 'item' },
@@ -217,7 +219,7 @@ const COMMON_FOODS = [
   { name: 'Navy Beans', type: 'volume' },
   { name: 'Edamame', type: 'volume' },
 
-/* --- Comment out this section for the first run, then uncomment for the second run ---
+
   // More Vegetables
   { name: 'Red Potato', type: 'item' },
   { name: 'Yukon Gold Potato', type: 'item' },
@@ -255,7 +257,7 @@ const COMMON_FOODS = [
   { name: 'Breakfast Sausage', type: 'item' },
   { name: 'Corn Flakes Cereal', type: 'volume' },
   { name: 'Cheerios Cereal', type: 'volume' },
-
+/*
   // Soups & Sauces
   { name: 'Tomato Soup', type: 'liquid' },
   { name: 'Chicken Noodle Soup', type: 'liquid' },
@@ -289,6 +291,7 @@ const COMMON_FOODS = [
   { name: 'Cheesecake', type: 'item' },
   { name: 'Jello', type: 'volume' },
   */
+  
 ];
 
 const SERVING_SIZES = {

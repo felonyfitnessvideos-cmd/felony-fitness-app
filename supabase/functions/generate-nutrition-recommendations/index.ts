@@ -1,10 +1,20 @@
-// FILE: supabase/functions/generate-nutrition-recommendations/index.ts
-// DESCRIPTION: This is the final, working version with the full AI prompt restored.
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+
+// Helper function to calculate age from date of birth
+const calculateAge = (dob) => {
+  if (!dob) return null;
+  const birthDate = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -20,16 +30,19 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // --- 1. Fetch all necessary user data ---
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const [profileRes, nutritionRes, workoutRes] = await Promise.all([
-      supabaseAdmin.from('user_profiles').select('daily_calorie_goal, daily_protein_goal').eq('id', userId).single(),
+    const [profileRes, metricsRes, nutritionRes, workoutRes] = await Promise.all([
+      supabaseAdmin.from('user_profiles').select('dob, sex, daily_calorie_goal, daily_protein_goal').eq('id', userId).single(),
+      supabaseAdmin.from('body_metrics').select('weight_lbs, body_fat_percentage').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabaseAdmin.from('nutrition_logs').select('foods(food_name), quantity_consumed').eq('user_id', userId).gte('log_date', sevenDaysAgo.toISOString()),
       supabaseAdmin.from('workout_logs').select('notes, duration_minutes').eq('user_id', userId).gte('created_at', sevenDaysAgo.toISOString())
     ]);
 
     if (profileRes.error) throw profileRes.error;
+    if (metricsRes.error) throw metricsRes.error;
     if (nutritionRes.error) throw nutritionRes.error;
     if (workoutRes.error) throw workoutRes.error;
 
@@ -37,16 +50,25 @@ Deno.serve(async (req) => {
       throw new Error("User profile not found. Cannot generate recommendations without goals.");
     }
 
-    // --- Construct the full prompt for the AI ---
+    // --- 2. Construct the full prompt for the AI ---
+    const userProfile = profileRes.data;
+    const latestMetrics = metricsRes.data;
+
     const prompt = `
       You are an expert fitness and nutrition coach for Felony Fitness, an organization helping formerly incarcerated individuals. 
       Your tone should be encouraging, straightforward, and supportive.
 
-      Analyze the following user data from the last 7 days and provide 3 actionable recommendations.
+      Analyze the following user data from the last 7 days and provide 3 actionable nutrition-related recommendations.
+
+      User Profile:
+      - Age: ${calculateAge(userProfile.dob)}
+      - Sex: ${userProfile.sex}
+      - Weight: ${latestMetrics?.weight_lbs || 'N/A'} lbs
+      - Body Fat: ${latestMetrics?.body_fat_percentage || 'N/A'}%
 
       User Goals:
-      - Calories: ${profileRes.data.daily_calorie_goal}
-      - Protein: ${profileRes.data.daily_protein_goal}g
+      - Calories: ${userProfile.daily_calorie_goal}
+      - Protein: ${userProfile.daily_protein_goal}g
 
       Recent Nutrition Logs:
       ${nutritionRes.data.map(log => `- ${log.foods?.food_name || 'Logged food'}: ${log.quantity_consumed} serving(s)`).join('\n')}
@@ -54,21 +76,21 @@ Deno.serve(async (req) => {
       Recent Workouts:
       ${workoutRes.data.map(log => `- ${log.notes || 'Workout'} for ${log.duration_minutes} minutes`).join('\n')}
 
-      Based on this data, provide a response in valid JSON format. The response must be a JSON object with two keys: "analysis_summary" and "recommendations".
+      Based on this data, provide a response in valid JSON format, focused on nutrition. The response must be a JSON object with two keys: "analysis_summary" and "recommendations".
       Here is the required JSON structure:
       {
         "analysis_summary": "A brief, one-sentence summary of their recent activity and diet.",
         "recommendations": [
           {
-            "title": "Recommendation Title 1",
+            "title": "Nutrition Recommendation Title 1",
             "reason": "Explain WHY this recommendation is important based on their specific data.",
-            "action": "Provide a simple, concrete action they can take."
+            "action": "Provide a simple, concrete action they can take related to their diet."
           }
         ]
       }
     `;
 
-    // --- Call the OpenAI API ---
+    // --- 3. Call the OpenAI API ---
     const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {

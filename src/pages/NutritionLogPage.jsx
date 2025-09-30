@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
-import { Apple, Search, Camera, X, Droplets } from 'lucide-react'; // NEW: Add Droplets icon
+import { Apple, Search, Camera, X, Droplets } from 'lucide-react';
 import Modal from 'react-modal';
 import './NutritionLogPage.css';
 
@@ -20,27 +20,30 @@ function NutritionLogPage() {
   const [todaysLogs, setTodaysLogs] = useState([]);
   const [goals, setGoals] = useState({ daily_calorie_goal: 2000, daily_water_goal_oz: 128 });
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [selectedFood, setSelectedFood] = useState(null);
+  const [servings, setServings] = useState([]);
+  const [selectedServing, setSelectedServing] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  const [modalStep, setModalStep] = useState(1);
 
   const dailyTotals = useMemo(() => {
     let calories = 0, protein = 0, carbs = 0, fat = 0, water = 0;
     todaysLogs.forEach(log => {
-      if (log.foods) { // Food entry
-        calories += (log.foods.calories_per_serving || 0) * log.quantity_consumed;
-        protein += (log.foods.protein_g_per_serving || 0) * log.quantity_consumed;
-        carbs += (log.foods.carbs_g_per_serving || 0) * log.quantity_consumed;
-        fat += (log.foods.fat_g_per_serving || 0) * log.quantity_consumed;
+      if (log.food_servings) {
+        calories += (log.food_servings.calories || 0) * log.quantity_consumed;
+        protein += (log.food_servings.protein_g || 0) * log.quantity_consumed;
+        carbs += (log.food_servings.carbs_g || 0) * log.quantity_consumed;
+        fat += (log.food_servings.fat_g || 0) * log.quantity_consumed;
       }
-      // NEW: Correctly sum water intake
-      if (log.water_oz_consumed) { // Water entry
+      if (log.water_oz_consumed) {
         water += log.water_oz_consumed;
       }
     });
-    return { calories, protein, carbs, fat, water };
+    return { calories: Math.round(calories), protein: Math.round(protein), carbs: Math.round(carbs), fat: Math.round(fat), water };
   }, [todaysLogs]);
 
   const mealLogs = useMemo(() => {
@@ -53,10 +56,11 @@ function NutritionLogPage() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      setUserId(user.id);
       const today = new Date().toISOString().split('T')[0];
       const { data: logs, error: logsError } = await supabase
         .from('nutrition_logs')
-        .select('*, foods(*)')
+        .select('*, food_servings(*, foods(name))')
         .eq('user_id', user.id)
         .gte('log_date', `${today} 00:00:00`)
         .lte('log_date', `${today} 23:59:59`);
@@ -85,34 +89,57 @@ function NutritionLogPage() {
     }
     const { data, error } = await supabase
       .from('foods')
-      .select('*')
-      .ilike('food_name', `%${term}%`)
+      .select('id, name')
+      .ilike('name', `%${term}%`)
       .limit(10);
 
     if (error) console.error("Error searching foods:", error);
     else setSearchResults(data || []);
   };
-
-  const openLogModal = (food) => {
+  
+  const openLogModal = async (food) => {
     setSelectedFood(food);
-    setQuantity(1);
-    setIsLogModalOpen(true);
+    const { data, error } = await supabase
+      .from('food_servings')
+      .select('*')
+      .eq('food_id', food.id);
+    
+    if (error) {
+      console.error("Error fetching servings:", error);
+    } else {
+      setServings(data);
+      setIsLogModalOpen(true);
+      setModalStep(1);
+    }
   };
+
   const closeLogModal = () => {
     setIsLogModalOpen(false);
     setSelectedFood(null);
+    setServings([]);
+    setSelectedServing(null);
     setSearchTerm('');
     setSearchResults([]);
+    setQuantity(1);
+  };
+  
+  const handleSelectServing = (serving) => {
+    setSelectedServing(serving);
+    setModalStep(2);
   };
 
   const handleLogFood = async () => {
-    if (!selectedFood || quantity <= 0) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!selectedServing || !quantity || quantity <= 0 || isNaN(quantity)) {
+      return;
+    }
+    if (!userId) {
+      alert("Error: User session not found. Please refresh the page.");
+      return;
+    }
 
     const { error } = await supabase.from('nutrition_logs').insert({
-      user_id: user.id,
-      food_id: selectedFood.id,
+      user_id: userId,
+      food_serving_id: selectedServing.id,
       meal_type: activeMeal,
       quantity_consumed: quantity,
     });
@@ -125,21 +152,20 @@ function NutritionLogPage() {
     }
   };
   
-  // NEW: Function to log water intake
   const handleLogWater = async (ounces) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
+    if (!userId) {
+      alert("Error: User session not found. Please refresh the page.");
+      return;
+    }
     const { error } = await supabase.from('nutrition_logs').insert({
-      user_id: user.id,
-      meal_type: 'Water', // Assign a specific type for easy filtering
+      user_id: userId,
+      meal_type: 'Water',
       water_oz_consumed: ounces,
     });
-
     if (error) {
       alert(`Error logging water: ${error.message}`);
     } else {
-      await fetchLogData(); // Refresh all data to update totals
+      await fetchLogData();
     }
   };
 
@@ -162,22 +188,18 @@ function NutritionLogPage() {
           value={searchTerm}
           onChange={(e) => handleSearch(e.target.value)}
         />
-        <button className="camera-btn">
-          <Camera size={20} />
-        </button>
+        <button className="camera-btn"><Camera size={20} /></button>
         {searchResults.length > 0 && (
           <div className="food-search-results">
             {searchResults.map(food => (
               <div key={food.id} className="food-search-item" onClick={() => openLogModal(food)}>
-                <span>{food.food_name}</span>
-                <span>{food.calories_per_serving} cal</span>
+                <span>{food.name}</span>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* NEW: Water Log Card */}
       <div className="water-log-card">
         <div className="water-log-header">
           <Droplets size={20} />
@@ -197,24 +219,24 @@ function NutritionLogPage() {
           <p className="no-items-message">No items logged for {activeMeal} yet.</p>
         )}
         {!loading && mealLogs.map(log => (
-          log.foods && (
+          log.food_servings ? (
             <div key={log.id} className="food-item-card">
               <div className="food-item-details">
-                <h4>{log.foods.food_name}</h4>
-                <span>{log.quantity_consumed} serving(s)</span>
+                <h4>{log.food_servings.foods.name}</h4>
+                <span>{log.quantity_consumed} x {log.food_servings.serving_description}</span>
               </div>
               <span className="food-item-calories">
-                {Math.round((log.foods.calories_per_serving || 0) * log.quantity_consumed)} cal
+                {Math.round((log.food_servings.calories || 0) * log.quantity_consumed)} cal
               </span>
             </div>
-          )
+          ) : null
         ))}
       </div>
       
       <div className="calorie-status-footer">
         <div className="calorie-info">
-          <span>{Math.round(dailyTotals.calories)} / {goals.daily_calorie_goal || 2000} cal</span>
-          <span>{Math.max(0, (goals.daily_calorie_goal || 2000) - dailyTotals.calories)} left</span>
+          <span>{dailyTotals.calories} / {goals.daily_calorie_goal || 2000} cal</span>
+          <span>{Math.max(0, Math.round(goals.daily_calorie_goal || 2000) - dailyTotals.calories)} left</span>
         </div>
         <div className="calorie-progress-bar-wrapper">
           <div className="calorie-progress-bar" style={{ width: `${calorieProgress > 100 ? 100 : calorieProgress}%` }}></div>
@@ -226,32 +248,52 @@ function NutritionLogPage() {
         onRequestClose={closeLogModal}
         style={customModalStyles}
         contentLabel="Log Food Item"
+        appElement={document.getElementById('root')}
       >
         {selectedFood && (
           <div className="log-food-modal">
             <div className="modal-header">
-              <h3>{selectedFood.food_name}</h3>
+              <h3>{selectedFood.name}</h3>
               <button onClick={closeLogModal} className="close-modal-btn"><X size={24} /></button>
             </div>
             <div className="modal-body">
-              <p>Per serving: {selectedFood.calories_per_serving} cal, {selectedFood.protein_g_per_serving}g protein</p>
-              <div className="quantity-input">
-                <label htmlFor="quantity">Quantity (servings)</label>
-                <input 
-                  id="quantity"
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(parseFloat(e.target.value))}
-                  min="0.1"
-                  step="0.1"
-                />
+              {modalStep === 1 && (
+                <div className="serving-selection">
+                  <h4>Select a serving size:</h4>
+                  <ul className="serving-list">
+                    {servings.map(serving => (
+                      <li key={serving.id} onClick={() => handleSelectServing(serving)}>
+                        <span>{serving.serving_description}</span>
+                        <span>{serving.calories} cal</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {modalStep === 2 && selectedServing && (
+                <>
+                  <p>Serving: {selectedServing.serving_description} ({selectedServing.calories} cal)</p>
+                  <div className="quantity-input">
+                    <label htmlFor="quantity">Quantity</label>
+                    <input 
+                      id="quantity"
+                      type="number"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                      min="0.1"
+                      step="0.1"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+            {modalStep === 2 && (
+              <div className="modal-footer">
+                <button className="log-food-btn" onClick={handleLogFood}>
+                  Add to {activeMeal}
+                </button>
               </div>
-            </div>
-            <div className="modal-footer">
-              <button className="log-food-btn" onClick={handleLogFood}>
-                Add to {activeMeal}
-              </button>
-            </div>
+            )}
           </div>
         )}
       </Modal>
