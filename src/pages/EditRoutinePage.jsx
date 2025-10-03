@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
-import { Dumbbell, Trash2, GripVertical } from 'lucide-react';
+import { Dumbbell, Trash2, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import Modal from 'react-modal';
 import './EditRoutinePage.css';
 
@@ -23,11 +23,9 @@ function EditRoutinePage() {
   const [routineName, setRoutineName] = useState('');
   const [routineExercises, setRoutineExercises] = useState([]);
   const [loading, setLoading] = useState(true);
-  
   const [allExercises, setAllExercises] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [customExerciseName, setCustomExerciseName] = useState('');
   const [selectedMuscleGroupId, setSelectedMuscleGroupId] = useState('');
@@ -60,7 +58,7 @@ function EditRoutinePage() {
         }
         const { data, error } = await supabase
             .from('workout_routines')
-            .select(`*, routine_exercises(sets, reps, exercises(*, muscle_groups(name)))`)
+            .select(`*, routine_exercises(*, exercises(*, muscle_groups(name)))`)
             .eq('id', routineId)
             .single();
 
@@ -68,7 +66,8 @@ function EditRoutinePage() {
             console.error("Error fetching routine data:", error);
         } else if (data) {
             setRoutineName(data.routine_name);
-            const formattedExercises = data.routine_exercises.map(item => ({
+            const sortedExercises = data.routine_exercises.sort((a, b) => a.exercise_order - b.exercise_order);
+            const formattedExercises = sortedExercises.map(item => ({
                 ...item.exercises,
                 sets: item.sets,
                 reps: item.reps,
@@ -115,47 +114,39 @@ function EditRoutinePage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("You must be logged in to save a routine.");
 
+    const exercisesToInsert = routineExercises.map((ex, index) => ({ 
+      exercise_id: ex.id, 
+      sets: ex.sets, 
+      reps: ex.reps,
+      target_sets: ex.sets,
+      exercise_order: index
+    }));
+
     if (routineId === 'new') {
-      const { data: newRoutine, error: routineError } = await supabase
-        .from('workout_routines')
-        .insert({ routine_name: routineName, user_id: user.id })
-        .select('id').single();
+      const { data: newRoutine, error: routineError } = await supabase.from('workout_routines').insert({ routine_name: routineName, user_id: user.id }).select('id').single();
       if (routineError) return alert(`Error: ${routineError.message}`);
       
-      // --- START CHANGE: Also save to target_sets column ---
-      const exercisesToInsert = routineExercises.map(ex => ({ 
-        routine_id: newRoutine.id, 
-        exercise_id: ex.id, 
-        sets: ex.sets, 
-        reps: ex.reps,
-        target_sets: ex.sets // Add this line
-      }));
-      // --- END CHANGE ---
-
-      const { error: exercisesError } = await supabase.from('routine_exercises').insert(exercisesToInsert);
+      const { error: exercisesError } = await supabase.from('routine_exercises').insert(exercisesToInsert.map(ex => ({...ex, routine_id: newRoutine.id})));
       if (exercisesError) return alert(`Error: ${exercisesError.message}`);
     } else {
-      const { error: routineError } = await supabase.from('workout_routines').update({ routine_name: routineName }).eq('id', routineId);
-      if (routineError) return alert(`Error: ${routineError.message}`);
-      
+      await supabase.from('workout_routines').update({ routine_name: routineName }).eq('id', routineId);
       await supabase.from('routine_exercises').delete().eq('routine_id', routineId);
-      
-      // --- START CHANGE: Also save to target_sets column ---
-      const exercisesToInsert = routineExercises.map(ex => ({ 
-        routine_id: routineId, 
-        exercise_id: ex.id, 
-        sets: ex.sets, 
-        reps: ex.reps,
-        target_sets: ex.sets // Add this line
-      }));
-      // --- END CHANGE ---
-
-      const { error: exercisesError } = await supabase.from('routine_exercises').insert(exercisesToInsert);
+      const { error: exercisesError } = await supabase.from('routine_exercises').insert(exercisesToInsert.map(ex => ({...ex, routine_id: routineId})));
       if (exercisesError) return alert(`Error: ${exercisesError.message}`);
     }
     navigate('/workouts/routines');
   };
-
+  
+  const moveExercise = (index, direction) => {
+    if ((direction === 'up' && index === 0) || (direction === 'down' && index === routineExercises.length - 1)) {
+      return;
+    }
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    const items = [...routineExercises];
+    [items[index], items[newIndex]] = [items[newIndex], items[index]];
+    setRoutineExercises(items);
+  };
+  
   const openCustomExerciseModal = () => {
     setCustomExerciseName(searchTerm);
     setIsCustomModalOpen(true);
@@ -191,23 +182,12 @@ function EditRoutinePage() {
       <div className="edit-routine-scroll-area">
         <div className="form-group">
           <label htmlFor="routineName">Routine Name</label>
-          <input 
-            type="text" 
-            id="routineName" 
-            value={routineName} 
-            onChange={(e) => setRoutineName(e.target.value)} 
-            placeholder="e.g., Push Day"
-          />
+          <input type="text" id="routineName" value={routineName} onChange={(e) => setRoutineName(e.target.value)} placeholder="e.g., Push Day" />
         </div>
 
         <div className="add-exercise-section">
           <h3>Add Exercises</h3>
-          <input 
-            type="text" 
-            placeholder="Search for an exercise..."
-            value={searchTerm}
-            onChange={handleSearch}
-          />
+          <input type="text" placeholder="Search for an exercise..." value={searchTerm} onChange={handleSearch} />
           {(searchResults.length > 0 || (searchTerm.length > 1 && searchResults.length === 0)) && (
             <div className="search-results">
               {searchResults.map(ex => (
@@ -234,7 +214,14 @@ function EditRoutinePage() {
         <div className="exercise-list">
           {routineExercises.map((ex, index) => (
             <div key={ex.id || index} className="exercise-card">
-              <GripVertical className="exercise-drag-handle" size={20} />
+              <div className="reorder-controls">
+                <button onClick={() => moveExercise(index, 'up')} disabled={index === 0}>
+                  <ArrowUpCircle size={24} />
+                </button>
+                <button onClick={() => moveExercise(index, 'down')} disabled={index === routineExercises.length - 1}>
+                  <ArrowDownCircle size={24} />
+                </button>
+              </div>
               <img src={ex.thumbnail_url || 'https://placehold.co/50x50/4a5568/ffffff?text=IMG'} alt={ex.name} className="exercise-thumbnail"/>
               <div className="exercise-details">
                 <h4>{ex.name}</h4>
@@ -263,27 +250,17 @@ function EditRoutinePage() {
         onRequestClose={closeCustomExerciseModal}
         style={customModalStyles}
         contentLabel="Create Custom Exercise"
+        appElement={document.getElementById('root')}
       >
         <h2>Create Custom Exercise</h2>
         <form onSubmit={handleSaveCustomExercise}>
           <div className="form-group">
             <label htmlFor="customExerciseName">Exercise Name</label>
-            <input 
-              type="text"
-              id="customExerciseName"
-              value={customExerciseName}
-              onChange={(e) => setCustomExerciseName(e.target.value)}
-              required
-            />
+            <input type="text" id="customExerciseName" value={customExerciseName} onChange={(e) => setCustomExerciseName(e.target.value)} required />
           </div>
           <div className="form-group">
             <label htmlFor="muscleGroup">Muscle Group</label>
-            <select
-              id="muscleGroup"
-              value={selectedMuscleGroupId}
-              onChange={(e) => setSelectedMuscleGroupId(e.target.value)}
-              required
-            >
+            <select id="muscleGroup" value={selectedMuscleGroupId} onChange={(e) => setSelectedMuscleGroupId(e.target.value)} required >
               <option value="" disabled>-- Select a muscle group --</option>
               {allMuscleGroups.map(group => (
                 <option key={group.id} value={group.id}>{group.name}</option>

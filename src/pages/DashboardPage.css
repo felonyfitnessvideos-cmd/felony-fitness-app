@@ -1,22 +1,28 @@
 /* FILE: DashboardPage.css */
-/* --- */
-/* DESCRIPTION: The .dashboard-container has been updated to enable scrolling. */
 
-/* START CHANGE: Added height and overflow-y to enable scrolling */
 .dashboard-container {
-  height: 100%; /* Allows the container to fill its parent (the main content area) */
-  overflow-y: auto; /* Enables a vertical scrollbar ONLY when content overflows */
+  height: 100%;
+  overflow-y: auto;
   padding: 1rem;
-  /* Add extra space at the bottom so the last card isn't hidden by the nav bar when you scroll down */
   padding-bottom: 6rem; 
   text-align: left;
 }
-/* END CHANGE */
 
+/* --- START: New Flexbox Header Styles --- */
 .dashboard-header {
-  position: relative;
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 2rem;
+}
+
+.header-spacer {
+  flex-basis: 65px; /* Creates space on the left equal to the button's width */
+  flex-shrink: 0;
+}
+
+.header-title-wrapper {
+  text-align: center;
 }
 
 .dashboard-header h1 {
@@ -24,31 +30,34 @@
   font-weight: 800;
   letter-spacing: 1.5px;
   margin: 0;
+  padding: 0; /* Remove previous padding */
 }
 
 .logout-button {
-  position: absolute;
-  top: 0;
-  right: 0;
+  /* No longer needs position: absolute */
+  flex-basis: 65px; /* Explicitly set width for balance */
+  flex-shrink: 0;
   background-color: #4a5568;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 8px;
   cursor: pointer;
+  font-size: 0.8rem;
 }
+/* --- END: New Flexbox Header Styles --- */
 
 .header-underline {
   width: 50px;
   height: 4px;
-  background-color: #f97316; /* Orange accent */
+  background-color: #f97316;
   border-radius: 2px;
   margin: 0.5rem auto 0;
 }
 
-/* Base card styling */
+/* ... (rest of the CSS is unchanged) ... */
 .dashboard-card {
-  background-color: #2d3748; /* Dark card background */
+  background-color: #2d3748;
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1rem;
@@ -70,7 +79,6 @@
   font-weight: 600;
 }
 
-/* Nutrition Card Specifics */
 .nutrition-card .card-header span {
   font-size: 1.5rem;
 }
@@ -90,10 +98,9 @@
 
 .nutrition-stats .stat .label {
   font-size: 0.75rem;
-  color: #a0aec0; /* Lighter text for labels */
+  color: #a0aec0;
 }
 
-/* --- Progress Bar Styles --- */
 .progress-bars-container {
   display: flex;
   justify-content: space-around;
@@ -102,23 +109,21 @@
 
 .progress-bar-wrapper {
   flex: 1;
-  background-color: #4a5568; /* Darker bar background */
+  background-color: #4a5568;
   border-radius: 5px;
   height: 8px;
   overflow: hidden;
 }
 
 .progress-bar {
-  background-color: #f97316; /* Orange progress */
+  background-color: #f97316;
   height: 100%;
   border-radius: 5px;
   transition: width 0.3s ease-in-out;
 }
 
-
-/* Training Card Specifics */
 .training-calories {
-  color: #f97316; /* Orange accent */
+  color: #f97316;
   font-weight: bold;
 }
 
@@ -128,7 +133,6 @@
   font-size: 0.9rem;
 }
 
-/* Goals Card Specifics */
 .goal-item {
   display: flex;
   justify-content: space-between;
@@ -136,7 +140,6 @@
   padding: 0.25rem 0;
 }
 
-/* Quote Card Specifics */
 .quote-card {
   text-align: center;
   font-style: italic;

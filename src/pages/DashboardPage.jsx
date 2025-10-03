@@ -72,11 +72,30 @@ function DashboardPage() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
-      const today = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      
       const [profileRes, nutritionRes, workoutRes, goalsRes] = await Promise.all([
         supabase.from('user_profiles').select('*').eq('id', user.id).single(),
-        supabase.from('nutrition_logs').select('*, food_servings(*, foods(pdcaas_score)), water_oz_consumed').eq('user_id', user.id).gte('log_date', `${today} 00:00:00`).lte('log_date', `${today} 23:59:59`),
-        supabase.from('workout_logs').select('*').eq('user_id', user.id).gte('created_at', `${today} 00:00:00`).lte('created_at', `${today} 23:59:59`).order('created_at', { ascending: false }).limit(1),
+        
+        // --- START: Updated Nutrition Query ---
+        // Now querying the simpler and faster database view
+        supabase.from('v_nutrition_log_details')
+          .select('total_calories, total_protein, water_oz_consumed, pdcaas_score')
+          .eq('user_id', user.id)
+          .gte('created_at', todayStart.toISOString())
+          .lte('created_at', todayEnd.toISOString()),
+        // --- END: Updated Nutrition Query ---
+          
+        supabase.from('workout_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('created_at', todayStart.toISOString())
+          .lte('created_at', todayEnd.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1),
+          
         supabase.from('goals').select('*').eq('user_id', user.id)
       ]);
 
@@ -91,19 +110,16 @@ function DashboardPage() {
       const todaysLogs = nutritionRes.data || [];
       let totalCalories = 0, totalProtein = 0, totalWater = 0;
       
+      // --- START: Simplified Calculation Logic ---
+      // The app now just adds up the pre-calculated totals from the view
       todaysLogs.forEach(log => {
-        if (log.food_servings) {
-          totalCalories += (log.food_servings.calories || 0) * log.quantity_consumed;
-          const proteinAmount = (log.food_servings.protein_g || 0) * log.quantity_consumed;
-          const pdcaas = log.food_servings.foods?.pdcaas_score;
-          if (pdcaas === null || pdcaas === undefined || pdcaas > 0.7) {
-            totalProtein += proteinAmount;
-          }
+        if (log.pdcaas_score === null || log.pdcaas_score > 0.7) {
+          totalProtein += log.total_protein || 0;
         }
-        if (log.water_oz_consumed) {
-          totalWater += log.water_oz_consumed;
-        }
+        totalCalories += log.total_calories || 0;
+        totalWater += log.water_oz_consumed || 0;
       });
+      // --- END: Simplified Calculation Logic ---
 
       setNutrition({ calories: Math.round(totalCalories), protein: Math.round(totalProtein), water: totalWater });
       
@@ -136,22 +152,20 @@ function DashboardPage() {
     navigate('/');
   };
 
-  // --- START: Calorie logic updates ---
   const netCalories = nutrition.calories - training.calories;
-
-  // Progress bar is now based on an adjusted goal (Goal + Calories Burned)
   const adjustedCalorieGoal = goals.calories + training.calories;
   const calorieProgress = adjustedCalorieGoal > 0 ? (nutrition.calories / adjustedCalorieGoal) * 100 : 0;
-  // --- END: Calorie logic updates ---
-
   const proteinProgress = goals.protein > 0 ? (nutrition.protein / goals.protein) * 100 : 0;
   const waterProgress = goals.water > 0 ? (nutrition.water / goals.water) * 100 : 0;
 
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <h1>FELONY FITNESS</h1>
-        <div className="header-underline"></div>
+        <div className="header-spacer"></div>
+        <div className="header-title-wrapper">
+          <h1>FELONY FITNESS</h1>
+          <div className="header-underline"></div>
+        </div>
         <button onClick={handleLogout} className="logout-button">Logout</button>
       </header>
 
@@ -161,12 +175,10 @@ function DashboardPage() {
           <h3>Nutrition</h3>
         </div>
         <div className="nutrition-stats">
-          {/* --- START: Calorie stat updated to "Net" --- */}
           <div className="stat">
             <span className="value">{netCalories}</span>
             <span className="label">Net Calories</span>
           </div>
-          {/* --- END: Calorie stat updated to "Net" --- */}
           <div className="stat">
             <span className="value">{nutrition.protein}g</span>
             <span className="label">Protein</span>

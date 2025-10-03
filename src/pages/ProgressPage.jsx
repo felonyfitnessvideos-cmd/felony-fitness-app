@@ -17,15 +17,10 @@ function ProgressPage() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
+      // Get all logs from all time for this user
       const [workoutLogsRes, nutritionLogsRes, goalsRes] = await Promise.all([
-        // --- START CHANGE 1: Fetch created_at and calories_burned ---
         supabase.from('workout_logs').select('duration_minutes, created_at, calories_burned').eq('user_id', user.id),
-        // --- END CHANGE 1 ---
-        
-        // --- START CHANGE 2: Fetch from the correct food_servings table ---
-        supabase.from('nutrition_logs').select('log_date, quantity_consumed, food_servings(calories)').eq('user_id', user.id),
-        // --- END CHANGE 2 ---
-
+        supabase.from('nutrition_logs').select('created_at, quantity_consumed, food_servings(calories)').eq('user_id', user.id),
         supabase.from('goals').select('*').eq('user_id', user.id)
       ]);
 
@@ -37,19 +32,18 @@ function ProgressPage() {
       const totalDuration = workoutLogs.reduce((sum, log) => sum + (log.duration_minutes || 0), 0);
       const avgDuration = totalWorkouts > 0 ? Math.round(totalDuration / totalWorkouts) : 0;
       
-      // --- START CHANGE 3: Process calories_burned and use created_at ---
+      // Process Chart Data using the user's local timezone
       const durationMap = new Map();
       const burnMap = new Map();
       workoutLogs.forEach(log => {
-        const date = new Date(log.created_at).toLocaleDateString(); // Use created_at
+        // Correctly group by local date
+        const date = new Date(log.created_at).toLocaleDateString();
         durationMap.set(date, (durationMap.get(date) || 0) + log.duration_minutes);
         burnMap.set(date, (burnMap.get(date) || 0) + log.calories_burned);
       });
       setWorkoutDurationTrends(Array.from(durationMap, ([date, duration]) => ({ date, duration })));
-      // Calculate average daily burn from the processed map
       const totalBurn = Array.from(burnMap.values()).reduce((sum, val) => sum + val, 0);
       const avgBurn = burnMap.size > 0 ? Math.round(totalBurn / burnMap.size) : 0;
-      // --- END CHANGE 3 ---
 
       // Process Nutrition Trends Chart Data
       const nutritionLogs = nutritionLogsRes.data || [];
@@ -57,14 +51,12 @@ function ProgressPage() {
 
       const calorieMap = new Map();
       nutritionLogs.forEach(log => {
-        const date = new Date(log.log_date).toLocaleDateString();
-        // --- START CHANGE 4: Calculate calories from the correct object ---
+        // Correctly group by local date
+        const date = new Date(log.created_at).toLocaleDateString();
         const calories = (log.food_servings?.calories || 0) * (log.quantity_consumed || 0);
-        // --- END CHANGE 4 ---
         calorieMap.set(date, (calorieMap.get(date) || 0) + calories);
       });
       setNutritionTrends(Array.from(calorieMap, ([date, calories]) => ({ date, calories: Math.round(calories) })));
-      // Calculate average daily calories from the processed map
       const totalCalories = Array.from(calorieMap.values()).reduce((sum, val) => sum + val, 0);
       const avgCalories = calorieMap.size > 0 ? Math.round(totalCalories / calorieMap.size) : 0;
       
@@ -92,10 +84,8 @@ function ProgressPage() {
       <div className="stats-grid">
         <div className="stat-card"><BarChart3 size={24} /> <span>{stats.totalWorkouts}</span> Total Workouts</div>
         <div className="stat-card"><Dumbbell size={24} /> <span>{stats.avgDuration} min</span> Avg Duration</div>
-        {/* --- START CHANGE 5: Correctly label Avg Calories Eaten and Avg Daily Burn --- */}
         <div className="stat-card"><AppleIcon size={24} /> <span>{stats.avgCalories}</span> Avg Cals Eaten</div>
         <div className="stat-card"><Flame size={24} /> <span>{stats.avgBurn}</span> Avg Daily Burn</div>
-        {/* --- END CHANGE 5 --- */}
       </div>
 
       <div className="chart-grid">

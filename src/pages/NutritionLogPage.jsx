@@ -57,13 +57,19 @@ function NutritionLogPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       setUserId(user.id);
-      const today = new Date().toISOString().split('T')[0];
+      
+      // --- START: Timezone Fix ---
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      // --- END: Timezone Fix ---
+
       const { data: logs, error: logsError } = await supabase
         .from('nutrition_logs')
         .select('*, food_servings(*, foods(name))')
         .eq('user_id', user.id)
-        .gte('log_date', `${today} 00:00:00`)
-        .lte('log_date', `${today} 23:59:59`);
+        .gte('created_at', todayStart.toISOString()) // Use local start time
+        .lte('created_at', todayEnd.toISOString());  // Use local end time
       
       if (logsError) console.error("Error fetching logs:", logsError);
       else setTodaysLogs(logs || []);
@@ -187,6 +193,7 @@ function NutritionLogPage() {
           placeholder="Search for a food..." 
           value={searchTerm}
           onChange={(e) => handleSearch(e.target.value)}
+          disabled={loading}
         />
         <button className="camera-btn"><Camera size={20} /></button>
         {searchResults.length > 0 && (
@@ -207,9 +214,9 @@ function NutritionLogPage() {
           <span>{dailyTotals.water} / {goals.daily_water_goal_oz || 128} oz</span>
         </div>
         <div className="water-log-actions">
-          <button onClick={() => handleLogWater(8)}>+ 8 oz</button>
-          <button onClick={() => handleLogWater(12)}>+ 12 oz</button>
-          <button onClick={() => handleLogWater(16)}>+ 16 oz</button>
+          <button onClick={() => handleLogWater(8)} disabled={loading}>+ 8 oz</button>
+          <button onClick={() => handleLogWater(12)} disabled={loading}>+ 12 oz</button>
+          <button onClick={() => handleLogWater(16)} disabled={loading}>+ 16 oz</button>
         </div>
       </div>
 

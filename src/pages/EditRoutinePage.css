@@ -7,15 +7,13 @@
 }
 
 .edit-routine-scroll-area {
-  flex-grow: 1; /* Takes up all available space */
-  overflow-y: auto; /* Enables scrolling */
-  padding-bottom: 1rem; /* Space at the bottom */
-  /* --- NEW: Hide the scrollbar --- */
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-bottom: 1rem;
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
 .edit-routine-scroll-area::-webkit-scrollbar {
   display: none;
 }
@@ -67,7 +65,6 @@
   margin-top: 0.5rem;
 }
 
-/* --- NEW & UPDATED STYLES FOR SEARCH RESULTS --- */
 .search-result-item {
   display: flex;
   justify-content: space-between;
@@ -94,7 +91,7 @@
 }
 
 .add-exercise-btn {
-  background-color: #10b981; /* Green button */
+  background-color: #10b981;
   color: white;
   border: none;
   border-radius: 6px;
@@ -107,8 +104,6 @@
 .add-exercise-btn:hover {
   background-color: #059669;
 }
-/* --- END OF NEW STYLES --- */
-
 
 .exercise-list {
   display: flex;
@@ -124,11 +119,6 @@
   background-color: #2d3748;
   border-radius: 8px;
   padding: 0.75rem;
-}
-
-.exercise-drag-handle {
-  cursor: grab;
-  color: #a0aec0;
 }
 
 .exercise-thumbnail {
@@ -185,10 +175,10 @@
 }
 
 .action-footer {
-  margin-top: 1rem; /* Changed from margin-top: auto */
+  margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
-  flex-shrink: 0; /* Prevents footer from shrinking */
+  border-top: 1px solid #4a5568;
+  flex-shrink: 0;
 }
 
 .action-footer button {
@@ -207,4 +197,29 @@
 .save-button {
   background-color: #f97316;
   color: white;
+}
+
+.reorder-controls {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0 0.5rem;
+}
+
+.reorder-controls button {
+  background: none;
+  border: none;
+  color: #718096; /* gray-500 */
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.reorder-controls button:hover {
+  color: #f97316; /* orange-500 */
+}
+
+.reorder-controls button:disabled {
+  color: #4a5568; /* gray-600 */
+  cursor: not-allowed;
 }

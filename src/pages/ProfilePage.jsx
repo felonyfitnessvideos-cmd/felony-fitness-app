@@ -3,10 +3,9 @@ import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { Link } from 'react-router-dom';
 import Modal from 'react-modal';
-import { User, Weight, Percent, Calendar, HeartPulse, X } from 'lucide-react';
+import { User, Weight, Percent, Calendar, HeartPulse, X, Edit2 as EditIcon } from 'lucide-react';
 import './ProfilePage.css';
 
-// Placeholder data for body fat images
 const maleBodyFatImages = [
   { label: '30%+', src: 'https://placehold.co/150x200/2d3748/ffffff?text=30%25%2B' },
   { label: '25%', src: 'https://placehold.co/150x200/2d3748/ffffff?text=25%25' },
@@ -25,7 +24,6 @@ const femaleBodyFatImages = [
   { label: '10%', src: 'https://placehold.co/150x200/2d3748/ffffff?text=10%25' },
 ];
 
-// Custom styles for the modal
 const customModalStyles = {
   content: {
     top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%',
@@ -36,7 +34,6 @@ const customModalStyles = {
   overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 999 },
 };
 
-// Helper function to calculate age
 const calculateAge = (dob) => {
   if (!dob) return null;
   const birthDate = new Date(dob);
@@ -50,58 +47,55 @@ const calculateAge = (dob) => {
 };
 
 function ProfilePage() {
-  // State for body metrics
   const [weight, setWeight] = useState('');
   const [bodyFat, setBodyFat] = useState('');
   const [history, setHistory] = useState([]);
-  
-  // State for user profile data
   const [profile, setProfile] = useState({ dob: '', sex: '' });
   const [age, setAge] = useState(null);
-  
-  // State for the body fat modal
   const [isBodyFatModalOpen, setBodyFatModalOpen] = useState(false);
-  
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [profileMessage, setProfileMessage] = useState('');
+  const [userId, setUserId] = useState(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Fetch metrics history
-        const { data: metricsData, error: metricsError } = await supabase
-          .from('body_metrics')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(10);
+    setLoading(true);
+    
+    const fetchData = async (currentUserId) => {
+      const [metricsRes, profileRes] = await Promise.all([
+        supabase.from('body_metrics').select('*').eq('user_id', currentUserId).order('created_at', { ascending: false }).limit(10),
+        supabase.from('user_profiles').select('dob, sex').eq('id', currentUserId).single()
+      ]);
 
-        if (metricsError) console.error('Error fetching metrics:', metricsError);
-        else setHistory(metricsData);
-        
-        // Fetch user profile data
-        const { data: profileData, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('dob, sex')
-          .eq('id', user.id)
-          .single();
-
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error('Error fetching profile:', profileError);
-        } else if (profileData) {
-          setProfile({
-            dob: profileData.dob || '',
-            sex: profileData.sex || '',
-          });
-          setAge(calculateAge(profileData.dob));
-        }
+      const { data: metricsData, error: metricsError } = metricsRes;
+      if (metricsError) console.error('Error fetching metrics:', metricsError);
+      else setHistory(metricsData || []);
+      
+      const { data: profileData, error: profileError } = profileRes;
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Error fetching profile:', profileError);
+      } else if (profileData) {
+        setProfile({ dob: profileData.dob || '', sex: profileData.sex || '' });
+        setAge(calculateAge(profileData.dob));
+        setIsEditingProfile(!profileData.dob || !profileData.sex);
+      } else {
+        setIsEditingProfile(true);
       }
       setLoading(false);
     };
-    fetchData();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUserId(session.user.id);
+        fetchData(session.user.id);
+      } else {
+        setUserId(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
   
   const handleProfileChange = (e) => {
@@ -114,18 +108,20 @@ function ProfilePage() {
   
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!userId) {
+        setProfileMessage("Error: Could not save profile. Please refresh and try again.");
+        return;
+    }
     
     const { error } = await supabase
       .from('user_profiles')
-      .update({ dob: profile.dob, sex: profile.sex })
-      .eq('id', user.id);
+      .upsert({ id: userId, dob: profile.dob, sex: profile.sex });
       
     if (error) {
       setProfileMessage(error.message);
     } else {
       setProfileMessage('Profile saved!');
+      setIsEditingProfile(false);
       setTimeout(() => setProfileMessage(''), 3000);
     }
   };
@@ -136,73 +132,80 @@ function ProfilePage() {
       setMessage('Please enter at least one measurement.');
       return;
     }
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!userId) {
+      setMessage("User not found, please refresh.");
+      return;
+    }
 
     const newMetric = {
-      user_id: user.id,
-      weight_lbs: weight || null,
-      body_fat_percentage: bodyFat || null,
+      user_id: userId,
+      weight_lbs: weight ? parseFloat(weight) : null,
+      body_fat_percentage: bodyFat ? parseFloat(bodyFat) : null,
     };
 
-    const { data, error } = await supabase
-      .from('body_metrics')
-      .insert(newMetric)
-      .select()
-      .single();
-
+    const { data, error } = await supabase.from('body_metrics').insert(newMetric).select().single();
     if (error) {
       setMessage(error.message);
     } else {
       setMessage('Measurement saved!');
-      setHistory([data, ...history]);
+      setHistory(prevHistory => [data, ...prevHistory]);
       setWeight('');
       setBodyFat('');
       setTimeout(() => setMessage(''), 3000);
     }
   };
 
+  if (loading) {
+    return <div style={{color: 'white', padding: '2rem'}}>Loading Profile...</div>;
+  }
+
   return (
     <div className="profile-page-container">
       <SubPageHeader title="Profile & Metrics" icon={<User size={28} />} iconColor="#f97316" backTo="/dashboard" />
       
-      <form onSubmit={handleProfileUpdate} className="profile-form metric-form">
+      <div className="profile-form metric-form">
         <h2>Your Information</h2>
-        <div className="form-group">
-          <label htmlFor="dob">Date of Birth {age && `(Age: ${age})`}</label>
-          <div className="input-with-icon">
-            <Calendar size={18} />
-            <input 
-              id="dob"
-              name="dob"
-              type="date"
-              value={profile.dob}
-              onChange={handleProfileChange}
-            />
+        {isEditingProfile ? (
+          <form onSubmit={handleProfileUpdate}>
+            <div className="form-group">
+              <label htmlFor="dob">Date of Birth {age && `(Age: ${age})`}</label>
+              <div className="input-with-icon">
+                <Calendar size={18} />
+                <input id="dob" name="dob" type="date" value={profile.dob} onChange={handleProfileChange} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label htmlFor="sex">Sex</label>
+              <div className="input-with-icon">
+                <HeartPulse size={18} />
+                <select id="sex" name="sex" value={profile.sex} onChange={handleProfileChange}>
+                  <option value="">Select...</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+              </div>
+            </div>
+            {profileMessage && <p className="form-message">{profileMessage}</p>}
+            <button type="submit" className="save-button">Save Profile</button>
+          </form>
+        ) : (
+          <div className="profile-display">
+            <div className="profile-stat">
+              <span className="label">Age</span>
+              <span className="value">{age || 'N/A'}</span>
+            </div>
+            <div className="profile-stat">
+              <span className="label">Sex</span>
+              <span className="value">{profile.sex || 'N/A'}</span>
+            </div>
+            <button className="edit-button" onClick={() => setIsEditingProfile(true)}>
+              <EditIcon size={16} /> Edit
+            </button>
           </div>
-        </div>
-        <div className="form-group">
-          <label htmlFor="sex">Sex</label>
-          <div className="input-with-icon">
-            <HeartPulse size={18} />
-            <select
-              id="sex"
-              name="sex"
-              value={profile.sex}
-              onChange={handleProfileChange}
-            >
-              <option value="">Select...</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-              <option value="Prefer not to say">Prefer not to say</option>
-            </select>
-          </div>
-        </div>
-        {profileMessage && <p className="form-message">{profileMessage}</p>}
-        <button type="submit" className="save-button">Save Profile</button>
-      </form>
+        )}
+      </div>
       
       <form onSubmit={handleLogMetric} className="metric-form">
         <h2>Log Today's Measurements</h2>
@@ -210,14 +213,7 @@ function ProfilePage() {
           <label htmlFor="weight">Weight (lbs)</label>
           <div className="input-with-icon">
             <Weight size={18} />
-            <input 
-              id="weight"
-              type="number"
-              placeholder="e.g., 185.5"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              step="0.1"
-            />
+            <input id="weight" type="number" placeholder="e.g., 185.5" value={weight} onChange={(e) => setWeight(e.target.value)} step="0.1" />
           </div>
         </div>
         <div className="form-group">
@@ -229,14 +225,7 @@ function ProfilePage() {
           </div>
           <div className="input-with-icon">
             <Percent size={18} />
-            <input 
-              id="bodyFat"
-              type="number"
-              placeholder="e.g., 15.2"
-              value={bodyFat}
-              onChange={(e) => setBodyFat(e.target.value)}
-              step="0.1"
-            />
+            <input id="bodyFat" type="number" placeholder="e.g., 15.2" value={bodyFat} onChange={(e) => setBodyFat(e.target.value)} step="0.1" />
           </div>
         </div>
         {message && <p className="form-message">{message}</p>}

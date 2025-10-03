@@ -130,18 +130,19 @@ input[type="date"] {
   color-scheme: dark;
 }
 
+/* --- THIS IS THE FIX FOR THE BUTTON --- */
 .link-button {
-  display: block;
-  width: 100%;
+  display: table; /* Allows margin auto to work for horizontal centering */
+  margin: 2rem auto 0; /* Adds top margin and centers the button */
+  /* width: 100% is removed */
   text-align: center;
-  padding: 1rem;
+  padding: 1rem 2rem; /* Give it some horizontal padding */
   background-color: #4a5568; /* gray-600 */
   color: white;
   border: none;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 2rem;
   text-decoration: none;
   transition: background-color 0.2s;
 }
@@ -149,8 +150,6 @@ input[type="date"] {
 .link-button:hover {
   background-color: #718096; /* gray-500 */
 }
-
-/* --- START: Styles for Body Fat Modal --- */
 
 .label-with-link {
   display: flex;
@@ -226,15 +225,50 @@ input[type="date"] {
   line-height: 1.6;
 }
 
-/* --- END: Styles for Body Fat Modal --- */
+.profile-display {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.profile-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1rem;
+}
+
+.profile-stat .label {
+  color: #a0aec0;
+  font-weight: 500;
+}
+
+.profile-stat .value {
+  font-weight: 600;
+}
+
+.edit-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #4a5568;
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
 /* For modern browsers like Chrome, Safari, and Edge */
 .profile-page-container::-webkit-scrollbar {
   display: none;
 }
 
-/* For Firefox */
+/* For Firefox and IE */
 .profile-page-container {
   scrollbar-width: none;
-  /* IE 10+ */
   -ms-overflow-style: none;
 }

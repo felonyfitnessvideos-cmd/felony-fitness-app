@@ -145,7 +145,7 @@ const COMMON_FOODS = [
   { name: 'Green Beans', type: 'volume' },
   { name: 'Peas', type: 'volume' },
   { name: 'Sweet Corn', type: 'volume' },
-  */
+  
   { name: 'Mushroom', type: 'volume' },
   { name: 'Celery', type: 'item' },
   { name: 'Zucchini', type: 'item' },
@@ -257,7 +257,7 @@ const COMMON_FOODS = [
   { name: 'Breakfast Sausage', type: 'item' },
   { name: 'Corn Flakes Cereal', type: 'volume' },
   { name: 'Cheerios Cereal', type: 'volume' },
-/*
+*/
   // Soups & Sauces
   { name: 'Tomato Soup', type: 'liquid' },
   { name: 'Chicken Noodle Soup', type: 'liquid' },
@@ -290,7 +290,7 @@ const COMMON_FOODS = [
   { name: 'Apple Pie', type: 'item' },
   { name: 'Cheesecake', type: 'item' },
   { name: 'Jello', type: 'volume' },
-  */
+  
   
 ];
 

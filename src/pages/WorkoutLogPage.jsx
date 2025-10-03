@@ -36,7 +36,6 @@ function WorkoutLogPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not found");
 
-      // Fetch user's latest weight for calorie calculation
       const { data: metricsData, error: metricsError } = await supabase
         .from('body_metrics')
         .select('weight_lbs')
@@ -57,15 +56,19 @@ function WorkoutLogPage() {
       if (routineError) throw routineError;
       if (!routine) setRoutine(routineData);
 
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
+      // --- START: Timezone Fix ---
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      // --- END: Timezone Fix ---
 
       const { data: todaysLogs, error: todaysLogsError } = await supabase
         .from('workout_logs')
         .select('id, is_complete, workout_log_entries(*)')
         .eq('user_id', user.id)
         .eq('routine_id', routineId)
-        .gte('created_at', todayStart.toISOString());
+        .gte('created_at', todayStart.toISOString())
+        .lte('created_at', todayEnd.toISOString());
       
       if (todaysLogsError) throw todaysLogsError;
       
