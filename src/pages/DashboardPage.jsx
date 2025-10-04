@@ -67,84 +67,60 @@ function DashboardPage() {
   const [activeGoals, setActiveGoals] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchDashboardData = useCallback(async () => {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
+  const fetchDashboardData = useCallback(async (userId) => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    
+    const [profileRes, nutritionRes, workoutRes, goalsRes] = await Promise.all([
+      supabase.from('user_profiles').select('*').eq('id', userId).single(),
+      supabase.from('v_nutrition_log_details').select('total_calories, total_protein, water_oz_consumed, pdcaas_score').eq('user_id', userId).gte('created_at', todayStart.toISOString()).lte('created_at', todayEnd.toISOString()),
+      supabase.from('workout_logs').select('*').eq('user_id', userId).gte('created_at', todayStart.toISOString()).lte('created_at', todayEnd.toISOString()).order('created_at', { ascending: false }).limit(1),
+      supabase.from('goals').select('*').eq('user_id', userId)
+    ]);
 
-    if (user) {
-      const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-      
-      const [profileRes, nutritionRes, workoutRes, goalsRes] = await Promise.all([
-        supabase.from('user_profiles').select('*').eq('id', user.id).single(),
-        
-        // --- START: Updated Nutrition Query ---
-        // Now querying the simpler and faster database view
-        supabase.from('v_nutrition_log_details')
-          .select('total_calories, total_protein, water_oz_consumed, pdcaas_score')
-          .eq('user_id', user.id)
-          .gte('created_at', todayStart.toISOString())
-          .lte('created_at', todayEnd.toISOString()),
-        // --- END: Updated Nutrition Query ---
-          
-        supabase.from('workout_logs')
-          .select('*')
-          .eq('user_id', user.id)
-          .gte('created_at', todayStart.toISOString())
-          .lte('created_at', todayEnd.toISOString())
-          .order('created_at', { ascending: false })
-          .limit(1),
-          
-        supabase.from('goals').select('*').eq('user_id', user.id)
-      ]);
-
-      if (profileRes.data) {
-        setGoals({
-          calories: profileRes.data.daily_calorie_goal || 0,
-          protein: profileRes.data.daily_protein_goal || 0,
-          water: profileRes.data.daily_water_goal_oz || 0,
-        });
-      }
-
-      const todaysLogs = nutritionRes.data || [];
-      let totalCalories = 0, totalProtein = 0, totalWater = 0;
-      
-      // --- START: Simplified Calculation Logic ---
-      // The app now just adds up the pre-calculated totals from the view
-      todaysLogs.forEach(log => {
-        if (log.pdcaas_score === null || log.pdcaas_score > 0.7) {
-          totalProtein += log.total_protein || 0;
-        }
-        totalCalories += log.total_calories || 0;
-        totalWater += log.water_oz_consumed || 0;
-      });
-      // --- END: Simplified Calculation Logic ---
-
-      setNutrition({ calories: Math.round(totalCalories), protein: Math.round(totalProtein), water: totalWater });
-      
-      if (workoutRes.data && workoutRes.data.length > 0) {
-        const todaysWorkout = workoutRes.data[0];
-        setTraining({
-          name: todaysWorkout.notes || 'Workout',
-          duration: todaysWorkout.duration_minutes || 0,
-          calories: todaysWorkout.calories_burned || 0
-        });
-      } else {
-        setTraining({ name: 'Rest Day', duration: 0, calories: 0 });
-      }
-
-      if (goalsRes.data) {
-        setActiveGoals(goalsRes.data);
-      }
+    if (profileRes.data) {
+      setGoals({ calories: profileRes.data.daily_calorie_goal || 0, protein: profileRes.data.daily_protein_goal || 0, water: profileRes.data.daily_water_goal_oz || 0 });
     }
-    setLoading(false);
+
+    const todaysLogs = nutritionRes.data || [];
+    let totalCalories = 0, totalProtein = 0, totalWater = 0;
+    
+    todaysLogs.forEach(log => {
+      if (log.pdcaas_score === null || log.pdcaas_score > 0.7) {
+        totalProtein += log.total_protein || 0;
+      }
+      totalCalories += log.total_calories || 0;
+      totalWater += log.water_oz_consumed || 0;
+    });
+
+    setNutrition({ calories: Math.round(totalCalories), protein: Math.round(totalProtein), water: totalWater });
+    
+    if (workoutRes.data && workoutRes.data.length > 0) {
+      const todaysWorkout = workoutRes.data[0];
+      setTraining({ name: todaysWorkout.notes || 'Workout', duration: todaysWorkout.duration_minutes || 0, calories: todaysWorkout.calories_burned || 0 });
+    } else {
+      setTraining({ name: 'Rest Day', duration: 0, calories: 0 });
+    }
+
+    if (goalsRes.data) {
+      setActiveGoals(goalsRes.data);
+    }
   }, []);
 
   useEffect(() => {
+    setLoading(true);
     const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
     setQuote(randomQuote);
-    fetchDashboardData();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        await fetchDashboardData(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, [fetchDashboardData]);
   
   const handleLogout = async () => {
@@ -157,6 +133,10 @@ function DashboardPage() {
   const calorieProgress = adjustedCalorieGoal > 0 ? (nutrition.calories / adjustedCalorieGoal) * 100 : 0;
   const proteinProgress = goals.protein > 0 ? (nutrition.protein / goals.protein) * 100 : 0;
   const waterProgress = goals.water > 0 ? (nutrition.water / goals.water) * 100 : 0;
+
+  if (loading) {
+    return <div style={{ color: 'white', padding: '2rem' }}>Loading Dashboard...</div>;
+  }
 
   return (
     <div className="dashboard-container">
