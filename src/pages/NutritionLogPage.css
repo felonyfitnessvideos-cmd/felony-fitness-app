@@ -1,31 +1,39 @@
-/* --- START CHANGES --- */
-
-/* Make the main container the primary scrolling area */
+/* This is the main container for the entire Nutrition Log page.
+   By setting its height to 100% and using flexbox, we can control
+   the layout of its direct children. */
 .nutrition-log-container {
-  height: 100%; /* Fill the parent container (e.g., main-content) */
-  overflow-y: auto; /* Enable vertical scrolling for the whole page */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 1rem;
-  /* Add plenty of bottom padding so the last item isn't hidden by the main nav bar */
-  padding-bottom: 8rem; 
+  box-sizing: border-box;
 }
 
-/* Remove the inner scrolling behavior from the list */
-.logged-items-list {
-  /* flex-grow and overflow-y have been removed */
-  /* This element will now grow naturally with its content */
-  margin-top: 1.5rem; /* Added for spacing */
+/* This is the middle section of the page that contains the water log
+   and the food item list. It's configured to grow and scroll. */
+.nutrition-log-scroll-area {
+  flex-grow: 1; /* This makes the element take up all available vertical space. */
+  overflow-y: auto; /* This enables vertical scrolling ONLY for this container. */
+  padding-bottom: 1rem; /* Adds some space at the very bottom of the scroll list. */
+
+  /* These rules hide the scrollbar for a cleaner, more native-app feel. */
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.nutrition-log-scroll-area::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
 }
 
-/* Let the footer sit naturally at the end of the content */
+/* The footer, which contains the calorie summary and progress bar.
+   It will now stay at the bottom of the flex container. */
 .calorie-status-footer {
-  /* margin-top: auto has been removed */
-  padding-top: 1.5rem;
+  flex-shrink: 0; /* Prevents the footer from shrinking. */
+  padding-top: 1rem;
   border-top: 1px solid #4a5568;
 }
 
-/* --- END CHANGES --- */
-
-
+/* All other styles remain largely the same, controlling the appearance
+   of the individual components within the flex layout. */
 .meal-tabs {
   display: flex;
   justify-content: space-between;
@@ -33,6 +41,7 @@
   background-color: #2d3748;
   border-radius: 9999px;
   padding: 0.25rem;
+  flex-shrink: 0; /* Prevents this from shrinking */
 }
 .meal-tabs button {
   flex: 1;
@@ -55,6 +64,7 @@
   display: flex;
   align-items: center;
   margin-bottom: 1.5rem;
+  flex-shrink: 0; /* Prevents this from shrinking */
 }
 .search-bar-wrapper .search-icon {
   position: absolute;
@@ -105,6 +115,47 @@
 .food-search-item:hover {
   background-color: #4a5568;
 }
+.water-log-card {
+  background-color: #2d3748;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+.water-log-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.water-log-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  flex-grow: 1;
+}
+.water-log-header span {
+  font-size: 0.9rem;
+  color: #a0aec0;
+}
+.water-log-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.water-log-actions button {
+  flex: 1;
+  background-color: #4a5568;
+  color: white;
+  border: none;
+  padding: 0.6rem 0;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.logged-items-list {
+  /* This doesn't need any special styles now */
+}
 .no-items-message {
   text-align: center;
   color: #a0aec0;
@@ -152,7 +203,6 @@
   border-radius: 5px;
   transition: width 0.3s ease-in-out;
 }
-/* Modal Styles */
 .log-food-modal .modal-header {
   display: flex;
   justify-content: space-between;
@@ -203,45 +253,30 @@
   font-weight: 600;
   cursor: pointer;
 }
-.water-log-card {
-  background-color: #2d3748;
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.water-log-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+.serving-selection h4 {
+  margin-top: 0;
   margin-bottom: 1rem;
-}
-
-.water-log-header h3 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  flex-grow: 1;
-}
-
-.water-log-header span {
-  font-size: 0.9rem;
   color: #a0aec0;
 }
-
-.water-log-actions {
+.serving-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  max-height: 250px;
+  overflow-y: auto;
+}
+.serving-list li {
   display: flex;
   justify-content: space-between;
-  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid #4a5568;
+}
+.serving-list li:last-child {
+  border-bottom: none;
+}
+.serving-list li:hover {
+  background-color: #4a5568;
 }
 
-.water-log-actions button {
-  flex: 1;
-  background-color: #4a5568;
-  color: white;
-  border: none;
-  padding: 0.6rem 0;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
