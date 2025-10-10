@@ -4,7 +4,7 @@ import SubPageHeader from '../components/SubPageHeader.jsx';
 import { Apple, Search, Camera, X, Droplets } from 'lucide-react';
 import Modal from 'react-modal';
 import { useAuth } from '../AuthContext.jsx';
-import './NutritionLogPage.css'; // We will use the corrected stylesheet
+import './NutritionLogPage.css';
 
 const customModalStyles = {
   content: {
@@ -190,9 +190,6 @@ function NutritionLogPage() {
   }
 
   return (
-    // --- START: FINAL STRUCTURE ---
-    // This structure mirrors the working WorkoutLogPage.
-    // A single container div lets the parent App component handle scrolling.
     <div className="nutrition-log-page-container">
       <SubPageHeader title="Log" icon={<Apple size={28} />} iconColor="#f97316" backTo="/nutrition" />
       
@@ -257,7 +254,6 @@ function NutritionLogPage() {
         ))}
       </div>
       
-      {/* The footer is now outside the main content flow, positioned fixed. */}
       <div className="calorie-status-footer">
         <div className="calorie-info">
           <span>{dailyTotals.calories} / {goals.daily_calorie_goal || 2000} cal</span>
@@ -275,12 +271,55 @@ function NutritionLogPage() {
         contentLabel="Log Food Item"
         appElement={document.getElementById('root')}
       >
-        {/* Modal content remains the same */}
+        {selectedFood && (
+          <div className="log-food-modal">
+            <div className="modal-header">
+              <h3>{selectedFood.name}</h3>
+              <button onClick={closeLogModal} className="close-modal-btn"><X size={24} /></button>
+            </div>
+            <div className="modal-body">
+              {modalStep === 1 && (
+                <div className="serving-selection">
+                  <h4>Select a serving size:</h4>
+                  <ul className="serving-list">
+                    {servings.map(serving => (
+                      <li key={serving.id} onClick={() => handleSelectServing(serving)}>
+                        <span>{serving.serving_description}</span>
+                        <span>{Math.round(serving.calories)} cal</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {modalStep === 2 && selectedServing && (
+                <>
+                  <p>Serving: {selectedServing.serving_description} ({Math.round(selectedServing.calories)} cal)</p>
+                  <div className="quantity-input">
+                    <label htmlFor="quantity">Quantity</label>
+                    <input 
+                      id="quantity"
+                      type="number"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                      min="0.1"
+                      step="0.1"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+            {modalStep === 2 && (
+              <div className="modal-footer">
+                <button className="log-food-btn" onClick={handleLogFood}>
+                  Add to {activeMeal}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
-    // --- END: FINAL STRUCTURE ---
   );
 }
 
 export default NutritionLogPage;
-

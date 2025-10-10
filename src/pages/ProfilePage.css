@@ -1,10 +1,10 @@
 /* FILE: src/pages/ProfilePage.css */
 
 .profile-page-container {
-  height: 100%;
-  overflow-y: auto;
+  /* height: 100%; REMOVED */
+  /* overflow-y: auto; REMOVED */
   padding: 1rem;
-  padding-bottom: 6rem;
+  padding-bottom: 6rem; /* Standard bottom padding */
 }
 
 .metric-form {
@@ -130,14 +130,12 @@ input[type="date"] {
   color-scheme: dark;
 }
 
-/* --- THIS IS THE FIX FOR THE BUTTON --- */
 .link-button {
-  display: table; /* Allows margin auto to work for horizontal centering */
-  margin: 2rem auto 0; /* Adds top margin and centers the button */
-  /* width: 100% is removed */
+  display: table;
+  margin: 2rem auto 0;
   text-align: center;
-  padding: 1rem 2rem; /* Give it some horizontal padding */
-  background-color: #4a5568; /* gray-600 */
+  padding: 1rem 2rem;
+  background-color: #4a5568;
   color: white;
   border: none;
   border-radius: 8px;
@@ -148,7 +146,7 @@ input[type="date"] {
 }
 
 .link-button:hover {
-  background-color: #718096; /* gray-500 */
+  background-color: #718096;
 }
 
 .label-with-link {
@@ -260,15 +258,4 @@ input[type="date"] {
   font-weight: 600;
   cursor: pointer;
   margin-top: 1rem;
-}
-
-/* For modern browsers like Chrome, Safari, and Edge */
-.profile-page-container::-webkit-scrollbar {
-  display: none;
-}
-
-/* For Firefox and IE */
-.profile-page-container {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
 }

@@ -1,10 +1,6 @@
-/* FILE: src/pages/WorkoutRecsPage.css */
-
 .workout-recs-container {
-  height: 100%;
-  overflow-y: auto;
   padding: 1rem;
-  padding-bottom: 6rem;
+  padding-bottom: 80px; /* Space for nav bar */
 }
 
 .recs-content {
@@ -18,12 +14,12 @@
   align-items: center;
   gap: 1rem;
   padding: 2rem;
-  background-color: #2d3748; /* bg-gray-800 */
+  background-color: #2d3748;
   border-radius: 12px;
 }
 
 .intro-icon {
-  color: #f97316; /* orange-500 */
+  color: #f97316;
 }
 
 .intro-view h2 {
@@ -33,7 +29,7 @@
 }
 
 .intro-view p {
-  color: #a0aec0; /* text-gray-400 */
+  color: #a0aec0;
   max-width: 350px;
 }
 
@@ -50,11 +46,11 @@
 }
 
 .intro-view button:hover, .regenerate-button:hover {
-  background-color: #dd6b20; /* hover:bg-orange-600 */
+  background-color: #dd6b20;
 }
 
 .loading-spinner {
-  border: 4px solid #4a5568; /* border-gray-600 */
+  border: 4px solid #4a5568;
   border-top: 4px solid #f97316;
   border-radius: 50%;
   width: 50px;
@@ -69,7 +65,7 @@
 }
 
 .error-message {
-  color: #fc8181; /* text-red-400 */
+  color: #fc8181;
   background-color: rgba(252, 129, 129, 0.1);
   padding: 1rem;
   border-radius: 8px;
@@ -126,13 +122,11 @@
   width: 100%;
 }
 
-/* --- NEW --- */
-/* Style for the pro tip message */
 .pro-tip {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: rgba(249, 115, 22, 0.1); /* transparent orange */
+  background-color: rgba(249, 115, 22, 0.1);
   color: #f97316;
   padding: 0.75rem 1rem;
   border-radius: 8px;

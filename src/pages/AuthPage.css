@@ -1,15 +1,9 @@
-/* START OF COMPLETE FILE AuthPage.css */
-
 .auth-page-wrapper {
-    /* Ensures the wrapper fills the entire viewport */
     min-height: 100vh;
-    /* Enforces NO SCROLLING */
     overflow-y: hidden;
-    /* Centers the .auth-container vertically */
     display: flex;
     justify-content: center;
     align-items: center;
-    /* Reduced vertical padding to save space on short screens */
     padding: 8px 0; 
 }
 
@@ -17,7 +11,6 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* Padding adjusted to be tight on top and provide good space at the bottom */
     padding: 1rem 1rem 1.5rem 1rem; 
     max-width: 400px;
     margin: 0 auto;
@@ -28,28 +21,24 @@
 
 .auth-header {
     text-align: center;
-    /* Reduced margin to be extremely tight */
     margin-bottom: 0.25rem; 
 }
 
 .auth-logo {
-    /* Reduced logo size significantly (from 100px to 80px) */
     width: 80px; 
     height: 80px;
     border-radius: 50%;
-    /* Reduced margin */
     margin-bottom: 0.1rem; 
 }
 
 .auth-header h1 {
-    /* Reduced h1 font size (from 1.5rem to 1.3rem) */
     font-size: 1.3rem; 
     margin: 0.1rem 0;
     font-weight: 800;
 }
 
 .subtitle {
-    font-size: 0.9rem; /* Slightly smaller subtitle */
+    font-size: 0.9rem;
     color: #a0aec0;
     margin-top: 0;
 }
@@ -57,10 +46,8 @@
 .social-auth-options {
     display: flex;
     flex-direction: column;
-    /* Reduced gap between buttons */
     gap: 0.4rem; 
     width: 100%;
-    /* Reduced margin */
     margin-bottom: 0.5rem;
 }
 
@@ -68,7 +55,6 @@
     background-color: #2d3748;
     border: 1px solid #4a5568;
     color: white;
-    /* Reduced button padding for vertical space */
     padding: 0.6rem 1rem; 
     border-radius: 8px;
     font-size: 1rem;
@@ -95,7 +81,6 @@
     text-align: center;
     border-bottom: 1px solid #4a5568;
     line-height: 0.1em;
-    /* Reduced margin */
     margin: .6rem 0; 
     color: #a0aec0;
 }
@@ -109,13 +94,11 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    /* Gap between form groups */
     gap: 0.4rem; 
 }
 
 .form-group label {
     display: block;
-    /* Sharply reduced margin-bottom */
     margin-bottom: 0.1rem; 
     font-size: 0.9rem;
     color: #a0aec0;
@@ -132,7 +115,6 @@
     background-color: #2d3748;
     border: 1px solid #4a5568;
     border-radius: 8px;
-    /* Reduced vertical padding on inputs */
     padding: 0.6rem 1rem; 
     color: white;
     font-size: 1rem;
@@ -145,28 +127,22 @@
     color: #a0aec0;
 }
 
-/* This rule adds space on the right of the password input for the eye icon */
 .password-input-wrapper input {
     padding-right: 2.8rem;
 }
 
 .toggle-password-visibility {
     position: absolute;
-    /* START FIX: Adjusted right positioning to pull it further left */
     right: 0.5rem; 
-    /* END FIX */
     background: none;
     border: none;
     color: #a0aec0;
     cursor: pointer;
-    /* START FIX: Give the button a small width/height to center the icon */
     width: 1.8rem;
     height: 100%;
     padding: 0;
-    /* END FIX */
     display: flex;
     align-items: center;
-    /* Vertical centering */
     top: 50%;
     transform: translateY(-50%);
     z-index: 10; 
@@ -176,7 +152,6 @@
     width: 100%;
     background-color: #f97316;
     color: white;
-    /* Reduced main button padding for vertical space */
     padding: 0.75rem; 
     border: none;
     border-radius: 8px;
@@ -198,7 +173,6 @@
 .auth-message {
     color: #a0aec0;
     text-align: center;
-    /* Maximized negative margin-top to pull message closer to button */
     margin-top: -0.5rem; 
     font-size: 0.9rem;
 }
@@ -207,7 +181,6 @@
     display: flex;
     justify-content: space-between;
     width: 100%;
-    /* Sharply reduced margin-top */
     margin-top: 0.4rem; 
     font-size: 0.9rem;
 }
@@ -225,27 +198,24 @@
     color: white;
 }
 
-
-/* Media Query for very short screens (e.g., mobile landscape) */
 @media (max-height: 650px) {
     .auth-container {
-        /* Reduce padding even further for very short screens, maintain bottom space */
         padding: 0.8rem 1rem 1.2rem 1rem;
     }
     
     .auth-logo {
         width: 60px;
         height: 60px;
-        margin-bottom: 0; /* No space below logo */
+        margin-bottom: 0;
     }
 
     .auth-header h1 {
         font-size: 1.4rem;
-        margin: 0.05rem 0; /* Minimal space above/below h1 */
+        margin: 0.05rem 0;
     }
     
     .subtitle {
-        margin-bottom: 0.5rem; /* Tighter spacing above social buttons */
+        margin-bottom: 0.5rem;
     }
 
     .social-auth-options button {
@@ -253,7 +223,6 @@
     }
 
     .input-with-icon input {
-        /* Most aggressive reduction on input padding */
         padding: 0.4rem 1rem; 
     }
     
@@ -266,8 +235,6 @@
     }
     
     .auth-footer-links {
-        margin-top: 0.3rem; /* Extremely tight spacing for footer links */
+        margin-top: 0.3rem;
     }
 }
-
-/* END OF COMPLETE FILE AuthPage.css */

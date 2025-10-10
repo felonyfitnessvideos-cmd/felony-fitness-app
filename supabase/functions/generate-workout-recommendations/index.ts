@@ -36,12 +36,18 @@ Deno.serve(async (req) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+    // --- START: MODIFICATION ---
+    // Corrected the nutrition_logs query to use the proper relationship and column names.
     const [profileRes, metricsRes, workoutRes, nutritionRes] = await Promise.all([
       supabaseAdmin.from('user_profiles').select('dob, sex, daily_calorie_goal, daily_protein_goal').eq('id', userId).single(),
       supabaseAdmin.from('body_metrics').select('weight_lbs, body_fat_percentage').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabaseAdmin.from('workout_logs').select('notes, duration_minutes, created_at').eq('user_id', userId).gte('created_at', sevenDaysAgo.toISOString()).order('created_at', { ascending: false }),
-      supabaseAdmin.from('nutrition_logs').select('foods(calories_per_serving, protein_g_per_serving), quantity_consumed').eq('user_id', userId).gte('log_date', sevenDaysAgo.toISOString())
+      supabaseAdmin.from('nutrition_logs')
+        .select('quantity_consumed, food_servings(calories, protein_g)')
+        .eq('user_id', userId)
+        .gte('created_at', sevenDaysAgo.toISOString())
     ]);
+    // --- END: MODIFICATION ---
 
     if (profileRes.error) throw profileRes.error;
     if (metricsRes.error) throw metricsRes.error;
@@ -57,9 +63,15 @@ Deno.serve(async (req) => {
     const latestMetrics = metricsRes.data;
     const recentWorkouts = workoutRes.data;
     const recentNutrition = nutritionRes.data;
+    
+    // --- START: MODIFICATION ---
+    // Corrected the data processing to match the new query structure.
+    const foodLogs = recentNutrition.filter(log => log.food_servings);
+    const totalDays = 7;
 
-    const avgCalories = recentNutrition.reduce((sum, log) => sum + (log.foods?.calories_per_serving || 0) * log.quantity_consumed, 0) / 7;
-    const avgProtein = recentNutrition.reduce((sum, log) => sum + (log.foods?.protein_g_per_serving || 0) * log.quantity_consumed, 0) / 7;
+    const avgCalories = foodLogs.reduce((sum, log) => sum + (log.food_servings?.calories || 0) * log.quantity_consumed, 0) / totalDays;
+    const avgProtein = foodLogs.reduce((sum, log) => sum + (log.food_servings?.protein_g || 0) * log.quantity_consumed, 0) / totalDays;
+    // --- END: MODIFICATION ---
 
     const summary = {
       profile: `Age: ${calculateAge(userProfile.dob)}, Sex: ${userProfile.sex}, Weight: ${latestMetrics?.weight_lbs || 'N/A'} lbs, Body Fat: ${latestMetrics?.body_fat_percentage || 'N/A'}%`,

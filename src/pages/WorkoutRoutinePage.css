@@ -1,23 +1,7 @@
 .workout-routines-container {
   padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 70px); /* Full height minus nav bar */
-  box-sizing: border-box;
+  padding-bottom: 80px; /* Space for nav bar */
 }
-
-.routines-content {
-  flex-grow: 1; /* Allows this area to take up available space */
-  overflow-y: auto; /* Enables scrolling ONLY when content overflows */
-  padding-bottom: 1rem; /* Space at the bottom of the scroll */
-  /* Hide scrollbar for a cleaner look */
-  -ms-overflow-style: none;  
-  scrollbar-width: none;
-}
-.routines-content::-webkit-scrollbar {
-  display: none;
-}
-
 
 .create-routine-button {
   display: flex;
@@ -96,9 +80,8 @@
   color: #e53e3e;
 }
 
-.no-routines-message {
+.no-routines-message, .loading-message {
   text-align: center;
   color: var(--text-secondary);
   padding: 2rem;
 }
-

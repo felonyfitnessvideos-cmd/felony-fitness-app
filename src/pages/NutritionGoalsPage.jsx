@@ -2,9 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { Apple, Flame, Droplets, Beef, Wheat, Wind } from 'lucide-react';
+import { useAuth } from '../AuthContext.jsx';
 import './NutritionGoalsPage.css';
 
 function NutritionGoalsPage() {
+  const { user } = useAuth();
   const [goals, setGoals] = useState({
     daily_calorie_goal: '',
     daily_protein_goal: '',
@@ -15,19 +17,18 @@ function NutritionGoalsPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
 
-  const fetchGoals = useCallback(async () => {
+  const fetchGoals = useCallback(async (userId) => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
+    try {
       const { data, error } = await supabase
         .from('user_profiles')
         .select('daily_calorie_goal, daily_protein_goal, daily_carb_goal, daily_fat_goal, daily_water_goal_oz')
-        .eq('id', user.id)
+        .eq('id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error("Error fetching goals:", error);
-      } else if (data) {
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (data) {
         setGoals({
           daily_calorie_goal: data.daily_calorie_goal || '',
           daily_protein_goal: data.daily_protein_goal || '',
@@ -36,33 +37,49 @@ function NutritionGoalsPage() {
           daily_water_goal_oz: data.daily_water_goal_oz || ''
         });
       }
+    } catch (error) {
+      console.error("Error fetching goals:", error);
+      setMessage("Could not load your goals.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchGoals();
-  }, [fetchGoals]);
+    if (user) {
+      fetchGoals(user.id);
+    } else {
+      setLoading(false);
+    }
+  }, [user?.id, fetchGoals]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setGoals(prev => ({ ...prev, [name]: value === '' ? null : parseInt(value, 10) }));
+    // Allow empty string to clear input, otherwise parse as integer
+    setGoals(prev => ({ ...prev, [name]: value === '' ? '' : parseInt(value, 10) }));
   };
 
   const handleSaveGoals = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("You must be logged in.");
 
     setMessage('Saving...');
-    const { error } = await supabase
-      .from('user_profiles')
-      .upsert({ id: user.id, ...goals });
+    try {
+      const updates = {
+        id: user.id,
+        daily_calorie_goal: goals.daily_calorie_goal || null,
+        daily_protein_goal: goals.daily_protein_goal || null,
+        daily_carb_goal: goals.daily_carb_goal || null,
+        daily_fat_goal: goals.daily_fat_goal || null,
+        daily_water_goal_oz: goals.daily_water_goal_oz || null,
+      };
+      const { error } = await supabase.from('user_profiles').upsert(updates);
 
-    if (error) {
-      setMessage(`Error: ${error.message}`);
-    } else {
+      if (error) throw error;
+      
       setMessage('Goals saved successfully!');
       setTimeout(() => setMessage(''), 2000);
+    } catch (error) {
+      setMessage(`Error: ${error.message}`);
     }
   };
 
@@ -162,4 +179,3 @@ function NutritionGoalsPage() {
 }
 
 export default NutritionGoalsPage;
-

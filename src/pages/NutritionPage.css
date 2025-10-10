@@ -1,12 +1,13 @@
-/* This can reuse styles from WorkoutsPage.css but we'll keep it separate for now */
 .nutrition-container {
   padding: 1rem;
+  padding-bottom: 80px;
 }
 
 .card-menu {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  margin-top: 1rem;
 }
 
 .menu-card {
@@ -27,14 +28,12 @@
   transform: translateY(-2px);
 }
 
-/* Add this to the bottom of NutritionPage.css */
-
 .tip-card {
   background-color: #2d3748;
   border: 1px solid #4a5568;
   border-radius: 12px;
   padding: 1.5rem;
-  margin-top: 1rem; /* Add some space above the tip card */
+  margin-top: 1rem;
 }
 
 .tip-card-header {
@@ -48,7 +47,7 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #a0aec0; /* Lighter text for the header */
+  color: #a0aec0;
 }
 
 .tip-card p {
@@ -56,4 +55,3 @@
   color: white;
   line-height: 1.6;
 }
-

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
-import { Dumbbell, Trash2, Trophy, Edit2 } from 'lucide-react'; // Added Edit2
+import { Dumbbell, Trash2, Trophy, Edit2 } from 'lucide-react';
 import Modal from 'react-modal';
+import { useAuth } from '../AuthContext.jsx';
 import './WorkoutGoalsPage.css';
 
 const customModalStyles = {
@@ -16,6 +17,7 @@ const customModalStyles = {
 };
 
 function WorkoutGoalsPage() {
+  const { user } = useAuth();
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,24 +26,37 @@ function WorkoutGoalsPage() {
     goal_description: '', current_value: 0, target_value: '', target_date: ''
   });
 
-  const fetchGoals = useCallback(async () => {
+  const fetchGoals = useCallback(async (userId) => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data, error } = await supabase.from('goals').select('*').eq('user_id', user.id);
-      if (error) console.error("Error fetching goals:", error);
-      else setGoals(data || []);
+    try {
+      const { data, error } = await supabase.from('goals').select('*').eq('user_id', userId);
+      if (error) throw error;
+      setGoals(data || []);
+    } catch (error) {
+      console.error("Error fetching goals:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  useEffect(() => { fetchGoals(); }, [fetchGoals]);
+  useEffect(() => {
+    if (user) {
+      fetchGoals(user.id);
+    } else {
+      setLoading(false);
+    }
+  }, [user?.id, fetchGoals]);
 
   const handleDeleteGoal = async (goalId) => {
+    // Note: window.confirm is functional but could be replaced with a custom modal for better UX.
     if (window.confirm("Are you sure you want to delete this goal?")) {
-      const { error } = await supabase.from('goals').delete().eq('id', goalId);
-      if (error) alert(`Error: ${error.message}`);
-      else fetchGoals();
+      try {
+        const { error } = await supabase.from('goals').delete().eq('id', goalId);
+        if (error) throw error;
+        if (user) fetchGoals(user.id);
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
     }
   };
   
@@ -73,25 +88,28 @@ function WorkoutGoalsPage() {
 
   const handleSaveGoal = async (e) => {
     e.preventDefault();
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("You must be logged in.");
-    if (editingGoal) {
-      const { error } = await supabase
-        .from('goals')
-        .update({
-          goal_description: newGoal.goal_description,
-          current_value: newGoal.current_value,
-          target_value: newGoal.target_value,
-          target_date: newGoal.target_date,
-        })
-        .eq('id', editingGoal.id);
-      if (error) return alert(`Error updating goal: ${error.message}`);
-    } else {
-      const { error } = await supabase.from('goals').insert({ ...newGoal, user_id: user.id });
-      if (error) return alert(`Error saving goal: ${error.message}`);
+    try {
+      if (editingGoal) {
+        const { error } = await supabase
+          .from('goals')
+          .update({
+            goal_description: newGoal.goal_description,
+            current_value: newGoal.current_value,
+            target_value: newGoal.target_value,
+            target_date: newGoal.target_date,
+          })
+          .eq('id', editingGoal.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('goals').insert({ ...newGoal, user_id: user.id });
+        if (error) throw error;
+      }
+      closeModal();
+      if (user) fetchGoals(user.id);
+    } catch (error) {
+      alert(`Error saving goal: ${error.message}`);
     }
-    closeModal();
-    fetchGoals();
   };
 
   if (loading) return <div style={{color: 'white', padding: '2rem'}}>Loading Goals...</div>
@@ -134,7 +152,6 @@ function WorkoutGoalsPage() {
                 <span className="progress-percent">{progress.toFixed(0)}%</span>
               </div>
 
-              {/* UPDATED: Buttons now wrapped in a div */}
               <div className="goal-actions">
                 <button className="action-btn" onClick={() => openModal(goal)}>
                   <Edit2 size={18} />
@@ -146,7 +163,7 @@ function WorkoutGoalsPage() {
             </div>
           )
         }) : (
-          <p className="no-goals-message">You haven't set any goals yet. Click the button above to add one!</p>
+          !loading && <p className="no-goals-message">You haven't set any goals yet. Click the button above to add one!</p>
         )}
       </div>
 

@@ -1,13 +1,12 @@
-// FILE: src/pages/WorkoutRecsPage.jsx
-
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
-// --- Add Lightbulb icon to imports ---
 import { Dumbbell, Zap, Lightbulb } from 'lucide-react';
+import { useAuth } from '../AuthContext.jsx';
 import './WorkoutRecsPage.css';
 
 function WorkoutRecsPage() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
   const [error, setError] = useState('');
@@ -17,23 +16,25 @@ function WorkoutRecsPage() {
     setError('');
     setRecommendations(null);
 
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setError("You must be logged in to get recommendations.");
       setLoading(false);
       return;
     }
 
-    const { data, error } = await supabase.functions.invoke('generate-workout-recommendations', {
-      body: { userId: user.id },
-    });
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke('generate-workout-recommendations', {
+        body: { userId: user.id },
+      });
 
-    if (error) {
-      setError(`Error: ${error.message}`);
-    } else {
+      if (invokeError) throw invokeError;
+      
       setRecommendations(data);
+    } catch (error) {
+       setError(`Error: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -52,14 +53,12 @@ function WorkoutRecsPage() {
             <h2>Personalized Insights</h2>
             <p>Get AI-powered recommendations based on your recent workouts, nutrition, and goals.</p>
             
-            {/* --- START: Added Pro Tip Message --- */}
             <div className="pro-tip">
               <Lightbulb size={16} />
               <span>The more you log, the smarter your recommendations will become.</span>
             </div>
-            {/* --- END: Added Pro Tip Message --- */}
 
-            <button onClick={handleGenerateRecs}>Generate My Recommendations</button>
+            <button onClick={handleGenerateRecs} disabled={!user}>Generate My Recommendations</button>
           </div>
         )}
 

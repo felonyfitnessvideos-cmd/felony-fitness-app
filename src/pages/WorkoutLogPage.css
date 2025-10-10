@@ -199,7 +199,6 @@
   cursor: pointer;
 }
 
-/* The finish button now just sits at the end of the content */
 .finish-button {
   width: 100%;
   padding: 0.8rem;

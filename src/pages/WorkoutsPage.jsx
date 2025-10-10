@@ -16,7 +16,6 @@ function WorkoutsPage() {
         <Link to="/workouts/routines" className="menu-card">
           Routines
         </Link>
-        {/* UPDATED: The link now points to the new, more descriptive route */}
         <Link to="/workouts/select-routine-log" className="menu-card">
           Log
         </Link>
@@ -29,4 +28,3 @@ function WorkoutsPage() {
 }
 
 export default WorkoutsPage;
-

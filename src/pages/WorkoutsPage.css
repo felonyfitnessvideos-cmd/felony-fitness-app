@@ -1,27 +1,17 @@
 .workouts-container {
   padding: 1rem;
-}
-
-.page-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.page-header h1 {
-  font-size: 1.75rem;
-  font-weight: 800;
-  display: inline-block;
-  vertical-align: middle;
+  padding-bottom: 80px;
 }
 
 .card-menu {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  margin-top: 1rem;
 }
 
 .menu-card {
-  background-color: #2d3748; /* Dark card background */
+  background-color: #2d3748;
   color: white;
   text-decoration: none;
   text-align: center;

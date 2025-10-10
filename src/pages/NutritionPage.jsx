@@ -8,22 +8,22 @@ import './NutritionPage.css';
 function NutritionPage() {
   const [dailyTip, setDailyTip] = useState('');
 
-  // UPDATED: This useEffect hook is now much simpler and more reliable.
   useEffect(() => {
     const fetchRandomTip = async () => {
-      // Call the new database function we created
-      const { data, error } = await supabase.rpc('get_random_tip');
-
-      if (error) {
+      try {
+        const { data, error } = await supabase.rpc('get_random_tip');
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setDailyTip(data[0].tip_text);
+        }
+      } catch (error) {
         console.error('Error fetching random tip:', error);
-      } else if (data && data.length > 0) {
-        // The function returns an array, so we take the first item
-        setDailyTip(data[0].tip_text);
+        setDailyTip('Could not load a tip right now, but remember: consistency is key!');
       }
     };
 
     fetchRandomTip();
-  }, []); // The empty array ensures this runs only once when the page loads
+  }, []);
 
   return (
     <div className="nutrition-container">
@@ -60,4 +60,3 @@ function NutritionPage() {
 }
 
 export default NutritionPage;
-

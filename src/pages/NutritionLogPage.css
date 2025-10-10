@@ -1,29 +1,21 @@
-/* --- START: FINAL STYLESHEET --- */
-
-/* This container mirrors the working WorkoutLogPage.
-   It lets the parent component handle scrolling. */
+/* Golden Pattern: A simple container that relies on the parent for scrolling. */
 .nutrition-log-page-container {
   padding: 1rem;
   box-sizing: border-box;
-  /* Add space at the bottom so the last item in the list isn't hidden by the fixed footer. */
-  padding-bottom: 160px; /* Increased padding for more buffer */
+  /* Padding at the bottom to prevent content from being hidden by the fixed footer. */
+  padding-bottom: 120px; /* Provides ample space for the footer */
 }
 
-/* The footer is positioned relative to the browser window. */
+/* Golden Pattern: A fixed footer for elements that need to stick to the bottom. */
 .calorie-status-footer {
   position: fixed;
-  /* Sits above the main app navigation, with a small gap. */
-  bottom: 70px; /* Increased from 60px to create space */
-  /* Manually match the app's max-width and centered layout. */
+  bottom: 60px; /* Sits directly on top of the 60px bottom nav bar */
   width: 100%;
-  max-width: 450px;
+  max-width: 450px; /* Matches the app's max-width */
   left: 50%;
   transform: translateX(-50%);
-
-  /* Standard styling */
   background-color: var(--background-color);
-  /* Adjust top and bottom padding to balance the content */
-  padding: 0.5rem 1rem 0.75rem;
+  padding: 0.75rem 1rem;
   border-top: 1px solid var(--border-color);
   z-index: 10;
   box-sizing: border-box;
@@ -198,8 +190,6 @@
   border-radius: 5px;
   transition: width 0.3s ease-in-out;
 }
-
-/* --- START: Added Modal Styles --- */
 .log-food-modal .modal-header {
   display: flex;
   justify-content: space-between;
@@ -276,5 +266,3 @@
 .serving-list li:hover {
   background-color: #4a5568;
 }
-/* --- END: Added Modal Styles --- */
-

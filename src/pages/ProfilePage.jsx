@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { Link } from 'react-router-dom';
 import Modal from 'react-modal';
 import { User, Weight, Percent, Calendar, HeartPulse, X, Edit2 as EditIcon } from 'lucide-react';
+import { useAuth } from '../AuthContext.jsx';
 import './ProfilePage.css';
 
 const maleBodyFatImages = [
@@ -47,6 +48,7 @@ const calculateAge = (dob) => {
 };
 
 function ProfilePage() {
+  const { user } = useAuth();
   const [weight, setWeight] = useState('');
   const [bodyFat, setBodyFat] = useState('');
   const [history, setHistory] = useState([]);
@@ -56,47 +58,43 @@ function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [profileMessage, setProfileMessage] = useState('');
-  const [userId, setUserId] = useState(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
-  useEffect(() => {
-    setLoading(true);
-    
-    const fetchData = async (currentUserId) => {
+  const fetchData = useCallback(async (userId) => {
+    try {
       const [metricsRes, profileRes] = await Promise.all([
-        supabase.from('body_metrics').select('*').eq('user_id', currentUserId).order('created_at', { ascending: false }).limit(10),
-        supabase.from('user_profiles').select('dob, sex').eq('id', currentUserId).single()
+        supabase.from('body_metrics').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
+        supabase.from('user_profiles').select('dob, sex').eq('id', userId).single()
       ]);
 
       const { data: metricsData, error: metricsError } = metricsRes;
-      if (metricsError) console.error('Error fetching metrics:', metricsError);
-      else setHistory(metricsData || []);
+      if (metricsError) throw metricsError;
+      setHistory(metricsData || []);
       
       const { data: profileData, error: profileError } = profileRes;
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Error fetching profile:', profileError);
-      } else if (profileData) {
+      if (profileError && profileError.code !== 'PGRST116') throw profileError;
+      
+      if (profileData) {
         setProfile({ dob: profileData.dob || '', sex: profileData.sex || '' });
         setAge(calculateAge(profileData.dob));
         setIsEditingProfile(!profileData.dob || !profileData.sex);
       } else {
         setIsEditingProfile(true);
       }
+    } catch (error) {
+      console.error("Error fetching profile data:", error);
+    } finally {
       setLoading(false);
-    };
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUserId(session.user.id);
-        fetchData(session.user.id);
-      } else {
-        setUserId(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    }
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchData(user.id);
+    } else {
+      setLoading(false);
+    }
+  }, [user?.id, fetchData]);
   
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
@@ -108,14 +106,14 @@ function ProfilePage() {
   
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
-    if (!userId) {
-        setProfileMessage("Error: Could not save profile. Please refresh and try again.");
-        return;
+    if (!user) {
+      setProfileMessage("Error: Could not save profile. Please refresh and try again.");
+      return;
     }
     
     const { error } = await supabase
       .from('user_profiles')
-      .upsert({ id: userId, dob: profile.dob, sex: profile.sex });
+      .upsert({ id: user.id, dob: profile.dob, sex: profile.sex });
       
     if (error) {
       setProfileMessage(error.message);
@@ -132,13 +130,13 @@ function ProfilePage() {
       setMessage('Please enter at least one measurement.');
       return;
     }
-    if (!userId) {
+    if (!user) {
       setMessage("User not found, please refresh.");
       return;
     }
 
     const newMetric = {
-      user_id: userId,
+      user_id: user.id,
       weight_lbs: weight ? parseFloat(weight) : null,
       body_fat_percentage: bodyFat ? parseFloat(bodyFat) : null,
     };
@@ -234,8 +232,7 @@ function ProfilePage() {
 
       <div className="history-section">
         <h2>Recent History</h2>
-        {loading ? <p>Loading history...</p> : (
-          history.length === 0 ? <p>No measurements logged yet.</p> : (
+        {history.length === 0 ? <p>No measurements logged yet.</p> : (
             <ul className="history-list">
               {history.map(metric => (
                 <li key={metric.id} className="history-item">
@@ -247,7 +244,6 @@ function ProfilePage() {
                 </li>
               ))}
             </ul>
-          )
         )}
       </div>
 

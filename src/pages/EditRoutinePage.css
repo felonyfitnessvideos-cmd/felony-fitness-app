@@ -1,21 +1,6 @@
-.edit-routine-container {
+.edit-routine-page-container {
   padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 70px); /* Full height minus nav bar */
-  box-sizing: border-box;
-}
-
-.edit-routine-scroll-area {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding-bottom: 1rem;
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-
-.edit-routine-scroll-area::-webkit-scrollbar {
-  display: none;
+  padding-bottom: 100px; /* Space for the fixed footer */
 }
 
 .form-group, .add-exercise-section {
@@ -42,11 +27,6 @@
   color: white;
   font-size: 1rem;
   box-sizing: border-box;
-}
-
-.form-row {
-  display: flex;
-  gap: 1rem;
 }
 
 .add-exercise-section {
@@ -103,6 +83,17 @@
 
 .add-exercise-btn:hover {
   background-color: #059669;
+}
+
+.custom-exercise-prompt button {
+    background: none;
+    border: none;
+    color: #f97316;
+    padding: 1rem;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.9rem;
 }
 
 .exercise-list {
@@ -175,13 +166,23 @@
 }
 
 .action-footer {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #4a5568;
-  flex-shrink: 0;
+  position: fixed;
+  bottom: 60px; /* Sits above main nav */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 450px;
+  background-color: var(--background-color);
+  padding: 1rem;
+  border-top: 1px solid var(--border-color);
+  z-index: 10;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
 }
 
-.action-footer button {
+.action-footer button, .modal-action-footer button {
   padding: 0.8rem 1.5rem;
   border: none;
   border-radius: 8px;
@@ -199,6 +200,13 @@
   color: white;
 }
 
+.modal-action-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
 .reorder-controls {
   display: flex;
   flex-direction: column;
@@ -210,16 +218,16 @@
 .reorder-controls button {
   background: none;
   border: none;
-  color: #718096; /* gray-500 */
+  color: #718096;
   cursor: pointer;
   padding: 0.25rem;
 }
 
 .reorder-controls button:hover {
-  color: #f97316; /* orange-500 */
+  color: #f97316;
 }
 
 .reorder-controls button:disabled {
-  color: #4a5568; /* gray-600 */
+  color: #4a5568;
   cursor: not-allowed;
 }

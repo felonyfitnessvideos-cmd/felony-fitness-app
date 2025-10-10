@@ -1,5 +1,3 @@
-// FILE: src/pages/AuthPage.jsx
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient.js';
 import { useNavigate } from 'react-router-dom';
@@ -52,7 +50,6 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
-          // It's better to configure this in the Supabase UI, but can be set here.
           redirectTo: window.location.origin,
         },
       });
@@ -77,11 +74,9 @@ function AuthPage() {
           <button onClick={() => handleSocialAuth('google')} disabled={loading}>
             <FaGoogle size={20} /> Continue with Google
           </button>
-          {/* START CHANGE: Replaced the alert with the correct function call */}
           <button onClick={() => handleSocialAuth('azure')} disabled={loading}>
             <FaMicrosoft size={20} /> Continue with Microsoft
           </button>
-          {/* END CHANGE */}
           <button onClick={() => alert("Facebook auth not configured.")} disabled={loading}>
             <FaFacebook size={20} /> Continue with Facebook
           </button>

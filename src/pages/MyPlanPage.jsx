@@ -1,37 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient.js';
-// CORRECTED: Removed the dash from the filename
+import React, { useState } from 'react';
 import SubPageHeader from '../components/SubPageHeader.jsx'; 
 import { ClipboardList, ShieldCheck, DollarSign, Key, Zap, Diamond, Settings, X } from 'lucide-react';
 import Modal from 'react-modal';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { useAuth } from '../AuthContext.jsx'; // Import the useAuth hook
 import './MyPlanPage.css';
 
-// Using the same style as other modals for consistency
 const customModalStyles = {
   content: {
     top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%',
     transform: 'translate(-50%, -50%)', width: '90%', maxWidth: '400px',
-    background: 'var(--card-color)', // Use theme variable
-    color: 'var(--text-primary)',   // Use theme variable
-    border: '1px solid var(--border-color)', // Use theme variable
+    background: 'var(--card-color)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border-color)',
     zIndex: 1000, padding: '1.5rem', borderRadius: '12px'
   },
   overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 999 },
 };
 
 function MyPlanPage() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth(); // Get user from the central auth context
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const { theme, updateUserTheme } = useTheme();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    fetchUser();
-  }, []);
 
   const openSettingsModal = () => setIsSettingsModalOpen(true);
   const closeSettingsModal = () => setIsSettingsModalOpen(false);
@@ -85,12 +75,10 @@ function MyPlanPage() {
         Every plan is built to support your comeback. Choose what fuels you.
       </p>
 
-      {/* Settings button */}
       <button className="settings-button" onClick={openSettingsModal}>
         <Settings size={24} />
       </button>
 
-      {/* Settings Modal */}
       <Modal
         isOpen={isSettingsModalOpen}
         onRequestClose={closeSettingsModal}
@@ -133,4 +121,3 @@ function MyPlanPage() {
 }
 
 export default MyPlanPage;
-

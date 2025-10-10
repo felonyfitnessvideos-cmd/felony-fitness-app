@@ -34,12 +34,18 @@ Deno.serve(async (req) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+    // --- START: MODIFICATION ---
+    // Corrected the nutrition_logs query to use the proper relationship and column names.
     const [profileRes, metricsRes, nutritionRes, workoutRes] = await Promise.all([
       supabaseAdmin.from('user_profiles').select('dob, sex, daily_calorie_goal, daily_protein_goal').eq('id', userId).single(),
       supabaseAdmin.from('body_metrics').select('weight_lbs, body_fat_percentage').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
-      supabaseAdmin.from('nutrition_logs').select('foods(food_name), quantity_consumed').eq('user_id', userId).gte('log_date', sevenDaysAgo.toISOString()),
+      supabaseAdmin.from('nutrition_logs')
+        .select('quantity_consumed, food_servings(foods(name))') // Corrected join
+        .eq('user_id', userId)
+        .gte('created_at', sevenDaysAgo.toISOString()), // Corrected column name
       supabaseAdmin.from('workout_logs').select('notes, duration_minutes').eq('user_id', userId).gte('created_at', sevenDaysAgo.toISOString())
     ]);
+    // --- END: MODIFICATION ---
 
     if (profileRes.error) throw profileRes.error;
     if (metricsRes.error) throw metricsRes.error;
@@ -54,6 +60,16 @@ Deno.serve(async (req) => {
     const userProfile = profileRes.data;
     const latestMetrics = metricsRes.data;
 
+    // --- START: MODIFICATION ---
+    // Corrected the data mapping to match the new query structure.
+    const recentNutritionLogs = nutritionRes.data
+      .map(log => {
+        const foodName = log.food_servings?.foods?.name || 'Logged food';
+        return `- ${foodName}: ${log.quantity_consumed} serving(s)`;
+      })
+      .join('\n');
+    // --- END: MODIFICATION ---
+    
     const prompt = `
       You are an expert fitness and nutrition coach for Felony Fitness, an organization helping formerly incarcerated individuals. 
       Your tone should be encouraging, straightforward, and supportive.
@@ -71,7 +87,7 @@ Deno.serve(async (req) => {
       - Protein: ${userProfile.daily_protein_goal}g
 
       Recent Nutrition Logs:
-      ${nutritionRes.data.map(log => `- ${log.foods?.food_name || 'Logged food'}: ${log.quantity_consumed} serving(s)`).join('\n')}
+      ${recentNutritionLogs}
 
       Recent Workouts:
       ${workoutRes.data.map(log => `- ${log.notes || 'Workout'} for ${log.duration_minutes} minutes`).join('\n')}

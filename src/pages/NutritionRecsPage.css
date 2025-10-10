@@ -1,6 +1,17 @@
+/* Main container is now a full-height flex frame */
 .nutrition-recs-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* New scroll area takes up all available space and scrolls */
+.nutrition-recs-scroll-area {
+  flex-grow: 1;
+  overflow-y: auto;
   padding: 1rem;
 }
+
 .recs-content {
   text-align: center;
 }
@@ -80,9 +91,6 @@
 .reason strong, .action strong {
   color: white;
 }
-
-/* --- NEW --- */
-/* Style for the pro tip message */
 .pro-tip {
   display: flex;
   align-items: center;

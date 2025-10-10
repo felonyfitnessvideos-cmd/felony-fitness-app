@@ -1,22 +1,6 @@
-.select-routine-container {
+.select-routine-page-container {
   padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 70px); /* Full height minus nav bar */
-  box-sizing: border-box;
-}
-
-.routines-scroll-area {
-  flex-grow: 1; /* Allows this area to take up available space */
-  overflow-y: auto; /* Enables scrolling ONLY when content overflows */
-  padding-bottom: 1rem; /* Space at the bottom of the scroll */
-  /* Hide scrollbar for a cleaner look */
-  -ms-overflow-style: none;  
-  scrollbar-width: none;
-}
-
-.routines-scroll-area::-webkit-scrollbar {
-  display: none;
+  padding-bottom: 80px; /* Space for nav bar */
 }
 
 .routine-selection-list {
@@ -25,7 +9,7 @@
   gap: 1rem;
   width: 100%;
   max-width: 450px;
-  margin: 0 auto; /* Center the list */
+  margin: 1rem auto 0; /* Center the list and add top margin */
 }
 
 .routine-selection-card {
@@ -63,7 +47,7 @@
   flex-shrink: 0;
 }
 
-.no-routines-message {
+.no-routines-message, .loading-message {
   text-align: center;
   color: var(--text-secondary);
   padding: 2rem;
