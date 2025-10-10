@@ -30,6 +30,7 @@ function WorkoutLogPage() {
   const [isSuccessModalOpen, setSuccessModalOpen] = useState(false);
   const [shouldAdvance, setShouldAdvance] = useState(false);
   const [userWeightLbs, setUserWeightLbs] = useState(150);
+  const [isWorkoutCompletable, setIsWorkoutCompletable] = useState(false);
 
   const selectedExercise = useMemo(() => routine?.routine_exercises[selectedExerciseIndex]?.exercises, [routine, selectedExerciseIndex]);
 
@@ -156,8 +157,14 @@ function WorkoutLogPage() {
 
     const targetSets = routine.routine_exercises[selectedExerciseIndex]?.target_sets;
     const completedSets = newTodaysLog[selectedExercise.id].length;
+    const isLastExercise = selectedExerciseIndex === routine.routine_exercises.length - 1;
+    
     if (targetSets && completedSets >= targetSets) {
-      setShouldAdvance(true);
+      if (isLastExercise) {
+        setIsWorkoutCompletable(true);
+      } else {
+        setShouldAdvance(true);
+      }
     }
     
     setIsTimerOpen(true);
@@ -175,6 +182,8 @@ function WorkoutLogPage() {
 
   const handleFinishWorkout = async () => {
     if (!workoutLogId || !startTime) return;
+
+    setIsTimerOpen(false);
 
     const duration_minutes = Math.round((new Date() - startTime) / 60000);
     const MET_VALUE = 5.0;
@@ -223,13 +232,10 @@ function WorkoutLogPage() {
 
   if (loading) return <div style={{color: 'white', padding: '2rem'}}>Loading Workout...</div>;
 
-  const isLastExercise = routine && selectedExerciseIndex === routine.routine_exercises.length - 1;
-
   return (
     <div className="workout-log-page-container">
       <SubPageHeader title={routine?.routine_name || 'Workout'} icon={<Dumbbell size={28} />} iconColor="#f97316" backTo="/workouts/select-routine-log" />
       
-      {/* Structure simplified: removed redundant inner div */}
       <div className="log-toggle-header">
         <div className="log-toggle">
           <button className={`toggle-btn ${activeView === 'log' ? 'active' : ''}`} onClick={() => setActiveView('log')}>Log</button>
@@ -313,11 +319,12 @@ function WorkoutLogPage() {
         </div>
       )}
 
-      {isLastExercise && (
-        <button className="finish-button" onClick={handleFinishWorkout}>Finish Workout</button>
-      )}
-
-      <RestTimerModal isOpen={isTimerOpen} onClose={handleTimerClose} />
+      <RestTimerModal 
+        isOpen={isTimerOpen} 
+        onClose={handleTimerClose}
+        isWorkoutComplete={isWorkoutCompletable}
+        onFinishWorkout={handleFinishWorkout}
+      />
       
       <SuccessModal 
         isOpen={isSuccessModalOpen}

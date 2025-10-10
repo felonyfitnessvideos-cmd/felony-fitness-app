@@ -3,7 +3,6 @@ import Modal from 'react-modal';
 import { Plus, Minus, X } from 'lucide-react';
 import './RestTimerModal.css';
 
-// Reusing the same modal style from your other components
 const customModalStyles = {
   content: {
     top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%',
@@ -14,25 +13,28 @@ const customModalStyles = {
   overlay: { backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 1000 },
 };
 
-function RestTimerModal({ isOpen, onClose, initialDuration = 60 }) {
+function RestTimerModal({ isOpen, onClose, initialDuration = 60, isWorkoutComplete = false, onFinishWorkout }) {
   const [timeLeft, setTimeLeft] = useState(initialDuration);
 
   useEffect(() => {
     if (isOpen) {
-      setTimeLeft(initialDuration); // Reset timer whenever modal opens
+      setTimeLeft(initialDuration);
+      
+      if (isWorkoutComplete) return;
+
       const timer = setInterval(() => {
         setTimeLeft(prevTime => {
           if (prevTime <= 1) {
             clearInterval(timer);
-            onClose(); // Auto-close when timer finishes
+            onClose();
             return 0;
           }
           return prevTime - 1;
         });
       }, 1000);
-      return () => clearInterval(timer); // Cleanup on close
+      return () => clearInterval(timer);
     }
-  }, [isOpen, initialDuration, onClose]);
+  }, [isOpen, initialDuration, onClose, isWorkoutComplete]);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -56,26 +58,32 @@ function RestTimerModal({ isOpen, onClose, initialDuration = 60 }) {
     >
       <div className="rest-timer-container">
         <div className="timer-header">
-          <h3>REST</h3>
+          <h3>{isWorkoutComplete ? 'WORKOUT COMPLETE' : 'REST'}</h3>
           <button onClick={onClose} className="close-btn"><X size={24} /></button>
         </div>
         
-        {/* UPDATED: Circular Timer Display */}
         <div className="timer-circle">
             <div className="timer-display">
                 {formatTime(timeLeft)}
             </div>
         </div>
-
-        <div className="timer-controls">
-          <button onClick={() => adjustTime(-10)} className="adjust-btn"><Minus size={20} /> 10s</button>
-          <button onClick={onClose} className="skip-btn">Skip</button>
-          <button onClick={() => adjustTime(10)} className="adjust-btn"><Plus size={20} /> 10s</button>
-        </div>
+        
+        {isWorkoutComplete ? (
+          <div className="timer-controls">
+            <button onClick={onFinishWorkout} className="finish-workout-modal-btn">
+              Finish Workout
+            </button>
+          </div>
+        ) : (
+          <div className="timer-controls">
+            <button onClick={() => adjustTime(-10)} className="adjust-btn"><Minus size={20} /> 10s</button>
+            <button onClick={onClose} className="skip-btn">Skip</button>
+            <button onClick={() => adjustTime(10)} className="adjust-btn"><Plus size={20} /> 10s</button>
+          </div>
+        )}
       </div>
     </Modal>
   );
 }
 
 export default RestTimerModal;
-
