@@ -1,39 +1,35 @@
-/* This is the main container for the entire Nutrition Log page.
-   By setting its height to 100% and using flexbox, we can control
-   the layout of its direct children. */
-.nutrition-log-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+/* --- START: FINAL STYLESHEET --- */
+
+/* This container mirrors the working WorkoutLogPage.
+   It lets the parent component handle scrolling. */
+.nutrition-log-page-container {
   padding: 1rem;
+  box-sizing: border-box;
+  /* Add space at the bottom so the last item in the list isn't hidden by the fixed footer. */
+  padding-bottom: 160px; /* Increased padding for more buffer */
+}
+
+/* The footer is positioned relative to the browser window. */
+.calorie-status-footer {
+  position: fixed;
+  /* Sits above the main app navigation, with a small gap. */
+  bottom: 70px; /* Increased from 60px to create space */
+  /* Manually match the app's max-width and centered layout. */
+  width: 100%;
+  max-width: 450px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  /* Standard styling */
+  background-color: var(--background-color);
+  /* Adjust top and bottom padding to balance the content */
+  padding: 0.5rem 1rem 0.75rem;
+  border-top: 1px solid var(--border-color);
+  z-index: 10;
   box-sizing: border-box;
 }
 
-/* This is the middle section of the page that contains the water log
-   and the food item list. It's configured to grow and scroll. */
-.nutrition-log-scroll-area {
-  flex-grow: 1; /* This makes the element take up all available vertical space. */
-  overflow-y: auto; /* This enables vertical scrolling ONLY for this container. */
-  padding-bottom: 1rem; /* Adds some space at the very bottom of the scroll list. */
-
-  /* These rules hide the scrollbar for a cleaner, more native-app feel. */
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-.nutrition-log-scroll-area::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, and Opera */
-}
-
-/* The footer, which contains the calorie summary and progress bar.
-   It will now stay at the bottom of the flex container. */
-.calorie-status-footer {
-  flex-shrink: 0; /* Prevents the footer from shrinking. */
-  padding-top: 1rem;
-  border-top: 1px solid #4a5568;
-}
-
-/* All other styles remain largely the same, controlling the appearance
-   of the individual components within the flex layout. */
+/* --- All other styles for inner elements remain the same --- */
 .meal-tabs {
   display: flex;
   justify-content: space-between;
@@ -41,7 +37,7 @@
   background-color: #2d3748;
   border-radius: 9999px;
   padding: 0.25rem;
-  flex-shrink: 0; /* Prevents this from shrinking */
+  margin-top: 1rem;
 }
 .meal-tabs button {
   flex: 1;
@@ -64,7 +60,6 @@
   display: flex;
   align-items: center;
   margin-bottom: 1.5rem;
-  flex-shrink: 0; /* Prevents this from shrinking */
 }
 .search-bar-wrapper .search-icon {
   position: absolute;
@@ -154,7 +149,7 @@
   cursor: pointer;
 }
 .logged-items-list {
-  /* This doesn't need any special styles now */
+  margin-top: 1.5rem;
 }
 .no-items-message {
   text-align: center;
@@ -203,6 +198,8 @@
   border-radius: 5px;
   transition: width 0.3s ease-in-out;
 }
+
+/* --- START: Added Modal Styles --- */
 .log-food-modal .modal-header {
   display: flex;
   justify-content: space-between;
@@ -279,4 +276,5 @@
 .serving-list li:hover {
   background-color: #4a5568;
 }
+/* --- END: Added Modal Styles --- */
 
