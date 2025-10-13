@@ -17,7 +17,6 @@ function WorkoutLogPage() {
   const [routine, setRoutine] = useState(null);
   const [loading, setLoading] = useState(true);
   const [chartLoading, setChartLoading] = useState(false);
-  const [startTime, setStartTime] = useState(null);
   const [workoutLogId, setWorkoutLogId] = useState(null);
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState(0);
   const [currentSet, setCurrentSet] = useState({ weight: '', reps: '' });
@@ -36,6 +35,31 @@ function WorkoutLogPage() {
 
   const selectedExercise = useMemo(() => routine?.routine_exercises[selectedExerciseIndex]?.exercises, [routine, selectedExerciseIndex]);
 
+  // CORRECTED: This useEffect now handles pre-populating both weight and reps.
+  useEffect(() => {
+    if (!selectedExercise) return;
+
+    const todaysSets = todaysLog[selectedExercise.id] || [];
+    const previousSets = previousLog[selectedExercise.id] || [];
+    let lastSet = null;
+
+    if (todaysSets.length > 0) {
+      // Priority 1: Use the last set from today's workout.
+      lastSet = todaysSets[todaysSets.length - 1];
+    } else if (previousSets.length > 0) {
+      // Priority 2: If no sets today, use the last set from the previous session.
+      lastSet = previousSets[previousSets.length - 1];
+    }
+
+    if (lastSet) {
+      // Pre-fill both weight and reps from the last known set.
+      setCurrentSet({ weight: lastSet.weight_lifted_lbs, reps: lastSet.reps_completed });
+    } else {
+      // If no history exists for this exercise, clear the inputs.
+      setCurrentSet({ weight: '', reps: '' });
+    }
+  }, [selectedExercise, todaysLog, previousLog]);
+
   const fetchAndStartWorkout = useCallback(async (userId) => {
     setLoading(true);
     try {
@@ -45,7 +69,6 @@ function WorkoutLogPage() {
 
       const [metricsRes, routineRes, todaysLogsRes] = await Promise.all([
         supabase.from('body_metrics').select('weight_lbs').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).single(),
-        // This is the updated line - we now specify the relationship
         supabase.from('workout_routines').select(`*, routine_exercises(target_sets, exercises(*, muscle_groups!muscle_group_id(name)))`).eq('id', routineId).single(),
         supabase.from('workout_logs').select('id, is_complete, workout_log_entries(*)').eq('user_id', userId).eq('routine_id', routineId).gte('created_at', todayStart.toISOString()).lte('created_at', todayEnd.toISOString())
       ]);
@@ -94,15 +117,12 @@ function WorkoutLogPage() {
         });
         setPreviousLog(prevLogMap);
       }
-
-      if (!startTime) setStartTime(new Date());
-
     } catch (error) {
       console.error("A critical error occurred while fetching workout data:", error);
     } finally {
       setLoading(false);
     }
-  }, [routineId, startTime]);
+  }, [routineId]);
 
   useEffect(() => {
     if (user) {
@@ -112,7 +132,6 @@ function WorkoutLogPage() {
     }
   }, [user?.id, routineId, fetchAndStartWorkout]);
 
-  // Updated function to fetch chart data for a specific exercise
   const fetchChartDataForExercise = useCallback(async (metric, exerciseId) => {
     if (!user || !exerciseId) return;
     setChartLoading(true);
@@ -152,7 +171,6 @@ function WorkoutLogPage() {
     }
   }, [user?.id]);
 
-  // Updated useEffect to fetch data when the selected exercise changes
   useEffect(() => {
     if (activeView === 'chart' && selectedExercise) {
       fetchChartDataForExercise(chartMetric, selectedExercise.id);
@@ -177,7 +195,9 @@ function WorkoutLogPage() {
     
     const newTodaysLog = { ...todaysLog, [selectedExercise.id]: [...(todaysLog[selectedExercise.id] || []), newEntry] };
     setTodaysLog(newTodaysLog);
-    setCurrentSet({ weight: currentSet.weight, reps: '' });
+    
+    // CORRECTED: Keep both weight and reps for the next set.
+    setCurrentSet({ weight: currentSet.weight, reps: currentSet.reps });
 
     const targetSets = routine.routine_exercises[selectedExerciseIndex]?.target_sets;
     const completedSets = newTodaysLog[selectedExercise.id].length;
@@ -205,19 +225,46 @@ function WorkoutLogPage() {
   };
 
   const handleFinishWorkout = async () => {
-    if (!workoutLogId || !startTime) return;
+    if (!workoutLogId) return;
     setIsTimerOpen(false);
-    const duration_minutes = Math.round((new Date() - startTime) / 60000);
-    const MET_VALUE = 5.0;
-    const weight_kg = userWeightLbs * 0.453592;
-    const duration_hours = duration_minutes / 60;
-    const calories_burned = Math.round(MET_VALUE * weight_kg * duration_hours);
-    const { error } = await supabase
-      .from('workout_logs')
-      .update({ is_complete: true, duration_minutes, ended_at: new Date().toISOString(), notes: routine.routine_name, calories_burned })
-      .eq('id', workoutLogId);
-    if (error) return alert(`Error finishing workout: ${error.message}`);
-    setSuccessModalOpen(true);
+
+    try {
+      const { data: logData, error: fetchError } = await supabase
+        .from('workout_logs')
+        .select('created_at')
+        .eq('id', workoutLogId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      const startTime = new Date(logData.created_at);
+      const endTime = new Date();
+
+      const duration_minutes = Math.round((endTime - startTime) / 60000);
+      const MET_VALUE = 5.0;
+      const weight_kg = userWeightLbs * 0.453592;
+      const duration_hours = duration_minutes / 60;
+      const calories_burned = Math.round(MET_VALUE * weight_kg * duration_hours);
+
+      const updatePayload = { 
+        is_complete: true, 
+        duration_minutes, 
+        ended_at: endTime.toISOString(), 
+        notes: routine.routine_name, 
+        calories_burned 
+      };
+      
+      const { error: updateError } = await supabase
+        .from('workout_logs')
+        .update(updatePayload)
+        .eq('id', workoutLogId);
+
+      if (updateError) throw updateError;
+      
+      setSuccessModalOpen(true);
+    } catch (error) {
+      alert(`Error finishing workout: ${error.message}`);
+    }
   };
   
   const handleCloseSuccessModal = () => {

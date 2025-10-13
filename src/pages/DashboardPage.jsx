@@ -4,19 +4,6 @@ import { supabase } from '../supabaseClient.js';
 import { useAuth } from '../AuthContext.jsx';
 import './DashboardPage.css';
 
-const motivationalQuotes = [
-  "Consistency beats intensity.",
-  "Your only limit is you.",
-  "Success is earned in the gym.",
-  "Strive for progress, not perfection.",
-  "The hard part isn’t getting your body in shape. The hard part is getting your mind in shape.",
-  "The pain you feel today is the strength you feel tomorrow.",
-  "Your body can stand almost anything. It’s your mind you have to convince.",
-  "Don't wish for it. Work for it.",
-  "The only bad workout is the one that didn't happen.",
-  "Discipline is choosing between what you want now and what you want most.",
-];
-
 function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -30,15 +17,15 @@ function DashboardPage() {
 
   const fetchDashboardData = useCallback(async (userId) => {
     try {
-      const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-      
-      const [profileRes, nutritionRes, workoutRes, goalsRes] = await Promise.all([
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const [profileRes, nutritionRes, workoutRes, goalsRes, quoteRes] = await Promise.all([
         supabase.from('user_profiles').select('*').eq('id', userId).single(),
         supabase.rpc('get_daily_nutrition_totals', { p_user_id: userId }),
-        supabase.from('workout_logs').select('*').eq('user_id', userId).gte('created_at', todayStart.toISOString()).lte('created_at', todayEnd.toISOString()).order('created_at', { ascending: false }).limit(1),
-        supabase.from('goals').select('*').eq('user_id', userId)
+        supabase.from('workout_logs').select('notes, duration_minutes, calories_burned').eq('user_id', userId).gte('created_at', todayStart.toISOString()).order('created_at', { ascending: false }).limit(1),
+        supabase.from('goals').select('*').eq('user_id', userId),
+        supabase.rpc('get_random_quote')
       ]);
 
       if (profileRes.data) {
@@ -64,6 +51,14 @@ function DashboardPage() {
       if (goalsRes.data) {
         setActiveGoals(goalsRes.data);
       }
+
+      // SIMPLIFIED: Just get the quote and display it.
+      if (quoteRes.data && quoteRes.data.length > 0) {
+        setQuote(quoteRes.data[0].quote);
+      } else {
+        setQuote('Time to get to work!'); // Fallback quote
+      }
+
     } catch (error) {
         console.error("Error fetching dashboard data:", error);
     } finally {
@@ -72,9 +67,6 @@ function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
-    setQuote(randomQuote);
-    
     if (user) {
       fetchDashboardData(user.id);
     } else {
