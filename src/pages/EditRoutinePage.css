@@ -1,6 +1,6 @@
 .edit-routine-page-container {
   padding: 1rem;
-  padding-bottom: 100px; /* Space for the fixed footer */
+  padding-bottom: 180px; 
 }
 
 .form-group, .add-exercise-section {
@@ -180,9 +180,20 @@
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
+  align-items: center;
 }
 
-.action-footer button, .modal-action-footer button {
+.action-footer button {
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  /* CORRECTED: This removes any default browser margins */
+  margin: 0;
+}
+
+.modal-action-footer button {
   padding: 0.8rem 1.5rem;
   border: none;
   border-radius: 8px;
