@@ -35,8 +35,9 @@ function EditRoutinePage() {
 
   const fetchInitialData = useCallback(async () => {
     try {
+      // CORRECTED QUERY: Explicitly define the relationship to use
       const [exercisesRes, muscleGroupsRes] = await Promise.all([
-        supabase.from('exercises').select('*, muscle_groups ( id, name )'),
+        supabase.from('exercises').select('*, muscle_groups!muscle_group_id(id, name)'),
         supabase.from('muscle_groups').select('*')
       ]);
 
@@ -47,9 +48,10 @@ function EditRoutinePage() {
       setAllMuscleGroups(muscleGroupsRes.data || []);
 
       if (routineId !== 'new') {
+        // CORRECTED QUERY: Explicitly define the relationship to use in the nested select
         const { data, error } = await supabase
             .from('workout_routines')
-            .select(`*, routine_exercises(*, exercises(*, muscle_groups(name)))`)
+            .select(`*, routine_exercises(*, exercises(*, muscle_groups!muscle_group_id(name)))`)
             .eq('id', routineId)
             .single();
         if (error) throw error;
@@ -159,27 +161,24 @@ function EditRoutinePage() {
     e.preventDefault();
     if (!customExerciseName || !selectedMuscleGroupId) return alert("Please provide a name and select a muscle group.");
     try {
-      const { data: newExercise, error: insertError } = await supabase
-        .from('exercises')
-        .insert({ name: customExerciseName })
-        .select('id, name').single();
-      if (insertError) throw insertError;
+        // We now need to insert muscle_group_id directly
+        const { data: newExercise, error: insertError } = await supabase
+            .from('exercises')
+            .insert({ name: customExerciseName, muscle_group_id: selectedMuscleGroupId })
+            .select('*, muscle_groups!muscle_group_id(id, name)')
+            .single();
 
-      const { error: linkError } = await supabase
-        .from('exercise_muscle_groups')
-        .insert({ exercise_id: newExercise.id, muscle_group_id: selectedMuscleGroupId });
-      if (linkError) throw linkError;
-
-      const newMuscleGroup = allMuscleGroups.find(mg => mg.id === selectedMuscleGroupId);
-      const completeNewExercise = { ...newExercise, sets: 3, reps: '8-12', muscle_groups: newMuscleGroup ? [newMuscleGroup] : [] };
-      
-      setRoutineExercises([...routineExercises, completeNewExercise]);
-      setAllExercises([...allExercises, completeNewExercise]);
-      setSearchTerm('');
-      setSearchResults([]);
-      closeCustomExerciseModal();
+        if (insertError) throw insertError;
+        
+        const completeNewExercise = { ...newExercise, sets: 3, reps: '8-12' };
+        
+        setRoutineExercises([...routineExercises, completeNewExercise]);
+        setAllExercises([...allExercises, completeNewExercise]);
+        setSearchTerm('');
+        setSearchResults([]);
+        closeCustomExerciseModal();
     } catch (error) {
-      alert(`Error creating custom exercise: ${error.message}`);
+        alert(`Error creating custom exercise: ${error.message}`);
     }
   };
 
@@ -203,7 +202,8 @@ function EditRoutinePage() {
               <div key={ex.id} className="search-result-item">
                 <div className="exercise-info">
                   <span className="exercise-name">{ex.name}</span>
-                  <span className="muscle-group">{ex.muscle_groups?.map(mg => mg.name).join(', ') || 'General'}</span>
+                  {/* Correctly display the muscle group name */}
+                  <span className="muscle-group">{ex.muscle_groups?.name || 'General'}</span>
                 </div>
                 <button className="add-exercise-btn" onClick={() => handleAddExercise(ex)}>
                   Add
