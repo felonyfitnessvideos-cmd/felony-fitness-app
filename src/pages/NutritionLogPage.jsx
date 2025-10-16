@@ -43,9 +43,11 @@ function NutritionLogPage() {
   const fetchLogData = useCallback(async (userId) => {
     setLoading(true);
     try {
-      const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      const today = new Date().toLocaleDateString('en-CA'); // Get today's date in YYYY-MM-DD format
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
 
       const [logsResponse, totalsResponse, profileResponse] = await Promise.all([
         supabase
@@ -54,7 +56,8 @@ function NutritionLogPage() {
           .eq('user_id', userId)
           .gte('created_at', todayStart.toISOString())
           .lte('created_at', todayEnd.toISOString()),
-        supabase.rpc('get_daily_nutrition_totals', { p_user_id: userId }),
+        // CORRECTED: Pass the user's current date to the timezone-aware RPC function
+        supabase.rpc('get_daily_nutrition_totals', { p_user_id: userId, p_date: today }),
         supabase
           .from('user_profiles')
           .select('*')
