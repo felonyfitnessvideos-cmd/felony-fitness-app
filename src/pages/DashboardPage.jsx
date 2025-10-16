@@ -4,6 +4,13 @@ import { supabase } from '../supabaseClient.js';
 import { useAuth } from '../AuthContext.jsx';
 import './DashboardPage.css';
 
+const motivationalQuotes = [
+  "Consistency beats intensity.",
+  "Your only limit is you.",
+  "Success is earned in the gym.",
+  "Strive for progress, not perfection.",
+];
+
 function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -16,16 +23,19 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchDashboardData = useCallback(async (userId) => {
+    setLoading(true);
     try {
+      const todayStr = new Date().toLocaleDateString('en-CA'); 
+
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
+      const tomorrowStart = new Date(todayStart);
+      tomorrowStart.setDate(tomorrowStart.getDate() + 1);
 
-      const [profileRes, nutritionRes, workoutRes, goalsRes, quoteRes] = await Promise.all([
+      const [profileRes, nutritionRes, goalsRes] = await Promise.all([
         supabase.from('user_profiles').select('*').eq('id', userId).single(),
-        supabase.rpc('get_daily_nutrition_totals', { p_user_id: userId }),
-        supabase.from('workout_logs').select('notes, duration_minutes, calories_burned').eq('user_id', userId).gte('created_at', todayStart.toISOString()).order('created_at', { ascending: false }).limit(1),
-        supabase.from('goals').select('*').eq('user_id', userId),
-        supabase.rpc('get_random_quote')
+        supabase.rpc('get_daily_nutrition_totals', { p_user_id: userId, p_date: todayStr }),
+        supabase.from('goals').select('*').eq('user_id', userId)
       ]);
 
       if (profileRes.data) {
@@ -41,32 +51,46 @@ function DashboardPage() {
         });
       }
       
-      if (workoutRes.data && workoutRes.data.length > 0) {
-        const todaysWorkout = workoutRes.data[0];
-        setTraining({ name: todaysWorkout.notes || 'Workout', duration: todaysWorkout.duration_minutes || 0, calories: todaysWorkout.calories_burned || 0 });
-      } else {
-        setTraining({ name: 'Rest Day', duration: 0, calories: 0 });
-      }
-
       if (goalsRes.data) {
         setActiveGoals(goalsRes.data);
       }
 
-      // SIMPLIFIED: Just get the quote and display it.
-      if (quoteRes.data && quoteRes.data.length > 0) {
-        setQuote(quoteRes.data[0].quote);
+      const { data: workoutLogData, error: workoutLogError } = await supabase
+        .from('workout_logs')
+        .select('notes, duration_minutes, calories_burned')
+        .eq('user_id', userId)
+        .gte('created_at', todayStart.toISOString()) 
+        .lt('created_at', tomorrowStart.toISOString()) 
+        .order('created_at', { ascending: false }) 
+        .limit(1)
+        .single();
+      
+      if (workoutLogError && workoutLogError.code !== 'PGRST116') { 
+        throw workoutLogError;
+      }
+
+      if (workoutLogData) {
+        setTraining({
+          name: workoutLogData.notes,
+          duration: workoutLogData.duration_minutes,
+          calories: workoutLogData.calories_burned
+        });
       } else {
-        setQuote('Time to get to work!'); // Fallback quote
+        setTraining({ name: 'Rest Day', duration: 0, calories: 0 });
       }
 
     } catch (error) {
         console.error("Error fetching dashboard data:", error);
+        setTraining({ name: 'Rest Day', duration: 0, calories: 0 });
     } finally {
         setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+    setQuote(randomQuote);
+    
     if (user) {
       fetchDashboardData(user.id);
     } else {
@@ -79,8 +103,8 @@ function DashboardPage() {
     navigate('/');
   };
 
-  const netCalories = nutrition.calories - training.calories;
-  const adjustedCalorieGoal = goals.calories + training.calories;
+  const netCalories = nutrition.calories - (training?.calories || 0);
+  const adjustedCalorieGoal = goals.calories + (training?.calories || 0);
   const calorieProgress = adjustedCalorieGoal > 0 ? (nutrition.calories / adjustedCalorieGoal) * 100 : 0;
   const proteinProgress = goals.protein > 0 ? (nutrition.protein / goals.protein) * 100 : 0;
   const waterProgress = goals.water > 0 ? (nutrition.water / goals.water) * 100 : 0;
@@ -135,11 +159,11 @@ function DashboardPage() {
       <div className="dashboard-card">
         <div className="card-header">
           <h3>Today's Training</h3>
-          <span className="training-calories">{training.calories} cal</span>
+          <span className="training-calories">{training.calories || 0} cal</span>
         </div>
         <div className="training-details">
-          <span>{training.name}</span>
-          <span>{training.duration} min</span>
+          <span>{training.name || 'Rest Day'}</span>
+          <span>{training.duration || 0} min</span>
         </div>
       </div>
 
