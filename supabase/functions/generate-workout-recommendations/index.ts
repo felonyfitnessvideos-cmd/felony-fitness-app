@@ -36,24 +36,26 @@ Deno.serve(async (req) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    // --- START: MODIFICATION ---
-    // Corrected the nutrition_logs query to use the proper relationship and column names.
     const [profileRes, metricsRes, workoutRes, nutritionRes] = await Promise.all([
       supabaseAdmin.from('user_profiles').select('dob, sex, daily_calorie_goal, daily_protein_goal').eq('id', userId).single(),
       supabaseAdmin.from('body_metrics').select('weight_lbs, body_fat_percentage').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
-      supabaseAdmin.from('workout_logs').select('notes, duration_minutes, created_at').eq('user_id', userId).gte('created_at', sevenDaysAgo.toISOString()).order('created_at', { ascending: false }),
-      supabaseAdmin.from('nutrition_logs')
-        .select('quantity_consumed, food_servings(calories, protein_g)')
+      // --- START: MODIFICATION ---
+      // This query now filters out incomplete "ghost" workouts by ensuring a duration was logged.
+      supabaseAdmin.from('workout_logs')
+        .select('notes, duration_minutes, created_at')
         .eq('user_id', userId)
         .gte('created_at', sevenDaysAgo.toISOString())
+        .gt('duration_minutes', 0) // ✅ Only count workouts with a duration > 0
+        .order('created_at', { ascending: false }),
+      // --- END: MODIFICATION ---
+      supabaseAdmin.from('nutrition_logs').select('quantity_consumed, food_servings(calories, protein_g)').eq('user_id', userId).gte('created_at', sevenDaysAgo.toISOString())
     ]);
-    // --- END: MODIFICATION ---
 
     if (profileRes.error) throw profileRes.error;
     if (metricsRes.error) throw metricsRes.error;
     if (workoutRes.error) throw workoutRes.error;
     if (nutritionRes.error) throw nutritionRes.error;
-    
+
     if (!profileRes.data) {
       throw new Error("User profile not found. Cannot generate recommendations without goals.");
     }
@@ -63,22 +65,18 @@ Deno.serve(async (req) => {
     const latestMetrics = metricsRes.data;
     const recentWorkouts = workoutRes.data;
     const recentNutrition = nutritionRes.data;
-    
-    // --- START: MODIFICATION ---
-    // Corrected the data processing to match the new query structure.
-    const foodLogs = recentNutrition.filter(log => log.food_servings);
-    const totalDays = 7;
 
+    const foodLogs = recentNutrition.filter((log) => log.food_servings);
+    const totalDays = 7;
     const avgCalories = foodLogs.reduce((sum, log) => sum + (log.food_servings?.calories || 0) * log.quantity_consumed, 0) / totalDays;
     const avgProtein = foodLogs.reduce((sum, log) => sum + (log.food_servings?.protein_g || 0) * log.quantity_consumed, 0) / totalDays;
-    // --- END: MODIFICATION ---
 
     const summary = {
       profile: `Age: ${calculateAge(userProfile.dob)}, Sex: ${userProfile.sex}, Weight: ${latestMetrics?.weight_lbs || 'N/A'} lbs, Body Fat: ${latestMetrics?.body_fat_percentage || 'N/A'}%`,
       goals: `Calorie Goal: ${userProfile.daily_calorie_goal}, Protein Goal: ${userProfile.daily_protein_goal}g`,
       avgIntake: `Avg Daily Intake (last 7 days): ${Math.round(avgCalories)} calories, ${Math.round(avgProtein)}g protein`,
-      workouts: `Completed ${recentWorkouts.length} workouts in the last 7 days.`,
-      workoutList: recentWorkouts.map(w => `- ${w.notes || 'Unnamed Workout'} (${w.duration_minutes} mins)`).join('\n') || 'No workouts logged.'
+      workouts: `Completed ${recentWorkouts.length} workouts in the last 7 days.`, // This count is now accurate
+      workoutList: recentWorkouts.map((w) => `- ${w.notes || 'Unnamed Workout'} (${w.duration_minutes} mins)`).join('\n') || 'No workouts logged.'
     };
 
     // --- 3. Construct the prompt for the AI with the new data ---
@@ -108,39 +106,37 @@ Deno.serve(async (req) => {
         ]
       }
     `;
-    
+
     // --- 4. Call the OpenAI API ---
     const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
-        temperature: 0.7,
-      }),
+        temperature: 0.7
+      })
     });
 
     if (!aiResponse.ok) {
       throw new Error(`AI API request failed: ${await aiResponse.text()}`);
     }
-
     const aiData = await aiResponse.json();
     const recommendations = JSON.parse(aiData.choices[0].message.content);
 
     // --- 5. Return the recommendations ---
     return new Response(JSON.stringify(recommendations), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
+      status: 200
     });
-
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status: 400
     });
   }
 });
