@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
-import { Apple, Search, Camera, X, Droplets } from 'lucide-react';
+import { Apple, Search, Camera, X, Droplets, Loader2 } from 'lucide-react';
 import Modal from 'react-modal';
 import { useAuth } from '../AuthContext.jsx';
 import './NutritionLogPage.css';
@@ -22,41 +22,31 @@ function NutritionLogPage() {
   const [todaysLogs, setTodaysLogs] = useState([]);
   const [goals, setGoals] = useState({ daily_calorie_goal: 2000, daily_water_goal_oz: 128 });
   const [loading, setLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [selectedFood, setSelectedFood] = useState(null);
-  const [servings, setServings] = useState([]);
-  const [selectedServing, setSelectedServing] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [modalStep, setModalStep] = useState(1);
   const [dailyTotals, setDailyTotals] = useState({
-    calories: 0, protein: 0, carbs: 0, fat: 0, water: 0
+    calories: 0, protein: 0, water: 0
   });
 
-  const mealLogs = useMemo(() => {
-    return todaysLogs.filter(log => log.meal_type === activeMeal);
-  }, [todaysLogs, activeMeal]);
-
+  const mealLogs = todaysLogs.filter(log => log.meal_type === activeMeal);
   const calorieProgress = goals.daily_calorie_goal > 0 ? (dailyTotals.calories / goals.daily_calorie_goal) * 100 : 0;
 
   const fetchLogData = useCallback(async (userId) => {
     setLoading(true);
     try {
-      const today = new Date().toLocaleDateString('en-CA'); // Get today's date in YYYY-MM-DD format
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      const todayEnd = new Date();
-      todayEnd.setHours(23, 59, 59, 999);
+      const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
 
       const [logsResponse, totalsResponse, profileResponse] = await Promise.all([
+        // --- FIX: Query by date, not timestamp ---
         supabase
           .from('nutrition_logs')
           .select('*, food_servings(*, foods(name))')
           .eq('user_id', userId)
-          .gte('created_at', todayStart.toISOString())
-          .lte('created_at', todayEnd.toISOString()),
-        // CORRECTED: Pass the user's current date to the timezone-aware RPC function
+          .eq('log_date', today), // This is now timezone-proof
         supabase.rpc('get_daily_nutrition_totals', { p_user_id: userId, p_date: today }),
         supabase
           .from('user_profiles')
@@ -65,25 +55,18 @@ function NutritionLogPage() {
           .single()
       ]);
 
-      const { data: logs, error: logsError } = logsResponse;
-      if (logsError) throw logsError;
-
-      const { data: totalsData, error: totalsError } = totalsResponse;
-      if (totalsError) throw totalsError;
-
-      const { data: profile, error: profileError } = profileResponse;
-      if (profileError && profileError.code !== 'PGRST116') throw profileError;
+      if (logsResponse.error) throw logsResponse.error;
+      if (totalsResponse.error) throw totalsResponse.error;
+      if (profileResponse.error && profileResponse.error.code !== 'PGRST116') throw profileResponse.error;
       
-      setTodaysLogs(logs || []);
-      if (profile) setGoals(profile);
+      setTodaysLogs(logsResponse.data || []);
+      if (profileResponse.data) setGoals(profileResponse.data);
 
-      if (totalsData && totalsData.length > 0) {
-        const totals = totalsData[0];
+      if (totalsResponse.data && totalsResponse.data.length > 0) {
+        const totals = totalsResponse.data[0];
         setDailyTotals({
           calories: Math.round(totals.total_calories || 0),
           protein: Math.round(totals.total_protein || 0),
-          carbs: Math.round(totals.total_carbs || 0),
-          fat: Math.round(totals.total_fat || 0),
           water: Math.round(totals.total_water || 0)
         });
       }
@@ -102,66 +85,88 @@ function NutritionLogPage() {
     }
   }, [user?.id, fetchLogData]);
 
-  const handleSearch = async (term) => {
+  const handleSearch = useCallback(async (term) => {
     setSearchTerm(term);
-    if (term.length < 2) {
+    if (term.length < 3) {
       setSearchResults([]);
       return;
     }
-    const { data, error } = await supabase
-      .from('foods')
-      .select('id, name')
-      .ilike('name', `%${term}%`)
-      .limit(10);
+    setIsSearching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('food-search', {
+        body: { query: term },
+      });
+      if (error) throw error;
+      
+      let standardizedResults = [];
+      if (data.source === 'local') {
+          standardizedResults = data.results.flatMap(food => 
+              food.food_servings.map(serving => ({
+                  is_external: false,
+                  food_id: food.id,
+                  name: food.name,
+                  serving_id: serving.id,
+                  serving_description: serving.serving_description,
+                  calories: serving.calories,
+                  protein_g: serving.protein_g,
+              }))
+          );
+      } else if (data.source === 'external') {
+          standardizedResults = data.results.map(item => ({ ...item, is_external: true }));
+      }
+      setSearchResults(standardizedResults);
 
-    if (error) console.error("Error searching foods:", error);
-    else setSearchResults(data || []);
-  };
-  
-  const openLogModal = async (food) => {
-    setSelectedFood(food);
-    const { data, error } = await supabase
-      .from('food_servings')
-      .select('*')
-      .eq('food_id', food.id);
-    
-    if (error) {
-      console.error("Error fetching servings:", error);
-    } else {
-      setServings(data);
-      setIsLogModalOpen(true);
-      setModalStep(1);
+    } catch (error) {
+      console.error("Error searching food:", error.message);
+    } finally {
+        setIsSearching(false);
     }
+  }, []);
+  
+  const openLogModal = (food) => {
+    setSelectedFood(food);
+    setIsLogModalOpen(true);
   };
 
   const closeLogModal = () => {
     setIsLogModalOpen(false);
     setSelectedFood(null);
-    setServings([]);
-    setSelectedServing(null);
     setSearchTerm('');
     setSearchResults([]);
     setQuantity(1);
   };
   
-  const handleSelectServing = (serving) => {
-    setSelectedServing(serving);
-    setModalStep(2);
-  };
-
   const handleLogFood = async () => {
-    if (!selectedServing || !quantity || quantity <= 0 || isNaN(quantity)) return;
-    if (!user) {
-      alert("Error: User session not found. Please refresh the page.");
-      return;
+    if (!selectedFood || !quantity || quantity <= 0 || isNaN(quantity) || !user) return;
+    
+    const today = new Date().toLocaleDateString('en-CA');
+    let rpcParams;
+
+    if (selectedFood.is_external) {
+      rpcParams = {
+        p_user_id: user.id,
+        p_meal_type: activeMeal,
+        p_quantity_consumed: quantity,
+        p_log_date: today, // Pass today's date
+        p_external_food: {
+          name: selectedFood.name,
+          serving_description: selectedFood.serving_description,
+          calories: selectedFood.calories,
+          protein_g: selectedFood.protein_g,
+          category: 'Uncategorized'
+        }
+      };
+    } else {
+      rpcParams = {
+        p_user_id: user.id,
+        p_meal_type: activeMeal,
+        p_quantity_consumed: quantity,
+        p_log_date: today, // Pass today's date
+        p_food_serving_id: selectedFood.serving_id
+      };
     }
 
-    const { error } = await supabase.from('nutrition_logs').insert({
-      user_id: user.id,
-      food_serving_id: selectedServing.id,
-      meal_type: activeMeal,
-      quantity_consumed: quantity,
-    });
+    const { error } = await supabase.rpc('log_food_item', rpcParams);
 
     if (error) {
       alert(`Error logging food: ${error.message}`);
@@ -172,14 +177,13 @@ function NutritionLogPage() {
   };
   
   const handleLogWater = async (ounces) => {
-    if (!user) {
-      alert("Error: User session not found. Please refresh the page.");
-      return;
-    }
+    if (!user) return;
+    const today = new Date().toLocaleDateString('en-CA');
     const { error } = await supabase.from('nutrition_logs').insert({
       user_id: user.id,
       meal_type: 'Water',
       water_oz_consumed: ounces,
+      log_date: today // Also add the date to water logs
     });
     if (error) {
       alert(`Error logging water: ${error.message}`);
@@ -197,10 +201,9 @@ function NutritionLogPage() {
       <SubPageHeader title="Log" icon={<Apple size={28} />} iconColor="#f97316" backTo="/nutrition" />
       
       <div className="meal-tabs">
-        <button className={activeMeal === 'Breakfast' ? 'active' : ''} onClick={() => setActiveMeal('Breakfast')}>Breakfast</button>
-        <button className={activeMeal === 'Lunch' ? 'active' : ''} onClick={() => setActiveMeal('Lunch')}>Lunch</button>
-        <button className={activeMeal === 'Dinner' ? 'active' : ''} onClick={() => setActiveMeal('Dinner')}>Dinner</button>
-        <button className={activeMeal === 'Snack' ? 'active' : ''} onClick={() => setActiveMeal('Snack')}>Snack</button>
+        {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map(meal => (
+            <button key={meal} className={activeMeal === meal ? 'active' : ''} onClick={() => setActiveMeal(meal)}>{meal}</button>
+        ))}
       </div>
 
       <div className="search-bar-wrapper">
@@ -213,11 +216,13 @@ function NutritionLogPage() {
           disabled={!user}
         />
         <button className="camera-btn"><Camera size={20} /></button>
-        {searchResults.length > 0 && (
+        {(isSearching || searchResults.length > 0) && (
           <div className="food-search-results">
-            {searchResults.map(food => (
-              <div key={food.id} className="food-search-item" onClick={() => openLogModal(food)}>
+            {isSearching && <div className="search-loading"><Loader2 className="animate-spin" /></div>}
+            {!isSearching && searchResults.map((food, index) => (
+              <div key={`${food.food_id}-${food.serving_id}-${index}`} className="food-search-item" onClick={() => openLogModal(food)}>
                 <span>{food.name}</span>
+                <span className="search-item-serving">{food.serving_description}</span>
               </div>
             ))}
           </div>
@@ -281,43 +286,24 @@ function NutritionLogPage() {
               <button onClick={closeLogModal} className="close-modal-btn"><X size={24} /></button>
             </div>
             <div className="modal-body">
-              {modalStep === 1 && (
-                <div className="serving-selection">
-                  <h4>Select a serving size:</h4>
-                  <ul className="serving-list">
-                    {servings.map(serving => (
-                      <li key={serving.id} onClick={() => handleSelectServing(serving)}>
-                        <span>{serving.serving_description}</span>
-                        <span>{Math.round(serving.calories)} cal</span>
-                      </li>
-                    ))}
-                  </ul>
+                <p>Serving: {selectedFood.serving_description} ({Math.round(selectedFood.calories)} cal)</p>
+                <div className="quantity-input">
+                  <label htmlFor="quantity">Quantity</label>
+                  <input 
+                    id="quantity"
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                    min="0.1"
+                    step="0.1"
+                  />
                 </div>
-              )}
-              {modalStep === 2 && selectedServing && (
-                <>
-                  <p>Serving: {selectedServing.serving_description} ({Math.round(selectedServing.calories)} cal)</p>
-                  <div className="quantity-input">
-                    <label htmlFor="quantity">Quantity</label>
-                    <input 
-                      id="quantity"
-                      type="number"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                      min="0.1"
-                      step="0.1"
-                    />
-                  </div>
-                </>
-              )}
             </div>
-            {modalStep === 2 && (
-              <div className="modal-footer">
-                <button className="log-food-btn" onClick={handleLogFood}>
-                  Add to {activeMeal}
-                </button>
-              </div>
-            )}
+            <div className="modal-footer">
+              <button className="log-food-btn" onClick={handleLogFood}>
+                Add to {activeMeal}
+              </button>
+            </div>
           </div>
         )}
       </Modal>

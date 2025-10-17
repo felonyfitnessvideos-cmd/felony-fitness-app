@@ -1,27 +1,48 @@
-/* Golden Pattern: A simple container that relies on the parent for scrolling. */
+/**
+ * @file NutritionLogPage.css
+ * @description Styles for the main nutrition logging page.
+ * This file uses a "fixed footer" layout pattern to ensure the calorie
+ * summary is always visible without being obscured by the main app navigation.
+ */
+
+/**
+ * Golden Pattern: Main Page Container
+ * This container holds the scrollable content of the page.
+ * - `padding-bottom` creates empty space at the bottom, ensuring that when a
+ * user scrolls to the end, no content is hidden underneath the fixed footers.
+ * - The value should be the combined height of the navbar and the calorie bar.
+ */
 .nutrition-log-page-container {
   padding: 1rem;
   box-sizing: border-box;
-  /* Padding at the bottom to prevent content from being hidden by the fixed footer. */
-  padding-bottom: 120px; /* Provides ample space for the footer */
+  /* ✅ FIX: Increased padding to clear both the navbar and the calorie bar.
+     (Navbar Height + Calorie Bar Height + Buffer) -> ~77px + 60px + 15px = 152px */
+  padding-bottom: 152px;
 }
 
-/* Golden Pattern: A fixed footer for elements that need to stick to the bottom. */
+/**
+ * Golden Pattern: Fixed Action Footer
+ * This element is "stuck" to the bottom of the viewport, just above the main navbar.
+ * - `bottom` must be equal to the exact height of the main navbar below it.
+ * - `z-index` ensures it stacks visually on top of other elements.
+ */
 .calorie-status-footer {
   position: fixed;
-  bottom: 60px; /* Sits directly on top of the 60px bottom nav bar */
+  /* ✅ FIX: Set to the exact height of your navbar */
+  bottom: 76.8px;
   width: 100%;
-  max-width: 450px; /* Matches the app's max-width */
+  max-width: 450px;
   left: 50%;
   transform: translateX(-50%);
   background-color: var(--background-color);
   padding: 0.75rem 1rem;
   border-top: 1px solid var(--border-color);
-  z-index: 10;
+  z-index: 40; /* Ensures it's above the navbar but below modals */
   box-sizing: border-box;
 }
 
-/* --- All other styles for inner elements remain the same --- */
+/* --- Component-Specific Styles --- */
+
 .meal-tabs {
   display: flex;
   justify-content: space-between;
@@ -47,6 +68,7 @@
   background-color: #f97316;
   color: white;
 }
+
 .search-bar-wrapper {
   position: relative;
   display: flex;
@@ -77,6 +99,7 @@
   padding: 0.5rem;
   cursor: pointer;
 }
+
 .food-search-results {
   position: absolute;
   top: 100%;
@@ -86,7 +109,7 @@
   border-radius: 8px;
   max-height: 200px;
   overflow-y: auto;
-  z-index: 10;
+  z-index: 50; /* High z-index to appear over all other content */
   margin-top: 0.25rem;
 }
 .food-search-item {
@@ -102,6 +125,7 @@
 .food-search-item:hover {
   background-color: #4a5568;
 }
+
 .water-log-card {
   background-color: #2d3748;
   border-radius: 12px;
@@ -140,6 +164,7 @@
   font-weight: 600;
   cursor: pointer;
 }
+
 .logged-items-list {
   margin-top: 1.5rem;
 }
@@ -171,6 +196,7 @@
   font-weight: bold;
   color: #fde68a;
 }
+
 .calorie-info {
   display: flex;
   justify-content: space-between;
@@ -190,6 +216,7 @@
   border-radius: 5px;
   transition: width 0.3s ease-in-out;
 }
+
 .log-food-modal .modal-header {
   display: flex;
   justify-content: space-between;
@@ -240,6 +267,7 @@
   font-weight: 600;
   cursor: pointer;
 }
+
 .serving-selection h4 {
   margin-top: 0;
   margin-bottom: 1rem;

@@ -17,7 +17,13 @@ function ProgressPage() {
   const fetchProgressData = useCallback(async (userId) => {
     try {
       const [workoutLogsRes, nutritionLogsRes, goalsRes] = await Promise.all([
-        supabase.from('workout_logs').select('duration_minutes, created_at, calories_burned').eq('user_id', userId),
+        // --- START: MODIFICATION ---
+        // Added the filter to only fetch completed workouts with a duration.
+        supabase.from('workout_logs')
+          .select('duration_minutes, created_at, calories_burned')
+          .eq('user_id', userId)
+          .gt('duration_minutes', 0), // ✅ This line fixes the incorrect stats
+        // --- END: MODIFICATION ---
         supabase.from('v_nutrition_log_details').select('created_at, total_calories, total_protein, water_oz_consumed').eq('user_id', userId),
         supabase.from('goals').select('*').eq('user_id', userId)
       ]);
