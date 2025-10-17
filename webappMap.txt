@@ -1,0 +1,84 @@
+. (PROJECT ROOT)
+|-- .gitignore
+|-- eslint.config.js
+|-- index.html
+|-- package.json
+|-- seed-exercises.js
+|-- seed-foods.js
+|-- vite.config.js
+|
++-- public/
+|   |-- vite.svg
+|   \-- (Numerous .png files for PWA icons and splash screens)
+|
++-- supabase/
+|   |-- config.toml
+|   \-- functions/
+|       |-- _shared/
+|       |   \-- cors.ts
+|       |
+|       |-- exercise-search/
+|       |   \-- index.ts
+|       |
+|       |-- food-search/
+|       |   \-- index.ts
+|       |
+|       |-- generate-nutrition-recommendations/
+|       |   \-- index.ts
+|       |
+|       \-- generate-workout-recommendations/
+|           \-- index.ts
+|
+\-- src/
+    |-- App.css
+    |-- App.jsx
+    |-- AuthContext.jsx
+    |-- index.css
+    |-- main.jsx
+    |-- supabaseClient.js
+    |
+    +-- assets/
+    |   \-- react.svg
+    |
+    +-- components/
+    |   |-- RestTimerModal.css
+    |   |-- RestTimerModal.jsx
+    |   |-- SubPageHeader.jsx
+    |   |-- SuccessModal.css
+    |   \-- SuccessModal.jsx
+    |
+    +-- context/
+    |   |-- ThemeContext.css
+    |   \-- ThemeContext.jsx
+    |
+    \-- pages/
+        |-- AuthPage.css
+        |-- AuthPage.jsx
+        |-- DashboardPage.css
+        |-- DashboardPage.jsx
+        |-- EditRoutinePage.css
+        |-- EditRoutinePage.jsx
+        |-- MyPlanPage.css
+        |-- MyPlanPage.jsx
+        |-- NutritionGoalsPage.css
+        |-- NutritionGoalsPage.jsx
+        |-- NutritionLogPage.css
+        |-- NutritionLogPage.jsx
+        |-- NutritionPage.css
+        |-- NutritionPage.jsx
+        |-- NutritionRecsPage.css
+        |-- NutritionRecsPage.jsx
+        |-- ProfilePage.css
+        |-- ProfilePage.jsx
+        |-- ProgressPage.css
+        |-- ProgressPage.jsx
+        |-- WorkoutGoalsPage.css
+        |-- WorkoutGoalsPage.jsx
+        |-- WorkoutLogPage.css
+        |-- WorkoutLogPage.jsx
+        |-- WorkoutRecsPage.css
+        |-- WorkoutRecsPage.jsx
+        |-- WorkoutRoutinePage.css
+        |-- WorkoutRoutinePage.jsx
+        |-- WorkoutsPage.css
+        \-- WorkoutsPage.jsx

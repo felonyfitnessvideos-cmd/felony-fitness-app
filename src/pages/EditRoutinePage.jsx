@@ -39,6 +39,7 @@ import Modal from 'react-modal';
 import { useAuth } from '../AuthContext.jsx';
 import './EditRoutinePage.css';
 
+// Styles for the custom exercise creation modal.
 const customModalStyles = {
   content: {
     top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%',
@@ -63,31 +64,43 @@ const customModalStyles = {
  * @property {string} [category_id] - The UUID for the category (e.g., Strength).
  * @property {string} [type] - The type of exercise (e.g., 'Strength').
  * @property {boolean} [is_external] - Flag indicating if the exercise is from the AI.
- * @property {number} sets - The number of sets for the routine.
+ * @property {number | string} sets - The number of sets for the routine.
  * @property {string} reps - The rep range (e.g., "8-12").
  * @property {Array<object>} [exercise_muscle_groups] - Join table data.
  * @property {string} [primary_muscle] - The primary muscle from the AI response.
  */
 
+/**
+ * @component EditRoutinePage
+ * @description A component for creating and editing workout routines, handling exercise search,
+ * custom exercise creation, reordering, and saving logic.
+ * @returns {JSX.Element} The rendered component.
+ */
 function EditRoutinePage() {
   const { routineId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   
+  // State for the routine being edited
   const [routineName, setRoutineName] = useState('');
   /** @type {[Exercise[], React.Dispatch<React.SetStateAction<Exercise[]>>]} */
   const [routineExercises, setRoutineExercises] = useState([]);
+  
+  // State for UI and data management
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
-  /** @type {[Exercise[], React.Dispatch<React.SetStateAction<Exercise[]>>]} */
-  const [allExercises, setAllExercises] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  
+  // State for the custom exercise modal
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [customExerciseName, setCustomExerciseName] = useState('');
   const [selectedMuscleGroupId, setSelectedMuscleGroupId] = useState('');
+  
+  // State for cached data
   /** @type {[MuscleGroup[], React.Dispatch<React.SetStateAction<MuscleGroup[]>>]} */
   const [allMuscleGroups, setAllMuscleGroups] = useState([]);
+
 
   /**
    * Fetches all necessary data for the page, including all muscle groups
@@ -96,17 +109,12 @@ function EditRoutinePage() {
    */
   const fetchInitialData = useCallback(async () => {
     try {
-      const [exercisesRes, muscleGroupsRes] = await Promise.all([
-        supabase.from('exercises').select('*, exercise_muscle_groups(*, muscle_groups(*))'),
-        supabase.from('muscle_groups').select('*')
-      ]);
+      // Fetch all muscle groups for the custom exercise modal dropdown.
+      const { data: muscleGroupsData, error: muscleGroupsError } = await supabase.from('muscle_groups').select('*');
+      if (muscleGroupsError) throw muscleGroupsError;
+      setAllMuscleGroups(muscleGroupsData || []);
 
-      if (exercisesRes.error) throw exercisesRes.error;
-      setAllExercises(exercisesRes.data || []);
-
-      if (muscleGroupsRes.error) throw muscleGroupsRes.error;
-      setAllMuscleGroups(muscleGroupsRes.data || []);
-
+      // If we are editing an existing routine, fetch its data.
       if (routineId !== 'new') {
         const { data, error } = await supabase
             .from('workout_routines')
@@ -121,7 +129,7 @@ function EditRoutinePage() {
             const formattedExercises = sortedExercises.map(item => ({
                 ...item.exercises,
                 sets: item.target_sets,
-                reps: '8-12',
+                reps: '8-12', // Reps are not stored per routine yet, so use a default.
             }));
             setRoutineExercises(formattedExercises);
         }
@@ -158,6 +166,7 @@ function EditRoutinePage() {
       });
       if (error) throw error;
 
+      // Tag results to know if they came from the AI.
       const results = data.results.map(item => ({
         ...item,
         is_external: data.source === 'external',
@@ -177,6 +186,7 @@ function EditRoutinePage() {
    * @param {Exercise} exerciseToAdd - The exercise object from search results.
    */
   const handleAddExercise = (exerciseToAdd) => {
+    // Add default sets and reps when adding a new exercise.
     const newExercise = { ...exerciseToAdd, sets: 3, reps: '8-12' };
     setRoutineExercises([...routineExercises, newExercise]);
     setSearchTerm('');
@@ -212,15 +222,15 @@ function EditRoutinePage() {
   const handleSaveRoutine = async () => {
     if (!user) return alert("You must be logged in to save a routine.");
 
-    // Step 1: Resolve all exercises to get their database IDs.
+    // Step 1: Resolve all exercises to ensure they have a database ID.
     const resolvedExercises = await Promise.all(
       routineExercises.map(async (ex) => {
-        // If it's already a local exercise with an ID, we're good.
+        // If it's a known local exercise, return it.
         if (ex.id && !ex.is_external) {
           return ex;
         }
 
-        // Check if the exercise already exists in our DB by name.
+        // Check if an exercise with the same name already exists.
         const { data: existingExercise } = await supabase
           .from('exercises')
           .select('id')
@@ -231,29 +241,22 @@ function EditRoutinePage() {
           return { ...ex, id: existingExercise.id };
         }
         
-        // If not, it's a new exercise from the AI. Create it with all available info.
+        // If not, create the new exercise (from AI or custom).
         const { data: newExercise, error: insertError } = await supabase
           .from('exercises')
-          .insert({ 
-              name: ex.name, 
-              description: ex.description,
-              category_id: ex.category_id,
-              type: ex.type
-          })
+          .insert({ name: ex.name, description: ex.description, category_id: ex.category_id, type: ex.type })
           .select('id')
           .single();
 
         if (insertError) throw insertError;
 
-        // Find the matching muscle group ID from our pre-loaded list.
+        // Find the matching muscle group ID for linking.
         const muscleGroup = allMuscleGroups.find(
           mg => mg.name.toLowerCase() === (ex.primary_muscle || 'general').toLowerCase()
         );
         
-        // Use the found ID, or fall back to the "General" group ID.
-        const muscleGroupId = muscleGroup 
-          ? muscleGroup.id 
-          : allMuscleGroups.find(mg => mg.name === 'General')?.id;
+        // Default to the "General" muscle group if no match is found.
+        const muscleGroupId = muscleGroup ? muscleGroup.id : allMuscleGroups.find(mg => mg.name === 'General')?.id;
 
         // Create the link in the join table.
         if (muscleGroupId) {
@@ -266,24 +269,27 @@ function EditRoutinePage() {
       })
     );
 
-    // Step 2: Prepare the final list for insertion into the routine_exercises table.
+    // Step 2: Prepare the final list for the `routine_exercises` join table.
     const exercisesToInsert = resolvedExercises.map((ex, index) => ({
       exercise_id: ex.id,
-      target_sets: ex.sets,
+      // **FIX APPLIED**: Coerce `sets` to a number, default to 1, and ensure it's at least 1.
+      target_sets: Math.max(1, Number(ex.sets) || 1),
       exercise_order: index
     }));
 
-    // Step 3: Save the routine itself.
+    // Step 3: Save the routine and its exercises.
     try {
       if (routineId === 'new') {
-        // Create a new routine and then add its exercises.
+        // Create a new routine record.
         const { data: newRoutine, error: routineError } = await supabase.from('workout_routines').insert({ routine_name: routineName, user_id: user.id }).select('id').single();
         if (routineError) throw routineError;
         
+        // Link the exercises to the new routine.
         await supabase.from('routine_exercises').insert(exercisesToInsert.map(e => ({...e, routine_id: newRoutine.id})));
       } else {
-        // Update an existing routine by deleting and re-inserting its exercises.
+        // Update an existing routine.
         await supabase.from('workout_routines').update({ routine_name: routineName }).eq('id', routineId);
+        // A simple approach: delete old exercises and insert the new list.
         await supabase.from('routine_exercises').delete().eq('routine_id', routineId);
         await supabase.from('routine_exercises').insert(exercisesToInsert.map(e => ({...e, routine_id: routineId})));
       }
@@ -302,15 +308,18 @@ function EditRoutinePage() {
     if ((direction === 'up' && index === 0) || (direction === 'down' && index === routineExercises.length - 1)) return;
     const newIndex = direction === 'up' ? index - 1 : index + 1;
     const items = [...routineExercises];
-    // Swap the elements at the two indices.
+    // Simple array element swap.
     [items[index], items[newIndex]] = [items[newIndex], items[index]];
     setRoutineExercises(items);
   };
   
+  /** @description Opens the modal for creating a custom exercise. */
   const openCustomExerciseModal = () => {
-    setCustomExerciseName(searchTerm);
+    setCustomExerciseName(searchTerm); // Pre-fill name from search bar.
     setIsCustomModalOpen(true);
   };
+
+  /** @description Closes the custom exercise modal. */
   const closeCustomExerciseModal = () => setIsCustomModalOpen(false);
 
   /**
@@ -322,6 +331,7 @@ function EditRoutinePage() {
     e.preventDefault();
     if (!customExerciseName || !selectedMuscleGroupId) return alert("Please provide a name and select a muscle group.");
     try {
+        // Create the new exercise in the `exercises` table.
         const { data: newExerciseData, error: insertError } = await supabase
             .from('exercises')
             .insert({ name: customExerciseName, type: 'Strength' }) // Assume custom exercises are 'Strength'
@@ -330,10 +340,10 @@ function EditRoutinePage() {
 
         if (insertError) throw insertError;
         
-        // Link the new exercise to its selected muscle group in the join table.
+        // Link it to the selected muscle group.
         await supabase.from('exercise_muscle_groups').insert({ exercise_id: newExerciseData.id, muscle_group_id: selectedMuscleGroupId });
         
-        // Fetch the full new exercise data to add to the UI state.
+        // Fetch the full exercise data to add to the UI.
         const { data: fullNewExercise, error: fetchError } = await supabase
             .from('exercises')
             .select('*, exercise_muscle_groups(*, muscle_groups(*))')
@@ -342,13 +352,10 @@ function EditRoutinePage() {
         
         if (fetchError) throw fetchError;
 
-        const completeNewExercise = { ...fullNewExercise, sets: 3, reps: '8-12' };
-        
-        setRoutineExercises([...routineExercises, completeNewExercise]);
-        setAllExercises([...allExercises, completeNewExercise]); // Add to local cache
-        setSearchTerm('');
-        setSearchResults([]);
+        // Add the fully-formed exercise to the current routine list.
+        handleAddExercise(fullNewExercise);
         closeCustomExerciseModal();
+
     } catch (error) {
         alert(`Error creating custom exercise: ${error.message}`);
     }
@@ -372,7 +379,6 @@ function EditRoutinePage() {
           <div className="search-results">
             {isSearching && <div className="search-loading"><Loader2 className="animate-spin" /></div>}
             {!isSearching && searchResults.map(ex => {
-              // Determine the muscle group name to display.
               const muscleGroup = ex.exercise_muscle_groups?.[0]?.muscle_groups?.name || ex.primary_muscle || 'General';
               return (
                 <div key={ex.id || ex.name} className="search-result-item">
