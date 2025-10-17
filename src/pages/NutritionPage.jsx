@@ -2,7 +2,6 @@
  * @file NutritionPage.jsx
  * @description This file contains the main landing page for the Nutrition section of the application.
  * It provides navigation to sub-sections like Goals, Log, and Recommendations, and displays a daily nutrition tip.
- * @author [Your Name/Team Name]
  * @date 10/17/2025
  */
 
