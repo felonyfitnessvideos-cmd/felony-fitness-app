@@ -1,8 +1,27 @@
+/**
+ * @file WorkoutRoutinePage.css
+ * @description Styles for the page that lists all of the user's created workout routines.
+ * @project Felony Fitness
+ *
+ * @layout_pattern Centered Vertical List
+ * This stylesheet centers a primary call-to-action button and a vertical list of
+ * routine cards. It uses `margin: 0 auto` to horizontally center the main elements
+ * and flexbox to stack the routine cards in a column.
+ */
+
+/**
+ * Main container for the Workout Routines Page.
+ * Provides basic padding and reserves space at the bottom for the main app navigation.
+ */
 .workout-routines-container {
   padding: 1rem;
   padding-bottom: 80px; /* Space for nav bar */
 }
 
+/**
+ * The primary "Create New Routine" button.
+ * It's styled as a prominent link and centered horizontally on the page.
+ */
 .create-routine-button {
   display: flex;
   align-items: center;
@@ -16,7 +35,7 @@
   font-weight: 600;
   text-decoration: none;
   border-radius: 12px;
-  margin: 0 auto 2rem auto; /* Center the button */
+  margin: 0 auto 2rem auto; /* Top | Horizontal (auto for center) | Bottom */
   transition: background-color 0.2s;
 }
 
@@ -24,15 +43,24 @@
   background-color: var(--accent-color-hover);
 }
 
+/**
+ * The main container for the list of routine cards.
+ * Uses a flexbox column to stack the cards vertically with consistent spacing.
+ */
 .routine-list {
   width: 100%;
   max-width: 450px;
-  margin: 0 auto; /* Center the list */
+  margin: 0 auto; /* Center the list horizontally */
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
+/**
+ * Styling for an individual routine card.
+ * Uses flexbox to position the routine name and status on the left,
+ * and the action buttons on the right.
+ */
 .routine-card {
   background-color: var(--card-color);
   padding: 1rem;
@@ -49,6 +77,10 @@
   color: var(--text-primary);
 }
 
+/**
+ * The "Active" / "Inactive" status badge.
+ * Uses specific color classes to indicate the state.
+ */
 .status-badge {
   font-size: 0.8rem;
   font-weight: 600;
@@ -62,24 +94,34 @@
   color: var(--text-secondary);
 }
 
+/**
+ * Container for the action buttons (Toggle, Edit, Delete) on a routine card.
+ */
 .routine-actions {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
+/**
+ * Shared base styles for the action buttons.
+ * They are reset to appear as simple icons.
+ */
 .action-button, .routine-actions button {
   background: none;
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 0;
+  padding: 0; /* Remove default button padding */
 }
 
 .action-button.danger {
-  color: #e53e3e;
+  color: #e53e3e; /* Red for the delete button */
 }
 
+/**
+ * Centered message text used for both loading states and when no routines are found.
+ */
 .no-routines-message, .loading-message {
   text-align: center;
   color: var(--text-secondary);

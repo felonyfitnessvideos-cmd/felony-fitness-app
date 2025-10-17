@@ -1,8 +1,26 @@
+/**
+ * @file NutritionGoalsPage.css
+ * @description Styles for the page where users set their daily nutrition goals.
+ * @project Felony Fitness
+ *
+ * @layout_pattern Vertical Card Form
+ * This stylesheet arranges the form inputs into a series of distinct, card-like
+ * sections. It uses a flexbox column to stack the cards vertically.
+ */
+
+/**
+ * Main container for the Nutrition Goals Page.
+ * Provides basic padding and reserves space at the bottom for the main app navigation.
+ */
 .nutrition-goals-container {
   padding: 1rem;
   padding-bottom: 80px; /* Space for nav bar */
 }
 
+/**
+ * The main form container that holds all the goal input cards.
+ * Uses a flexbox column to stack the cards with consistent spacing.
+ */
 .goals-form {
   display: flex;
   flex-direction: column;
@@ -10,6 +28,9 @@
   margin-top: 1rem;
 }
 
+/**
+ * A sub-header used to group the macronutrient inputs.
+ */
 .goals-form h3 {
   font-size: 1rem;
   font-weight: 600;
@@ -19,6 +40,10 @@
   letter-spacing: 1px;
 }
 
+/**
+ * A single card containing an icon, a label, and an input field for a goal.
+ * Uses flexbox to align the icon and the input wrapper horizontally.
+ */
 .goal-input-card {
   display: flex;
   align-items: center;
@@ -30,9 +55,13 @@
 
 .goal-icon {
   color: #f97316; /* Orange icon color */
-  flex-shrink: 0;
+  flex-shrink: 0; /* Prevents the icon from being squished */
 }
 
+/**
+ * A wrapper for the label and input, allowing them to grow and fill
+ * the available space in the card.
+ */
 .goal-input-wrapper {
   flex-grow: 1;
 }
@@ -55,9 +84,12 @@
 }
 
 .goal-input-wrapper input:focus {
-  outline: none;
+  outline: none; /* Removes the default browser outline on focus */
 }
 
+/**
+ * The primary "Save Goals" button.
+ */
 .save-goals-button {
   width: 100%;
   padding: 1rem;
@@ -71,8 +103,11 @@
   margin-top: 1rem;
 }
 
+/**
+ * A message area for displaying success or error feedback to the user.
+ */
 .status-message {
   text-align: center;
   margin-top: 1rem;
-  color: #63b3ed;
+  color: #63b3ed; /* Blue for informational messages */
 }

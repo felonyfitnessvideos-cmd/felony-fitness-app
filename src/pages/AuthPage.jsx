@@ -1,3 +1,25 @@
+// @ts-check
+
+/**
+ * @file AuthPage.jsx
+ * @description The main authentication page for the application. It handles both sign-in and sign-up for users.
+ * @project Felony Fitness
+ *
+ * @workflow
+ * 1.  **Session Check**: On component mount, it checks if an active session already exists. If so, it immediately redirects the user to the dashboard.
+ * 2.  **State Toggle**: The component has two main modes: "Sign In" and "Sign Up", controlled by the `isSignUp` state. Users can toggle between these modes.
+ * 3.  **Email Authentication**:
+ * - A form captures the user's email and password.
+ * - `handleEmailAuth` is called on submission.
+ * - If in "Sign Up" mode, it calls `supabase.auth.signUp()`, which sends a confirmation email.
+ * - If in "Sign In" mode, it calls `supabase.auth.signInWithPassword()` and redirects to the dashboard on success.
+ * 4.  **Social Authentication (OAuth)**:
+ * - Buttons are provided for social logins (e.g., Google, Microsoft).
+ * - `handleSocialAuth` is called with the chosen provider.
+ * - It calls `supabase.auth.signInWithOAuth()`, which redirects the user to the provider's authentication page and then back to the app.
+ * 5.  **User Feedback**: The component uses state (`loading`, `message`) to provide feedback to the user, such as showing a loading state or displaying error/success messages.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient.js';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +36,11 @@ function AuthPage() {
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
+  /**
+   * Effect to check for an existing user session. If a session is found,
+   * it redirects the user to the main dashboard to prevent them from seeing
+   * the login page again.
+   */
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -22,16 +49,24 @@ function AuthPage() {
     });
   }, [navigate]);
 
+  /**
+   * Handles user authentication via email and password.
+   * It performs either a sign-up or sign-in based on the `isSignUp` state.
+   * @param {React.FormEvent<HTMLFormElement>} event - The form submission event.
+   * @async
+   */
   const handleEmailAuth = async (event) => {
     event.preventDefault();
     setLoading(true);
     setMessage('');
     try {
       if (isSignUp) {
+        // Sign up a new user.
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         setMessage("Check your email for a confirmation link!");
       } else {
+        // Sign in an existing user.
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         navigate('/dashboard');
@@ -43,6 +78,11 @@ function AuthPage() {
     }
   };
 
+  /**
+   * Handles user authentication via third-party OAuth providers (e.g., Google).
+   * @param {'google' | 'azure' | 'facebook'} provider - The name of the OAuth provider.
+   * @async
+   */
   const handleSocialAuth = async (provider) => {
     setLoading(true);
     setMessage('');
@@ -50,6 +90,7 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider,
         options: {
+          // Redirect the user back to the app's home page after successful authentication.
           redirectTo: window.location.origin,
         },
       });

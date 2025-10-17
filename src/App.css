@@ -1,49 +1,77 @@
-/* Main container for the entire app screen */
+/**
+ * @file App.css
+ * @description The root stylesheet for the main App component.
+ * @project Felony Fitness
+ *
+ * @layout_pattern App Shell Layout
+ * This file defines the primary layout for the application, often called an "App Shell".
+ * - The `.app-container` uses a flexbox column to stack the main content and the navbar.
+ * - The `.main-content` area is configured to grow and fill all available space,
+ * with its own independent scrolling. This is a crucial pattern for mobile app layouts,
+ * as it allows the content of each page to scroll while the navigation bar remains fixed.
+ * - The `.bottom-nav` is positioned absolutely at the bottom of the screen, providing
+ * persistent navigation.
+ */
+
+/**
+ * The main container for the entire app screen.
+ * It establishes the flexbox context for its direct children.
+ */
 .app-container {
   display: flex;
-  flex-direction: column;
-  height: 100%;
+  flex-direction: column; /* Stacks children vertically (main content on top, nav on bottom) */
+  height: 100%; /* Ensures the app fills the full viewport height */
   width: 100%;
   background-color: var(--background-color);
 }
 
-/* This is the main content area that will now scroll */
+/**
+ * The primary content area for all pages.
+ * This is where the `<Outlet />` from React Router renders its content.
+ */
 .main-content {
-  flex-grow: 1; /* Allows this area to take up all available vertical space */
-  overflow-y: auto; /* Enables vertical scrolling ONLY when content overflows */
-  /* Hide scrollbar for a cleaner, more native-app-like feel */
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  flex-grow: 1; /* This is the key property: it tells this element to "grow" and fill all available vertical space not taken by the navbar. */
+  overflow-y: auto; /* Enables vertical scrolling ONLY when the content is taller than the container. */
+
+  /* The following rules hide the scrollbar for a cleaner, more native-app-like feel. */
+  -ms-overflow-style: none;  /* For Internet Explorer and Edge */
+  scrollbar-width: none;  /* For Firefox */
 }
+/* For Chrome, Safari, and other WebKit browsers */
 .main-content::-webkit-scrollbar {
   display: none;
 }
 
-
-/* Bottom navigation bar styling */
+/**
+ * The bottom navigation bar.
+ * It is positioned absolutely to remain fixed at the bottom of the screen.
+ */
 .bottom-nav {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   display: flex;
-  justify-content: space-around;
+  justify-content: space-around; /* Distributes nav links evenly */
   background-color: var(--card-color);
   border-top: 1px solid var(--border-color);
   padding: 0.5rem 0;
-  height: 60px; /* Fixed height for the nav bar */
-  z-index: 100;
+  height: 60px; /* A fixed height is important for layout consistency */
+  z-index: 100; /* A high z-index ensures it sits on top of page content */
 }
 
+/**
+ * Individual navigation links within the bottom bar.
+ */
 .nav-link {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
+  flex: 1; /* Ensures each link takes up an equal amount of horizontal space */
   text-decoration: none;
   color: var(--text-secondary);
-  transition: color 0.2s;
+  transition: color 0.2s; /* Smooth color transition on state change */
 }
 
 .nav-link span {
@@ -51,9 +79,10 @@
   margin-top: 4px;
 }
 
-/* Style for the currently active navigation link */
+/**
+ * The style applied by React Router's <NavLink> to the currently active link.
+ * This provides a clear visual indicator of the user's location in the app.
+ */
 .nav-link.active {
   color: var(--accent-color);
 }
-```
-

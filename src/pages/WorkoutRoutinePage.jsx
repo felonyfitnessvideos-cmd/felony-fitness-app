@@ -1,3 +1,22 @@
+// @ts-check
+
+/**
+ * @file WorkoutRoutinePage.jsx
+ * @description This page displays a list of all workout routines created by the user, allowing them to manage them.
+ * @project Felony Fitness
+ *
+ * @workflow
+ * 1. On component mount, it checks for an authenticated user.
+ * 2. It calls `fetchRoutines` to query the `workout_routines` table and retrieve all routines for that user.
+ * 3. The routines are displayed in a list of cards. Each card shows the routine's name and its active status.
+ * 4. Users can perform several actions on each routine:
+ * - **Toggle Active**: The `handleToggleActive` function updates the `is_active` boolean in the database. Active routines are the ones that can be selected for logging.
+ * - **Edit**: A link navigates the user to the `EditRoutinePage` for that specific routine.
+ * - **Delete**: The `handleDeleteRoutine` function removes the routine from the database after a confirmation prompt.
+ * 5. A prominent "Create New Routine" button links to the `EditRoutinePage` with a 'new' ID, signaling that a new routine should be created.
+ * 6. After any create, update, or delete action, the component re-fetches the full list of routines to ensure the UI is always up-to-date.
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
@@ -6,11 +25,25 @@ import { Dumbbell, PlusCircle, Trash2, Edit, ToggleLeft, ToggleRight } from 'luc
 import { useAuth } from '../AuthContext.jsx';
 import './WorkoutRoutinePage.css';
 
+/**
+ * @typedef {object} Routine
+ * @property {string} id - The UUID of the workout routine.
+ * @property {string} routine_name - The name of the routine.
+ * @property {boolean} is_active - Whether the routine is available for logging.
+ * @property {string} created_at - The timestamp of when the routine was created.
+ */
+
 function WorkoutRoutinePage() {
   const { user } = useAuth();
+  /** @type {[Routine[], React.Dispatch<React.SetStateAction<Routine[]>>]} */
   const [routines, setRoutines] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Fetches all workout routines for the current user from the database.
+   * @param {string} userId - The UUID of the authenticated user.
+   * @async
+   */
   const fetchRoutines = useCallback(async (userId) => {
     setLoading(true);
     try {
@@ -29,21 +62,26 @@ function WorkoutRoutinePage() {
     }
   }, []);
 
+  // Effect to trigger the initial data fetch when the user session is available.
   useEffect(() => {
     if (user) {
       fetchRoutines(user.id);
     } else {
-      setLoading(false); // If no user, stop loading
+      setLoading(false);
     }
   }, [user?.id, fetchRoutines]);
 
+  /**
+   * Deletes a specific workout routine after user confirmation.
+   * @param {string} routineId - The UUID of the routine to be deleted.
+   * @async
+   */
   const handleDeleteRoutine = async (routineId) => {
-    // Note: window.confirm can be disruptive. Consider a custom modal for a better UX.
     if (window.confirm('Are you sure you want to delete this routine? This cannot be undone.')) {
       try {
         const { error } = await supabase.from('workout_routines').delete().eq('id', routineId);
         if (error) throw error;
-        // Refetch routines after deletion
+        // Refetch routines after deletion to update the UI.
         if (user) fetchRoutines(user.id);
       } catch (error) {
         alert(`Error: ${error.message}`);
@@ -51,6 +89,11 @@ function WorkoutRoutinePage() {
     }
   };
 
+  /**
+   * Toggles the `is_active` status of a workout routine.
+   * @param {Routine} routine - The routine object to be updated.
+   * @async
+   */
   const handleToggleActive = async (routine) => {
     try {
       const { error } = await supabase
@@ -59,7 +102,7 @@ function WorkoutRoutinePage() {
         .eq('id', routine.id);
       
       if (error) throw error;
-      // Refetch routines after toggle
+      // Refetch routines after toggle to update the UI.
       if (user) fetchRoutines(user.id);
     } catch (error) {
       alert(`Error: ${error.message}`);

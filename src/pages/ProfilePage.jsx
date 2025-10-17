@@ -1,3 +1,12 @@
+/**
+ * @file ProfilePage.jsx
+ * @description This component manages the user's profile information and body metrics.
+ * It allows users to view, edit, and save their date of birth and sex.
+ * Users can also log their current weight and body fat percentage, and view a history of their past measurements.
+ * @author [Your Name/Team Name]
+ * @date 10/17/2025
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
@@ -7,6 +16,10 @@ import { User, Weight, Percent, Calendar, HeartPulse, X, Edit2 as EditIcon } fro
 import { useAuth } from '../AuthContext.jsx';
 import './ProfilePage.css';
 
+/**
+ * @constant {Array<object>} maleBodyFatImages
+ * @description An array of objects containing labels and placeholder image URLs for male body fat percentages.
+ */
 const maleBodyFatImages = [
   { label: '30%+', src: 'https://placehold.co/150x200/2d3748/ffffff?text=30%25%2B' },
   { label: '25%', src: 'https://placehold.co/150x200/2d3748/ffffff?text=25%25' },
@@ -16,6 +29,10 @@ const maleBodyFatImages = [
   { label: '5%', src: 'https://placehold.co/150x200/2d3748/ffffff?text=5%25' },
 ];
 
+/**
+ * @constant {Array<object>} femaleBodyFatImages
+ * @description An array of objects containing labels and placeholder image URLs for female body fat percentages.
+ */
 const femaleBodyFatImages = [
   { label: '35%+', src: 'https://placehold.co/150x200/2d3748/ffffff?text=35%25%2B' },
   { label: '30%', src: 'https://placehold.co/150x200/2d3748/ffffff?text=30%25' },
@@ -25,6 +42,10 @@ const femaleBodyFatImages = [
   { label: '10%', src: 'https://placehold.co/150x200/2d3748/ffffff?text=10%25' },
 ];
 
+/**
+ * @constant {object} customModalStyles
+ * @description Custom styles for the react-modal component to match the app's theme.
+ */
 const customModalStyles = {
   content: {
     top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%',
@@ -35,6 +56,11 @@ const customModalStyles = {
   overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 999 },
 };
 
+/**
+ * Calculates the age of a person based on their date of birth.
+ * @param {string | null} dob - The date of birth string in 'YYYY-MM-DD' format.
+ * @returns {number | null} The calculated age, or null if the dob is not provided.
+ */
 const calculateAge = (dob) => {
   if (!dob) return null;
   const birthDate = new Date(dob);
@@ -47,21 +73,38 @@ const calculateAge = (dob) => {
   return age;
 };
 
+/**
+ * The main component for the Profile and Metrics page.
+ * @returns {JSX.Element} The rendered ProfilePage component.
+ */
 function ProfilePage() {
-  const { user } = useAuth();
+  const { user } = useAuth(); // Custom hook to get the authenticated user.
+  
+  // State for the metric logging form
   const [weight, setWeight] = useState('');
   const [bodyFat, setBodyFat] = useState('');
-  const [history, setHistory] = useState([]);
+  const [message, setMessage] = useState(''); // Feedback message for metric form
+
+  // State for user profile data and form
   const [profile, setProfile] = useState({ dob: '', sex: '' });
   const [age, setAge] = useState(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState(''); // Feedback message for profile form
+  
+  // State for data display and UI control
+  const [history, setHistory] = useState([]);
   const [isBodyFatModalOpen, setBodyFatModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
-  const [profileMessage, setProfileMessage] = useState('');
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
+  /**
+   * Fetches user profile and body metrics history from the database.
+   * Memoized with useCallback to prevent re-creation on every render.
+   * @param {string} userId - The UUID of the currently logged-in user.
+   * @async
+   */
   const fetchData = useCallback(async (userId) => {
     try {
+      // Fetch metrics and profile concurrently for better performance.
       const [metricsRes, profileRes] = await Promise.all([
         supabase.from('body_metrics').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
         supabase.from('user_profiles').select('dob, sex').eq('id', userId).single()
@@ -72,13 +115,16 @@ function ProfilePage() {
       setHistory(metricsData || []);
       
       const { data: profileData, error: profileError } = profileRes;
+      // Ignore 'PGRST116' error, which means no row was found (a valid case for new users).
       if (profileError && profileError.code !== 'PGRST116') throw profileError;
       
       if (profileData) {
         setProfile({ dob: profileData.dob || '', sex: profileData.sex || '' });
         setAge(calculateAge(profileData.dob));
+        // Force editing mode if profile is incomplete.
         setIsEditingProfile(!profileData.dob || !profileData.sex);
       } else {
+        // If no profile exists, force editing mode.
         setIsEditingProfile(true);
       }
     } catch (error) {
@@ -88,14 +134,21 @@ function ProfilePage() {
     }
   }, []);
 
+  /**
+   * Effect hook to trigger data fetching when the user object is available or changes.
+   */
   useEffect(() => {
     if (user) {
       fetchData(user.id);
     } else {
-      setLoading(false);
+      setLoading(false); // If no user, stop loading.
     }
   }, [user?.id, fetchData]);
   
+  /**
+   * Handles changes in the profile form inputs (DOB, sex).
+   * @param {React.ChangeEvent<HTMLInputElement | HTMLSelectElement>} e - The event object.
+   */
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
     setProfile(prev => ({ ...prev, [name]: value }));
@@ -104,6 +157,12 @@ function ProfilePage() {
     }
   };
   
+  /**
+   * Handles the submission of the profile update form.
+   * Upserts the profile data to the 'user_profiles' table in Supabase.
+   * @param {React.FormEvent<HTMLFormElement>} e - The form event object.
+   * @async
+   */
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     if (!user) {
@@ -111,6 +170,7 @@ function ProfilePage() {
       return;
     }
     
+    // Upsert ensures a new record is created if none exists, or updated if it does.
     const { error } = await supabase
       .from('user_profiles')
       .upsert({ id: user.id, dob: profile.dob, sex: profile.sex });
@@ -120,10 +180,16 @@ function ProfilePage() {
     } else {
       setProfileMessage('Profile saved!');
       setIsEditingProfile(false);
-      setTimeout(() => setProfileMessage(''), 3000);
+      setTimeout(() => setProfileMessage(''), 3000); // Clear message after 3 seconds.
     }
   };
 
+  /**
+   * Handles the submission of the body metrics form.
+   * Inserts a new row into the 'body_metrics' table.
+   * @param {React.FormEvent<HTMLFormElement>} e - The form event object.
+   * @async
+   */
   const handleLogMetric = async (e) => {
     e.preventDefault();
     if (!weight && !bodyFat) {
@@ -146,13 +212,14 @@ function ProfilePage() {
       setMessage(error.message);
     } else {
       setMessage('Measurement saved!');
-      setHistory(prevHistory => [data, ...prevHistory]);
+      setHistory(prevHistory => [data, ...prevHistory]); // Add new metric to the top of the history list.
       setWeight('');
       setBodyFat('');
-      setTimeout(() => setMessage(''), 3000);
+      setTimeout(() => setMessage(''), 3000); // Clear message after 3 seconds.
     }
   };
 
+  // Display a loading message while data is being fetched.
   if (loading) {
     return <div style={{color: 'white', padding: '2rem'}}>Loading Profile...</div>;
   }
@@ -161,10 +228,12 @@ function ProfilePage() {
     <div className="profile-page-container">
       <SubPageHeader title="Profile & Metrics" icon={<User size={28} />} iconColor="#f97316" backTo="/dashboard" />
       
+      {/* User Profile Section: Toggles between edit form and display view */}
       <div className="profile-form metric-form">
         <h2>Your Information</h2>
         {isEditingProfile ? (
           <form onSubmit={handleProfileUpdate}>
+            {/* Form fields for Date of Birth and Sex */}
             <div className="form-group">
               <label htmlFor="dob">Date of Birth {age && `(Age: ${age})`}</label>
               <div className="input-with-icon">
@@ -190,6 +259,7 @@ function ProfilePage() {
           </form>
         ) : (
           <div className="profile-display">
+            {/* Display for saved Age and Sex */}
             <div className="profile-stat">
               <span className="label">Age</span>
               <span className="value">{age || 'N/A'}</span>
@@ -205,6 +275,7 @@ function ProfilePage() {
         )}
       </div>
       
+      {/* Metric Logging Section */}
       <form onSubmit={handleLogMetric} className="metric-form">
         <h2>Log Today's Measurements</h2>
         <div className="form-group">
@@ -230,6 +301,7 @@ function ProfilePage() {
         <button type="submit" className="save-button">Save Measurement</button>
       </form>
 
+      {/* Recent History Section */}
       <div className="history-section">
         <h2>Recent History</h2>
         {history.length === 0 ? <p>No measurements logged yet.</p> : (
@@ -251,18 +323,20 @@ function ProfilePage() {
         Go to My Plan
       </Link>
       
+      {/* Modal for Body Fat Estimation Guide */}
       <Modal
         isOpen={isBodyFatModalOpen}
         onRequestClose={() => setBodyFatModalOpen(false)}
         style={customModalStyles}
         contentLabel="Body Fat Guide"
-        appElement={document.getElementById('root')}
+        appElement={document.getElementById('root')} // Accessibility requirement for react-modal
       >
         <div className="modal-header">
           <h3>Body Fat Percentage Guide</h3>
           <button onClick={() => setBodyFatModalOpen(false)} className="close-modal-btn"><X size={24} /></button>
         </div>
         <div className="modal-body">
+          {/* Conditionally render content based on the user's selected sex */}
           { (profile.sex === 'Male' || profile.sex === 'Female') ? (
             <>
               <p className="modal-subtitle">These are visual estimates. For accurate measurements, consult a professional.</p>

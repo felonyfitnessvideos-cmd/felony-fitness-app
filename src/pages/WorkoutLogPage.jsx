@@ -1,3 +1,34 @@
+// @ts-check
+
+/**
+ * @file WorkoutLogPage.jsx
+ * @description The main page for actively logging a workout session based on a selected routine.
+ * @project Felony Fitness
+ *
+ * @workflow
+ * 1.  **Initialization**: On load, it receives a `routineId` from the URL. The `fetchAndStartWorkout`
+ * function is called.
+ * 2.  **Starting a Session**: This function checks for an incomplete `workout_logs` entry for the user
+ * and routine for today. If one exists, it resumes it. If not, it creates a new one.
+ * It also fetches the routine's details, today's logged sets, and the sets from the
+ * previous session for this routine to display as a reference ("Last Time").
+ * 3.  **Logging a Set**: The user selects an exercise from the thumbnail scroller. They input
+ * weight and reps, which are pre-filled based on their last set (today's or previous).
+ * Clicking "Save Set" calls `handleSaveSet`, which inserts a new row into the
+ * `workout_log_entries` table.
+ * 4.  **Rest Timer**: After a set is saved, a rest timer modal automatically appears.
+ * 5.  **Advancement**: When the rest timer is closed, if all target sets for the current exercise
+ * are complete, the component automatically advances to the next exercise. If it's the
+ * last exercise, it readies the workout to be completed.
+ * 6.  **Chart View**: The user can toggle to a "Chart" view, which calls `fetchChartDataForExercise`.
+ * This function fetches historical performance data for the selected exercise by calling
+ * different PostgreSQL RPC functions based on the chosen metric (1RM, Volume, etc.).
+ * 7.  **Finishing**: When the user decides to finish, `handleFinishWorkout` calculates the total
+ * duration and estimated calories burned, updates the `workout_logs` entry to mark it as
+ * complete, and shows a success modal before navigating the user away.
+ * 8.  **Editing/Deleting**: Users can also edit or delete sets they've logged for the current session.
+ */
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
@@ -5,9 +36,28 @@ import SubPageHeader from '../components/SubPageHeader.jsx';
 import RestTimerModal from '../components/RestTimerModal.jsx';
 import SuccessModal from '../components/SuccessModal.jsx';
 import { Dumbbell, Edit2, Trash2, Check, X } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../AuthContext.jsx';
 import './WorkoutLogPage.css';
+
+/**
+ * @typedef {object} SetEntry
+ * @property {string} id
+ * @property {number} set_number
+ * @property {number} reps_completed
+ * @property {number} weight_lifted_lbs
+ * @property {string} exercise_id
+ */
+
+/**
+ * @typedef {{[exerciseId: string]: SetEntry[]}} LogMap
+ */
+
+/**
+ * @typedef {object} ChartDataPoint
+ * @property {string} date
+ * @property {number} value
+ */
 
 function WorkoutLogPage() {
   const { routineId } = useParams();
@@ -20,10 +70,13 @@ function WorkoutLogPage() {
   const [workoutLogId, setWorkoutLogId] = useState(null);
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState(0);
   const [currentSet, setCurrentSet] = useState({ weight: '', reps: '' });
+  /** @type {[LogMap, React.Dispatch<React.SetStateAction<LogMap>>]} */
   const [todaysLog, setTodaysLog] = useState({});
+  /** @type {[LogMap, React.Dispatch<React.SetStateAction<LogMap>>]} */
   const [previousLog, setPreviousLog] = useState({});
   const [isTimerOpen, setIsTimerOpen] = useState(false);
   const [activeView, setActiveView] = useState('log');
+  /** @type {[ChartDataPoint[], React.Dispatch<React.SetStateAction<ChartDataPoint[]>>]} */
   const [chartData, setChartData] = useState([]);
   const [chartMetric, setChartMetric] = useState('1RM');
   const [editingSet, setEditingSet] = useState(null);
@@ -35,7 +88,11 @@ function WorkoutLogPage() {
 
   const selectedExercise = useMemo(() => routine?.routine_exercises[selectedExerciseIndex]?.exercises, [routine, selectedExerciseIndex]);
 
-  // CORRECTED: This useEffect now handles pre-populating both weight and reps.
+  /**
+   * Effect to pre-populate the weight and reps inputs.
+   * It prioritizes the last set from today's session, then falls back to the
+   * last set from the previous session for that exercise.
+   */
   useEffect(() => {
     if (!selectedExercise) return;
 
@@ -44,33 +101,32 @@ function WorkoutLogPage() {
     let lastSet = null;
 
     if (todaysSets.length > 0) {
-      // Priority 1: Use the last set from today's workout.
       lastSet = todaysSets[todaysSets.length - 1];
     } else if (previousSets.length > 0) {
-      // Priority 2: If no sets today, use the last set from the previous session.
       lastSet = previousSets[previousSets.length - 1];
     }
 
     if (lastSet) {
-      // Pre-fill both weight and reps from the last known set.
       setCurrentSet({ weight: lastSet.weight_lifted_lbs, reps: lastSet.reps_completed });
     } else {
-      // If no history exists for this exercise, clear the inputs.
       setCurrentSet({ weight: '', reps: '' });
     }
   }, [selectedExercise, todaysLog, previousLog]);
 
+  /**
+   * Fetches all initial data for the workout session. Finds or creates a workout log for the day,
+   * fetches the selected routine's details, and loads today's and the previous session's logs.
+   * @param {string} userId - The UUID of the authenticated user.
+   * @async
+   */
   const fetchAndStartWorkout = useCallback(async (userId) => {
     setLoading(true);
     try {
-      const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-
+      const today = new Date().toLocaleDateString('en-CA');
       const [metricsRes, routineRes, todaysLogsRes] = await Promise.all([
         supabase.from('body_metrics').select('weight_lbs').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).single(),
         supabase.from('workout_routines').select(`*, routine_exercises(target_sets, exercises(*, muscle_groups!muscle_group_id(name)))`).eq('id', routineId).single(),
-        supabase.from('workout_logs').select('id, is_complete, workout_log_entries(*)').eq('user_id', userId).eq('routine_id', routineId).gte('created_at', todayStart.toISOString()).lte('created_at', todayEnd.toISOString())
+        supabase.from('workout_logs').select('id, is_complete, workout_log_entries(*)').eq('user_id', userId).eq('routine_id', routineId).eq('workout_date', today)
       ]);
       
       if (metricsRes.data) setUserWeightLbs(metricsRes.data.weight_lbs);
@@ -132,21 +188,20 @@ function WorkoutLogPage() {
     }
   }, [user?.id, routineId, fetchAndStartWorkout]);
 
+  /**
+   * Fetches historical performance data for a given exercise and metric.
+   * @param {'1RM' | 'Weight Volume' | 'Set Volume'} metric - The performance metric to calculate.
+   * @param {string} exerciseId - The UUID of the exercise.
+   * @async
+   */
   const fetchChartDataForExercise = useCallback(async (metric, exerciseId) => {
     if (!user || !exerciseId) return;
     setChartLoading(true);
     let functionName = '';
     switch (metric) {
-      case 'Weight Volume':
-        functionName = 'calculate_exercise_weight_volume';
-        break;
-      case 'Set Volume':
-        functionName = 'calculate_exercise_set_volume';
-        break;
-      case '1RM':
-      default:
-        functionName = 'calculate_exercise_1rm';
-        break;
+      case 'Weight Volume': functionName = 'calculate_exercise_weight_volume'; break;
+      case 'Set Volume': functionName = 'calculate_exercise_set_volume'; break;
+      case '1RM': default: functionName = 'calculate_exercise_1rm'; break;
     }
 
     try {
@@ -154,7 +209,6 @@ function WorkoutLogPage() {
         p_user_id: user.id,
         p_exercise_id: exerciseId 
       });
-
       if (error) throw error;
       
       const formattedData = data.map(item => ({
@@ -177,7 +231,10 @@ function WorkoutLogPage() {
     }
   }, [activeView, chartMetric, selectedExercise, fetchChartDataForExercise]);
 
-
+  /**
+   * Saves a new set to the `workout_log_entries` table, updates local state, and opens the rest timer.
+   * @async
+   */
   const handleSaveSet = async () => {
     if (!currentSet.reps || !currentSet.weight || !workoutLogId || !selectedExercise) return;
     const newSetPayload = {
@@ -196,9 +253,6 @@ function WorkoutLogPage() {
     const newTodaysLog = { ...todaysLog, [selectedExercise.id]: [...(todaysLog[selectedExercise.id] || []), newEntry] };
     setTodaysLog(newTodaysLog);
     
-    // CORRECTED: Keep both weight and reps for the next set.
-    setCurrentSet({ weight: currentSet.weight, reps: currentSet.reps });
-
     const targetSets = routine.routine_exercises[selectedExerciseIndex]?.target_sets;
     const completedSets = newTodaysLog[selectedExercise.id].length;
     const isLastExercise = selectedExerciseIndex === routine.routine_exercises.length - 1;
@@ -214,6 +268,7 @@ function WorkoutLogPage() {
     setIsTimerOpen(true);
   };
 
+  /** Handles closing the rest timer and advancing to the next exercise if needed. */
   const handleTimerClose = () => {
     setIsTimerOpen(false);
     if (shouldAdvance) {
@@ -224,24 +279,22 @@ function WorkoutLogPage() {
     }
   };
 
+  /**
+   * Finalizes the workout by calculating duration and calories, updating the `workout_logs` entry, and showing a success modal.
+   * @async
+   */
   const handleFinishWorkout = async () => {
     if (!workoutLogId) return;
     setIsTimerOpen(false);
 
     try {
-      const { data: logData, error: fetchError } = await supabase
-        .from('workout_logs')
-        .select('created_at')
-        .eq('id', workoutLogId)
-        .single();
-      
+      const { data: logData, error: fetchError } = await supabase.from('workout_logs').select('created_at').eq('id', workoutLogId).single();
       if (fetchError) throw fetchError;
       
       const startTime = new Date(logData.created_at);
       const endTime = new Date();
-
-      const duration_minutes = Math.round((endTime - startTime) / 60000);
-      const MET_VALUE = 5.0;
+      const duration_minutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
+      const MET_VALUE = 5.0; // General MET value for weightlifting
       const weight_kg = userWeightLbs * 0.453592;
       const duration_hours = duration_minutes / 60;
       const calories_burned = Math.round(MET_VALUE * weight_kg * duration_hours);
@@ -254,11 +307,7 @@ function WorkoutLogPage() {
         calories_burned 
       };
       
-      const { error: updateError } = await supabase
-        .from('workout_logs')
-        .update(updatePayload)
-        .eq('id', workoutLogId);
-
+      const { error: updateError } = await supabase.from('workout_logs').update(updatePayload).eq('id', workoutLogId);
       if (updateError) throw updateError;
       
       setSuccessModalOpen(true);
@@ -267,22 +316,26 @@ function WorkoutLogPage() {
     }
   };
   
+  /** Closes the success modal and navigates to the dashboard. */
   const handleCloseSuccessModal = () => {
     setSuccessModalOpen(false);
     navigate('/dashboard');
   };
 
+  /** Deletes a specific set from the current log. */
   const handleDeleteSet = async (entryId) => {
     const { error } = await supabase.from('workout_log_entries').delete().eq('id', entryId);
     if (error) return alert("Could not delete set.");
     if (user) await fetchAndStartWorkout(user.id);
   };
 
+  /** Enters "edit mode" for a specific set. */
   const handleEditSetClick = (set) => {
     setEditingSet({ entryId: set.id });
     setEditSetValue({ weight: set.weight_lifted_lbs, reps: set.reps_completed });
   };
 
+  /** Saves the updated values for a set being edited. */
   const handleUpdateSet = async () => {
     if (!editingSet) return;
     const { error } = await supabase
@@ -295,6 +348,7 @@ function WorkoutLogPage() {
     if (user) await fetchAndStartWorkout(user.id);
   };
 
+  /** Exits "edit mode" without saving. */
   const handleCancelEdit = () => setEditingSet(null);
 
   if (loading) return <div className="loading-message">Loading Workout...</div>;
@@ -332,6 +386,7 @@ function WorkoutLogPage() {
             </div>
           </div>
           <button className="save-set-button" onClick={handleSaveSet}>Save Set</button>
+
           <div className="log-history-container">
             <div className="log-history-column">
               <h3>Today</h3>

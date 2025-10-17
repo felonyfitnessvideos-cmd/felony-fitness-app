@@ -1,3 +1,21 @@
+// @ts-check
+
+/**
+ * @file WorkoutGoalsPage.jsx
+ * @description This page allows users to create, view, update, and delete their workout goals.
+ * @project Felony Fitness
+ *
+ * @workflow
+ * 1. On component mount, it fetches all existing goals for the authenticated user from the `goals` table.
+ * 2. It displays the goals in a list of cards, each showing the goal's description, progress, and target date.
+ * 3. Users can click an "Add Goal" button or an "Edit" button on an existing goal, which opens a modal.
+ * 4. The modal contains a form that is used for both creating new goals and editing existing ones.
+ * 5. State (`editingGoal`) is used to determine if the modal is in "edit" or "create" mode.
+ * 6. Submitting the form calls `handleSaveGoal`, which performs either an `insert` or an `update` operation in the Supabase `goals` table.
+ * 7. Users can also delete goals, which triggers a confirmation prompt before sending a `delete` request.
+ * 8. After any create, update, or delete operation, the component re-fetches the list of goals to ensure the UI is up-to-date.
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
@@ -6,6 +24,7 @@ import Modal from 'react-modal';
 import { useAuth } from '../AuthContext.jsx';
 import './WorkoutGoalsPage.css';
 
+// Defines the styles for the modal pop-up.
 const customModalStyles = {
   content: {
     top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%',
@@ -16,16 +35,41 @@ const customModalStyles = {
   overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 999 },
 };
 
+/**
+ * @typedef {object} Goal
+ * @property {string} id
+ * @property {string} goal_description
+ * @property {number} current_value
+ * @property {number} target_value
+ * @property {string} target_date
+ */
+
+/**
+ * @typedef {object} NewGoal
+ * @property {string} goal_description
+ * @property {number} current_value
+ * @property {string | number} target_value
+ * @property {string} target_date
+ */
+
 function WorkoutGoalsPage() {
   const { user } = useAuth();
+  /** @type {[Goal[], React.Dispatch<React.SetStateAction<Goal[]>>]} */
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingGoal, setEditingGoal] = useState(null); 
+  /** @type {[Goal | null, React.Dispatch<React.SetStateAction<Goal | null>>]} */
+  const [editingGoal, setEditingGoal] = useState(null);
+  /** @type {[NewGoal, React.Dispatch<React.SetStateAction<NewGoal>>]} */
   const [newGoal, setNewGoal] = useState({
     goal_description: '', current_value: 0, target_value: '', target_date: ''
   });
 
+  /**
+   * Fetches all goals for the current user from the database.
+   * @param {string} userId - The UUID of the authenticated user.
+   * @async
+   */
   const fetchGoals = useCallback(async (userId) => {
     setLoading(true);
     try {
@@ -39,6 +83,7 @@ function WorkoutGoalsPage() {
     }
   }, []);
 
+  // Effect to trigger the initial data fetch when the user session is available.
   useEffect(() => {
     if (user) {
       fetchGoals(user.id);
@@ -47,21 +92,30 @@ function WorkoutGoalsPage() {
     }
   }, [user?.id, fetchGoals]);
 
+  /**
+   * Deletes a specific goal after user confirmation.
+   * @param {string} goalId - The UUID of the goal to be deleted.
+   * @async
+   */
   const handleDeleteGoal = async (goalId) => {
-    // Note: window.confirm is functional but could be replaced with a custom modal for better UX.
     if (window.confirm("Are you sure you want to delete this goal?")) {
       try {
         const { error } = await supabase.from('goals').delete().eq('id', goalId);
         if (error) throw error;
-        if (user) fetchGoals(user.id);
+        if (user) fetchGoals(user.id); // Re-fetch goals to update the UI
       } catch (error) {
         alert(`Error: ${error.message}`);
       }
     }
   };
   
+  /**
+   * Opens the modal for either creating a new goal or editing an existing one.
+   * @param {Goal | null} [goal=null] - The goal object to edit. If null, the modal will be in "add new" mode.
+   */
   const openModal = (goal = null) => {
     if (goal) {
+      // If a goal is passed, we are in "edit" mode.
       setEditingGoal(goal);
       setNewGoal({
         goal_description: goal.goal_description,
@@ -70,27 +124,39 @@ function WorkoutGoalsPage() {
         target_date: goal.target_date,
       });
     } else {
+      // If no goal is passed, we are in "create" mode.
       setEditingGoal(null);
       setNewGoal({ goal_description: '', current_value: 0, target_value: '', target_date: '' });
     }
     setIsModalOpen(true);
   };
 
+  /** Closes the modal and resets its state. */
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingGoal(null);
   };
 
+  /**
+   * Handles changes to the form inputs within the modal.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
+   */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewGoal(prev => ({ ...prev, [name]: value }));
   };
 
+  /**
+   * Handles the form submission to either create a new goal or update an existing one.
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event.
+   * @async
+   */
   const handleSaveGoal = async (e) => {
     e.preventDefault();
     if (!user) return alert("You must be logged in.");
     try {
       if (editingGoal) {
+        // If we are editing, perform an update operation.
         const { error } = await supabase
           .from('goals')
           .update({
@@ -102,11 +168,12 @@ function WorkoutGoalsPage() {
           .eq('id', editingGoal.id);
         if (error) throw error;
       } else {
+        // If we are not editing, perform an insert operation.
         const { error } = await supabase.from('goals').insert({ ...newGoal, user_id: user.id });
         if (error) throw error;
       }
       closeModal();
-      if (user) fetchGoals(user.id);
+      if (user) fetchGoals(user.id); // Re-fetch to show the new/updated goal
     } catch (error) {
       alert(`Error saving goal: ${error.message}`);
     }
