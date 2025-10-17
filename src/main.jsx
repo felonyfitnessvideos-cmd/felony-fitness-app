@@ -84,7 +84,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/nutrition/recommendations" element={<NutritionRecsPage />} />
 
               {/* Profile route */}
-              <Route path="profile" element={<ProfilePage />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Routes>
         </AuthProvider>
