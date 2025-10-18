@@ -4,29 +4,6 @@
  * @file WorkoutLogPage.jsx
  * @description The main page for actively logging a workout session based on a selected routine.
  * @project Felony Fitness
- *
- * @workflow
- * 1.  **Initialization**: On load, it receives a `routineId` from the URL. The `fetchAndStartWorkout`
- * function is called.
- * 2.  **Starting a Session**: This function checks for an incomplete `workout_logs` entry for the user
- * and routine for today. If one exists, it resumes it. If not, it creates a new one.
- * It also fetches the routine's details, today's logged sets, and the sets from the
- * previous session for this routine to display as a reference ("Last Time").
- * 3.  **Logging a Set**: The user selects an exercise from the thumbnail scroller. They input
- * weight and reps, which are pre-filled based on their last set (today's or previous).
- * Clicking "Save Set" calls `handleSaveSet`, which inserts a new row into the
- * `workout_log_entries` table.
- * 4.  **Rest Timer**: After a set is saved, a rest timer modal automatically appears.
- * 5.  **Advancement**: When the rest timer is closed, if all target sets for the current exercise
- * are complete, the component automatically advances to the next exercise. If it's the
- * last exercise, it readies the workout to be completed.
- * 6.  **Chart View**: The user can toggle to a "Chart" view, which calls `fetchChartDataForExercise`.
- * This function fetches historical performance data for the selected exercise by calling
- * different PostgreSQL RPC functions based on the chosen metric (1RM, Volume, etc.).
- * 7.  **Finishing**: When the user decides to finish, `handleFinishWorkout` calculates the total
- * duration and estimated calories burned, updates the `workout_logs` entry to mark it as
- * complete, and shows a success modal before navigating the user away.
- * 8.  **Editing/Deleting**: Users can also edit or delete sets they've logged for the current session.
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -49,9 +26,7 @@ import './WorkoutLogPage.css';
  * @property {string} exercise_id
  */
 
-/**
- * @typedef {{[exerciseId: string]: SetEntry[]}} LogMap
- */
+/** @typedef {{[exerciseId: string]: SetEntry[]}} LogMap */
 
 /**
  * @typedef {object} ChartDataPoint
@@ -88,11 +63,6 @@ function WorkoutLogPage() {
 
   const selectedExercise = useMemo(() => routine?.routine_exercises[selectedExerciseIndex]?.exercises, [routine, selectedExerciseIndex]);
 
-  /**
-   * Effect to pre-populate the weight and reps inputs.
-   * It prioritizes the last set from today's session, then falls back to the
-   * last set from the previous session for that exercise.
-   */
   useEffect(() => {
     if (!selectedExercise) return;
 
@@ -113,29 +83,65 @@ function WorkoutLogPage() {
     }
   }, [selectedExercise, todaysLog, previousLog]);
 
-  /**
-   * Fetches all initial data for the workout session. Finds or creates a workout log for the day,
-   * fetches the selected routine's details, and loads today's and the previous session's logs.
-   * @param {string} userId - The UUID of the authenticated user.
-   * @async
-   */
   const fetchAndStartWorkout = useCallback(async (userId) => {
     setLoading(true);
     try {
-      const today = new Date().toLocaleDateString('en-CA');
-      const [metricsRes, routineRes, todaysLogsRes] = await Promise.all([
-        supabase.from('body_metrics').select('weight_lbs').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).single(),
-        supabase.from('workout_routines').select(`*, routine_exercises(target_sets, exercises(*, muscle_groups!muscle_group_id(name)))`).eq('id', routineId).single(),
-        supabase.from('workout_logs').select('id, is_complete, workout_log_entries(*)').eq('user_id', userId).eq('routine_id', routineId).eq('workout_date', today)
-      ]);
-      
-      if (metricsRes.data) setUserWeightLbs(metricsRes.data.weight_lbs);
-      if (routineRes.error) throw routineRes.error;
-      const routineData = routineRes.data;
+      // Step 1: Fetch the routine details first, ensuring exercises are correctly ordered.
+      const { data: routineData, error: routineError } = await supabase
+        .from('workout_routines')
+        .select(`*, routine_exercises(target_sets, exercise_order, exercises(*, muscle_groups!muscle_group_id(name)))`)
+        .eq('id', routineId)
+        .order('exercise_order', { foreignTable: 'routine_exercises', ascending: true })
+        .single();
+
+      if (routineError) throw routineError;
       setRoutine(routineData);
+
+      // Step 2: Fetch the "Last Time" data using the routineId BEFORE creating today's log.
+      if (routineData?.routine_exercises) {
+        console.log("Fetching 'Last Time' data for routine:", routineId);
+        const prevLogPromises = routineData.routine_exercises.map(item => {
+          const params = {
+            p_user_id: userId,
+            p_exercise_id: item.exercises.id,
+            p_routine_id: routineId
+          };
+          console.log(`Calling RPC 'get_entries_for_last_session' with params:`, params);
+          return supabase.rpc('get_entries_for_last_session', params);
+        });
+
+        const prevLogResults = await Promise.all(prevLogPromises);
+        
+        console.log("Results from RPC calls:", prevLogResults);
+
+        const prevLogMap = {};
+        prevLogResults.forEach((res, index) => {
+          if (res.error) {
+            console.error(`Error fetching last session for exercise ${routineData.routine_exercises[index].exercises.id}:`, res.error);
+          }
+          const exerciseId = routineData.routine_exercises[index].exercises.id;
+          prevLogMap[exerciseId] = res.data || [];
+        });
+        setPreviousLog(prevLogMap);
+      }
+
+      // Step 3: Now, find or create today's workout log using the `created_at` timestamp.
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      const startOfTomorrow = new Date(startOfToday);
+      startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+
+      const { data: todaysLogsData, error: todaysLogsError } = await supabase
+        .from('workout_logs')
+        .select('id, is_complete, workout_log_entries(*)')
+        .eq('user_id', userId)
+        .eq('routine_id', routineId)
+        .gte('created_at', startOfToday.toISOString())
+        .lt('created_at', startOfTomorrow.toISOString());
+
+      if (todaysLogsError) throw todaysLogsError;
       
-      if (todaysLogsRes.error) throw todaysLogsRes.error;
-      const todaysLogsData = todaysLogsRes.data || [];
       const todaysEntriesMap = {};
       let activeLog = todaysLogsData.find(log => !log.is_complete);
       
@@ -152,27 +158,20 @@ function WorkoutLogPage() {
       if (activeLog) {
         currentLogId = activeLog.id;
       } else {
-        const { data: newLog, error: newLogError } = await supabase.from('workout_logs').insert({ user_id: userId, routine_id: routineId, is_complete: false }).select('id').single();
+        const { data: newLog, error: newLogError } = await supabase.from('workout_logs').insert({ 
+          user_id: userId, 
+          routine_id: routineId, 
+          is_complete: false,
+        }).select('id').single();
         if (newLogError) throw newLogError;
         currentLogId = newLog.id;
       }
       setWorkoutLogId(currentLogId);
 
-      if (routineData?.routine_exercises) {
-        const prevLogPromises = routineData.routine_exercises.map(item => 
-          supabase.rpc('get_entries_for_last_session', {
-            p_user_id: userId,
-            p_exercise_id: item.exercises.id,
-          })
-        );
-        const prevLogResults = await Promise.all(prevLogPromises);
-        const prevLogMap = {};
-        prevLogResults.forEach((res, index) => {
-          const exerciseId = routineData.routine_exercises[index].exercises.id;
-          prevLogMap[exerciseId] = res.data || [];
-        });
-        setPreviousLog(prevLogMap);
-      }
+      // Fetch user's weight for calorie calculation
+      const { data: metricsData } = await supabase.from('body_metrics').select('weight_lbs').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).single();
+      if (metricsData) setUserWeightLbs(metricsData.weight_lbs);
+
     } catch (error) {
       console.error("A critical error occurred while fetching workout data:", error);
     } finally {
@@ -188,12 +187,6 @@ function WorkoutLogPage() {
     }
   }, [user?.id, routineId, fetchAndStartWorkout]);
 
-  /**
-   * Fetches historical performance data for a given exercise and metric.
-   * @param {'1RM' | 'Weight Volume' | 'Set Volume'} metric - The performance metric to calculate.
-   * @param {string} exerciseId - The UUID of the exercise.
-   * @async
-   */
   const fetchChartDataForExercise = useCallback(async (metric, exerciseId) => {
     if (!user || !exerciseId) return;
     setChartLoading(true);
@@ -231,10 +224,6 @@ function WorkoutLogPage() {
     }
   }, [activeView, chartMetric, selectedExercise, fetchChartDataForExercise]);
 
-  /**
-   * Saves a new set to the `workout_log_entries` table, updates local state, and opens the rest timer.
-   * @async
-   */
   const handleSaveSet = async () => {
     if (!currentSet.reps || !currentSet.weight || !workoutLogId || !selectedExercise) return;
     const newSetPayload = {
@@ -268,7 +257,6 @@ function WorkoutLogPage() {
     setIsTimerOpen(true);
   };
 
-  /** Handles closing the rest timer and advancing to the next exercise if needed. */
   const handleTimerClose = () => {
     setIsTimerOpen(false);
     if (shouldAdvance) {
@@ -279,10 +267,6 @@ function WorkoutLogPage() {
     }
   };
 
-  /**
-   * Finalizes the workout by calculating duration and calories, updating the `workout_logs` entry, and showing a success modal.
-   * @async
-   */
   const handleFinishWorkout = async () => {
     if (!workoutLogId) return;
     setIsTimerOpen(false);
@@ -316,16 +300,20 @@ function WorkoutLogPage() {
     }
   };
   
-  /** Closes the success modal and navigates to the dashboard. */
   const handleCloseSuccessModal = () => {
     setSuccessModalOpen(false);
     navigate('/dashboard');
   };
 
-  /** Deletes a specific set from the current log. */
+  /** Deletes a specific set from the current log securely. */
   const handleDeleteSet = async (entryId) => {
-    const { error } = await supabase.from('workout_log_entries').delete().eq('id', entryId);
-    if (error) return alert("Could not delete set.");
+    // SECURITY FIX: Call the secure RPC function.
+    const { error } = await supabase.rpc('delete_workout_set', { p_entry_id: entryId });
+    if (error) {
+      console.error("Secure delete failed:", error);
+      return alert("Could not delete set.");
+    }
+    // Refetch to ensure UI consistency.
     if (user) await fetchAndStartWorkout(user.id);
   };
 
@@ -335,20 +323,24 @@ function WorkoutLogPage() {
     setEditSetValue({ weight: set.weight_lifted_lbs, reps: set.reps_completed });
   };
 
-  /** Saves the updated values for a set being edited. */
+  /** Saves the updated values for a set being edited securely. */
   const handleUpdateSet = async () => {
     if (!editingSet) return;
-    const { error } = await supabase
-      .from('workout_log_entries')
-      .update({ weight_lifted_lbs: parseInt(editSetValue.weight, 10), reps_completed: parseInt(editSetValue.reps, 10) })
-      .eq('id', editingSet.entryId);
-      
-    if (error) return alert("Could not update set.");
+    // SECURITY FIX: Call the secure RPC function.
+    const { error } = await supabase.rpc('update_workout_set', {
+      p_entry_id: editingSet.entryId,
+      p_weight: parseInt(editSetValue.weight, 10),
+      p_reps: parseInt(editSetValue.reps, 10)
+    });
+    
+    if (error) {
+      console.error("Secure update failed:", error);
+      return alert("Could not update set.");
+    }
     setEditingSet(null);
     if (user) await fetchAndStartWorkout(user.id);
   };
 
-  /** Exits "edit mode" without saving. */
   const handleCancelEdit = () => setEditingSet(null);
 
   if (loading) return <div className="loading-message">Loading Workout...</div>;
@@ -367,7 +359,7 @@ function WorkoutLogPage() {
       <div className="thumbnail-scroller">
         {routine?.routine_exercises.map((item, index) => (
             <button key={item.exercises.id} className={`thumbnail-btn ${index === selectedExerciseIndex ? 'selected' : ''}`} onClick={() => setSelectedExerciseIndex(index)}>
-            <img src={item.exercises.thumbnail_url || 'https://placehold.co/50x50/4a5568/ffffff?text=IMG'} alt={item.exercises.name} />
+            <img src={item.exercises.thumbnail_url || 'https://placehold.co/50x50/4a556j8/ffffff?text=IMG'} alt={item.exercises.name} />
             </button>
         ))}
       </div>
@@ -467,3 +459,4 @@ function WorkoutLogPage() {
 }
 
 export default WorkoutLogPage;
+

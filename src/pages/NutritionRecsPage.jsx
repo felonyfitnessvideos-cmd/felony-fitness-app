@@ -73,9 +73,10 @@ function NutritionRecsPage() {
 
     try {
       // Invoke the serverless edge function, passing the user's ID.
-      const { data, error } = await supabase.functions.invoke('generate-nutrition-recommendations', {
-        body: { userId: user.id },
-      });
+      const { data, error } = await supabase.functions.invoke(
+  'generate-nutrition-recommendations', 
+  { body: {} }
+);
 
       if (error) {
         // Throw an error to be caught by the catch block.

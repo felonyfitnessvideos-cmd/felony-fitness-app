@@ -57,9 +57,11 @@ function WorkoutRecsPage() {
 
     try {
       // Invoke the serverless function with the current user's ID.
-      const { data, error: invokeError } = await supabase.functions.invoke('generate-workout-recommendations', {
-        body: { userId: user.id },
-      });
+      const { data, error } = await supabase.functions.invoke(
+  'generate-workout-recommendations', 
+  { body: {} }
+
+);
 
       if (invokeError) throw invokeError;
       

@@ -4,17 +4,6 @@
  * @file WorkoutRoutinePage.jsx
  * @description This page displays a list of all workout routines created by the user, allowing them to manage them.
  * @project Felony Fitness
- *
- * @workflow
- * 1. On component mount, it checks for an authenticated user.
- * 2. It calls `fetchRoutines` to query the `workout_routines` table and retrieve all routines for that user.
- * 3. The routines are displayed in a list of cards. Each card shows the routine's name and its active status.
- * 4. Users can perform several actions on each routine:
- * - **Toggle Active**: The `handleToggleActive` function updates the `is_active` boolean in the database. Active routines are the ones that can be selected for logging.
- * - **Edit**: A link navigates the user to the `EditRoutinePage` for that specific routine.
- * - **Delete**: The `handleDeleteRoutine` function removes the routine from the database after a confirmation prompt.
- * 5. A prominent "Create New Routine" button links to the `EditRoutinePage` with a 'new' ID, signaling that a new routine should be created.
- * 6. After any create, update, or delete action, the component re-fetches the full list of routines to ensure the UI is always up-to-date.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -62,7 +51,6 @@ function WorkoutRoutinePage() {
     }
   }, []);
 
-  // Effect to trigger the initial data fetch when the user session is available.
   useEffect(() => {
     if (user) {
       fetchRoutines(user.id);
@@ -73,16 +61,26 @@ function WorkoutRoutinePage() {
 
   /**
    * Deletes a specific workout routine after user confirmation.
+   * The query is scoped to the user's ID for an extra layer of security.
    * @param {string} routineId - The UUID of the routine to be deleted.
    * @async
    */
   const handleDeleteRoutine = async (routineId) => {
+    // Guard clause to ensure a user is logged in.
+    if (!user) return;
+
     if (window.confirm('Are you sure you want to delete this routine? This cannot be undone.')) {
       try {
-        const { error } = await supabase.from('workout_routines').delete().eq('id', routineId);
+        // **SECURITY FIX: Add .eq('user_id', user.id) to the query.**
+        // This ensures a user can only delete routines that belong to them.
+        const { error } = await supabase
+          .from('workout_routines')
+          .delete()
+          .eq('id', routineId)
+          .eq('user_id', user.id);
+
         if (error) throw error;
-        // Refetch routines after deletion to update the UI.
-        if (user) fetchRoutines(user.id);
+        fetchRoutines(user.id);
       } catch (error) {
         alert(`Error: ${error.message}`);
       }
@@ -95,15 +93,18 @@ function WorkoutRoutinePage() {
    * @async
    */
   const handleToggleActive = async (routine) => {
+    // Guard clause to ensure a user is logged in.
+    if (!user) return;
+
     try {
       const { error } = await supabase
         .from('workout_routines')
         .update({ is_active: !routine.is_active })
-        .eq('id', routine.id);
+        .eq('id', routine.id)
+        .eq('user_id', user.id); // Also scope updates for security
       
       if (error) throw error;
-      // Refetch routines after toggle to update the UI.
-      if (user) fetchRoutines(user.id);
+      fetchRoutines(user.id);
     } catch (error) {
       alert(`Error: ${error.message}`);
     }
