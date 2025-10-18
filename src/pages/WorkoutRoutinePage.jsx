@@ -10,7 +10,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
-import { Dumbbell, PlusCircle, Trash2, Edit, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Dumbbell, PlusCircle, Trash2, Edit, ToggleLeft, ToggleRight, Zap } from 'lucide-react';
 import { useAuth } from '../AuthContext.jsx';
 import './WorkoutRoutinePage.css';
 
@@ -61,18 +61,14 @@ function WorkoutRoutinePage() {
 
   /**
    * Deletes a specific workout routine after user confirmation.
-   * The query is scoped to the user's ID for an extra layer of security.
    * @param {string} routineId - The UUID of the routine to be deleted.
    * @async
    */
   const handleDeleteRoutine = async (routineId) => {
-    // Guard clause to ensure a user is logged in.
     if (!user) return;
 
     if (window.confirm('Are you sure you want to delete this routine? This cannot be undone.')) {
       try {
-        // **SECURITY FIX: Add .eq('user_id', user.id) to the query.**
-        // This ensures a user can only delete routines that belong to them.
         const { error } = await supabase
           .from('workout_routines')
           .delete()
@@ -93,7 +89,6 @@ function WorkoutRoutinePage() {
    * @async
    */
   const handleToggleActive = async (routine) => {
-    // Guard clause to ensure a user is logged in.
     if (!user) return;
 
     try {
@@ -101,7 +96,7 @@ function WorkoutRoutinePage() {
         .from('workout_routines')
         .update({ is_active: !routine.is_active })
         .eq('id', routine.id)
-        .eq('user_id', user.id); // Also scope updates for security
+        .eq('user_id', user.id);
       
       if (error) throw error;
       fetchRoutines(user.id);
@@ -119,10 +114,21 @@ function WorkoutRoutinePage() {
         backTo="/workouts" 
       />
       
-      <Link to="/workouts/routines/new" className="create-routine-button">
-        <PlusCircle size={20} />
-        <span>Create New Routine</span>
-      </Link>
+      {/**
+       * This section provides the primary actions for the page:
+       * 1. Navigating to the "Pro Routine" selection hub.
+       * 2. Navigating to the page for creating a new custom routine.
+       */}
+      <div className="routine-page-actions">
+        <Link to="/workouts/routines/select-pro" className="action-button primary">
+          <Zap size={20} />
+          <span>Select Pro Routine</span>
+        </Link>
+        <Link to="/workouts/routines/new" className="action-button secondary">
+          <PlusCircle size={20} />
+          <span>Create Custom Routine</span>
+        </Link>
+      </div>
 
       <div className="routine-list">
         {loading && <p className="loading-message">Loading routines...</p>}
@@ -148,7 +154,7 @@ function WorkoutRoutinePage() {
           </div>
         ))}
         {!loading && routines.length === 0 && (
-          <p className="no-routines-message">You haven't created any routines yet. Click the button above to get started!</p>
+          <p className="no-routines-message">You haven't created any routines yet. Click a button above to get started!</p>
         )}
       </div>
     </div>
@@ -156,3 +162,4 @@ function WorkoutRoutinePage() {
 }
 
 export default WorkoutRoutinePage;
+

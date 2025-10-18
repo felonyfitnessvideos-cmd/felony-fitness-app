@@ -6,7 +6,7 @@
  * @project Felony Fitness
  *
  * @workflow
- * 1. This file targets the root DOM element (usually `<div id="root">`).
+ * 1. This file targets the root DOM element (`<div id="root">`).
  * 2. It sets up global context providers that wrap the entire application:
  * - `ThemeProvider`: Manages the application's theme (e.g., dark/light mode).
  * - `BrowserRouter`: Enables client-side routing using React Router.
@@ -42,10 +42,12 @@ import SelectRoutineLogPage from './pages/SelectRoutineLogPage.jsx';
 import WorkoutLogPage from './pages/WorkoutLogPage.jsx';
 import WorkoutRecsPage from './pages/WorkoutRecsPage.jsx';
 import EditRoutinePage from './pages/EditRoutinePage.jsx';
+import SelectProRoutinePage from './pages/SelectProRoutinePage.jsx';
+import ProRoutineCategoryPage from './pages/ProRoutineCategoryPage.jsx';
 import NutritionGoalsPage from './pages/NutritionGoalsPage.jsx';
 import NutritionLogPage from './pages/NutritionLogPage.jsx';
 import NutritionRecsPage from './pages/NutritionRecsPage.jsx';
-import ProfilePage from './pages/ProfilePage';
+import ProfilePage from './pages/ProfilePage.jsx';
 
 // Binds the modal to the app's root element for accessibility (e.g., screen readers).
 Modal.setAppElement('#root'); 
@@ -70,20 +72,27 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/progress" element={<ProgressPage />} />
               <Route path="/my-plan" element={<MyPlanPage />} />
               
-              {/* Nested routes for the "Workouts" section */}
+              {/* --- Nested routes for the "Workouts" section --- */}
               <Route path="/workouts/goals" element={<WorkoutGoalsPage />} />
               <Route path="/workouts/routines" element={<WorkoutRoutinePage />} />
               <Route path="/workouts/select-routine-log" element={<SelectRoutineLogPage />} />
               <Route path="/log-workout/:routineId" element={<WorkoutLogPage />} />
               <Route path="/workouts/recommendations" element={<WorkoutRecsPage />} />
+              {/* This route handles both creating a new routine and editing an existing one */}
               <Route path="/workouts/routines/:routineId" element={<EditRoutinePage />} />
+              
+              {/* --- Nested routes for the "Pro Routines" feature --- */}
+              {/* The main hub/category selection page */}
+              <Route path="/workouts/routines/select-pro" element={<SelectProRoutinePage />} />
+              {/* The dynamic page that displays routines for a specific category */}
+              <Route path="/workouts/routines/pro-category/:categoryName" element={<ProRoutineCategoryPage />} />
 
-              {/* Nested routes for the "Nutrition" section */}
+              {/* --- Nested routes for the "Nutrition" section --- */}
               <Route path="/nutrition/goals" element={<NutritionGoalsPage />} />
               <Route path="/nutrition/log" element={<NutritionLogPage />} />
               <Route path="/nutrition/recommendations" element={<NutritionRecsPage />} />
 
-              {/* Profile route */}
+              {/* --- Profile route --- */}
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Routes>
@@ -92,3 +101,4 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </ThemeProvider>
   </React.StrictMode>
 );
+
