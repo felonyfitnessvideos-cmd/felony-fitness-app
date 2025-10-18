@@ -1,3 +1,19 @@
+// @ts-check
+
+/**
+ * @file NutritionGoalsPage.jsx
+ * @description This page allows users to set and update their daily nutrition goals, such as calories, macronutrients, and water intake.
+ * @project Felony Fitness
+ *
+ * @workflow
+ * 1.  **Data Fetching**: On component mount, `fetchGoals` is called. It queries the `user_profiles` table to retrieve the current user's saved daily nutrition goals.
+ * 2.  **State Management**: The fetched goals are stored in the `goals` state object. The form inputs are bound to this state. A `loading` state manages the UI during fetching, and a `message` state provides feedback to the user.
+ * 3.  **User Input**: As the user types in the input fields, `handleInputChange` updates the `goals` state in real-time.
+ * 4.  **Saving Goals**: When the "Save Goals" button is clicked, `handleSaveGoals` is triggered. It constructs a payload with the updated goal values, converting any empty inputs to `null` for the database.
+ * 5.  **Database Update**: The function uses `supabase.from('user_profiles').upsert()` to update the user's profile with the new goals. `upsert` is used to safely update the existing record.
+ * 6.  **User Feedback**: A status message is displayed to inform the user that their goals are being saved or have been saved successfully.
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
@@ -5,8 +21,18 @@ import { Apple, Flame, Droplets, Beef, Wheat, Wind } from 'lucide-react';
 import { useAuth } from '../AuthContext.jsx';
 import './NutritionGoalsPage.css';
 
+/**
+ * @typedef {object} NutritionGoals
+ * @property {string|number} daily_calorie_goal
+ * @property {string|number} daily_protein_goal
+ * @property {string|number} daily_carb_goal
+ * @property {string|number} daily_fat_goal
+ * @property {string|number} daily_water_goal_oz
+ */
+
 function NutritionGoalsPage() {
   const { user } = useAuth();
+  /** @type {[NutritionGoals, React.Dispatch<React.SetStateAction<NutritionGoals>>]} */
   const [goals, setGoals] = useState({
     daily_calorie_goal: '',
     daily_protein_goal: '',
@@ -17,6 +43,11 @@ function NutritionGoalsPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
 
+  /**
+   * Fetches the user's current nutrition goals from their profile.
+   * @param {string} userId - The UUID of the authenticated user.
+   * @async
+   */
   const fetchGoals = useCallback(async (userId) => {
     setLoading(true);
     try {
@@ -26,9 +57,11 @@ function NutritionGoalsPage() {
         .eq('id', userId)
         .single();
 
+      // Ignore the "no rows found" error, as it's expected for new users.
       if (error && error.code !== 'PGRST116') throw error;
       
       if (data) {
+        // Populate the state with fetched data, using empty strings as a fallback.
         setGoals({
           daily_calorie_goal: data.daily_calorie_goal || '',
           daily_protein_goal: data.daily_protein_goal || '',
@@ -45,6 +78,7 @@ function NutritionGoalsPage() {
     }
   }, []);
 
+  // Effect to trigger the initial data fetch when the user session is available.
   useEffect(() => {
     if (user) {
       fetchGoals(user.id);
@@ -53,19 +87,28 @@ function NutritionGoalsPage() {
     }
   }, [user?.id, fetchGoals]);
 
+  /**
+   * Handles changes to the form's input fields, updating the local state.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
+   */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    // Allow empty string to clear input, otherwise parse as integer
+    // Allow empty strings for clearing inputs, otherwise parse to a number.
     setGoals(prev => ({ ...prev, [name]: value === '' ? '' : parseInt(value, 10) }));
   };
 
+  /**
+   * Saves the user's updated goals to the `user_profiles` table using an upsert operation.
+   * @async
+   */
   const handleSaveGoals = async () => {
     if (!user) return alert("You must be logged in.");
 
     setMessage('Saving...');
     try {
+      // Prepare the payload for Supabase, converting empty strings to null.
       const updates = {
-        id: user.id,
+        id: user.id, // The primary key to identify the row for upserting.
         daily_calorie_goal: goals.daily_calorie_goal || null,
         daily_protein_goal: goals.daily_protein_goal || null,
         daily_carb_goal: goals.daily_carb_goal || null,
@@ -77,7 +120,7 @@ function NutritionGoalsPage() {
       if (error) throw error;
       
       setMessage('Goals saved successfully!');
-      setTimeout(() => setMessage(''), 2000);
+      setTimeout(() => setMessage(''), 2000); // Clear the message after 2 seconds.
     } catch (error) {
       setMessage(`Error: ${error.message}`);
     }

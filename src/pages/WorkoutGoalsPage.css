@@ -1,7 +1,26 @@
+/**
+ * @file WorkoutGoalsPage.css 
+ * @description Styles for the user's goal management page.
+ * @project Felony Fitness
+ *
+ * @layout_pattern Vertical Card List
+ * This stylesheet defines the layout for a page that displays a list of goals.
+ * Each goal is presented in a detailed "card" component, and the list is arranged
+ * in a single vertical column for easy scrolling on mobile devices.
+ */
+
+/**
+ * Main container for the Goals Page.
+ * Provides basic padding and reserves space at the bottom for the main app navigation.
+ */
 .goals-container {
   padding: 1rem;
   padding-bottom: 80px;
 }
+
+/**
+ * Header section containing the page title and description.
+ */
 .goals-header {
   text-align: center;
   margin-bottom: 2rem;
@@ -10,10 +29,14 @@
   color: var(--text-secondary);
   margin: 0 0 1rem 0;
 }
+
+/**
+ * The primary "Add Goal" button, styled as a prominent call-to-action.
+ */
 .add-goal-button {
   width: 100%;
   max-width: 300px;
-  margin: 0 auto;
+  margin: 0 auto; /* Centers the button horizontally */
   display: block;
   padding: 0.8rem;
   background-color: var(--accent-color);
@@ -27,25 +50,40 @@
 .add-goal-button:hover {
   background-color: var(--accent-color-hover);
 }
+
+/**
+ * The main container for the list of goal cards.
+ * Uses a flexbox column to stack the cards vertically with consistent spacing.
+ */
 .goals-list {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   margin-top: 2rem;
 }
+
+/**
+ * Styling for an individual goal card.
+ * This is the main component for displaying goal information.
+ */
 .goal-card {
   background-color: var(--card-color);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1rem;
-  display: flex; 
-  flex-direction: column; 
-  gap: 1rem; 
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; /* Creates space between the header, description, and progress sections */
 }
+
+/**
+ * The header section within a goal card.
+ * Uses flexbox to position the title on the left and the target date on the right.
+ */
 .goal-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: flex-start; /* Aligns items to the top */
 }
 .goal-title-group {
   display: flex;
@@ -72,11 +110,19 @@
 .goal-target-date span {
   font-weight: 600;
 }
+
+/**
+ * The main description text for the goal.
+ */
 .goal-description {
   color: var(--text-secondary);
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.6; /* Improves readability */
 }
+
+/**
+ * The container for the goal's progress bar and associated text.
+ */
 .goal-progress {
   position: relative;
 }
@@ -91,13 +137,13 @@
   background-color: var(--background-color);
   border-radius: 5px;
   height: 8px;
-  overflow: hidden;
+  overflow: hidden; /* Ensures the inner bar's rounded corners are visible */
 }
 .progress-bar {
   background-color: #10b981;
   height: 100%;
   border-radius: 5px;
-  transition: width 0.3s;
+  transition: width 0.3s; /* Smooth animation when progress updates */
 }
 .progress-percent {
   font-size: 1.2rem;
@@ -105,14 +151,17 @@
   color: var(--text-primary);
 }
 
+/**
+ * Container for the action buttons (e.g., Edit, Delete) on a goal card.
+ * `justify-content: flex-end` aligns the buttons to the right.
+ */
 .goal-actions {
   display: flex;
-  justify-content: flex-end; 
+  justify-content: flex-end;
   align-items: center;
   gap: 0.75rem;
-  margin-top: -0.5rem; 
+  margin-top: -0.5rem; /* Negative margin pulls it closer to the progress bar */
 }
-
 .action-btn {
   background: none;
   border: none;
@@ -123,16 +172,24 @@
   align-items: center;
 }
 .action-btn:hover {
-  color: #63b3ed; 
+  color: #63b3ed; /* Blue for standard actions */
 }
 .action-btn.danger:hover {
-  color: #e53e3e; 
+  color: #e53e3e; /* Red for destructive actions like delete */
 }
+
+/**
+ * Message displayed when no goals are found.
+ */
 .no-goals-message {
   text-align: center;
   color: var(--text-secondary);
   padding: 2rem;
 }
+
+/**
+ * Generic form styles, likely used within a modal for adding/editing goals.
+ */
 .form-group, .form-row, .action-footer {
   margin-bottom: 1rem;
 }

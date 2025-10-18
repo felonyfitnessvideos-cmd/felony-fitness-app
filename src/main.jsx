@@ -1,12 +1,34 @@
+// @ts-check
+
+/**
+ * @file main.jsx
+ * @description The main entry point for the React application.
+ * @project Felony Fitness
+ *
+ * @workflow
+ * 1. This file targets the root DOM element (usually `<div id="root">`).
+ * 2. It sets up global context providers that wrap the entire application:
+ * - `ThemeProvider`: Manages the application's theme (e.g., dark/light mode).
+ * - `BrowserRouter`: Enables client-side routing using React Router.
+ * - `AuthProvider`: Manages user authentication state (e.g., who is logged in).
+ * 3. It defines the application's URL structure using `<Routes>` and `<Route>`.
+ * 4. It establishes a nested routing structure:
+ * - A public route for the login page (`/`).
+ * - A group of protected routes that render inside the main `<App />` layout,
+ * which includes the persistent bottom navigation bar.
+ * 5. It initializes the `react-modal` library by setting the app element, which is
+ * important for accessibility.
+ */
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
 import Modal from 'react-modal';
 import { ThemeProvider } from './context/ThemeContext';
-import { AuthProvider } from './AuthContext.jsx'; // Import the AuthProvider
+import { AuthProvider } from './AuthContext.jsx';
 
-// Import page components
+// Import all page components
 import App from './App.jsx';
 import AuthPage from './pages/AuthPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
@@ -25,19 +47,22 @@ import NutritionLogPage from './pages/NutritionLogPage.jsx';
 import NutritionRecsPage from './pages/NutritionRecsPage.jsx';
 import ProfilePage from './pages/ProfilePage';
 
+// Binds the modal to the app's root element for accessibility (e.g., screen readers).
 Modal.setAppElement('#root'); 
 
+// Renders the main React application into the DOM.
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeProvider>
       <BrowserRouter>
-        {/* Wrap the entire Routes structure with AuthProvider */}
+        {/* The AuthProvider makes user session data available to all components. */}
         <AuthProvider>
           <Routes>
-            {/* Route 1: The public login page stands alone */}
+            {/* Route 1: The public login page. It does not use the main App layout. */}
             <Route path="/" element={<AuthPage />} />
 
-            {/* Route 2: All protected app pages live inside the App layout */}
+            {/* Route 2: A layout route. All child routes will render inside the <App /> component. */}
+            {/* This is how the bottom navbar appears on all the main pages. */}
             <Route element={<App />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/workouts" element={<WorkoutsPage />} />
@@ -45,7 +70,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/progress" element={<ProgressPage />} />
               <Route path="/my-plan" element={<MyPlanPage />} />
               
-              {/* Workout Sub-Pages */}
+              {/* Nested routes for the "Workouts" section */}
               <Route path="/workouts/goals" element={<WorkoutGoalsPage />} />
               <Route path="/workouts/routines" element={<WorkoutRoutinePage />} />
               <Route path="/workouts/select-routine-log" element={<SelectRoutineLogPage />} />
@@ -53,11 +78,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/workouts/recommendations" element={<WorkoutRecsPage />} />
               <Route path="/workouts/routines/:routineId" element={<EditRoutinePage />} />
 
-              {/* Nutrition Sub-Pages */}
+              {/* Nested routes for the "Nutrition" section */}
               <Route path="/nutrition/goals" element={<NutritionGoalsPage />} />
               <Route path="/nutrition/log" element={<NutritionLogPage />} />
               <Route path="/nutrition/recommendations" element={<NutritionRecsPage />} />
-              <Route path="profile" element={<ProfilePage />} />
+
+              {/* Profile route */}
+              <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Routes>
         </AuthProvider>

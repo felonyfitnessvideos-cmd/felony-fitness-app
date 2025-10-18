@@ -1,3 +1,26 @@
+// @ts-check
+
+/**
+ * @file DashboardPage.jsx
+ * @description The main dashboard page, serving as the central hub for the user's daily stats.
+ * @project Felony Fitness
+ *
+ * @workflow
+ * 1.  **Data Fetching**: On component mount, `fetchDashboardData` is called. It runs several database queries in parallel to gather:
+ * - The user's daily nutrition/fitness goals from their profile.
+ * - Today's aggregated nutrition totals (calories, protein, water) from an RPC function.
+ * - The user's list of active, long-term goals.
+ * - The most recent workout log for the current day.
+ * 2.  **State Management**: The fetched data is stored in various state variables (`goals`, `nutrition`, `training`, `activeGoals`). A `loading` state manages the UI during the fetch. A motivational quote is also randomly selected and stored.
+ * 3.  **Data Calculation**: The component calculates derived values for display, such as "net calories" (calories eaten minus calories burned) and progress percentages for nutrition goals.
+ * 4.  **Rendering**: The page displays the information in a series of cards:
+ * - A main nutrition card with progress bars.
+ * - A "Today's Training" card showing the most recent workout.
+ * - An "Active Goals" card listing the user's long-term goals.
+ * - A motivational quote card.
+ * 5.  **User Actions**: The user can log out, which signs them out of the session and navigates them back to the authentication page.
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
@@ -11,17 +34,55 @@ const motivationalQuotes = [
   "Strive for progress, not perfection.",
 ];
 
+/**
+ * @typedef {object} DailyGoals
+ * @property {number} calories
+ * @property {number} protein
+ * @property {number} water
+ */
+
+/**
+ * @typedef {object} DailyNutrition
+ * @property {number} calories
+ * @property {number} protein
+ * @property {number} water
+ */
+
+/**
+ * @typedef {object} DailyTraining
+ * @property {string} name
+ * @property {number} duration
+ * @property {number} calories
+ */
+
+/**
+ * @typedef {object} ActiveGoal
+ * @property {string} id
+ * @property {string} goal_description
+ * @property {number} current_value
+ * @property {number} target_value
+ */
+
 function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   
   const [quote, setQuote] = useState('');
+  /** @type {[DailyGoals, React.Dispatch<React.SetStateAction<DailyGoals>>]} */
   const [goals, setGoals] = useState({ calories: 0, protein: 0, water: 0 });
+  /** @type {[DailyNutrition, React.Dispatch<React.SetStateAction<DailyNutrition>>]} */
   const [nutrition, setNutrition] = useState({ calories: 0, protein: 0, water: 0 });
+  /** @type {[DailyTraining, React.Dispatch<React.SetStateAction<DailyTraining>>]} */
   const [training, setTraining] = useState({ name: 'Rest Day', duration: 0, calories: 0 });
+  /** @type {[ActiveGoal[], React.Dispatch<React.SetStateAction<ActiveGoal[]>>]} */
   const [activeGoals, setActiveGoals] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Fetches all necessary data for the dashboard from Supabase in parallel.
+   * @param {string} userId - The UUID of the currently authenticated user.
+   * @async
+   */
   const fetchDashboardData = useCallback(async (userId) => {
     setLoading(true);
     try {
@@ -32,6 +93,7 @@ function DashboardPage() {
       const tomorrowStart = new Date(todayStart);
       tomorrowStart.setDate(tomorrowStart.getDate() + 1);
 
+      // Fetch profile, nutrition totals, and goals simultaneously.
       const [profileRes, nutritionRes, goalsRes] = await Promise.all([
         supabase.from('user_profiles').select('*').eq('id', userId).single(),
         supabase.rpc('get_daily_nutrition_totals', { p_user_id: userId, p_date: todayStr }),
@@ -55,6 +117,7 @@ function DashboardPage() {
         setActiveGoals(goalsRes.data);
       }
 
+      // Fetch the most recent workout log for today.
       const { data: workoutLogData, error: workoutLogError } = await supabase
         .from('workout_logs')
         .select('notes, duration_minutes, calories_burned')
@@ -65,6 +128,7 @@ function DashboardPage() {
         .limit(1)
         .single();
       
+      // Ignore the "no rows found" error, as it's an expected outcome on a rest day.
       if (workoutLogError && workoutLogError.code !== 'PGRST116') { 
         throw workoutLogError;
       }
@@ -81,12 +145,17 @@ function DashboardPage() {
 
     } catch (error) {
         console.error("Error fetching dashboard data:", error);
+        // Fallback to a safe "Rest Day" state on error.
         setTraining({ name: 'Rest Day', duration: 0, calories: 0 });
     } finally {
         setLoading(false);
     }
   }, []);
 
+  /**
+   * Effect to initialize the dashboard. It selects a random quote and
+   * triggers the data fetch when the user session is available.
+   */
   useEffect(() => {
     const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
     setQuote(randomQuote);
@@ -98,11 +167,17 @@ function DashboardPage() {
     }
   }, [user?.id, fetchDashboardData]);
   
+  /**
+   * Handles the user logout process.
+   * @async
+   */
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/');
   };
 
+  // --- Derived State Calculations ---
+  // These values are calculated on every render based on the current state.
   const netCalories = nutrition.calories - (training?.calories || 0);
   const adjustedCalorieGoal = goals.calories + (training?.calories || 0);
   const calorieProgress = adjustedCalorieGoal > 0 ? (nutrition.calories / adjustedCalorieGoal) * 100 : 0;

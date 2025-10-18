@@ -1,9 +1,23 @@
+/**
+ * @file supabase/functions/generate-nutrition-recommendations/index.ts
+ * @description Edge Function to generate personalized nutrition recommendations for a user.
+ *
+ * @project Felony Fitness
+ *
+ * @workflow
+ * 1. SECURELY derives the user's ID from their authentication token.
+ * 2. Fetches the user's profile, latest metrics, and recent logs using RLS.
+ * 3. Processes nutrition logs by food category.
+ * 4. Constructs a detailed prompt for the OpenAI API with the user's data.
+ * 5. Instructs the AI to provide analysis and recommendations in a specific JSON format.
+ * 6. The AI's JSON response is parsed and sent back to the client.
+ */
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-// Helper function to calculate age from date of birth
 const calculateAge = (dob) => {
   if (!dob) return null;
   const birthDate = new Date(dob);
@@ -22,36 +36,39 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { userId } = await req.json();
-    if (!userId) throw new Error("User ID is required.");
-
-    const supabaseAdmin = createClient(
+    // **SECURITY FIX: Create a user-scoped client to enforce RLS**
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
 
-    // --- 1. Fetch all necessary user data ---
+    // **SECURITY FIX: Securely get the user from the JWT**
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error("Auth error:", authError?.message);
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+    const userId = user.id; // Use the secure, server-derived user ID
+
+    // --- 1. Fetch all necessary user data in parallel for efficiency. ---
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const [profileRes, metricsRes, nutritionRes, workoutRes] = await Promise.all([
-      supabaseAdmin.from('user_profiles').select('dob, sex, daily_calorie_goal, daily_protein_goal').eq('id', userId).single(),
-      supabaseAdmin.from('body_metrics').select('weight_lbs, body_fat_percentage').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
-      // --- START: MODIFICATION ---
-      // Query now includes the food's category for better analysis.
-      supabaseAdmin.from('nutrition_logs')
-        .select('quantity_consumed, food_servings(foods(name, category))') 
-        .eq('user_id', userId)
-        .gte('created_at', sevenDaysAgo.toISOString()),
-      // --- END: MODIFICATION ---
-      supabaseAdmin.from('workout_logs').select('notes, duration_minutes').eq('user_id', userId).gte('created_at', sevenDaysAgo.toISOString())
+      supabase.from('user_profiles').select('dob, sex, daily_calorie_goal, daily_protein_goal').eq('id', userId).single(),
+      supabase.from('body_metrics').select('weight_lbs, body_fat_percentage').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('nutrition_logs').select('quantity_consumed, food_servings(foods(name, category))').eq('user_id', userId).gte('created_at', sevenDaysAgo.toISOString()),
+      supabase.from('workout_logs').select('notes, duration_minutes').eq('user_id', userId).gte('created_at', sevenDaysAgo.toISOString())
     ]);
 
     if (profileRes.error) throw profileRes.error;
     if (metricsRes.error) throw metricsRes.error;
     if (nutritionRes.error) throw nutritionRes.error;
     if (workoutRes.error) throw workoutRes.error;
-
     if (!profileRes.data) {
       throw new Error("User profile not found. Cannot generate recommendations without goals.");
     }
@@ -59,9 +76,8 @@ Deno.serve(async (req) => {
     const userProfile = profileRes.data;
     const latestMetrics = metricsRes.data;
 
-    // --- START: MODIFICATION ---
-    // Process nutrition logs into a summary by category.
-    const categoryCounts = nutritionRes.data.reduce((acc, log) => {
+    // --- 2. Process and summarize the fetched data for the AI prompt. ---
+    const categoryCounts = (nutritionRes.data || []).reduce((acc, log) => {
       const category = log.food_servings?.foods?.category || 'Uncategorized';
       const quantity = log.quantity_consumed || 0;
       acc[category] = (acc[category] || 0) + quantity;
@@ -71,30 +87,24 @@ Deno.serve(async (req) => {
     const nutritionSummary = Object.entries(categoryCounts)
       .map(([category, count]) => `- ${category}: ${count} serving(s)`)
       .join('\n');
-    // --- END: MODIFICATION ---
 
+    // --- 3. Construct the full prompt for the AI. ---
     const prompt = `
       You are an expert fitness and nutrition coach for Felony Fitness, an organization helping formerly incarcerated individuals. 
       Your tone should be encouraging, straightforward, and supportive.
-
       Analyze the following user data from the last 7 days and provide 3 actionable nutrition-related recommendations.
-
       User Profile:
       - Age: ${calculateAge(userProfile.dob)}
       - Sex: ${userProfile.sex}
       - Weight: ${latestMetrics?.weight_lbs || 'N/A'} lbs
       - Body Fat: ${latestMetrics?.body_fat_percentage || 'N/A'}%
-
       User Goals:
       - Calories: ${userProfile.daily_calorie_goal}
       - Protein: ${userProfile.daily_protein_goal}g
-
       7-Day Nutrition Summary (by category):
       ${nutritionSummary || 'No nutrition logged.'}
-
       Recent Workouts:
-      ${workoutRes.data.map((log) => `- ${log.notes || 'Workout'} for ${log.duration_minutes} minutes`).join('\n') || 'No workouts logged.'}
-
+      ${(workoutRes.data || []).map((log) => `- ${log.notes || 'Workout'} for ${log.duration_minutes} minutes`).join('\n') || 'No workouts logged.'}
       Based on this data, provide a response in valid JSON format, focused on nutrition. The response must be a JSON object with two keys: "analysis_summary" and "recommendations".
       Here is the required JSON structure:
       {
@@ -109,7 +119,7 @@ Deno.serve(async (req) => {
       }
     `;
 
-    // --- 3. Call the OpenAI API ---
+    // --- 4. Call the OpenAI API ---
     const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -129,6 +139,8 @@ Deno.serve(async (req) => {
     }
     const aiData = await aiResponse.json();
     const recommendations = JSON.parse(aiData.choices[0].message.content);
+
+    // --- 5. Return the final recommendations to the client. ---
     return new Response(JSON.stringify(recommendations), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200

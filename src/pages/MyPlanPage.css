@@ -1,9 +1,27 @@
+/**
+ * @file MyPlanPage.css
+ * @description Styles for the "My Plan" page, which displays subscription options and settings.
+ * @project Felony Fitness
+ *
+ * @layout_pattern Vertical Layout with a Grid
+ * This stylesheet defines a primarily single-column layout for the main plan cards,
+ * but uses a two-column CSS Grid for the smaller upgrade option cards.
+ */
+
+/**
+ * Main container for the My Plan Page.
+ * `position: relative` is crucial for correctly positioning the absolute
+ * `.settings-button` within this container.
+ */
 .my-plan-container {
   padding: 1rem;
   padding-bottom: 80px; /* Space for nav bar */
   position: relative;
 }
 
+/**
+ * The header section displaying the page title and user email.
+ */
 .plan-header {
   text-align: center;
   margin-bottom: 2rem;
@@ -21,6 +39,9 @@
   margin: 0.25rem 0 0;
 }
 
+/**
+ * Base styling for all subscription plan cards.
+ */
 .plan-card {
   background-color: var(--card-color);
   border: 1px solid var(--border-color);
@@ -30,8 +51,9 @@
   margin-bottom: 1rem;
 }
 
+/* Special styling for the user's current plan card. */
 .plan-card.current-plan {
-  border-color: #10b981; /* Green border for current plan */
+  border-color: var(--color-success, #10b981); /* Green border to highlight the active plan */
 }
 
 .plan-icon {
@@ -52,6 +74,9 @@
   margin: 0 0 1.5rem 0;
 }
 
+/**
+ * Base styling for the buttons within the plan cards.
+ */
 .plan-button {
   width: 100%;
   background-color: var(--border-color);
@@ -68,11 +93,15 @@
   background-color: var(--accent-color);
 }
 
+/* Specific style for the button on the current, non-interactive plan. */
 .plan-button.current {
-  background-color: #8d5a21;
+  background-color: var(--color-accent-dark, #8d5a21); /* A muted/inactive version of the accent color */
   cursor: default;
 }
 
+/**
+ * A two-column grid for displaying the smaller upgrade plan cards.
+ */
 .plans-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -86,6 +115,10 @@
   margin-top: 2rem;
 }
 
+/**
+ * The floating settings button in the top-right corner.
+ * `position: absolute` places it relative to the `.my-plan-container`.
+ */
 .settings-button {
   position: absolute;
   top: 1rem;
@@ -97,6 +130,9 @@
   padding: 0.5rem;
 }
 
+/**
+ * Styles for the Settings modal content.
+ */
 .settings-modal .modal-header {
   display: flex;
   justify-content: space-between;
@@ -119,6 +155,9 @@
   margin-bottom: 1rem;
 }
 
+/**
+ * The container for the theme selection buttons inside the modal.
+ */
 .theme-options {
   display: flex;
   flex-direction: column;
@@ -144,5 +183,5 @@
 .theme-btn.active {
   background-color: var(--accent-color);
   border-color: var(--accent-color);
-  color: white;
+  color: var(--color-white, #ffffff);
 }

@@ -1,72 +1,88 @@
-/* FILE: src/pages/ProfilePage.css */
+/*
+ * @file ProfilePage.css
+ * @description This file contains the styles for the ProfilePage.jsx component.
+ * It styles the profile information section, the metric logging form, the history list,
+ * and the body fat estimation modal.
+ * @author [Your Name/Team Name]
+ * @date 10/17/2025
+ */
 
+/* Main container for the profile page. */
 .profile-page-container {
-  /* height: 100%; REMOVED */
-  /* overflow-y: auto; REMOVED */
   padding: 1rem;
-  padding-bottom: 6rem; /* Standard bottom padding */
+  padding-bottom: 6rem; /* Ensures content isn't hidden by a fixed bottom nav bar. */
 }
 
+/* Common styling for form containers (profile and metrics). */
 .metric-form {
-  background-color: #2d3748;
+  background-color: #2d3748; /* Dark card background. */
   padding: 1.5rem;
   border-radius: 12px;
   margin-bottom: 2rem;
 }
 
+/* Header within the form containers. */
 .metric-form h2 {
   text-align: center;
   margin-top: 0;
   margin-bottom: 1.5rem;
 }
 
+/* Wrapper for a label and its corresponding input. */
 .form-group {
   margin-bottom: 1rem;
 }
 
+/* Label styling for form inputs. */
 .form-group label {
   display: block;
   font-size: 0.9rem;
-  color: #a0aec0;
+  color: #a0aec0; /* Light gray for secondary text. */
   margin-bottom: 0.5rem;
 }
 
+/* Container for positioning an icon inside an input field. */
 .input-with-icon {
   position: relative;
   display: flex;
   align-items: center;
 }
 
+/* Icon styling within an input field. */
 .input-with-icon svg {
   position: absolute;
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
   color: #a0aec0;
-  pointer-events: none;
+  pointer-events: none; /* Allows clicks to pass through the icon to the input. */
 }
 
+/* General input field styling. */
 .input-with-icon input {
   width: 100%;
-  background-color: #1a202c;
+  background-color: #1a202c; /* Very dark background for the input. */
   border: 1px solid #4a5568;
   border-radius: 8px;
+  /* Left padding makes space for the icon. */
   padding: 0.9rem 1rem 0.9rem 3rem;
   color: white;
   font-size: 1rem;
 }
 
+/* Feedback message (e.g., "Saved successfully"). */
 .form-message {
   text-align: center;
-  color: #48bb78; /* green-500 */
+  color: #48bb78; /* A success green color. */
   margin-top: 1rem;
   margin-bottom: 0;
 }
 
+/* Main action button for forms. */
 .save-button {
   width: 100%;
   padding: 1rem;
-  background-color: #f97316;
+  background-color: #f97316; /* Primary brand orange. */
   color: white;
   border: none;
   border-radius: 8px;
@@ -75,17 +91,21 @@
   margin-top: 1rem;
 }
 
+/* --- History Section --- */
+
 .history-section h2 {
   margin-bottom: 1rem;
   font-size: 1.25rem;
 }
 
+/* Resets default list styling. */
 .history-list {
   list-style-type: none;
   padding: 0;
   margin: 0;
 }
 
+/* Individual list item for a past measurement. */
 .history-item {
   display: flex;
   justify-content: space-between;
@@ -101,20 +121,26 @@
   font-size: 0.9rem;
 }
 
+/* Container for the logged values (e.g., weight, body fat). */
 .history-values {
   display: flex;
   gap: 1.5rem;
   font-weight: 600;
 }
 
+/* --- Specific Input Type Styling --- */
+
+/* Common styles for select and date inputs to align with text inputs. */
 .input-with-icon select,
 .input-with-icon input[type="date"] {
-  padding-left: 3rem;
+  padding-left: 3rem; /* Ensures text doesn't overlap the icon. */
+  /* Removes default browser styling for the dropdown arrow. */
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
 }
 
+/* Select (dropdown) specific styling. */
 .input-with-icon select {
   width: 100%;
   background-color: #1a202c;
@@ -126,12 +152,16 @@
   font-size: 1rem;
 }
 
+/* Ensures the date picker's calendar UI is dark-themed. */
 input[type="date"] {
   color-scheme: dark;
 }
 
+/* --- Miscellaneous Components --- */
+
+/* A button styled to look like a link. */
 .link-button {
-  display: table;
+  display: table; /* Allows centering with margin: auto. */
   margin: 2rem auto 0;
   text-align: center;
   padding: 1rem 2rem;
@@ -146,15 +176,17 @@ input[type="date"] {
 }
 
 .link-button:hover {
-  background-color: #718096;
+  background-color: #718096; /* Lighter gray on hover. */
 }
 
+/* Container for a label and a side-link (e.g., "How can I tell?"). */
 .label-with-link {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+/* The small text link next to a label. */
 .info-link {
   background: none;
   border: none;
@@ -164,6 +196,8 @@ input[type="date"] {
   cursor: pointer;
   padding: 0;
 }
+
+/* --- Modal Styles --- */
 
 .modal-header {
   display: flex;
@@ -192,8 +226,10 @@ input[type="date"] {
   margin-bottom: 1.5rem;
 }
 
+/* Grid layout for body fat images. */
 .bodyfat-grid {
   display: grid;
+  /* Creates a responsive grid that fits as many columns as possible with a minimum width of 120px. */
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 1rem;
 }
@@ -205,8 +241,8 @@ input[type="date"] {
 .bodyfat-image {
   width: 100%;
   height: auto;
-  aspect-ratio: 3 / 4;
-  object-fit: cover;
+  aspect-ratio: 3 / 4; /* Maintains a consistent 3:4 aspect ratio. */
+  object-fit: cover; /* Ensures images fill the space without distortion. */
   border-radius: 8px;
   background-color: #4a5568;
   margin-bottom: 0.5rem;
@@ -217,11 +253,14 @@ input[type="date"] {
   margin: 0;
 }
 
+/* Styles for the message shown when sex is not 'Male' or 'Female'. */
 .professional-advice {
   text-align: center;
   color: #a0aec0;
   line-height: 1.6;
 }
+
+/* --- Profile Display Styles (Non-editing view) --- */
 
 .profile-display {
   display: flex;
@@ -229,6 +268,7 @@ input[type="date"] {
   gap: 1.5rem;
 }
 
+/* A single line of profile info (e.g., "Age: 35"). */
 .profile-stat {
   display: flex;
   justify-content: space-between;
@@ -245,6 +285,7 @@ input[type="date"] {
   font-weight: 600;
 }
 
+/* The "Edit" button in the profile display view. */
 .edit-button {
   display: flex;
   align-items: center;

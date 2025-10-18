@@ -1,8 +1,28 @@
+/**
+ * @file EditRoutinePage.css
+ * @description Styles for the page where users create or edit a workout routine.
+ * @project Felony Fitness
+ *
+ * @layout_pattern Fixed Footer & Vertical List
+ * This stylesheet uses a fixed footer (`.action-footer`) for the main save/cancel actions,
+ * ensuring they are always accessible. The main content area scrolls vertically,
+ * containing form inputs and a list of exercise cards.
+ */
+
+/**
+ * Main container for the Edit Routine Page.
+ * `padding-bottom` is crucial to create space at the bottom, preventing the
+ * fixed footer and the main app navbar from hiding the last items in the exercise list.
+ */
 .edit-routine-page-container {
   padding: 1rem;
+  /* (Footer Height + Navbar Height + Buffer) -> ~80px + 60px + 40px = 180px */
   padding-bottom: 180px; 
 }
 
+/**
+ * Shared styles for form groups and the main exercise search section.
+ */
 .form-group, .add-exercise-section {
   margin-bottom: 1.5rem;
 }
@@ -29,10 +49,19 @@
   box-sizing: border-box;
 }
 
+/**
+ * The exercise search section.
+ * `position: relative` is necessary for the absolutely positioned search results dropdown.
+ */
 .add-exercise-section {
   position: relative;
 }
 
+/**
+ * The search results dropdown that appears below the search input.
+ * `position: absolute` removes it from the normal document flow.
+ * `z-index: 10` ensures it appears on top of other content.
+ */
 .search-results {
   position: absolute;
   background-color: #2d3748;
@@ -71,7 +100,7 @@
 }
 
 .add-exercise-btn {
-  background-color: #10b981;
+  background-color: #10b981; /* Green for "add" action */
   color: white;
   border: none;
   border-radius: 6px;
@@ -96,6 +125,10 @@
     font-size: 0.9rem;
 }
 
+/**
+ * The list of exercises currently in the routine.
+ * Uses a flexbox column to stack the exercise cards vertically.
+ */
 .exercise-list {
   display: flex;
   flex-direction: column;
@@ -103,6 +136,9 @@
   margin-top: 1rem;
 }
 
+/**
+ * An individual exercise card within the routine list.
+ */
 .exercise-card {
   display: flex;
   align-items: center;
@@ -117,27 +153,27 @@
   height: 50px;
   background-color: #4a5568;
   border-radius: 6px;
-  flex-shrink: 0;
+  flex-shrink: 0; /* Prevents the image from shrinking */
 }
 
 .exercise-details {
-  flex-grow: 1;
-  min-width: 0;
+  flex-grow: 1; /* Allows this section to take up all available space */
+  min-width: 0; /* Prevents text overflow issues in flexbox */
 }
 
 .exercise-details h4 {
   margin: 0 0 0.5rem 0;
   font-size: 1rem;
-  white-space: nowrap;
+  white-space: nowrap; /* Prevents the title from wrapping */
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: ellipsis; /* Adds "..." if the title is too long */
 }
 
 .exercise-inputs {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  flex-wrap: wrap; /* Allows inputs to wrap on smaller screens if needed */
 }
 
 .exercise-inputs input {
@@ -158,16 +194,19 @@
 .remove-exercise-button {
   background: none;
   border: none;
-  color: #e53e3e;
+  color: #e53e3e; /* Red for destructive action */
   cursor: pointer;
   padding: 0.5rem;
   margin-left: auto;
   flex-shrink: 0;
 }
 
+/**
+ * The fixed footer containing the "Save" and "Cancel" buttons.
+ */
 .action-footer {
   position: fixed;
-  bottom: 60px; /* Sits above main nav */
+  bottom: 60px; /* Sits directly on top of the main 60px navbar */
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -189,10 +228,12 @@
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  /* CORRECTED: This removes any default browser margins */
-  margin: 0;
+  margin: 0; /* Removes any default browser margins */
 }
 
+/**
+ * Shared button styles for the modal footer.
+ */
 .modal-action-footer button {
   padding: 0.8rem 1.5rem;
   border: none;
@@ -218,6 +259,9 @@
     margin-top: 1.5rem;
 }
 
+/**
+ * Controls for reordering exercises in the list (up/down arrows).
+ */
 .reorder-controls {
   display: flex;
   flex-direction: column;

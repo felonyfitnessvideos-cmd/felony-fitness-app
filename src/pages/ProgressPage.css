@@ -1,8 +1,29 @@
+/**
+ * @file ProgressPage.css
+ * @description Styles for the user's progress overview page.
+ * @project Felony Fitness
+ *
+ * @layout_pattern Grid Layout
+ * This stylesheet uses CSS Grid to create responsive, adaptive layouts for
+ * displaying stats and charts.
+ * - `.stats-grid`: A two-column grid for the main summary statistics.
+ * - `.chart-grid`: A single-column grid that stacks the chart components vertically.
+ */
+
+/**
+ * Main container for the Progress Page.
+ * Provides basic padding and reserves space at the bottom to prevent the
+ * main app navigation from obscuring content.
+ */
 .progress-container {
   padding: 1rem;
   padding-bottom: 80px; /* Space for the bottom nav */
 }
 
+/**
+ * Defines the two-column grid for the summary statistic cards.
+ * `grid-template-columns: 1fr 1fr;` creates two columns of equal width.
+ */
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -10,6 +31,10 @@
   margin-bottom: 2rem;
 }
 
+/**
+ * Styling for the individual statistic cards (e.g., "Total Workouts").
+ * Uses flexbox to center its content (icon and text) both vertically and horizontally.
+ */
 .stat-card {
   background-color: #2d3748;
   border-radius: 12px;
@@ -23,7 +48,7 @@
 }
 
 .stat-card svg {
-  color: #f97316;
+  color: #f97316; /* Accent color for the icon */
 }
 
 .stat-card span {
@@ -31,6 +56,10 @@
   font-weight: bold;
 }
 
+/**
+ * Defines the single-column grid for the trend charts.
+ * On mobile, this ensures charts stack neatly on top of each other.
+ */
 .chart-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -38,6 +67,9 @@
   margin-bottom: 2rem;
 }
 
+/**
+ * Styling for the container card that holds each chart.
+ */
 .chart-card {
   background-color: #2d3748;
   border-radius: 12px;
@@ -52,6 +84,9 @@
   color: #a0aec0;
 }
 
+/**
+ * Styling for the "Goals Progress" section at the bottom of the page.
+ */
 .goals-progress-section h3 {
   font-size: 1.2rem;
   font-weight: 800;
@@ -70,6 +105,11 @@
   color: #a0aec0;
 }
 
+/**
+ * The visual progress bar for each goal.
+ * The inner `.goal-progress-bar` width is set dynamically via inline styles
+ * in the React component.
+ */
 .goal-progress-bar-wrapper {
   width: 100%;
   background-color: #2d3748;
@@ -78,8 +118,8 @@
 }
 
 .goal-progress-bar {
-  background-color: #10b981;
+  background-color: #10b981; /* Green color for progress */
   height: 100%;
   border-radius: 5px;
-  transition: width 0.5s ease-in-out;
+  transition: width 0.5s ease-in-out; /* Smooth animation for width changes */
 }
