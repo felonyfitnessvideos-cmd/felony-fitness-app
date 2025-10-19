@@ -58,8 +58,16 @@ function ProRoutineCategoryPage() {
     setSelectedRoutine(routine);
     setModalIsOpen(true);
     
-    // Fetch exercise names for the modal
-    const exerciseIds = routine.exercises.map(ex => ex.exercise_id);
+    // Fetch exercise names for the modal robustly and performantly.
+    const exerciseIds = Array.isArray(routine.exercises)
+      ? routine.exercises.map((ex) => ex?.exercise_id).filter(Boolean)
+      : [];
+
+    if (exerciseIds.length === 0) {
+      setModalExercises([]);
+      return;
+    }
+    
     const { data, error } = await supabase
       .from('exercises')
       .select('id, name')
@@ -71,11 +79,12 @@ function ProRoutineCategoryPage() {
       return;
     }
     
-    // Map exercise names to the routine's exercise list
-    const exercisesWithDetails = routine.exercises.map(ex => {
-        const details = data.find(d => d.id === ex.exercise_id);
-        return { ...ex, name: details?.name || 'Unknown Exercise' };
-    });
+    // Use a Map for efficient O(n) lookup instead of a nested loop.
+    const nameById = new Map((data ?? []).map((d) => [d.id, d.name]));
+    const exercisesWithDetails = routine.exercises.map((ex) => ({
+      ...ex,
+      name: nameById.get(ex.exercise_id) ?? 'Unknown Exercise',
+    }));
     setModalExercises(exercisesWithDetails);
   };
 
@@ -111,8 +120,9 @@ function ProRoutineCategoryPage() {
           <div key={routine.id} className="routine-item-card">
             <h4>{routine.name}</h4>
             <p>{routine.description}</p>
+            {/* ACCESSIBILITY FIX: Hide decorative icon from screen readers. */}
             <button onClick={() => openModalWithRoutine(routine)}>
-              <Info size={16} /> View Details
+              <Info size={16} aria-hidden="true" /> View Details
             </button>
           </div>
         ))}
@@ -132,7 +142,10 @@ function ProRoutineCategoryPage() {
           <div className="routine-modal-content">
             <div className="modal-header">
                 <h2>{selectedRoutine.name}</h2>
-                <button onClick={closeModal} className="close-button"><X size={24} /></button>
+                {/* ACCESSIBILITY FIX: Add aria-label and hide decorative icon. */}
+                <button onClick={closeModal} className="close-button" aria-label="Close details">
+                  <X size={24} aria-hidden="true" />
+                </button>
             </div>
             <p className="modal-description">{selectedRoutine.description}</p>
             
@@ -160,3 +173,4 @@ function ProRoutineCategoryPage() {
 }
 
 export default ProRoutineCategoryPage;
+
