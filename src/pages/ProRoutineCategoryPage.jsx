@@ -24,6 +24,13 @@ const customModalStyles = {
   overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 999 },
 };
 
+/**
+ * Render a page listing pro routines for the current category with a modal to view routine details and add a pro routine to the user's account.
+ *
+ * Fetches routines for the route `categoryName`, displays each routine with a details button that opens a modal (showing exercise names and sets), and allows copying a pro routine to the current user's routines. Manages loading and adding states and navigates to the user's routines after a successful add.
+ *
+ * @returns {JSX.Element} The rendered category page component.
+ */
 function ProRoutineCategoryPage() {
   const { categoryName } = useParams();
   const navigate = useNavigate();

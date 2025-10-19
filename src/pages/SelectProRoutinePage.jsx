@@ -14,9 +14,10 @@ import { Dumbbell, Zap, HeartPulse, Shield, Wind, Repeat } from 'lucide-react';
 import './SelectProRoutinePage.css';
 
 /**
- * @component SelectProRoutinePage
- * @description Renders a grid of cards, each representing a category of "Pro Routines".
- * @returns {JSX.Element}
+ * Render the Select Pro Routine hub page for choosing a routine category.
+ *
+ * Displays a header, an introductory paragraph, and a grid of navigable category cards.
+ * @returns {JSX.Element} The rendered Select Pro Routine page element.
  */
 function SelectProRoutinePage() {
   // Array of category objects to generate the navigation cards dynamically.
@@ -50,4 +51,3 @@ function SelectProRoutinePage() {
 }
 
 export default SelectProRoutinePage;
-
