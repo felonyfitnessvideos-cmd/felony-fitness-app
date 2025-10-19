@@ -59,7 +59,13 @@ function ProRoutineCategoryPage() {
     setModalIsOpen(true);
     
     // Fetch exercise names for the modal
-    const exerciseIds = routine.exercises.map(ex => ex.exercise_id);
+    const exerciseIds = Array.isArray(routine.exercises)
+      ? routine.exercises.map((ex) => ex?.exercise_id).filter(Boolean)
+      : [];
+    if (exerciseIds.length === 0) {
+      setModalExercises([]);
+      return;
+    }
     const { data, error } = await supabase
       .from('exercises')
       .select('id, name')
@@ -72,10 +78,11 @@ function ProRoutineCategoryPage() {
     }
     
     // Map exercise names to the routine's exercise list
-    const exercisesWithDetails = routine.exercises.map(ex => {
-        const details = data.find(d => d.id === ex.exercise_id);
-        return { ...ex, name: details?.name || 'Unknown Exercise' };
-    });
+    const nameById = new Map((data ?? []).map((d) => [d.id, d.name]));
+    const exercisesWithDetails = routine.exercises.map((ex) => ({
+      ...ex,
+      name: nameById.get(ex.exercise_id) ?? 'Unknown Exercise',
+    }));
     setModalExercises(exercisesWithDetails);
   };
 
