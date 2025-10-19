@@ -1,12 +1,11 @@
-// @ts-check
-
+ 
 /**
  * @file EditRoutinePage.jsx
  * @description This page allows users to create a new workout routine or edit an existing one.
  * @project Felony Fitness
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
@@ -15,16 +14,7 @@ import Modal from 'react-modal';
 import { useAuth } from '../AuthContext.jsx';
 import './EditRoutinePage.css';
 
-// Styles for the custom exercise creation modal.
-const customModalStyles = {
-  content: {
-    top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%',
-    transform: 'translate(-50%, -50%)', width: '90%', maxWidth: '400px',
-    background: '#2d3748', color: '#f7fafc', border: '1px solid #4a5568',
-    zIndex: 1000, padding: '1.5rem', borderRadius: '12px'
-  },
-  overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 999 },
-};
+// Modal styling moved to CSS (.custom-modal-overlay, .custom-modal-content)
 
 /**
  * @typedef {object} MuscleGroup
@@ -59,6 +49,8 @@ function EditRoutinePage() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const searchAbortControllerRef = useRef(null);
+  const searchDebounceRef = useRef(null);
   
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [customExerciseName, setCustomExerciseName] = useState('');
@@ -104,33 +96,77 @@ function EditRoutinePage() {
     fetchInitialData();
   }, [fetchInitialData]);
 
-  const handleSearch = useCallback(async (e) => {
+  // Cleanup debounce timer and abort controller on unmount
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
+      }
+      if (searchAbortControllerRef.current) {
+        try { searchAbortControllerRef.current.abort(); } catch (__) {}
+        searchAbortControllerRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleSearch = useCallback((e) => {
     const term = e.target.value;
     setSearchTerm(term);
 
+    // Clear any pending debounce timer
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
+
+    // If search term is too short, cancel any in-flight request and clear results
     if (term.length < 3) {
+      if (searchAbortControllerRef.current) {
+        try { searchAbortControllerRef.current.abort(); } catch (__) {}
+        searchAbortControllerRef.current = null;
+      }
       setSearchResults([]);
+      setIsSearching(false);
       return;
     }
-    setIsSearching(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('exercise-search', {
-        body: { query: term },
-      });
-      if (error) throw error;
 
-      const results = data.results.map(item => ({
-        ...item,
-        is_external: data.source === 'external',
-      }));
-      setSearchResults(results);
+    // Debounce the network request
+    searchDebounceRef.current = setTimeout(async () => {
+      // Abort previous in-flight request if present
+      if (searchAbortControllerRef.current) {
+        try { searchAbortControllerRef.current.abort(); } catch (__) {}
+      }
+      const controller = new AbortController();
+      searchAbortControllerRef.current = controller;
 
-    } catch (error) {
-        console.error("Error searching exercises:", error.message);
-        setSearchResults([]);
-    } finally {
+      setIsSearching(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('exercise-search', {
+          body: { query: term },
+          signal: controller.signal,
+        });
+        if (error) throw error;
+
+        if (controller.signal.aborted) return;
+
+        const results = (data?.results || []).map(item => ({
+          ...item,
+          is_external: data?.source === 'external',
+        }));
+        setSearchResults(results);
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          // Request was aborted, ignore
+        } else {
+          console.error('Error searching exercises:', error?.message || error);
+          setSearchResults([]);
+        }
+      } finally {
         setIsSearching(false);
-    }
+        searchAbortControllerRef.current = null;
+      }
+    }, 300);
   }, []);
   
   const handleAddExercise = (exerciseToAdd) => {
@@ -142,7 +178,12 @@ function EditRoutinePage() {
 
   const handleExerciseChange = (index, field, value) => {
     const updatedExercises = [...routineExercises];
-    updatedExercises[index][field] = value;
+    // Coerce numeric fields to numbers to avoid type issues (sets should be a number)
+    if (field === 'sets') {
+      updatedExercises[index][field] = Math.max(1, Number(value) || 1);
+    } else {
+      updatedExercises[index][field] = value;
+    }
     setRoutineExercises(updatedExercises);
   };
 
@@ -276,8 +317,8 @@ function EditRoutinePage() {
       <SubPageHeader title={routineId === 'new' ? 'Create Routine' : 'Edit Routine'} icon={<Dumbbell size={28}/>} iconColor="#f97316" backTo="/workouts/routines" />
       
       <div className="form-group">
-        <label htmlFor="routineName">Routine Name</label>
-        <input type="text" id="routineName" value={routineName} onChange={(e) => setRoutineName(e.target.value)} placeholder="e.g., Push Day" />
+  <label htmlFor="routineName">Routine Name</label>
+  <input type="text" id="routineName" value={routineName} onChange={(e) => setRoutineName(e.target.value)} placeholder="e.g., Push Day" required />
       </div>
 
       <div className="add-exercise-section">
@@ -312,7 +353,7 @@ function EditRoutinePage() {
       <h3>Exercises in this Routine</h3>
       <div className="exercise-list">
         {routineExercises.map((ex, index) => (
-          <div key={ex.id || index} className="exercise-card">
+          <div key={ex.id || ex.name || index} className="exercise-card">
             <div className="reorder-controls">
               <button onClick={() => moveExercise(index, 'up')} disabled={index === 0}><ArrowUpCircle size={24} /></button>
               <button onClick={() => moveExercise(index, 'down')} disabled={index === routineExercises.length - 1}><ArrowDownCircle size={24} /></button>
@@ -321,7 +362,7 @@ function EditRoutinePage() {
             <div className="exercise-details">
               <h4>{ex.name}</h4>
               <div className="exercise-inputs">
-                <input type="number" value={ex.sets} onChange={(e) => handleExerciseChange(index, 'sets', e.target.value)} />
+                <input type="number" min="1" step="1" value={ex.sets} onChange={(e) => handleExerciseChange(index, 'sets', e.target.value)} />
                 <span>sets</span>
                 <input type="text" value={ex.reps} onChange={(e) => handleExerciseChange(index, 'reps', e.target.value)} />
                 <span>reps</span>
@@ -340,9 +381,9 @@ function EditRoutinePage() {
       <Modal
         isOpen={isCustomModalOpen}
         onRequestClose={closeCustomExerciseModal}
-        style={customModalStyles}
         contentLabel="Create Custom Exercise"
-        appElement={document.getElementById('root')}
+        overlayClassName="custom-modal-overlay"
+        className="custom-modal-content"
       >
         <h2>Create Custom Exercise</h2>
         <form onSubmit={handleSaveCustomExercise}>

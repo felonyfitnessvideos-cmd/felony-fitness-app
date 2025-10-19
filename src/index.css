@@ -7,9 +7,9 @@
   --text-secondary: #a0aec0;
   --accent-color: #f97316;
   --accent-color-hover: #ea580c;
-  **--color-success: #10b981;** /* Green for success states */
-  **--color-accent-dark: #8d5a21;** /* Brown/gold for specific accents */
-  **--color-white: #ffffff;** /* Pure white for text */
+  --color-success: #10b981; /* Green for success states */
+  --color-accent-dark: #8d5a21; /* Brown/gold for specific accents */
+  --color-white: #ffffff; /* Pure white for text */
 
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

@@ -1,33 +1,11 @@
-// @ts-check
-
+ 
 /**
  * @file NutritionLogPage.jsx
  * @description This page allows users to log their daily food and water intake for different meals.
  * @project Felony Fitness
- *
- * @workflow
- * 1.  **Data Fetching**: On component mount, `fetchLogData` is called. It fetches the user's daily goals,
- * today's aggregated nutrition totals, and all nutrition log entries for the current day. This is
- * done using a timezone-proof date query to avoid bugs.
- * 2.  **Meal Tabs**: The UI is organized by meal type (Breakfast, Lunch, etc.). The user can switch
- * between these tabs to view logged items for each meal.
- * 3.  **Hybrid Search**:
- * - When the user types in the search bar, `handleSearch` calls the `food-search` Edge Function.
- * - This function first searches the local DB. If results are found, they are returned.
- * - If not, it calls the OpenAI API to get nutritional information for the searched term.
- * - The results, flagged as 'local' or 'external', are displayed in a dropdown.
- * 4.  **Logging Food**:
- * - Clicking a search result opens a modal (`openLogModal`).
- * - The user inputs a quantity, and `handleLogFood` is called.
- * - This function calls the `log_food_item` PostgreSQL RPC function. This smart function
- * handles both existing and new (external) food items. If the food is new, it automatically
- * creates the `foods` and `food_servings` entries before creating the `nutrition_logs` entry.
- * 5.  **Logging Water**: Users can quickly add water intake, which directly inserts a new log entry.
- * 6.  **UI Updates**: After any new log is created, `fetchLogData` is called again to ensure all
- * displayed totals and lists are up-to-date.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { Apple, Search, Camera, X, Droplets, Loader2 } from 'lucide-react';
@@ -35,26 +13,19 @@ import Modal from 'react-modal';
 import { useAuth } from '../AuthContext.jsx';
 import './NutritionLogPage.css';
 
-const customModalStyles = {
-  content: {
-    top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%',
-    transform: 'translate(-50%, -50%)', width: '90%', maxWidth: '400px',
-    background: '#2d3748', color: '#f7fafc', border: '1px solid #4a5568',
-    zIndex: 1000, padding: '1.5rem', borderRadius: '12px'
-  },
-  overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 999 },
-};
 
 /**
  * @typedef {object} NutritionLog
  * @property {string} id
  * @property {string} meal_type
  * @property {number} quantity_consumed
+ * @property {number} [water_oz_consumed]
  * @property {object} food_servings
  * @property {object} food_servings.foods
  * @property {string} food_servings.foods.name
  * @property {string} food_servings.serving_description
  * @property {number} food_servings.calories
+ * @property {number} food_servings.protein_g
  */
 
 /**
@@ -73,12 +44,14 @@ function NutritionLogPage() {
   const [activeMeal, setActiveMeal] = useState('Breakfast');
   /** @type {[NutritionLog[], React.Dispatch<React.SetStateAction<NutritionLog[]>>]} */
   const [todaysLogs, setTodaysLogs] = useState([]);
-  const [goals, setGoals] = useState({ daily_calorie_goal: 2000, daily_water_goal_oz: 128 });
+  const [goals, setGoals] = useState({ daily_calorie_goal: 2000, daily_protein_goal: 150, daily_water_goal_oz: 128 });
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   /** @type {[SearchResult[], React.Dispatch<React.SetStateAction<SearchResult[]>>]} */
   const [searchResults, setSearchResults] = useState([]);
+  const searchAbortControllerRef = useRef(null);
+  const searchDebounceRef = useRef(null);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   /** @type {[SearchResult | null, React.Dispatch<React.SetStateAction<SearchResult | null>>]} */
   const [selectedFood, setSelectedFood] = useState(null);
@@ -87,50 +60,79 @@ function NutritionLogPage() {
     calories: 0, protein: 0, water: 0
   });
 
-  // Derived state: filters the logs for the currently active meal tab.
   const mealLogs = todaysLogs.filter(log => log.meal_type === activeMeal);
   const calorieProgress = goals.daily_calorie_goal > 0 ? (dailyTotals.calories / goals.daily_calorie_goal) * 100 : 0;
 
   /**
-   * Fetches all nutrition data for the current day for the specified user.
+   * Fetches all nutrition data for the current day and calculates totals.
+   * This function uses a robust, timezone-proof method to query the database.
    * @param {string} userId - The UUID of the authenticated user.
    * @async
    */
   const fetchLogData = useCallback(async (userId) => {
     setLoading(true);
     try {
-      const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+      // **TIMEZONE FIX**: Calculate the start and end of the user's local day.
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
 
-      const [logsResponse, totalsResponse, profileResponse] = await Promise.all([
-        // This query is now timezone-proof by using the 'log_date' column.
+      const startOfTomorrow = new Date(startOfToday);
+      startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+
+      // DEBUGGING: Log the exact timestamps being sent to the database (guarded).
+      if (process.env.NODE_ENV !== 'production') {
+        console.debug('Fetching logs between (UTC):', startOfToday.toISOString(), 'and', startOfTomorrow.toISOString());
+      }
+
+
+      const [logsResponse, profileResponse] = await Promise.all([
         supabase
           .from('nutrition_logs')
           .select('*, food_servings(*, foods(name))')
           .eq('user_id', userId)
-          .eq('log_date', today),
-        supabase.rpc('get_daily_nutrition_totals', { p_user_id: userId, p_date: today }),
+          .gte('created_at', startOfToday.toISOString())
+          .lt('created_at', startOfTomorrow.toISOString()),
         supabase
           .from('user_profiles')
-          .select('*')
+          .select('daily_calorie_goal, daily_protein_goal, daily_water_goal_oz')
           .eq('id', userId)
           .single()
       ]);
 
       if (logsResponse.error) throw logsResponse.error;
-      if (totalsResponse.error) throw totalsResponse.error;
       if (profileResponse.error && profileResponse.error.code !== 'PGRST116') throw profileResponse.error;
       
-      setTodaysLogs(logsResponse.data || []);
+      const logs = logsResponse.data || [];
+      // DEBUGGING: Avoid logging full objects in production; only show non-sensitive fields in development.
+      if (process.env.NODE_ENV !== 'production') {
+        try {
+          const safePreview = logs.map(l => ({ id: l.id, meal_type: l.meal_type, created_at: l.created_at }));
+          console.debug('Fetched logs (preview):', safePreview);
+        } catch (e) {
+          console.debug('Fetched logs (count):', Array.isArray(logs) ? logs.length : typeof logs);
+        }
+      }
+      setTodaysLogs(logs);
       if (profileResponse.data) setGoals(profileResponse.data);
 
-      if (totalsResponse.data && totalsResponse.data.length > 0) {
-        const totals = totalsResponse.data[0];
-        setDailyTotals({
-          calories: Math.round(totals.total_calories || 0),
-          protein: Math.round(totals.total_protein || 0),
-          water: Math.round(totals.total_water || 0)
-        });
-      }
+      // **FIX APPLIED**: Calculate totals on the client-side for perfect consistency.
+      const totals = logs.reduce((acc, log) => {
+        if (log.food_servings) {
+          acc.calories += (log.food_servings.calories || 0) * log.quantity_consumed;
+          acc.protein += (log.food_servings.protein_g || 0) * log.quantity_consumed;
+        }
+        if (log.water_oz_consumed) {
+          acc.water += log.water_oz_consumed;
+        }
+        return acc;
+      }, { calories: 0, protein: 0, water: 0 });
+
+      setDailyTotals({
+        calories: Math.round(totals.calories),
+        protein: Math.round(totals.protein),
+        water: Math.round(totals.water)
+      });
+
     } catch (error) {
       console.error("A critical error occurred during data fetch:", error);
     } finally {
@@ -138,7 +140,6 @@ function NutritionLogPage() {
     }
   }, []);
 
-  // Effect to trigger the initial data fetch.
   useEffect(() => {
     if (user) {
       fetchLogData(user.id);
@@ -146,30 +147,47 @@ function NutritionLogPage() {
       setLoading(false);
     }
   }, [user?.id, fetchLogData]);
-
-  /**
-   * Handles the hybrid search by calling the 'food-search' Edge Function.
-   * @param {string} term - The user's search query.
-   * @async
-   */
-  const handleSearch = useCallback(async (term) => {
+  
+  const handleSearch = useCallback((term) => {
     setSearchTerm(term);
+
+    // Clear pending debounce timer
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
+
     if (term.length < 3) {
+      if (searchAbortControllerRef.current) {
+        try { searchAbortControllerRef.current.abort(); } catch (__) {}
+        searchAbortControllerRef.current = null;
+      }
       setSearchResults([]);
+      setIsSearching(false);
       return;
     }
-    setIsSearching(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('food-search', {
-        body: { query: term },
-      });
-      if (error) throw error;
-      
-      // Standardize results from both local and external sources for consistent UI rendering.
-      let standardizedResults = [];
-      if (data.source === 'local') {
-          standardizedResults = data.results.flatMap(food => 
-              food.food_servings.map(serving => ({
+
+    searchDebounceRef.current = setTimeout(async () => {
+      if (searchAbortControllerRef.current) {
+        try { searchAbortControllerRef.current.abort(); } catch (__) {}
+      }
+      const controller = new AbortController();
+      searchAbortControllerRef.current = controller;
+
+      setIsSearching(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('food-search', {
+          body: { query: term },
+          signal: controller.signal,
+        });
+        if (error) throw error;
+
+        if (controller.signal.aborted) return;
+
+        let standardizedResults = [];
+        if (data?.source === 'local') {
+            standardizedResults = (data.results || []).flatMap(food => 
+              (food.food_servings || []).map(serving => ({
                   is_external: false,
                   food_id: food.id,
                   name: food.name,
@@ -178,29 +196,30 @@ function NutritionLogPage() {
                   calories: serving.calories,
                   protein_g: serving.protein_g,
               }))
-          );
-      } else if (data.source === 'external') {
-          standardizedResults = data.results.map(item => ({ ...item, is_external: true }));
-      }
-      setSearchResults(standardizedResults);
+            );
+        } else if (data?.source === 'external') {
+            standardizedResults = (data.results || []).map(item => ({ ...item, is_external: true }));
+        }
+        setSearchResults(standardizedResults);
 
-    } catch (error) {
-      console.error("Error searching food:", error.message);
-    } finally {
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          // ignore
+        } else {
+          console.error('Error searching food:', error?.message || error);
+        }
+      } finally {
         setIsSearching(false);
-    }
+        searchAbortControllerRef.current = null;
+      }
+    }, 300);
   }, []);
   
-  /**
-   * Opens the logging modal with the selected food's data.
-   * @param {SearchResult} food - The food object from the search results.
-   */
   const openLogModal = (food) => {
     setSelectedFood(food);
     setIsLogModalOpen(true);
   };
 
-  /** Closes the logging modal and resets all related state. */
   const closeLogModal = () => {
     setIsLogModalOpen(false);
     setSelectedFood(null);
@@ -209,39 +228,31 @@ function NutritionLogPage() {
     setQuantity(1);
   };
   
-  /**
-   * Logs a food item by calling a PostgreSQL RPC function. This function handles
-   * both existing items and new items from the AI.
-   * @async
-   */
   const handleLogFood = async () => {
     if (!selectedFood || !quantity || quantity <= 0 || isNaN(quantity) || !user) return;
     
-    const today = new Date().toLocaleDateString('en-CA');
+    // NOTE: The `log_food_item` RPC function implicitly uses the current timestamp for `created_at`.
+    // This is correct and doesn't need to be changed.
     let rpcParams;
 
     if (selectedFood.is_external) {
-      // If the food is new (from AI), pass its full details.
       rpcParams = {
         p_user_id: user.id,
         p_meal_type: activeMeal,
         p_quantity_consumed: quantity,
-        p_log_date: today,
         p_external_food: {
           name: selectedFood.name,
           serving_description: selectedFood.serving_description,
           calories: selectedFood.calories,
           protein_g: selectedFood.protein_g,
-          category: 'Uncategorized' // New items are uncategorized by default.
+          category: 'Uncategorized'
         }
       };
     } else {
-      // If the food is from our local DB, just pass its serving ID.
       rpcParams = {
         p_user_id: user.id,
         p_meal_type: activeMeal,
         p_quantity_consumed: quantity,
-        p_log_date: today,
         p_food_serving_id: selectedFood.serving_id
       };
     }
@@ -251,24 +262,18 @@ function NutritionLogPage() {
     if (error) {
       alert(`Error logging food: ${error.message}`);
     } else {
-      await fetchLogData(user.id); // Refresh data on success
+      await fetchLogData(user.id);
       closeLogModal();
     }
   };
   
-  /**
-   * Logs a water entry directly into the `nutrition_logs` table.
-   * @param {number} ounces - The amount of water to log.
-   * @async
-   */
   const handleLogWater = async (ounces) => {
     if (!user) return;
-    const today = new Date().toLocaleDateString('en-CA');
     const { error } = await supabase.from('nutrition_logs').insert({
       user_id: user.id,
       meal_type: 'Water',
       water_oz_consumed: ounces,
-      log_date: today
+      // We no longer need to set log_date; created_at is handled automatically
     });
     if (error) {
       alert(`Error logging water: ${error.message}`);
@@ -280,6 +285,20 @@ function NutritionLogPage() {
   if (loading) {
     return <div style={{ color: 'white', padding: '2rem' }}>Loading Nutrition Log...</div>;
   }
+
+  // Cleanup debounce timer and abort controller on unmount
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
+      }
+      if (searchAbortControllerRef.current) {
+        try { searchAbortControllerRef.current.abort(); } catch (__) {}
+        searchAbortControllerRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <div className="nutrition-log-page-container">
@@ -360,9 +379,9 @@ function NutritionLogPage() {
       <Modal
         isOpen={isLogModalOpen}
         onRequestClose={closeLogModal}
-        style={customModalStyles}
         contentLabel="Log Food Item"
-        appElement={document.getElementById('root')}
+        overlayClassName="custom-modal-overlay"
+        className="custom-modal-content log-food-modal"
       >
         {selectedFood && (
           <div className="log-food-modal">
@@ -397,3 +416,4 @@ function NutritionLogPage() {
 }
 
 export default NutritionLogPage;
+

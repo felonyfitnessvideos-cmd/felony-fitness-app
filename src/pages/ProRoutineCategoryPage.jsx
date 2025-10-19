@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * @file ProRoutineCategoryPage.jsx
  * @description This page displays a list of pro routines for a specific category.
@@ -13,16 +12,7 @@ import Modal from 'react-modal';
 import { Dumbbell, Info, X } from 'lucide-react';
 import './ProRoutineCategoryPage.css';
 
-const customModalStyles = {
-  content: {
-    top: '50%', left: '50%', right: 'auto', bottom: 'auto',
-    marginRight: '-50%', transform: 'translate(-50%, -50%)',
-    width: '90%', maxWidth: '500px', background: '#2d3748',
-    color: '#f7fafc', border: '1px solid #4a5568',
-    zIndex: 1000, padding: '1.5rem', borderRadius: '12px'
-  },
-  overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 999 },
-};
+// Modal styling is handled in CSS to respect theme variables and prefers-reduced-motion
 
 function ProRoutineCategoryPage() {
   const { categoryName } = useParams();
@@ -42,7 +32,8 @@ function ProRoutineCategoryPage() {
         const { data, error } = await supabase
           .from('pro_routines')
           .select('*')
-          .eq('category', categoryName);
+          .eq('category', categoryName)
+          .order('name', { ascending: true });
         if (error) throw error;
         setRoutines(data || []);
       } catch (error) {
@@ -134,9 +125,9 @@ function ProRoutineCategoryPage() {
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={closeModal}
-        style={customModalStyles}
         contentLabel="Routine Details"
-        appElement={document.getElementById('root')}
+        className="ReactModal__Content--custom"
+        overlayClassName="ReactModal__Overlay--custom"
       >
         {selectedRoutine && (
           <div className="routine-modal-content">
@@ -151,8 +142,8 @@ function ProRoutineCategoryPage() {
             
             <h3>Exercises in this Routine:</h3>
             <ul className="modal-exercise-list">
-              {modalExercises.map((ex, index) => (
-                <li key={index}>
+              {modalExercises.map((ex) => (
+                <li key={ex.exercise_id || ex.id}>
                     <span className="exercise-name">{ex.name}</span>
                     <span className="exercise-sets">{ex.target_sets} sets</span>
                 </li>

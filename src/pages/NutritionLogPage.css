@@ -268,6 +268,32 @@
   cursor: pointer;
 }
 
+/* Reusable modal overlay/content used by several pages */
+.custom-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.custom-modal-content {
+  background: #2d3748;
+  color: #f7fafc;
+  width: 100%;
+  max-width: 420px;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-sizing: border-box;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+}
+
+body.ReactModal__Body--open { overflow: hidden; }
+
 .serving-selection h4 {
   margin-top: 0;
   margin-bottom: 1rem;

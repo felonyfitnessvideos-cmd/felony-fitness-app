@@ -70,6 +70,21 @@
   border-color: var(--accent-color);
 }
 
+/* Keyboard focus visible ring for accessibility */
+.category-card:focus-visible {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 3px;
+}
+
+/* Respect users who prefer reduced motion: disable transform/transition */
+@media (prefers-reduced-motion: reduce) {
+  .category-card,
+  .category-card:hover {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
 /**
  * Styles the icon inside each category card.
  */

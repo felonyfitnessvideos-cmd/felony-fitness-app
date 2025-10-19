@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file MyPlanPage.jsx
  * @description This page displays the user's current subscription plan, shows other available plans, and provides access to app settings like theme selection.
@@ -25,18 +24,7 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { useAuth } from '../AuthContext.jsx';
 import './MyPlanPage.css';
 
-// Defines the styles for the modal pop-up.
-const customModalStyles = {
-  content: {
-    top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%',
-    transform: 'translate(-50%, -50%)', width: '90%', maxWidth: '400px',
-    background: 'var(--card-color)',
-    color: 'var(--text-primary)',
-    border: '1px solid var(--border-color)',
-    zIndex: 1000, padding: '1.5rem', borderRadius: '12px'
-  },
-  overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 999 },
-};
+// Modal styling moved to CSS (.settings-modal-overlay, .settings-modal-content)
 
 /**
  * Renders the "My Plan" page, showing subscription options and providing access to settings.
@@ -108,9 +96,9 @@ function MyPlanPage() {
       <Modal
         isOpen={isSettingsModalOpen}
         onRequestClose={closeSettingsModal}
-        style={customModalStyles}
         contentLabel="Settings"
-        appElement={document.getElementById('root')}
+        overlayClassName="settings-modal-overlay"
+        className="settings-modal-content"
       >
         <div className="settings-modal">
           <div className="modal-header">
@@ -120,21 +108,24 @@ function MyPlanPage() {
           <div className="modal-body">
             <h3>Color Theme</h3>
             <div className="theme-options">
-              <button 
+              <button
                 className={`theme-btn ${theme === 'dark' ? 'active' : ''}`}
                 onClick={() => updateUserTheme('dark')}
+                aria-pressed={theme === 'dark'}
               >
                 Dark
               </button>
-              <button 
+              <button
                 className={`theme-btn ${theme === 'light' ? 'active' : ''}`}
                 onClick={() => updateUserTheme('light')}
+                aria-pressed={theme === 'light'}
               >
                 Light
               </button>
-              <button 
+              <button
                 className={`theme-btn ${theme === 'high-contrast' ? 'active' : ''}`}
                 onClick={() => updateUserTheme('high-contrast')}
+                aria-pressed={theme === 'high-contrast'}
               >
                 High Contrast
               </button>

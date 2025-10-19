@@ -286,3 +286,39 @@
   color: #4a5568;
   cursor: not-allowed;
 }
+
+/* Modal overlay and content styles for react-modal (CSS-driven instead of inline styles) */
+.custom-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.custom-modal-content {
+  background: #2d3748;
+  color: #f7fafc;
+  border: 1px solid #4a5568;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+/* Focus ring for modal interactive elements */
+.custom-modal-content :is(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(249,115,22,0.8);
+  outline-offset: 2px;
+}
+
+/* Prevent background scrolling when modal open (react-modal adds body class but ensure fallback) */
+body.ReactModal__Body--open {
+  overflow: hidden;
+}

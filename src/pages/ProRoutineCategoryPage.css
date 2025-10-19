@@ -191,3 +191,51 @@
     color: var(--text-primary);
 }
 
+/* Modal styling moved from JS to CSS so theme variables apply */
+.ReactModal__Overlay--custom {
+  background-color: rgba(0,0,0,0.75);
+  z-index: 999;
+  /* Ensure overlay covers the full viewport */
+  position: fixed;
+  inset: 0; /* top:0; right:0; bottom:0; left:0; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem; /* allow breathing room on small viewports */
+}
+
+.ReactModal__Content--custom {
+  width: 100%;
+  max-width: 500px;
+  background: var(--card-color);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  z-index: 1000;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(2,6,23,0.6);
+  box-sizing: border-box;
+  /* Constrain height so content doesn't overflow the viewport; allow internal scrolling */
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+}
+
+/* Focus ring for interactive elements */
+.routine-item-card button:focus-visible,
+.modal-actions .primary-button:focus-visible,
+.modal-actions .secondary-button:focus-visible,
+.routine-modal-content .close-button:focus-visible {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 3px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .ReactModal__Content--custom,
+  .routine-item-card button,
+  .modal-actions .primary-button,
+  .modal-actions .secondary-button {
+    transition: none !important;
+  }
+}
+

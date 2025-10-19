@@ -14,15 +14,7 @@ import './RestTimerModal.css';
  * @constant {object} customModalStyles
  * @description Custom styles for the react-modal component to match the app's theme.
  */
-const customModalStyles = {
-  content: {
-    top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%',
-    transform: 'translate(-50%, -50%)', width: '320px', background: '#2d3748',
-    color: '#f7fafc', border: '1px solid #4a5568', zIndex: 1001,
-    padding: '1.5rem', borderRadius: '16px'
-  },
-  overlay: { backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 1000 },
-};
+// Modal styling migrated to CSS classes: .rest-modal-overlay and .rest-modal-content
 
 /**
  * Renders a modal for a rest timer or a workout completion screen.
@@ -100,9 +92,9 @@ function RestTimerModal({ isOpen, onClose, initialDuration = 60, isWorkoutComple
     <Modal
       isOpen={isOpen}
       onRequestClose={onClose}
-      style={customModalStyles}
       contentLabel="Rest Timer"
-      appElement={document.getElementById('root')}
+      overlayClassName="rest-modal-overlay"
+      className="rest-modal-content"
     >
       <div className="rest-timer-container">
         <div className="timer-header">

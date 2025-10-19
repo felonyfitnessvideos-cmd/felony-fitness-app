@@ -33,6 +33,7 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 1rem;
+  min-height: 44px; /* Ensure touch target size on mobile */
   font-weight: 600;
   text-decoration: none;
   border-radius: 12px;
@@ -136,8 +137,17 @@
   color: var(--text-secondary);
   cursor: pointer;
   padding: 0; /* Remove default button padding */
+  min-height: 44px; /* Make icon buttons easier to tap */
   display: flex;
   align-items: center;
+}
+
+/* Focus ring for keyboard navigation */
+.routine-actions .action-button:focus-visible,
+.routine-actions button:focus-visible,
+.routine-page-actions .action-button:focus-visible {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 3px;
 }
 
 .routine-actions .action-button.danger {

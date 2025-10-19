@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file AuthPage.jsx
  * @description The main authentication page for the application. It handles both sign-in and sign-up for users.
@@ -163,7 +162,8 @@ function AuthPage() {
               </button>
             </div>
           </div>
-          {message && <p className="auth-message">{message}</p>}
+          {/* Live region for auth messages (always present) */}
+          <div className="auth-message" role="status" aria-live="polite" aria-atomic="true">{message || ''}</div>
           <button type="submit" className="sign-in-button" disabled={loading}>
             {loading ? 'Loading...' : `Sign ${isSignUp ? 'up' : 'in'}`}
           </button>

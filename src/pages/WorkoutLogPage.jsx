@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file WorkoutLogPage.jsx
  * @description The main page for actively logging a workout session based on a selected routine.
@@ -13,7 +12,7 @@ import SubPageHeader from '../components/SubPageHeader.jsx';
 import RestTimerModal from '../components/RestTimerModal.jsx';
 import SuccessModal from '../components/SuccessModal.jsx';
 import { Dumbbell, Edit2, Trash2, Check, X } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import LazyRecharts from '../components/LazyRecharts.jsx';
 import { useAuth } from '../AuthContext.jsx';
 import './WorkoutLogPage.css';
 
@@ -424,18 +423,24 @@ function WorkoutLogPage() {
                 <button className={chartMetric === 'Set Volume' ? 'active' : ''} onClick={() => setChartMetric('Set Volume')}>Set Volume</button>
             </div>
             <div className="chart-container">
-            {chartLoading ? (<div className="loading-message">Loading Chart...</div>) : chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
+            {chartLoading ? (
+              <div className="loading-message">Loading Chart...</div>
+            ) : chartData.length > 0 ? (
+              <LazyRecharts fallback={<div className="loading-message">Loading chart...</div>}>
+                {({ LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer }) => (
+                  <ResponsiveContainer width="100%" height={250}>
                     <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                        <CartesianGrid stroke="#4a5568" strokeDasharray="3 3" />
-                        <XAxis dataKey="date" stroke="#a0aec0" />
-                        <YAxis stroke="#a0aec0" domain={['dataMin - 10', 'dataMax + 10']} />
-                        <Tooltip contentStyle={{ backgroundColor: '#2d3748', border: '1px solid #4a5568' }} />
-                        <Line type="monotone" dataKey="value" name={chartMetric} stroke="#f97316" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }} />
+                      <CartesianGrid stroke="#4a5568" strokeDasharray="3 3" />
+                      <XAxis dataKey="date" stroke="#a0aec0" />
+                      <YAxis stroke="#a0aec0" domain={['dataMin - 10', 'dataMax + 10']} />
+                      <Tooltip contentStyle={{ backgroundColor: '#2d3748', border: '1px solid #4a5568' }} />
+                      <Line type="monotone" dataKey="value" name={chartMetric} stroke="#f97316" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }} />
                     </LineChart>
-                </ResponsiveContainer>
+                  </ResponsiveContainer>
+                )}
+              </LazyRecharts>
             ) : (
-                <p className="no-data-message">No progress data available for this exercise yet.</p>
+              <p className="no-data-message">No progress data available for this exercise yet.</p>
             )}
             </div>
         </div>
