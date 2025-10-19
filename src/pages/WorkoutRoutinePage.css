@@ -2,11 +2,6 @@
  * @file WorkoutRoutinePage.css
  * @description Styles for the page that lists all of the user's created workout routines.
  * @project Felony Fitness
- *
- * @layout_pattern Centered Vertical List
- * This stylesheet centers a primary call-to-action button and a vertical list of
- * routine cards. It uses `margin: 0 auto` to horizontally center the main elements
- * and flexbox to stack the routine cards in a column.
  */
 
 /**
@@ -19,29 +14,57 @@
 }
 
 /**
- * The primary "Create New Routine" button.
- * It's styled as a prominent link and centered horizontally on the page.
+ * Flex container for the main action buttons ("Select Pro" and "Create Custom").
+ * This ensures they are displayed side-by-side with a gap.
  */
-.create-routine-button {
+.routine-page-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+/**
+ * Shared styling for the main action buttons on the page.
+ */
+.routine-page-actions .action-button {
+  flex: 1; /* Each button takes up equal space */
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  width: 100%;
-  max-width: 350px;
   padding: 1rem;
-  background-color: var(--accent-color);
-  color: white;
   font-weight: 600;
   text-decoration: none;
   border-radius: 12px;
-  margin: 0 auto 2rem auto; /* Top | Horizontal (auto for center) | Bottom */
+  text-align: center;
   transition: background-color 0.2s;
 }
 
-.create-routine-button:hover {
+/**
+ * Primary action button style (e.g., "Select Pro Routine").
+ */
+.routine-page-actions .action-button.primary {
+  background-color: var(--accent-color);
+  color: var(--color-white, #fff);
+}
+
+.routine-page-actions .action-button.primary:hover {
   background-color: var(--accent-color-hover);
 }
+
+/**
+ * Secondary action button style (e.g., "Create Custom Routine").
+ */
+.routine-page-actions .action-button.secondary {
+  background-color: var(--card-color);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.routine-page-actions .action-button.secondary:hover {
+  background-color: var(--border-color);
+}
+
 
 /**
  * The main container for the list of routine cards.
@@ -104,18 +127,20 @@
 }
 
 /**
- * Shared base styles for the action buttons.
+ * Shared base styles for the action buttons on the cards.
  * They are reset to appear as simple icons.
  */
-.action-button, .routine-actions button {
+.routine-actions .action-button, .routine-actions button {
   background: none;
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
   padding: 0; /* Remove default button padding */
+  display: flex;
+  align-items: center;
 }
 
-.action-button.danger {
+.routine-actions .action-button.danger {
   color: #e53e3e; /* Red for the delete button */
 }
 
