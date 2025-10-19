@@ -283,6 +283,11 @@ function NutritionLogPage() {
   };
   
   // Cleanup debounce timer and abort controller on unmount
+  // NOTE: This cleanup effect must be declared before any early returns
+  // (for example `if (loading) return ...`). React hooks must be called
+  // in the same order on every render — moving this effect above the
+  // early return ensures the component's hook call order remains stable
+  // and avoids the "change in the order of Hooks" runtime error.
   useEffect(() => {
     return () => {
       if (searchDebounceRef.current) {
