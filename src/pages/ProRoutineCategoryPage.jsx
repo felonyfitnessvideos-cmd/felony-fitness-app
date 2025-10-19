@@ -50,8 +50,13 @@ function ProRoutineCategoryPage() {
     setModalIsOpen(true);
     
     // Fetch exercise names for the modal robustly and performantly.
+    // Routine entries may come in different shapes depending on how they were
+    // loaded (joined relations, RPC, or denormalized). Accept multiple shapes
+    // to avoid missing IDs and showing 'Unknown Exercise'.
     const exerciseIds = Array.isArray(routine.exercises)
-      ? routine.exercises.map((ex) => ex?.exercise_id).filter(Boolean)
+      ? routine.exercises
+          .map((ex) => ex?.exercise_id ?? ex?.id ?? ex?.exercises?.id)
+          .filter(Boolean)
       : [];
 
     if (exerciseIds.length === 0) {
@@ -72,10 +77,22 @@ function ProRoutineCategoryPage() {
     
     // Use a Map for efficient O(n) lookup instead of a nested loop.
     const nameById = new Map((data ?? []).map((d) => [d.id, d.name]));
-    const exercisesWithDetails = routine.exercises.map((ex) => ({
-      ...ex,
-      name: nameById.get(ex.exercise_id) ?? 'Unknown Exercise',
-    }));
+    const exercisesWithDetails = routine.exercises.map((ex) => {
+      // Derive the id from whichever field is present
+      const id = ex?.exercise_id ?? ex?.id ?? ex?.exercises?.id;
+      // Prefer any name already present on the routine object (e.g., when the
+      // routine was fetched with nested exercises), otherwise use DB lookup.
+      const displayName = ex?.name ?? ex?.exercises?.name ?? nameById.get(id) ?? 'Unknown Exercise';
+      return {
+        ...ex,
+        name: displayName,
+      };
+    });
+    // Log missing names for easier debugging when backend data is inconsistent.
+    const missing = exercisesWithDetails.filter(e => !e.name || e.name === 'Unknown Exercise').map(e => e?.exercise_id ?? e?.id ?? e?.exercises?.id);
+    if (missing.length > 0) {
+      console.debug('ProRoutineCategoryPage: missing exercise names for ids', missing);
+    }
     setModalExercises(exercisesWithDetails);
   };
 
