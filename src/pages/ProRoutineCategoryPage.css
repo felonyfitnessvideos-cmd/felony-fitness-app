@@ -224,7 +224,7 @@
 .routine-item-card button:focus-visible,
 .modal-actions .primary-button:focus-visible,
 .modal-actions .secondary-button:focus-visible,
-.routine-item-card .close-button:focus-visible {
+.routine-modal-content .close-button:focus-visible {
   outline: 3px solid var(--accent-color);
   outline-offset: 3px;
 }

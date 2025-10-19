@@ -20,7 +20,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { TrendingUp, Dumbbell, Flame, BarChart3, Apple as AppleIcon } from 'lucide-react';
-import { LineChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart } from 'recharts';
+import LazyRecharts from '../components/LazyRecharts.jsx';
 import { useAuth } from '../AuthContext.jsx';
 import './ProgressPage.css';
 
@@ -86,30 +86,46 @@ function ProgressPage() {
       const totalDuration = workoutLogs.reduce((sum, log) => sum + (log.duration_minutes || 0), 0);
       const avgDuration = totalWorkouts > 0 ? Math.round(totalDuration / totalWorkouts) : 0;
       
-      // Aggregate workout data by date for the trend chart.
+      // Aggregate workout data by ISO date key for reliable sorting, keep a display date for charts.
       const durationMap = new Map();
       const burnMap = new Map();
       workoutLogs.forEach(log => {
-        const date = new Date(log.created_at).toLocaleDateString();
-        durationMap.set(date, (durationMap.get(date) || 0) + log.duration_minutes);
-        burnMap.set(date, (burnMap.get(date) || 0) + log.calories_burned);
+        const dt = new Date(log.created_at);
+        const isoKey = dt.toISOString().split('T')[0]; // YYYY-MM-DD
+        const display = dt.toLocaleDateString();
+        const existingDuration = durationMap.get(isoKey) || { date: display, duration: 0 };
+        existingDuration.duration += (log.duration_minutes || 0);
+        durationMap.set(isoKey, existingDuration);
+        const existingBurn = burnMap.get(isoKey) || { date: display, burn: 0 };
+        existingBurn.burn += (log.calories_burned || 0);
+        burnMap.set(isoKey, existingBurn);
       });
-      setWorkoutDurationTrends(Array.from(durationMap, ([date, duration]) => ({ date, duration })));
-      const totalBurn = Array.from(burnMap.values()).reduce((sum, val) => sum + val, 0);
-      const avgBurn = burnMap.size > 0 ? Math.round(totalBurn / burnMap.size) : 0;
+      // Convert maps to arrays and sort by ISO date key
+      const workoutArray = Array.from(durationMap, ([iso, val]) => ({ iso, ...val }))
+        .sort((a, b) => a.iso.localeCompare(b.iso))
+        .map(({ date, duration }) => ({ date, duration }));
+      setWorkoutDurationTrends(workoutArray);
+  const totalBurn = Array.from(burnMap.values()).reduce((sum, obj) => sum + (obj.burn || 0), 0);
+  const avgBurn = burnMap.size > 0 ? Math.round(totalBurn / burnMap.size) : 0;
 
       // --- Calculate Nutrition Statistics ---
       if(nutritionLogsRes.error) throw nutritionLogsRes.error;
       const nutritionLogs = nutritionLogsRes.data || [];
 
-      // Aggregate nutrition data by date for the trend chart.
+      // Aggregate nutrition data by ISO date key for reliable sorting, keep display date for charts.
       const calorieMap = new Map();
       nutritionLogs.forEach(log => {
-        const date = new Date(log.created_at).toLocaleDateString();
-        const calories = log.total_calories || 0;
-        calorieMap.set(date, (calorieMap.get(date) || 0) + calories);
+        const dt = new Date(log.created_at);
+        const isoKey = dt.toISOString().split('T')[0];
+        const display = dt.toLocaleDateString();
+        const existing = calorieMap.get(isoKey) || { date: display, calories: 0 };
+        existing.calories += (log.total_calories || 0);
+        calorieMap.set(isoKey, existing);
       });
-      setNutritionTrends(Array.from(calorieMap, ([date, calories]) => ({ date, calories: Math.round(calories) })));
+      const nutritionArray = Array.from(calorieMap, ([iso, val]) => ({ iso, ...val }))
+        .sort((a, b) => a.iso.localeCompare(b.iso))
+        .map(({ date, calories }) => ({ date, calories: Math.round(calories) }));
+      setNutritionTrends(nutritionArray);
       const totalCalories = Array.from(calorieMap.values()).reduce((sum, val) => sum + val, 0);
       const avgCalories = calorieMap.size > 0 ? Math.round(totalCalories / calorieMap.size) : 0;
       
@@ -154,29 +170,37 @@ function ProgressPage() {
       <div className="chart-grid">
         <div className="chart-card">
           <h3>Nutrition Trends (Calories Eaten)</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={nutritionTrends}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-              <XAxis dataKey="date" stroke="#a0aec0" fontSize={12} />
-              <YAxis stroke="#a0aec0" fontSize={12} />
-              <Tooltip contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #4a5568' }} />
-              <Legend />
-              <Line type="monotone" dataKey="calories" name="Calories Eaten" stroke="#8884d8" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+          <LazyRecharts fallback={<div className="loading-message">Loading chart...</div>}>
+            {({ LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer }) => (
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={nutritionTrends}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+                  <XAxis dataKey="date" stroke="#a0aec0" fontSize={12} />
+                  <YAxis stroke="#a0aec0" fontSize={12} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #4a5568' }} />
+                  <Legend />
+                  <Line type="monotone" dataKey="calories" name="Calories Eaten" stroke="#8884d8" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </LazyRecharts>
         </div>
         <div className="chart-card">
           <h3>Workout Duration (Minutes)</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={workoutDurationTrends}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-              <XAxis dataKey="date" stroke="#a0aec0" fontSize={12} />
-              <YAxis stroke="#a0aec0" fontSize={12} />
-              <Tooltip contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #4a5568' }} />
-              <Legend />
-              <Bar dataKey="duration" name="Duration (min)" fill="#82ca9d" />
-            </BarChart>
-          </ResponsiveContainer>
+          <LazyRecharts fallback={<div className="loading-message">Loading chart...</div>}>
+            {({ BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer }) => (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={workoutDurationTrends}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+                  <XAxis dataKey="date" stroke="#a0aec0" fontSize={12} />
+                  <YAxis stroke="#a0aec0" fontSize={12} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #4a5568' }} />
+                  <Legend />
+                  <Bar dataKey="duration" name="Duration (min)" fill="#82ca9d" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </LazyRecharts>
         </div>
       </div>
 

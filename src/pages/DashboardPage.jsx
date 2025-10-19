@@ -218,8 +218,8 @@ function DashboardPage() {
         <div className="card-header">
           <h3>Active Goals</h3>
         </div>
-        {activeGoals.length > 0 ? activeGoals.map((goal, index) => (
-          <div key={index} className="goal-item">
+        {activeGoals.length > 0 ? activeGoals.map((goal) => (
+          <div key={goal.id} className="goal-item">
             <span>{goal.goal_description}</span>
             <span>{goal.current_value || 0}/{goal.target_value}</span>
           </div>

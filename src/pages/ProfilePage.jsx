@@ -254,7 +254,8 @@ function ProfilePage() {
                 </select>
               </div>
             </div>
-            {profileMessage && <p className="form-message">{profileMessage}</p>}
+            {/* Live region for profile messages */}
+            <div className="form-message" role="status" aria-live="polite" aria-atomic="true">{profileMessage || ''}</div>
             <button type="submit" className="save-button">Save Profile</button>
           </form>
         ) : (
@@ -297,7 +298,8 @@ function ProfilePage() {
             <input id="bodyFat" type="number" placeholder="e.g., 15.2" value={bodyFat} onChange={(e) => setBodyFat(e.target.value)} step="0.1" />
           </div>
         </div>
-        {message && <p className="form-message">{message}</p>}
+  {/* Live region for metric save messages */}
+  <div className="form-message" role="status" aria-live="polite" aria-atomic="true">{message || ''}</div>
         <button type="submit" className="save-button">Save Measurement</button>
       </form>
 
@@ -327,9 +329,9 @@ function ProfilePage() {
       <Modal
         isOpen={isBodyFatModalOpen}
         onRequestClose={() => setBodyFatModalOpen(false)}
-        style={customModalStyles}
         contentLabel="Body Fat Guide"
-        appElement={document.getElementById('root')} // Accessibility requirement for react-modal
+        overlayClassName="profile-modal-overlay"
+        className="profile-modal-content"
       >
         <div className="modal-header">
           <h3>Body Fat Percentage Guide</h3>

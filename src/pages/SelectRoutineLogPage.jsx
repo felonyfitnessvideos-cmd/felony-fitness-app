@@ -110,7 +110,12 @@ function SelectRoutineLogPage() {
 
         {/* Once loading is complete, map over and display the active routines */}
         {!loading && activeRoutines.map(routine => (
-          <button key={routine.id} className="routine-selection-card" onClick={() => handleSelectRoutine(routine.id)}>
+          <button
+            key={routine.id}
+            className="routine-selection-card"
+            onClick={() => handleSelectRoutine(routine.id)}
+            aria-label={`Select ${routine.routine_name} routine to log`}
+          >
             <div className="routine-card-info">
               <h3>{routine.routine_name}</h3>
               {/* The exercise count comes from the Supabase query's relation count */}

@@ -24,7 +24,7 @@ function SelectProRoutinePage() {
     { name: 'Endurance', icon: <HeartPulse size={40} className="card-icon" />, link: '/workouts/routines/pro-category/Endurance' },
     { name: 'Challenges', icon: <Shield size={40} className="card-icon" />, link: '/workouts/routines/pro-category/Challenges' },
     { name: 'Bodyweight Beast', icon: <Wind size={40} className="card-icon" />, link: '/workouts/routines/pro-category/Bodyweight Beast' },
-    { name: 'Interval Training', icon: <Repeat size={40} className="card-icon" />, link: '/workouts/routines/pro-category/Interval' },
+  { name: 'Interval', icon: <Repeat size={40} className="card-icon" />, link: '/workouts/routines/pro-category/Interval' },
   ];
 
   return (

@@ -5,7 +5,7 @@
  * @project Felony Fitness
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { Apple, Search, Camera, X, Droplets, Loader2 } from 'lucide-react';
@@ -13,15 +13,6 @@ import Modal from 'react-modal';
 import { useAuth } from '../AuthContext.jsx';
 import './NutritionLogPage.css';
 
-  const customModalStyles = {
-  content: {
-    top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%',
-    transform: 'translate(-50%, -50%)', width: '90%', maxWidth: '400px',
-    background: '#2d3748', color: '#f7fafc', border: '1px solid #4a5568',
-    zIndex: 1000, padding: '1.5rem', borderRadius: '12px'
-  },
-  overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 999 },
-};
 
 /**
  * @typedef {object} NutritionLog
@@ -59,6 +50,8 @@ function NutritionLogPage() {
   const [searchTerm, setSearchTerm] = useState('');
   /** @type {[SearchResult[], React.Dispatch<React.SetStateAction<SearchResult[]>>]} */
   const [searchResults, setSearchResults] = useState([]);
+  const searchAbortControllerRef = useRef(null);
+  const searchDebounceRef = useRef(null);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   /** @type {[SearchResult | null, React.Dispatch<React.SetStateAction<SearchResult | null>>]} */
   const [selectedFood, setSelectedFood] = useState(null);
@@ -86,8 +79,10 @@ function NutritionLogPage() {
       const startOfTomorrow = new Date(startOfToday);
       startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
-      // DEBUGGING: Log the exact timestamps being sent to the database.
-      console.log("Fetching logs between (UTC):", startOfToday.toISOString(), "and", startOfTomorrow.toISOString());
+      // DEBUGGING: Log the exact timestamps being sent to the database (guarded).
+      if (process.env.NODE_ENV !== 'production') {
+        console.debug('Fetching logs between (UTC):', startOfToday.toISOString(), 'and', startOfTomorrow.toISOString());
+      }
 
 
       const [logsResponse, profileResponse] = await Promise.all([
@@ -108,7 +103,15 @@ function NutritionLogPage() {
       if (profileResponse.error && profileResponse.error.code !== 'PGRST116') throw profileResponse.error;
       
       const logs = logsResponse.data || [];
-      console.log("Fetched logs:", logs); // DEBUGGING: See what data came back.
+      // DEBUGGING: Avoid logging full objects in production; only show non-sensitive fields in development.
+      if (process.env.NODE_ENV !== 'production') {
+        try {
+          const safePreview = logs.map(l => ({ id: l.id, meal_type: l.meal_type, created_at: l.created_at }));
+          console.debug('Fetched logs (preview):', safePreview);
+        } catch (e) {
+          console.debug('Fetched logs (count):', Array.isArray(logs) ? logs.length : typeof logs);
+        }
+      }
       setTodaysLogs(logs);
       if (profileResponse.data) setGoals(profileResponse.data);
 
@@ -145,42 +148,71 @@ function NutritionLogPage() {
     }
   }, [user?.id, fetchLogData]);
   
-  const handleSearch = useCallback(async (term) => {
+  const handleSearch = useCallback((term) => {
     setSearchTerm(term);
+
+    // Clear pending debounce timer
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
+
     if (term.length < 3) {
+      if (searchAbortControllerRef.current) {
+        try { searchAbortControllerRef.current.abort(); } catch (__) {}
+        searchAbortControllerRef.current = null;
+      }
       setSearchResults([]);
+      setIsSearching(false);
       return;
     }
-    setIsSearching(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('food-search', {
-        body: { query: term },
-      });
-      if (error) throw error;
-      
-      let standardizedResults = [];
-      if (data.source === 'local') {
-          standardizedResults = data.results.flatMap(food => 
-            food.food_servings.map(serving => ({
-                is_external: false,
-                food_id: food.id,
-                name: food.name,
-                serving_id: serving.id,
-                serving_description: serving.serving_description,
-                calories: serving.calories,
-                protein_g: serving.protein_g,
-            }))
-          );
-      } else if (data.source === 'external') {
-          standardizedResults = data.results.map(item => ({ ...item, is_external: true }));
-      }
-      setSearchResults(standardizedResults);
 
-    } catch (error) {
-      console.error("Error searching food:", error.message);
-    } finally {
+    searchDebounceRef.current = setTimeout(async () => {
+      if (searchAbortControllerRef.current) {
+        try { searchAbortControllerRef.current.abort(); } catch (__) {}
+      }
+      const controller = new AbortController();
+      searchAbortControllerRef.current = controller;
+
+      setIsSearching(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('food-search', {
+          body: { query: term },
+          signal: controller.signal,
+        });
+        if (error) throw error;
+
+        if (controller.signal.aborted) return;
+
+        let standardizedResults = [];
+        if (data?.source === 'local') {
+            standardizedResults = (data.results || []).flatMap(food => 
+              (food.food_servings || []).map(serving => ({
+                  is_external: false,
+                  food_id: food.id,
+                  name: food.name,
+                  serving_id: serving.id,
+                  serving_description: serving.serving_description,
+                  calories: serving.calories,
+                  protein_g: serving.protein_g,
+              }))
+            );
+        } else if (data?.source === 'external') {
+            standardizedResults = (data.results || []).map(item => ({ ...item, is_external: true }));
+        }
+        setSearchResults(standardizedResults);
+
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          // ignore
+        } else {
+          console.error('Error searching food:', error?.message || error);
+        }
+      } finally {
         setIsSearching(false);
-    }
+        searchAbortControllerRef.current = null;
+      }
+    }, 300);
   }, []);
   
   const openLogModal = (food) => {
@@ -253,6 +285,20 @@ function NutritionLogPage() {
   if (loading) {
     return <div style={{ color: 'white', padding: '2rem' }}>Loading Nutrition Log...</div>;
   }
+
+  // Cleanup debounce timer and abort controller on unmount
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
+      }
+      if (searchAbortControllerRef.current) {
+        try { searchAbortControllerRef.current.abort(); } catch (__) {}
+        searchAbortControllerRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <div className="nutrition-log-page-container">
@@ -333,9 +379,9 @@ function NutritionLogPage() {
       <Modal
         isOpen={isLogModalOpen}
         onRequestClose={closeLogModal}
-        style={customModalStyles}
         contentLabel="Log Food Item"
-        appElement={document.getElementById('root')}
+        overlayClassName="custom-modal-overlay"
+        className="custom-modal-content log-food-modal"
       >
         {selectedFood && (
           <div className="log-food-modal">

@@ -13,15 +13,6 @@ import Modal from 'react-modal';
 import { useAuth } from '../AuthContext.jsx';
 import './WorkoutGoalsPage.css';
 
-const customModalStyles = {
-  content: {
-    top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%',
-    transform: 'translate(-50%, -50%)', width: '90%', maxWidth: '400px',
-    background: '#2d3748', color: '#f7fafc', border: '1px solid #4a5568',
-    zIndex: 1000, padding: '1.5rem', borderRadius: '12px'
-  },
-  overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 999 },
-};
 
 /**
  * @typedef {object} Goal
@@ -138,8 +129,9 @@ function WorkoutGoalsPage() {
    * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
    */
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewGoal(prev => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    const next = type === 'number' ? (value === '' ? '' : Number(value)) : value;
+    setNewGoal(prev => ({ ...prev, [name]: next }));
   };
 
   /**
@@ -231,9 +223,9 @@ function WorkoutGoalsPage() {
       <Modal
         isOpen={isModalOpen}
         onRequestClose={closeModal}
-        style={customModalStyles}
         contentLabel="Goal Form"
-        appElement={document.getElementById('root')}
+        overlayClassName="custom-modal-overlay"
+        className="custom-modal-content"
       >
         <h2>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</h2>
         <form onSubmit={handleSaveGoal}>
@@ -244,11 +236,11 @@ function WorkoutGoalsPage() {
           <div className="form-row">
             <div className="form-group">
               <label>Current Value</label>
-              <input name="current_value" type="number" value={newGoal.current_value} onChange={handleInputChange} />
+              <input name="current_value" type="number" min="0" step="any" value={newGoal.current_value} onChange={handleInputChange} />
             </div>
             <div className="form-group">
               <label>Target Value</label>
-              <input name="target_value" type="number" value={newGoal.target_value} onChange={handleInputChange} required />
+              <input name="target_value" type="number" min="0" step="any" value={newGoal.target_value} onChange={handleInputChange} required />
             </div>
           </div>
           <div className="form-group">

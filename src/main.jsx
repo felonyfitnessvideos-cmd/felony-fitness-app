@@ -30,23 +30,24 @@ import { AuthProvider } from './AuthContext.jsx';
 // Import all page components
 import App from './App.jsx';
 import AuthPage from './pages/AuthPage.jsx';
-import DashboardPage from './pages/DashboardPage.jsx';
-import WorkoutsPage from './pages/WorkoutsPage.jsx';
-import NutritionPage from './pages/NutritionPage.jsx';
-import ProgressPage from './pages/ProgressPage.jsx';
-import MyPlanPage from './pages/MyPlanPage.jsx';
-import WorkoutGoalsPage from './pages/WorkoutGoalsPage.jsx';
-import WorkoutRoutinePage from './pages/WorkoutRoutinePage.jsx';
-import SelectRoutineLogPage from './pages/SelectRoutineLogPage.jsx';
-import WorkoutLogPage from './pages/WorkoutLogPage.jsx';
-import WorkoutRecsPage from './pages/WorkoutRecsPage.jsx';
-import EditRoutinePage from './pages/EditRoutinePage.jsx';
+// Lazy-load heavier route pages to reduce initial bundle size
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage.jsx'));
+const WorkoutsPage = React.lazy(() => import('./pages/WorkoutsPage.jsx'));
+const NutritionPage = React.lazy(() => import('./pages/NutritionPage.jsx'));
+const ProgressPage = React.lazy(() => import('./pages/ProgressPage.jsx'));
+const MyPlanPage = React.lazy(() => import('./pages/MyPlanPage.jsx'));
+const WorkoutGoalsPage = React.lazy(() => import('./pages/WorkoutGoalsPage.jsx'));
+const WorkoutRoutinePage = React.lazy(() => import('./pages/WorkoutRoutinePage.jsx'));
+const SelectRoutineLogPage = React.lazy(() => import('./pages/SelectRoutineLogPage.jsx'));
+const WorkoutLogPage = React.lazy(() => import('./pages/WorkoutLogPage.jsx'));
+const WorkoutRecsPage = React.lazy(() => import('./pages/WorkoutRecsPage.jsx'));
+const EditRoutinePage = React.lazy(() => import('./pages/EditRoutinePage.jsx'));
 const SelectProRoutinePage = React.lazy(() => import('./pages/SelectProRoutinePage.jsx'));
 const ProRoutineCategoryPage = React.lazy(() => import('./pages/ProRoutineCategoryPage.jsx'));
-import NutritionGoalsPage from './pages/NutritionGoalsPage.jsx';
-import NutritionLogPage from './pages/NutritionLogPage.jsx';
-import NutritionRecsPage from './pages/NutritionRecsPage.jsx';
-import ProfilePage from './pages/ProfilePage.jsx';
+const NutritionGoalsPage = React.lazy(() => import('./pages/NutritionGoalsPage.jsx'));
+const NutritionLogPage = React.lazy(() => import('./pages/NutritionLogPage.jsx'));
+const NutritionRecsPage = React.lazy(() => import('./pages/NutritionRecsPage.jsx'));
+const ProfilePage = React.lazy(() => import('./pages/ProfilePage.jsx'));
 
 // Binds the modal to the app's root element for accessibility (e.g., screen readers).
 Modal.setAppElement('#root'); 

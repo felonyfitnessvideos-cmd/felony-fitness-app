@@ -214,7 +214,8 @@ function NutritionGoalsPage() {
         <button className="save-goals-button" onClick={handleSaveGoals}>
           Save Goals
         </button>
-        {message && <p className="status-message">{message}</p>}
+        {/* Live region for assistive tech: always present but empty when no message */}
+        <div className="status-message" role="status" aria-live="polite" aria-atomic="true">{message || ''}</div>
       </div>
     </div>
   );

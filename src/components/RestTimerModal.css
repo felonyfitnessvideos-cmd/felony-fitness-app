@@ -109,3 +109,24 @@
     background-color: #ea580c; /* A slightly darker orange for hover. */
     color: white; /* Ensures text color remains white. */
 }
+
+/* Modal overlay/content classes for the rest timer modal */
+.rest-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.rest-modal-content {
+  width: 320px;
+  background: #2d3748;
+  color: #f7fafc;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}

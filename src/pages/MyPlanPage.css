@@ -185,3 +185,35 @@
   border-color: var(--accent-color);
   color: var(--color-white, #ffffff);
 }
+
+/* Modal overlay and content styles for settings modal */
+.settings-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.settings-modal-content {
+  background: var(--card-color);
+  color: var(--text-primary);
+  width: 100%;
+  max-width: 420px;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+}
+
+/* Focus visible for theme buttons */
+.theme-btn:focus-visible {
+  outline: 3px solid rgba(249,115,22,0.85);
+  outline-offset: 2px;
+}
+
+body.ReactModal__Body--open { overflow: hidden; }
