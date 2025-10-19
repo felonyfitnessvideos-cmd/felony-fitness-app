@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file WorkoutGoalsPage.jsx
  * @description This page allows users to create, view, update, and delete their workout goals.

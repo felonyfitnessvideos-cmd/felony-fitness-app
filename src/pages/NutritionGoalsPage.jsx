@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file NutritionGoalsPage.jsx
  * @description This page allows users to set and update their daily nutrition goals, such as calories, macronutrients, and water intake.

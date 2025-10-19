@@ -1,24 +1,8 @@
-// @ts-check
-
+ 
 /**
  * @file DashboardPage.jsx
  * @description The main dashboard page, serving as the central hub for the user's daily stats.
  * @project Felony Fitness
- *
- * @workflow
- * 1.  **Data Fetching**: On component mount, `fetchDashboardData` is called. It runs several database queries in parallel to gather:
- * - The user's daily nutrition/fitness goals from their profile.
- * - Today's aggregated nutrition totals (calories, protein, water) from an RPC function.
- * - The user's list of active, long-term goals.
- * - The most recent workout log for the current day.
- * 2.  **State Management**: The fetched data is stored in various state variables (`goals`, `nutrition`, `training`, `activeGoals`). A `loading` state manages the UI during the fetch. A motivational quote is also randomly selected and stored.
- * 3.  **Data Calculation**: The component calculates derived values for display, such as "net calories" (calories eaten minus calories burned) and progress percentages for nutrition goals.
- * 4.  **Rendering**: The page displays the information in a series of cards:
- * - A main nutrition card with progress bars.
- * - A "Today's Training" card showing the most recent workout.
- * - An "Active Goals" card listing the user's long-term goals.
- * - A motivational quote card.
- * 5.  **User Actions**: The user can log out, which signs them out of the session and navigates them back to the authentication page.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -86,58 +70,57 @@ function DashboardPage() {
   const fetchDashboardData = useCallback(async (userId) => {
     setLoading(true);
     try {
-      const todayStr = new Date().toLocaleDateString('en-CA'); 
-
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
       const tomorrowStart = new Date(todayStart);
       tomorrowStart.setDate(tomorrowStart.getDate() + 1);
 
-      // Fetch profile, nutrition totals, and goals simultaneously.
-      const [profileRes, nutritionRes, goalsRes] = await Promise.all([
-        supabase.from('user_profiles').select('*').eq('id', userId).single(),
-        supabase.rpc('get_daily_nutrition_totals', { p_user_id: userId, p_date: todayStr }),
-        supabase.from('goals').select('*').eq('user_id', userId)
+      const [profileRes, nutritionLogsRes, goalsRes, workoutLogRes] = await Promise.all([
+        supabase.from('user_profiles').select('daily_calorie_goal, daily_protein_goal, daily_water_goal_oz').eq('id', userId).single(),
+        supabase.from('nutrition_logs').select('quantity_consumed, water_oz_consumed, food_servings(calories, protein_g)').eq('user_id', userId).gte('created_at', todayStart.toISOString()).lt('created_at', tomorrowStart.toISOString()),
+        supabase.from('goals').select('*').eq('user_id', userId),
+        // **FIX APPLIED**: Removed `.single()` to prevent 406 error. The query now returns an array.
+        supabase.from('workout_logs').select('notes, duration_minutes, calories_burned').eq('user_id', userId).gte('created_at', todayStart.toISOString()).lt('created_at', tomorrowStart.toISOString()).order('created_at', { ascending: false }).limit(1)
       ]);
 
       if (profileRes.data) {
         setGoals({ calories: profileRes.data.daily_calorie_goal || 0, protein: profileRes.data.daily_protein_goal || 0, water: profileRes.data.daily_water_goal_oz || 0 });
       }
 
-      const totalsData = nutritionRes.data?.[0];
-      if (totalsData) {
+      if (nutritionLogsRes.data) {
+        const totals = nutritionLogsRes.data.reduce((acc, log) => {
+          if (log.food_servings) {
+            acc.calories += (log.food_servings.calories || 0) * log.quantity_consumed;
+            acc.protein += (log.food_servings.protein_g || 0) * log.quantity_consumed;
+          }
+          if (log.water_oz_consumed) {
+            acc.water += log.water_oz_consumed;
+          }
+          return acc;
+        }, { calories: 0, protein: 0, water: 0 });
+
         setNutrition({
-            calories: Math.round(totalsData.total_calories || 0),
-            protein: Math.round(totalsData.total_protein || 0),
-            water: totalsData.total_water || 0,
+            calories: Math.round(totals.calories),
+            protein: Math.round(totals.protein),
+            water: totals.water,
         });
       }
       
       if (goalsRes.data) {
         setActiveGoals(goalsRes.data);
       }
-
-      // Fetch the most recent workout log for today.
-      const { data: workoutLogData, error: workoutLogError } = await supabase
-        .from('workout_logs')
-        .select('notes, duration_minutes, calories_burned')
-        .eq('user_id', userId)
-        .gte('created_at', todayStart.toISOString()) 
-        .lt('created_at', tomorrowStart.toISOString()) 
-        .order('created_at', { ascending: false }) 
-        .limit(1)
-        .single();
       
-      // Ignore the "no rows found" error, as it's an expected outcome on a rest day.
-      if (workoutLogError && workoutLogError.code !== 'PGRST116') { 
-        throw workoutLogError;
+      if (workoutLogRes.error) { 
+        throw workoutLogRes.error;
       }
 
-      if (workoutLogData) {
+      // **FIX APPLIED**: Check the array and take the first element if it exists.
+      const latestWorkout = workoutLogRes.data?.[0];
+      if (latestWorkout) {
         setTraining({
-          name: workoutLogData.notes,
-          duration: workoutLogData.duration_minutes,
-          calories: workoutLogData.calories_burned
+          name: latestWorkout.notes,
+          duration: latestWorkout.duration_minutes,
+          calories: latestWorkout.calories_burned
         });
       } else {
         setTraining({ name: 'Rest Day', duration: 0, calories: 0 });
@@ -145,17 +128,12 @@ function DashboardPage() {
 
     } catch (error) {
         console.error("Error fetching dashboard data:", error);
-        // Fallback to a safe "Rest Day" state on error.
         setTraining({ name: 'Rest Day', duration: 0, calories: 0 });
     } finally {
         setLoading(false);
     }
   }, []);
 
-  /**
-   * Effect to initialize the dashboard. It selects a random quote and
-   * triggers the data fetch when the user session is available.
-   */
   useEffect(() => {
     const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
     setQuote(randomQuote);
@@ -167,17 +145,11 @@ function DashboardPage() {
     }
   }, [user?.id, fetchDashboardData]);
   
-  /**
-   * Handles the user logout process.
-   * @async
-   */
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/');
   };
 
-  // --- Derived State Calculations ---
-  // These values are calculated on every render based on the current state.
   const netCalories = nutrition.calories - (training?.calories || 0);
   const adjustedCalorieGoal = goals.calories + (training?.calories || 0);
   const calorieProgress = adjustedCalorieGoal > 0 ? (nutrition.calories / adjustedCalorieGoal) * 100 : 0;
@@ -262,3 +234,4 @@ function DashboardPage() {
 }
 
 export default DashboardPage;
+

@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file ProgressPage.jsx
  * @description A page that displays the user's overall fitness progress, including summary statistics, trend charts, and goal tracking.

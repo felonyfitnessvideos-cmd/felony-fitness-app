@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file App.jsx
  * @description The root component of the application.

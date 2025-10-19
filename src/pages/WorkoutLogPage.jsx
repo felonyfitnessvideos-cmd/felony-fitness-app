@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file WorkoutLogPage.jsx
  * @description The main page for actively logging a workout session based on a selected routine.

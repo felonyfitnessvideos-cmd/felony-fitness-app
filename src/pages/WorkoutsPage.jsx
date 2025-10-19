@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file WorkoutsPage.jsx
  * @description The main landing page for the "Workouts" section of the app.

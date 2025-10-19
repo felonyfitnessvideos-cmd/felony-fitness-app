@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file SelectRoutineLogPage.jsx
  * @description This page displays a list of the user's active workout routines, allowing them to select one to start logging a workout.

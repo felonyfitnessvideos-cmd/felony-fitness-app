@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file MyPlanPage.jsx
  * @description This page displays the user's current subscription plan, shows other available plans, and provides access to app settings like theme selection.

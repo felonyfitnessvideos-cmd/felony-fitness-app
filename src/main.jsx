@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file main.jsx
  * @description The main entry point for the React application.
@@ -42,8 +41,8 @@ import SelectRoutineLogPage from './pages/SelectRoutineLogPage.jsx';
 import WorkoutLogPage from './pages/WorkoutLogPage.jsx';
 import WorkoutRecsPage from './pages/WorkoutRecsPage.jsx';
 import EditRoutinePage from './pages/EditRoutinePage.jsx';
-import SelectProRoutinePage from './pages/SelectProRoutinePage.jsx';
-import ProRoutineCategoryPage from './pages/ProRoutineCategoryPage.jsx';
+const SelectProRoutinePage = React.lazy(() => import('./pages/SelectProRoutinePage.jsx'));
+const ProRoutineCategoryPage = React.lazy(() => import('./pages/ProRoutineCategoryPage.jsx'));
 import NutritionGoalsPage from './pages/NutritionGoalsPage.jsx';
 import NutritionLogPage from './pages/NutritionLogPage.jsx';
 import NutritionRecsPage from './pages/NutritionRecsPage.jsx';
@@ -59,7 +58,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         {/* The AuthProvider makes user session data available to all components. */}
         <AuthProvider>
-          <Routes>
+          <React.Suspense fallback={<div>Loading...</div>}>
+            <Routes>
             {/* Route 1: The public login page. It does not use the main App layout. */}
             <Route path="/" element={<AuthPage />} />
 
@@ -83,9 +83,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               
               {/* --- Nested routes for the "Pro Routines" feature --- */}
               {/* The main hub/category selection page */}
-              <Route path="/workouts/routines/select-pro" element={<SelectProRoutinePage />} />
-              {/* The dynamic page that displays routines for a specific category */}
-              <Route path="/workouts/routines/pro-category/:categoryName" element={<ProRoutineCategoryPage />} />
+                <Route path="/workouts/routines/select-pro" element={<SelectProRoutinePage />} />
+                {/* The dynamic page that displays routines for a specific category */}
+                <Route path="/workouts/routines/pro-category/:categoryName" element={<ProRoutineCategoryPage />} />
 
               {/* --- Nested routes for the "Nutrition" section --- */}
               <Route path="/nutrition/goals" element={<NutritionGoalsPage />} />
@@ -95,7 +95,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               {/* --- Profile route --- */}
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
-          </Routes>
+            </Routes>
+          </React.Suspense>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

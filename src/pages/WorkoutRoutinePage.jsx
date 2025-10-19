@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file WorkoutRoutinePage.jsx
  * @description This page displays a list of all workout routines created by the user, allowing them to manage them.

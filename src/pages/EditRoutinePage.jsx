@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file EditRoutinePage.jsx
  * @description This page allows users to create a new workout routine or edit an existing one.

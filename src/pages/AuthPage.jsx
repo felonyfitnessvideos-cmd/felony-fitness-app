@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file AuthPage.jsx
  * @description The main authentication page for the application. It handles both sign-in and sign-up for users.

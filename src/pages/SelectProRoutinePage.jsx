@@ -1,5 +1,4 @@
-// @ts-check
-
+ 
 /**
  * @file SelectProRoutinePage.jsx
  * @description A hub page for users to select a category of professionally designed workout routines.
@@ -16,7 +15,6 @@ import './SelectProRoutinePage.css';
 /**
  * @component SelectProRoutinePage
  * @description Renders a grid of cards, each representing a category of "Pro Routines".
- * @returns {JSX.Element}
  */
 function SelectProRoutinePage() {
   // Array of category objects to generate the navigation cards dynamically.
@@ -39,7 +37,12 @@ function SelectProRoutinePage() {
 
       <div className="category-grid">
         {categories.map((cat) => (
-          <Link key={cat.name} to={cat.link} className="category-card">
+          <Link
+            key={cat.name}
+            to={`/workouts/routines/pro-category/${encodeURIComponent(cat.name)}`}
+            className="category-card"
+            aria-label={`Browse ${cat.name} pro routines`}
+          >
             {cat.icon}
             <span className="card-name">{cat.name}</span>
           </Link>
