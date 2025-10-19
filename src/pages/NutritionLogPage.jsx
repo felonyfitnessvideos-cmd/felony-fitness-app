@@ -282,10 +282,6 @@ function NutritionLogPage() {
     }
   };
   
-  if (loading) {
-    return <div style={{ color: 'white', padding: '2rem' }}>Loading Nutrition Log...</div>;
-  }
-
   // Cleanup debounce timer and abort controller on unmount
   useEffect(() => {
     return () => {
@@ -299,6 +295,10 @@ function NutritionLogPage() {
       }
     };
   }, []);
+
+  if (loading) {
+    return <div style={{ color: 'white', padding: '2rem' }}>Loading Nutrition Log...</div>;
+  }
 
   return (
     <div className="nutrition-log-page-container">
