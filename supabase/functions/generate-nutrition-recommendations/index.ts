@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * generate-nutrition-recommendations
  * Edge Function that returns personalized nutrition recommendations for an
@@ -9,12 +8,46 @@
  * Errors: returns 401 for auth failures, 503 if OPENAI_API_KEY is missing.
  */
 
+// Minimal local type shims so TypeScript can check this Deno-run file.
+declare const Deno: {
+  env: { get(name: string): string | undefined };
+  serve(handler: (req: Request) => Promise<Response> | Response): void;
+};
+
+// @ts-expect-error: CDN ESM import used in Deno runtime; local types are not available.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../_shared/cors.ts';
+import { corsHeaders } from '../_shared/cors';
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const OPENAI_API_KEY: string | undefined = Deno.env.get('OPENAI_API_KEY');
 
-const calculateAge = (dob: string | null) => {
+// --- Types used in this function ---
+interface UserProfile {
+  dob?: string | null;
+  sex?: string | null;
+  daily_calorie_goal?: number | null;
+  daily_protein_goal?: number | null;
+}
+
+interface BodyMetrics {
+  weight_lbs?: number | null;
+  body_fat_percentage?: number | null;
+}
+
+interface Food {
+  name?: string | null;
+  category?: string | null;
+}
+
+interface FoodServing {
+  quantity_consumed?: number | null;
+  foods?: Food | null;
+}
+
+interface NutritionLogEntry {
+  food_servings?: FoodServing[] | null;
+}
+
+const calculateAge = (dob: string | null | undefined) => {
   if (!dob) return null;
   const birthDate = new Date(dob);
   const today = new Date();
@@ -77,7 +110,8 @@ Deno.serve(async (req: Request) => {
 
     const maskedPrefix = accessToken.slice(0, 12) + '...';
 
-    const { data: { user } = {}, error: authError } = await supabase.auth.getUser();
+  // Supabase client library types are not available here; cast to any for typed destructuring.
+  const { data: { user } = {}, error: authError }: { data?: { user?: any }, error?: any } = await (supabase as any).auth.getUser();
     if (authError || !user) {
       console.error(JSON.stringify({
         event: 'auth.resolve_user',
@@ -132,8 +166,8 @@ Deno.serve(async (req: Request) => {
       throw new Error('User profile not found. Cannot generate recommendations without goals.');
     }
 
-    const userProfile = profileRes.data;
-    const latestMetrics = metricsRes.data;
+  const userProfile = profileRes.data as UserProfile;
+  const latestMetrics = metricsRes.data as BodyMetrics | undefined;
 
     const categoryCounts = (nutritionRes.data || []).reduce((acc: Record<string, number>, log: any) => {
       const servings = Array.isArray(log.food_servings) ? log.food_servings : [];
@@ -159,12 +193,12 @@ Deno.serve(async (req: Request) => {
       'Analyze the following user data from the last 7 days and provide 3 actionable nutrition-related recommendations.',
       'User Profile:',
       '- Age: ' + (calculateAge(userProfile.dob)),
-      '- Sex: ' + (userProfile.sex),
+      '- Sex: ' + (userProfile.sex ?? 'Unknown'),
       '- Weight: ' + (latestMetrics?.weight_lbs || 'N/A') + ' lbs',
       '- Body Fat: ' + (latestMetrics?.body_fat_percentage || 'N/A') + '%',
       'User Goals:',
-      '- Calories: ' + (userProfile.daily_calorie_goal),
-      '- Protein: ' + (userProfile.daily_protein_goal) + 'g',
+      '- Calories: ' + (userProfile.daily_calorie_goal ?? 'N/A'),
+      '- Protein: ' + (userProfile.daily_protein_goal ?? 'N/A') + 'g',
       '7-Day Nutrition Summary (by category):',
       (nutritionSummary || 'No nutrition logged.'),
       'Recent Workouts:',
