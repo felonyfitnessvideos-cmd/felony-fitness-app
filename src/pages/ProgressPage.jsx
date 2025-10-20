@@ -126,8 +126,13 @@ function ProgressPage() {
         .sort((a, b) => a.iso.localeCompare(b.iso))
         .map(({ date, calories }) => ({ date, calories: Math.round(calories) }));
       setNutritionTrends(nutritionArray);
-      const totalCalories = Array.from(calorieMap.values()).reduce((sum, val) => sum + val, 0);
-      const avgCalories = calorieMap.size > 0 ? Math.round(totalCalories / calorieMap.size) : 0;
+      // Sum the calories field on each entry (calorieMap stores objects like { date, calories })
+      const totalCalories = Array.from(calorieMap.values()).reduce((sum, val) => sum + (Number(val?.calories) || 0), 0);
+      let avgCalories = 0;
+      if (calorieMap.size > 0) {
+        const rawAvg = totalCalories / calorieMap.size;
+        avgCalories = Number.isFinite(rawAvg) ? Math.round(rawAvg) : 0;
+      }
       
       // --- Set Goals Data ---
       if(goalsRes.error) throw goalsRes.error;
@@ -211,10 +216,13 @@ function ProgressPage() {
           <div key={goal.id} className="goal-progress-item">
             <div className="goal-progress-header">
               <span>{goal.goal_description}</span>
-              <span>{goal.current_value || 0} / {goal.target_value}</span>
+              <span>{goal.current_value || 0} / {goal.target_value || 0}</span>
             </div>
             <div className="goal-progress-bar-wrapper">
-              <div className="goal-progress-bar" style={{ width: `${((goal.current_value || 0) / goal.target_value) * 100}%` }}></div>
+              <div
+                className="goal-progress-bar"
+                style={{ width: `${goal.target_value ? (((goal.current_value || 0) / goal.target_value) * 100) : 0}%` }}
+              ></div>
             </div>
           </div>
         ))}

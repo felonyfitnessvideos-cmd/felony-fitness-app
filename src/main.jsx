@@ -26,6 +26,7 @@ import './index.css';
 import Modal from 'react-modal';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './AuthContext.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 // Import all page components
 import App from './App.jsx';
@@ -59,7 +60,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         {/* The AuthProvider makes user session data available to all components. */}
         <AuthProvider>
-          <React.Suspense fallback={<div>Loading...</div>}>
+          <ErrorBoundary>
+            <React.Suspense fallback={<div>Loading...</div>}>
             <Routes>
             {/* Route 1: The public login page. It does not use the main App layout. */}
             <Route path="/" element={<AuthPage />} />
@@ -97,7 +99,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
             </Routes>
-          </React.Suspense>
+            </React.Suspense>
+          </ErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

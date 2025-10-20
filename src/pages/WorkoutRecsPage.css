@@ -22,19 +22,21 @@
 }
 
 .recs-content {
-  margin-top: 2rem;
+  /* This is correct: centers the whole block */
+  width: 100%;
+  max-width: 450px;
+  margin: 2rem auto 0 auto; 
   text-align: center;
 }
 
 /**
  * The initial view, prompting the user to generate recommendations.
- * Uses a flexbox column to center the content.
  */
 .intro-view {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+  align-items: center; 
+  /* Removed gap to use explicit margins for better control */
   padding: 2rem;
   background-color: #2d3748;
   border-radius: 12px;
@@ -42,17 +44,20 @@
 
 .intro-icon {
   color: #f97316;
+  margin-bottom: 1.5rem; /* Added margin */
 }
 
 .intro-view h2 {
   font-size: 1.5rem;
   font-weight: bold;
   color: white;
+  margin-bottom: 0.5rem; /* Added margin */
 }
 
 .intro-view p {
   color: #a0aec0;
-  max-width: 350px;
+  max-width: 350px; /* This is correct */
+  margin-bottom: 1.5rem; /* Added margin */
 }
 
 /**
@@ -67,20 +72,20 @@
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.2s;
-  margin-top: 1rem;
+  width: 100%;
+  max-width: 350px; /* This is correct */
 }
 
 .intro-view button:hover, .regenerate-button:hover {
-  background-color: #dd6b20; /* A darker shade for hover feedback */
+  background-color: #dd6b20; 
 }
 
 /**
  * A simple loading spinner animation.
- * The animation `spin` is defined in the @keyframes rule below.
  */
 .loading-spinner {
   border: 4px solid #4a5568;
-  border-top: 4px solid #f97316; /* Accent color for the moving part */
+  border-top: 4px solid #f97316;
   border-radius: 50%;
   width: 50px;
   height: 50px;
@@ -120,7 +125,6 @@
 
 /**
  * The summary text block from the AI.
- * The left border adds a visual quote-like accent.
  */
 .summary {
   background-color: #2d3748;
@@ -164,7 +168,7 @@
 }
 
 .regenerate-button {
-  width: 100%;
+  /* This is now in the shared rule above */
 }
 
 /**
@@ -174,11 +178,17 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: rgba(249, 115, 22, 0.1); /* Transparent version of accent color */
+  background-color: rgba(249, 115, 22, 0.1); 
   color: #f97316;
   padding: 0.75rem 1rem;
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 500;
-  margin-top: 1.5rem;
+  text-align: left; 
+  
+  /* Added margins for spacing and max-width to match other elements */
+  margin-bottom: 1.5rem;
+  width: 100%; 
+  max-width: 350px; 
+  box-sizing: border-box; /* Include padding in the width calculation */
 }

@@ -1,23 +1,10 @@
-/**
- * @file supabase/functions/generate-workout-recommendations/index.ts
- * @description Edge Function to generate personalized workout recommendations for a user.
- *
- * @project Felony Fitness
- *
- * @workflow
- * 1. SECURELY derives the user's ID from their authentication token.
- * 2. Fetches a comprehensive set of user data using RLS.
- * 3. It processes and summarizes this data into a human-readable format.
- * 4. It constructs a detailed prompt for the OpenAI API.
- * 5. The AI analyzes the data and returns a structured JSON object.
- * 6. The function parses the AI's response and sends it back to the client.
- */
-
+// @ts-nocheck
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
+// --- Helper function ---
 const calculateAge = (dob) => {
   if (!dob) return null;
   const birthDate = new Date(dob);
@@ -30,20 +17,21 @@ const calculateAge = (dob) => {
   return age;
 };
 
+// --- Main Function ---
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    // **SECURITY FIX: Create a user-scoped client to enforce RLS**
+    console.log("Function started."); // DEBUG
+    
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
 
-    // **SECURITY FIX: Securely get the user from the JWT**
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       console.error("Auth error:", authError?.message);
@@ -52,28 +40,34 @@ Deno.serve(async (req) => {
         status: 401,
       });
     }
-    const userId = user.id; // Use the secure, server-derived user ID
+    const userId = user.id;
+    console.log(`User ${userId} authenticated.`); // DEBUG
 
-    // --- 1. Fetch all necessary user data in parallel for efficiency. ---
+    // --- 1. Fetch all necessary user data ---
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+    console.log("Fetching data from database..."); // DEBUG
     const [profileRes, metricsRes, workoutRes, nutritionRes] = await Promise.all([
       supabase.from('user_profiles').select('dob, sex, daily_calorie_goal, daily_protein_goal').eq('id', userId).single(),
       supabase.from('body_metrics').select('weight_lbs, body_fat_percentage').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('workout_logs').select('notes, duration_minutes, created_at').eq('user_id', userId).gte('created_at', sevenDaysAgo.toISOString()).gt('duration_minutes', 0),
       supabase.from('nutrition_logs').select('quantity_consumed, food_servings(calories, protein_g)').eq('user_id', userId).gte('created_at', sevenDaysAgo.toISOString())
     ]);
+    console.log("Database queries complete."); // DEBUG
 
-    if (profileRes.error) throw profileRes.error;
-    if (metricsRes.error) throw metricsRes.error;
-    if (workoutRes.error) throw workoutRes.error;
-    if (nutritionRes.error) throw nutritionRes.error;
+    if (profileRes.error) throw new Error(`Profile query failed: ${profileRes.error.message}`);
+    if (metricsRes.error) throw new Error(`Metrics query failed: ${metricsRes.error.message}`);
+    if (workoutRes.error) throw new Error(`Workout query failed: ${workoutRes.error.message}`);
+    if (nutritionRes.error) throw new Error(`Nutrition query failed: ${nutritionRes.error.message}`);
+    console.log("All database queries successful."); // DEBUG
+
     if (!profileRes.data) {
       throw new Error("User profile not found. Cannot generate recommendations without goals.");
     }
 
-    // --- 2. Process and summarize the fetched data for the AI prompt. ---
+    // --- 2. Process and summarize the fetched data ---
+    console.log("Processing data and constructing prompt..."); // DEBUG
     const userProfile = profileRes.data;
     const latestMetrics = metricsRes.data;
     const recentWorkouts = workoutRes.data || [];
@@ -91,8 +85,8 @@ Deno.serve(async (req) => {
       workouts: `Completed ${recentWorkouts.length} workouts in the last 7 days.`,
       workoutList: recentWorkouts.map((w) => `- ${w.notes || 'Unnamed Workout'} (${w.duration_minutes} mins)`).join('\n') || 'No workouts logged.'
     };
-
-    // --- 3. Construct the full prompt for the AI. ---
+    
+    // (Prompt text removed for brevity, your original prompt goes here)
     const prompt = `
       You are a fitness and nutrition expert for the app "Felony Fitness".
       Analyze the following user data and provide 3-4 actionable workout-related recommendations.
@@ -119,8 +113,10 @@ Deno.serve(async (req) => {
         ]
       }
     `;
+    console.log("Prompt constructed."); // DEBUG
 
     // --- 4. Call the OpenAI API ---
+    console.log("Calling OpenAI API..."); // DEBUG
     const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -134,19 +130,27 @@ Deno.serve(async (req) => {
         temperature: 0.7
       })
     });
+    console.log("OpenAI response received."); // DEBUG
 
     if (!aiResponse.ok) {
-      throw new Error(`AI API request failed: ${await aiResponse.text()}`);
+      const errorText = await aiResponse.text();
+      console.error("OpenAI API error response:", errorText); // DEBUG
+      throw new Error(`AI API request failed: ${errorText}`);
     }
+
     const aiData = await aiResponse.json();
+    console.log("Parsing AI JSON response..."); // DEBUG
     const recommendations = JSON.parse(aiData.choices[0].message.content);
 
     // --- 5. Return the final recommendations to the client. ---
+    console.log("Success. Returning recommendations."); // DEBUG
     return new Response(JSON.stringify(recommendations), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
     });
+
   } catch (err) {
+    console.error("Error caught in function's main try block:", err.message); // DEBUG
     return new Response(JSON.stringify({ error: err.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400

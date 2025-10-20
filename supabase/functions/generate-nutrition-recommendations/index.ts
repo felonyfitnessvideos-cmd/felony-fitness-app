@@ -1,24 +1,18 @@
+// @ts-nocheck
 /**
- * @file supabase/functions/generate-nutrition-recommendations/index.ts
- * @description Edge Function to generate personalized nutrition recommendations for a user.
- *
- * @project Felony Fitness
- *
- * @workflow
- * 1. SECURELY derives the user's ID from their authentication token.
- * 2. Fetches the user's profile, latest metrics, and recent logs using RLS.
- * 3. Processes nutrition logs by food category.
- * 4. Constructs a detailed prompt for the OpenAI API with the user's data.
- * 5. Instructs the AI to provide analysis and recommendations in a specific JSON format.
- * 6. The AI's JSON response is parsed and sent back to the client.
+ * Edge Function: generate-nutrition-recommendations
+ * - Derives the user from the Authorization header using a user-scoped Supabase client
+ * - Queries recent profile / metrics / nutrition / workout data under RLS
+ * - Builds a defensive prompt and asks OpenAI for JSON-formatted nutrition recommendations
+ * - Returns the parsed JSON to the client, masking internal errors
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
-const calculateAge = (dob) => {
+const calculateAge = (dob: string | null) => {
   if (!dob) return null;
   const birthDate = new Date(dob);
   const today = new Date();
@@ -30,54 +24,96 @@ const calculateAge = (dob) => {
   return age;
 };
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    // **SECURITY FIX: Create a user-scoped client to enforce RLS**
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-    );
+    if (!OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY not configured');
+      return new Response(JSON.stringify({ error: 'Service unavailable' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 503,
+      });
+    }
 
-    // **SECURITY FIX: Securely get the user from the JWT**
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.warn('generate-nutrition-recommendations: missing Authorization header');
+      return new Response(JSON.stringify({ error: 'Authorization header required' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const maskedPrefix = authHeader ? (authHeader.split(' ')[1] || '').slice(0, 12) + '...' : null;
+
+    const { data: { user } = {}, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      console.error("Auth error:", authError?.message);
+      console.error(JSON.stringify({
+        event: 'auth.resolve_user',
+        auth_error_message: authError?.message ?? null,
+        auth_header_prefix: maskedPrefix,
+      }));
+
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       });
     }
-    const userId = user.id; // Use the secure, server-derived user ID
 
-    // --- 1. Fetch all necessary user data in parallel for efficiency. ---
+    const userId = user.id;
+
+    // Fetch the last 7 days of relevant data in parallel
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const [profileRes, metricsRes, nutritionRes, workoutRes] = await Promise.all([
-      supabase.from('user_profiles').select('dob, sex, daily_calorie_goal, daily_protein_goal').eq('id', userId).single(),
-      supabase.from('body_metrics').select('weight_lbs, body_fat_percentage').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
-      supabase.from('nutrition_logs').select('quantity_consumed, food_servings(foods(name, category))').eq('user_id', userId).gte('created_at', sevenDaysAgo.toISOString()),
-      supabase.from('workout_logs').select('notes, duration_minutes').eq('user_id', userId).gte('created_at', sevenDaysAgo.toISOString())
+      supabase
+        .from('user_profiles')
+        .select('dob, sex, daily_calorie_goal, daily_protein_goal')
+        .eq('id', userId)
+        .single(),
+      supabase
+        .from('body_metrics')
+        .select('weight_lbs, body_fat_percentage')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from('nutrition_logs')
+        .select('quantity_consumed, food_servings(foods(name, category))')
+        .eq('user_id', userId)
+        .gte('created_at', sevenDaysAgo.toISOString()),
+      supabase
+        .from('workout_logs')
+        .select('notes, duration_minutes')
+        .eq('user_id', userId)
+        .gte('created_at', sevenDaysAgo.toISOString()),
     ]);
 
-    if (profileRes.error) throw profileRes.error;
-    if (metricsRes.error) throw metricsRes.error;
-    if (nutritionRes.error) throw nutritionRes.error;
-    if (workoutRes.error) throw workoutRes.error;
+    if (profileRes.error) throw new Error('Profile query failed: ' + (profileRes.error.message ?? 'unknown'));
+    if (metricsRes.error) throw new Error('Metrics query failed: ' + (metricsRes.error.message ?? 'unknown'));
+    if (nutritionRes.error) throw new Error('Nutrition query failed: ' + (nutritionRes.error.message ?? 'unknown'));
+    if (workoutRes.error) throw new Error('Workout query failed: ' + (workoutRes.error.message ?? 'unknown'));
+
     if (!profileRes.data) {
-      throw new Error("User profile not found. Cannot generate recommendations without goals.");
+      throw new Error('User profile not found. Cannot generate recommendations without goals.');
     }
 
     const userProfile = profileRes.data;
     const latestMetrics = metricsRes.data;
 
-    // --- 2. Process and summarize the fetched data for the AI prompt. ---
-    const categoryCounts = (nutritionRes.data || []).reduce((acc, log) => {
+    const categoryCounts = (nutritionRes.data || []).reduce((acc: Record<string, number>, log: any) => {
       const category = log.food_servings?.foods?.category || 'Uncategorized';
       const quantity = log.quantity_consumed || 0;
       acc[category] = (acc[category] || 0) + quantity;
@@ -85,71 +121,87 @@ Deno.serve(async (req) => {
     }, {});
 
     const nutritionSummary = Object.entries(categoryCounts)
-      .map(([category, count]) => `- ${category}: ${count} serving(s)`)
+      .map(([category, count]) => '- ' + category + ': ' + count + ' serving(s)')
       .join('\n');
 
-    // --- 3. Construct the full prompt for the AI. ---
-    const prompt = `
-      You are an expert fitness and nutrition coach for Felony Fitness, an organization helping formerly incarcerated individuals. 
-      Your tone should be encouraging, straightforward, and supportive.
-      Analyze the following user data from the last 7 days and provide 3 actionable nutrition-related recommendations.
-      User Profile:
-      - Age: ${calculateAge(userProfile.dob)}
-      - Sex: ${userProfile.sex}
-      - Weight: ${latestMetrics?.weight_lbs || 'N/A'} lbs
-      - Body Fat: ${latestMetrics?.body_fat_percentage || 'N/A'}%
-      User Goals:
-      - Calories: ${userProfile.daily_calorie_goal}
-      - Protein: ${userProfile.daily_protein_goal}g
-      7-Day Nutrition Summary (by category):
-      ${nutritionSummary || 'No nutrition logged.'}
-      Recent Workouts:
-      ${(workoutRes.data || []).map((log) => `- ${log.notes || 'Workout'} for ${log.duration_minutes} minutes`).join('\n') || 'No workouts logged.'}
-      Based on this data, provide a response in valid JSON format, focused on nutrition. The response must be a JSON object with two keys: "analysis_summary" and "recommendations".
-      Here is the required JSON structure:
-      {
-        "analysis_summary": "A brief, one-sentence summary of their recent activity and diet.",
-        "recommendations": [
-          {
-            "title": "Nutrition Recommendation Title 1",
-            "reason": "Explain WHY this recommendation is important based on their specific data (e.g., their food category summary).",
-            "action": "Provide a simple, concrete action they can take related to their diet."
-          }
-        ]
-      }
-    `;
+    const workoutsList = (workoutRes.data || [])
+      .map((log: any) => '- ' + (log.notes || 'Workout') + ' for ' + (log.duration_minutes) + ' minutes')
+      .join('\n') || 'No workouts logged.';
 
-    // --- 4. Call the OpenAI API ---
+    const prompt = [
+      'You are an expert fitness and nutrition coach for Felony Fitness, an organization helping formerly incarcerated individuals.',
+      'Your tone should be encouraging, straightforward, and supportive.',
+      'Analyze the following user data from the last 7 days and provide 3 actionable nutrition-related recommendations.',
+      'User Profile:',
+      '- Age: ' + (calculateAge(userProfile.dob)),
+      '- Sex: ' + (userProfile.sex),
+      '- Weight: ' + (latestMetrics?.weight_lbs || 'N/A') + ' lbs',
+      '- Body Fat: ' + (latestMetrics?.body_fat_percentage || 'N/A') + '%',
+      'User Goals:',
+      '- Calories: ' + (userProfile.daily_calorie_goal),
+      '- Protein: ' + (userProfile.daily_protein_goal) + 'g',
+      '7-Day Nutrition Summary (by category):',
+      (nutritionSummary || 'No nutrition logged.'),
+      'Recent Workouts:',
+      workoutsList,
+      'Based on this data, provide a response in valid JSON format, focused on nutrition. The response must be a JSON object with two keys: "analysis_summary" and "recommendations".',
+      'Here is the required JSON structure:',
+      '{',
+      '  "analysis_summary": "A brief, one-sentence summary of their recent activity and diet.",',
+      '  "recommendations": [',
+      '    {',
+      '      "title": "Nutrition Recommendation Title 1",',
+      '      "reason": "Explain WHY this recommendation is important based on their specific data (e.g., their food category summary).",',
+      '      "action": "Provide a simple, concrete action they can take related to their diet."',
+      '    }',
+      '  ]',
+      '}',
+    ].join('\n');
+
     const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Authorization': 'Bearer ' + OPENAI_API_KEY,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
-        temperature: 0.7
-      })
+        temperature: 0.7,
+      }),
     });
 
     if (!aiResponse.ok) {
-      throw new Error(`AI API request failed: ${await aiResponse.text()}`);
+      const errorText = await aiResponse.text();
+      console.error('OpenAI API error response:', errorText);
+      throw new Error('AI API request failed');
     }
-    const aiData = await aiResponse.json();
-    const recommendations = JSON.parse(aiData.choices[0].message.content);
 
-    // --- 5. Return the final recommendations to the client. ---
+    const aiData = await aiResponse.json();
+    const aiText = aiData?.choices?.[0]?.message?.content;
+    if (!aiText) {
+      console.error('OpenAI returned missing content', { aiData });
+      throw new Error('AI returned an unexpected response');
+    }
+
+    let recommendations;
+    try {
+      recommendations = JSON.parse(aiText);
+    } catch (e) {
+      console.error('Failed to parse AI JSON', { aiText });
+      throw new Error('AI returned unparsable JSON');
+    }
+
     return new Response(JSON.stringify(recommendations), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200
+      status: 200,
     });
-  } catch (err) {
-    console.error("Error caught in function:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+  } catch (err: any) {
+    console.error('Error caught in function:', err?.message ?? String(err));
+    return new Response(JSON.stringify({ error: err?.message || 'Internal error' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400
+      status: 400,
     });
   }
 });

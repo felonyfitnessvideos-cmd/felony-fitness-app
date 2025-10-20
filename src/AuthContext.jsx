@@ -10,15 +10,36 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Check for an initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        setUser(session?.user ?? null);
+      } catch (err) {
+        // If there's an error reading session, clear any partial state and continue.
+        console.debug('AuthProvider: getSession error', err?.message ?? err);
+        setSession(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
 
     // Set up a listener for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        // Handle token refresh failures explicitly: sign the user out so they can re-authenticate.
+        // Supabase may emit a TOKEN_REFRESH_FAILED or similar event when refresh token is invalid.
+        if (event === 'TOKEN_REFRESH_FAILED' || event === 'TOKEN_REFRESHED_FAILED') {
+          console.warn('AuthProvider: token refresh failed, signing out');
+          // Best-effort sign out to clear any invalid client-side session state.
+          supabase.auth.signOut().catch(() => {});
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
