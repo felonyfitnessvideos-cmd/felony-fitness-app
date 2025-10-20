@@ -2,11 +2,15 @@
  * @file NutritionRecsPage.jsx
  * @description This file contains the component for generating and displaying AI-powered nutrition recommendations.
  * It interacts with a Supabase Edge Function to get personalized advice for the user.
- * @author [Your Name/Team Name]
- * @date 10/17/2025
  */
 
 import React, { useState } from 'react';
+/**
+ * NutritionRecsPage
+ * UI page that allows the user to request AI-generated nutrition recommendations.
+ * Handles session retrieval and calls the /functions/generate-nutrition-recommendations
+ * Edge Function with the user's access token.
+ */
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { Apple, Zap, Lightbulb } from 'lucide-react';
@@ -25,66 +29,66 @@ import './NutritionRecsPage.css';
  * @property {Recommendation[]} recommendations - An array of specific recommendation objects.
  */
 
-/**
- * Renders the nutrition recommendations page.
- * This component allows users to generate personalized nutrition recommendations
- * based on their logged data by invoking a Supabase Edge Function. It handles
- * loading, error, and results states.
- *
- * @returns {JSX.Element} The rendered nutrition recommendations page.
- */
 function NutritionRecsPage() {
-  /**
-   * State to manage the loading status while fetching recommendations.
-   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
-   */
   const [loading, setLoading] = useState(false);
-
-  /**
-   * State to store the fetched nutrition recommendations object.
-   * @type {[RecommendationsData | null, React.Dispatch<React.SetStateAction<RecommendationsData | null>>]}
-   */
   const [recommendations, setRecommendations] = useState(null);
-
-  /**
-   * State to store any error messages that occur during the fetch process.
-   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
-   */
   const [error, setError] = useState('');
 
-  /**
-   * Handles the request to generate nutrition recommendations.
-   * It sets loading states, retrieves the current user, invokes the Supabase Edge Function
-   * 'generate-nutrition-recommendations', and updates the state with the results or an error message.
-   * @async
-   */
   const handleGenerateRecs = async () => {
     setLoading(true);
     setError('');
     setRecommendations(null);
 
-    // Get the current authenticated user from Supabase.
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setError("You must be logged in to get recommendations.");
+    let session;
+    try {
+      const s = await supabase.auth.getSession();
+      session = s?.data?.session;
+    } catch (e) {
+      console.warn('Failed to read session from supabase client', e);
+    }
+
+    if (!session || !session.access_token) {
+      setError('You must be logged in to get recommendations.');
       setLoading(false);
       return;
     }
 
     try {
-      // Invoke the serverless edge function, passing the user's ID.
-      const { data, error } = await supabase.functions.invoke(
-  'generate-nutrition-recommendations', 
-  { body: {} }
-);
-
-      if (error) {
-        // Throw an error to be caught by the catch block.
-        throw error;
+      // This page already uses the correct fetch method with the Authorization header.
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        throw new Error('Configuration error: VITE_SUPABASE_URL is not set.');
       }
-      
+      const funcUrl = `${supabaseUrl.replace(/\/$/, '')}/functions/v1/generate-nutrition-recommendations`;
+
+      const resp = await fetch(funcUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`, // <-- This is correct
+        },
+      });
+
+      const text = await resp.text();
+      if (!resp.ok) {
+        let detail = text;
+        try {
+          const parsed = JSON.parse(text);
+          detail = parsed.error || JSON.stringify(parsed);
+        } catch (e) { /* not JSON */ }
+        throw new Error(`Edge function error ${resp.status}: ${detail}`);
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error('Edge function returned invalid JSON');
+      }
+
       setRecommendations(data);
     } catch (err) {
+      console.error('Nutrition recommendations error:', err);
       setError(`Error: ${err.message || 'An unexpected error occurred.'}`);
     } finally {
       setLoading(false);
@@ -99,39 +103,27 @@ function NutritionRecsPage() {
         iconColor="#f97316"
         backTo="/nutrition"
       />
-
-      {/* A dedicated scrollable area for the page content. */}
       <div className="nutrition-recs-scroll-area">
         <div className="recs-content">
-          {/* Initial view: Shown when there are no recommendations and not loading. */}
           {!recommendations && !loading && (
             <div className="intro-view">
               <Zap size={48} className="intro-icon" />
               <h2>Personalized Insights</h2>
               <p>Get AI-powered recommendations based on your recent activity, logged meals, and goals.</p>
-              
               <div className="pro-tip">
                 <Lightbulb size={16} />
                 <span>The more you log, the smarter your recommendations will become.</span>
               </div>
-
-              <button onClick={handleGenerateRecs}>Generate My Recommendations</button>
+              <button onClick={handleGenerateRecs} disabled={loading}>Generate My Recommendations</button>
             </div>
           )}
-
-          {/* Loading state: Shows a spinner while fetching data. */}
           {loading && <div className="loading-spinner"></div>}
-
-          {/* Error state: Displays an error message if the fetch fails. */}
           {error && <p className="error-message">{error}</p>}
-
-          {/* Results view: Displays the analysis and recommendations once fetched. */}
           {recommendations && (
             <div className="results-view">
               <h3>Here's your analysis:</h3>
               <p className="summary">{recommendations.analysis_summary}</p>
               <div className="recommendations-list">
-                {/* Maps over the recommendations array to display each one in a card. */}
                 {recommendations.recommendations.map((rec, index) => (
                   <div key={index} className="rec-card">
                     <h4>{rec.title}</h4>
@@ -140,7 +132,7 @@ function NutritionRecsPage() {
                   </div>
                 ))}
               </div>
-              <button onClick={handleGenerateRecs} className="regenerate-button">
+              <button onClick={handleGenerateRecs} className="regenerate-button" disabled={loading}>
                 Generate Again
               </button>
             </div>

@@ -16,6 +16,12 @@
  * 6. The page displays these stats in cards, visualizes trends in charts using the `recharts` library, and lists the user's active goals with progress bars.
  */
 
+/**
+ * ProgressPage
+ * Displays a user's progress metrics and charts. This page consumes body metrics
+ * and workout logs to present visualizations and high-level insights.
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
@@ -126,8 +132,13 @@ function ProgressPage() {
         .sort((a, b) => a.iso.localeCompare(b.iso))
         .map(({ date, calories }) => ({ date, calories: Math.round(calories) }));
       setNutritionTrends(nutritionArray);
-      const totalCalories = Array.from(calorieMap.values()).reduce((sum, val) => sum + val, 0);
-      const avgCalories = calorieMap.size > 0 ? Math.round(totalCalories / calorieMap.size) : 0;
+      // Sum the calories field on each entry (calorieMap stores objects like { date, calories })
+      const totalCalories = Array.from(calorieMap.values()).reduce((sum, val) => sum + (Number(val?.calories) || 0), 0);
+      let avgCalories = 0;
+      if (calorieMap.size > 0) {
+        const rawAvg = totalCalories / calorieMap.size;
+        avgCalories = Number.isFinite(rawAvg) ? Math.round(rawAvg) : 0;
+      }
       
       // --- Set Goals Data ---
       if(goalsRes.error) throw goalsRes.error;
@@ -211,10 +222,15 @@ function ProgressPage() {
           <div key={goal.id} className="goal-progress-item">
             <div className="goal-progress-header">
               <span>{goal.goal_description}</span>
-              <span>{goal.current_value || 0} / {goal.target_value}</span>
+              <span>{goal.current_value || 0} / {goal.target_value || 0}</span>
             </div>
             <div className="goal-progress-bar-wrapper">
-              <div className="goal-progress-bar" style={{ width: `${((goal.current_value || 0) / goal.target_value) * 100}%` }}></div>
+                {(() => {
+                  const tv = Number(goal?.target_value) || 0;
+                  const cv = Number(goal?.current_value) || 0;
+                  const pct = tv > 0 ? Math.max(0, Math.min(100, (cv / tv) * 100)) : 0;
+                  return <div className="goal-progress-bar" style={{ width: `${pct}%` }}></div>;
+                })()}
             </div>
           </div>
         ))}
