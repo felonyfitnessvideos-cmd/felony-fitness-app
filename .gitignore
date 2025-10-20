@@ -32,4 +32,4 @@ dist-ssr
 .env.*
 
 # Build output
-/dist
+/dist# Ignore local database/backup dumps\nbackups/\n
