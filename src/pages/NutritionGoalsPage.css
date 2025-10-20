@@ -111,3 +111,34 @@
   margin-top: 1rem;
   color: #63b3ed; /* Blue for informational messages */
 }
+/*
+ * Modal Styles
+ * Add this to your .css file
+ */
+
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75); /* Dark semi-transparent background */
+  display: flex;
+  justify-content: center; /* Horizontally centers the content */
+  align-items: center;    /* Vertically centers the content */
+  z-index: 1000;          /* Make sure it's on top of everything */
+}
+
+.custom-modal-content {
+  position: relative;     /* Reset any weird positioning */
+  inset: auto;            /* Clear any 'top', 'left', 'right', 'bottom' values */
+  background: #2d2d2d;    /* A dark background for the modal box */
+  color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 500px;       /* Set a max width */
+  width: 90%;             /* Responsive width for mobile */
+  border: 1px solid #444;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  outline: none;          /* Remove default focus outline */
+}

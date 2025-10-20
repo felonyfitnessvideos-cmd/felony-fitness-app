@@ -1,4 +1,3 @@
- 
 /**
  * @file NutritionGoalsPage.jsx
  * @description This page allows users to set and update their daily nutrition goals, such as calories, macronutrients, and water intake.
@@ -14,10 +13,12 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { Apple, Flame, Droplets, Beef, Wheat, Wind } from 'lucide-react';
 import { useAuth } from '../AuthContext.jsx';
+import Modal from 'react-modal'; // <-- 1. IMPORTED Modal
 import './NutritionGoalsPage.css';
 
 /**
@@ -31,6 +32,7 @@ import './NutritionGoalsPage.css';
 
 function NutritionGoalsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   /** @type {[NutritionGoals, React.Dispatch<React.SetStateAction<NutritionGoals>>]} */
   const [goals, setGoals] = useState({
     daily_calorie_goal: '',
@@ -41,6 +43,7 @@ function NutritionGoalsPage() {
   });
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false); // <-- 2. ADDED new state
 
   /**
    * Fetches the user's current nutrition goals from their profile.
@@ -118,12 +121,24 @@ function NutritionGoalsPage() {
 
       if (error) throw error;
       
-      setMessage('Goals saved successfully!');
-      setTimeout(() => setMessage(''), 2000); // Clear the message after 2 seconds.
+      // <-- 4. UPDATED this block -->
+      setMessage(''); // Clear "Saving..." message
+      setIsSuccessModalOpen(true); // Show success modal
+      
     } catch (error) {
       setMessage(`Error: ${error.message}`);
     }
   };
+
+  // <-- 3. ADDED new handler function -->
+  /**
+   * Closes the success modal and navigates the user to the dashboard.
+   */
+  const handleCloseSuccessModal = () => {
+    setIsSuccessModalOpen(false);
+    navigate('/dashboard');
+  };
+
 
   if (loading) {
     return <div style={{ color: 'white', padding: '2rem' }}>Loading goals...</div>;
@@ -217,6 +232,30 @@ function NutritionGoalsPage() {
         {/* Live region for assistive tech: always present but empty when no message */}
         <div className="status-message" role="status" aria-live="polite" aria-atomic="true">{message || ''}</div>
       </div>
+
+      {/* <-- 5. ADDED the new Modal component --> */}
+      <Modal
+        isOpen={isSuccessModalOpen}
+        onRequestClose={handleCloseSuccessModal} // Closes modal if user clicks outside
+        contentLabel="Success"
+        overlayClassName="custom-modal-overlay"
+        className="custom-modal-content"
+      >
+        <div style={{textAlign: 'center'}}>
+          <h2>Goals Saved!</h2>
+          <div className="action-footer" style={{justifyContent: 'center'}}>
+            <button 
+              type="button" 
+              className="save-goals-button" // Re-using your button style
+              onClick={handleCloseSuccessModal}
+              style={{marginTop: '1rem'}} // Added a little space
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 }
