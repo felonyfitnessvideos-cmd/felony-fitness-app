@@ -14,19 +14,22 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
     // Check for an initial session
     (async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
       } catch (err) {
         // If there's an error reading session, clear any partial state and continue.
         console.debug('AuthProvider: getSession error', err?.message ?? err);
+        if (!mounted) return;
         setSession(null);
         setUser(null);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     })();
 
@@ -53,6 +56,7 @@ export function AuthProvider({ children }) {
 
     // Cleanup the subscription on component unmount
     return () => {
+      mounted = false;
       subscription?.unsubscribe();
     };
   }, []);

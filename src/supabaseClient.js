@@ -8,6 +8,10 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('supabaseClient: missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY');
+  throw new Error('Supabase environment is not configured');
+}
 
 // Create the Supabase client. We disable detectSessionInUrl to avoid
 // accidental session parsing when the app is mounted at a non-root URL

@@ -225,10 +225,12 @@ function ProgressPage() {
               <span>{goal.current_value || 0} / {goal.target_value || 0}</span>
             </div>
             <div className="goal-progress-bar-wrapper">
-              <div
-                className="goal-progress-bar"
-                style={{ width: `${goal.target_value ? (((goal.current_value || 0) / goal.target_value) * 100) : 0}%` }}
-              ></div>
+                {(() => {
+                  const tv = Number(goal?.target_value) || 0;
+                  const cv = Number(goal?.current_value) || 0;
+                  const pct = tv > 0 ? Math.max(0, Math.min(100, (cv / tv) * 100)) : 0;
+                  return <div className="goal-progress-bar" style={{ width: `${pct}%` }}></div>;
+                })()}
             </div>
           </div>
         ))}

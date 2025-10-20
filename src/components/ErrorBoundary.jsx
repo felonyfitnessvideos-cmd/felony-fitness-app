@@ -32,7 +32,13 @@ class ErrorBoundary extends React.Component {
       return (
         <div style={{ padding: 24 }}>
           <h2>Something went wrong loading this part of the app.</h2>
-          <p style={{ color: '#666' }}>{String(this.state.error?.message ?? this.state.error)}</p>
+          <p style={{ color: '#666' }}>An unexpected error occurred.</p>
+          <details style={{ marginTop: 8 }}>
+            <summary>Details</summary>
+            <pre style={{ color: '#aaa', whiteSpace: 'pre-wrap' }}>
+              {String(this.state.error?.message ?? this.state.error)}
+            </pre>
+          </details>
           <div style={{ marginTop: 12 }}>
             <button onClick={this.handleReload} style={{ marginRight: 8 }}>Reload</button>
             <button onClick={() => window.location.replace('/')}>Go to sign in</button>

@@ -69,7 +69,7 @@ function WorkoutRecsPage() {
               <Lightbulb size={16} />
               <span>The more you log, the smarter your recommendations will become.</span>
             </div>
-            <button onClick={handleGenerateRecs} disabled={!user}>Generate My Recommendations</button>
+            <button onClick={handleGenerateRecs} disabled={!user || loading}>Generate My Recommendations</button>
           </div>
         )}
         {loading && <div className="loading-spinner"></div>}
@@ -87,7 +87,7 @@ function WorkoutRecsPage() {
                 </div>
               ))}
             </div>
-            <button onClick={handleGenerateRecs} className="regenerate-button">
+            <button onClick={handleGenerateRecs} className="regenerate-button" disabled={loading}>
               Generate Again
             </button>
           </div>

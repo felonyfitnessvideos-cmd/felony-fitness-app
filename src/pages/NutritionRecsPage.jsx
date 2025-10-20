@@ -67,7 +67,6 @@ function NutritionRecsPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`, // <-- This is correct
         },
-        body: JSON.stringify({}),
       });
 
       const text = await resp.text();
@@ -115,7 +114,7 @@ function NutritionRecsPage() {
                 <Lightbulb size={16} />
                 <span>The more you log, the smarter your recommendations will become.</span>
               </div>
-              <button onClick={handleGenerateRecs}>Generate My Recommendations</button>
+              <button onClick={handleGenerateRecs} disabled={loading}>Generate My Recommendations</button>
             </div>
           )}
           {loading && <div className="loading-spinner"></div>}
@@ -133,7 +132,7 @@ function NutritionRecsPage() {
                   </div>
                 ))}
               </div>
-              <button onClick={handleGenerateRecs} className="regenerate-button">
+              <button onClick={handleGenerateRecs} className="regenerate-button" disabled={loading}>
                 Generate Again
               </button>
             </div>
