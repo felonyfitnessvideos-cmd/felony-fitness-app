@@ -1,4 +1,3 @@
- 
 /**
  * @file WorkoutLogPage.jsx
  * @description The main page for actively logging a workout session based on a selected routine.
@@ -15,6 +14,19 @@ import { Dumbbell, Edit2, Trash2, Check, X } from 'lucide-react';
 import LazyRecharts from '../components/LazyRecharts.jsx';
 import { useAuth } from '../AuthContext.jsx';
 import './WorkoutLogPage.css';
+
+// --- 1. MODIFIED HELPER FUNCTION ---
+/**
+ * Converts a set number to a display string.
+ * @param {number} num - The number of sets.
+ * @returns {string} - The number as a string with "Sets".
+ */
+const formatSetCount = (num) => {
+  if (num > 0) {
+    return `${num} Sets`; // Changed from word to number
+  }
+  return ''; // Don't show anything if 0 or null/undefined
+};
 
 /**
  * @typedef {object} SetEntry
@@ -60,7 +72,14 @@ function WorkoutLogPage() {
   const [userWeightLbs, setUserWeightLbs] = useState(150);
   const [isWorkoutCompletable, setIsWorkoutCompletable] = useState(false);
 
-  const selectedExercise = useMemo(() => routine?.routine_exercises[selectedExerciseIndex]?.exercises, [routine, selectedExerciseIndex]);
+  // Get the whole routine_exercise object (which includes target_sets and exercises)
+  const selectedRoutineExercise = useMemo(() => routine?.routine_exercises[selectedExerciseIndex], [routine, selectedExerciseIndex]);
+  
+  // Get the nested exercise details from the object above
+  const selectedExercise = useMemo(() => selectedRoutineExercise?.exercises, [selectedRoutineExercise]);
+  
+  // Get the target sets number from the object above
+  const targetSets = useMemo(() => selectedRoutineExercise?.target_sets, [selectedRoutineExercise]);
 
   useEffect(() => {
     if (!selectedExercise) return;
@@ -362,7 +381,16 @@ function WorkoutLogPage() {
             </button>
         ))}
       </div>
-      <h2 className="current-exercise-name">{selectedExercise?.name}</h2>
+      
+      {/* --- This JSX remains the same, but will now use the new function --- */}
+      <h2 className="current-exercise-name">
+        {selectedExercise?.name}
+        {targetSets > 0 && (
+          <span className="set-count-subtitle">
+            &nbsp;- {formatSetCount(targetSets)}
+          </span>
+        )}
+      </h2>
       
       {activeView === 'log' ? (
         <>
@@ -373,7 +401,7 @@ function WorkoutLogPage() {
             </div>
             <div className="input-group">
               <label>Reps</label>
-              <input type="number" value={currentSet.reps} onChange={(e) => setCurrentSet(prev => ({...prev, reps: e.target.value}))} placeholder="0"/>
+              <input type="number" value={currentSet.reps} onChange={(e) => setCurrentSet(prev => ({...prev, reps: e.Ttarget.value}))} placeholder="0"/>
             </div>
           </div>
           <button className="save-set-button" onClick={handleSaveSet}>Save Set</button>
@@ -464,4 +492,3 @@ function WorkoutLogPage() {
 }
 
 export default WorkoutLogPage;
-

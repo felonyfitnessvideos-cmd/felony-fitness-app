@@ -314,3 +314,18 @@
   text-align: center;
   color: #a0aec0;
 }
+/* Add this to WorkoutLogPage.css */
+
+.current-exercise-name {
+  display: flex; /* Aligns text on one line */
+  align-items: baseline; /* Keeps "Bench Press" and "- Four Sets" aligned nicely */
+  justify-content: center;
+  flex-wrap: wrap; /* Allows wrapping on small screens if needed */
+}
+
+.set-count-subtitle {
+  font-size: 0.8rem; /* Makes it smaller */
+  color: #a0aec0; /* A lighter, subtle color (adjust as needed) */
+  font-weight: 500; /* Lighter than the main title */
+  margin-left: 0.25rem; /* A tiny bit of space */
+}
