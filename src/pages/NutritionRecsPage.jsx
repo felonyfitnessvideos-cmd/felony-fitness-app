@@ -5,6 +5,12 @@
  */
 
 import React, { useState } from 'react';
+/**
+ * NutritionRecsPage
+ * UI page that allows the user to request AI-generated nutrition recommendations.
+ * Handles session retrieval and calls the /functions/generate-nutrition-recommendations
+ * Edge Function with the user's access token.
+ */
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { Apple, Zap, Lightbulb } from 'lucide-react';

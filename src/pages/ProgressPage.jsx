@@ -16,6 +16,12 @@
  * 6. The page displays these stats in cards, visualizes trends in charts using the `recharts` library, and lists the user's active goals with progress bars.
  */
 
+/**
+ * ProgressPage
+ * Displays a user's progress metrics and charts. This page consumes body metrics
+ * and workout logs to present visualizations and high-level insights.
+ */
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';

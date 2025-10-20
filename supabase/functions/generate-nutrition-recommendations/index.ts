@@ -1,10 +1,12 @@
 // @ts-nocheck
 /**
- * Edge Function: generate-nutrition-recommendations
- * - Derives the user from the Authorization header using a user-scoped Supabase client
- * - Queries recent profile / metrics / nutrition / workout data under RLS
- * - Builds a defensive prompt and asks OpenAI for JSON-formatted nutrition recommendations
- * - Returns the parsed JSON to the client, masking internal errors
+ * generate-nutrition-recommendations
+ * Edge Function that returns personalized nutrition recommendations for an
+ * authenticated user. Inputs:
+ * - Authorization header with a valid access token
+ * - SUPABASE_URL and SUPABASE_ANON_KEY available in function env
+ * Output: JSON object matching { analysis_summary, recommendations }
+ * Errors: returns 401 for auth failures, 503 if OPENAI_API_KEY is missing.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';

@@ -1,3 +1,8 @@
+/**
+ * AuthContext
+ * Provides React context for Supabase authentication state across the app.
+ * Exposes `session`, `user`, and `loading` so components can react to auth changes.
+ */
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from './supabaseClient';
 

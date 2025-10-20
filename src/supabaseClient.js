@@ -1,3 +1,9 @@
+/**
+ * Supabase client singleton
+ * Creates a shared Supabase client for the browser app and centralizes
+ * handling of token refresh failures by clearing persisted tokens and
+ * forcing sign out when necessary.
+ */
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL

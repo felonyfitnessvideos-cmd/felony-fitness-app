@@ -1,3 +1,8 @@
+/**
+ * ErrorBoundary
+ * A React error boundary that catches rendering/runtime errors in child components,
+ * logs them server-side, and displays a friendly fallback UI with reload controls.
+ */
 import React from 'react';
 
 class ErrorBoundary extends React.Component {

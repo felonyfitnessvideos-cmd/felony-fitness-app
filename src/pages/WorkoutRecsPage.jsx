@@ -1,3 +1,7 @@
+/**
+ * WorkoutRecsPage
+ * Page to request AI-generated workout recommendations and view suggested routines.
+ */
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
