@@ -58,6 +58,18 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
+    // Fail fast if environment is misconfigured to avoid obscure runtime failures
+    const missingEnv: string[] = [];
+    if (!supabaseUrl) missingEnv.push('SUPABASE_URL');
+    if (!supabaseAnonKey) missingEnv.push('SUPABASE_ANON_KEY');
+    if (missingEnv.length) {
+      console.error('Missing environment variables for function:', missingEnv.join(', '));
+      return new Response(JSON.stringify({ error: 'Service configuration error' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
     // Pass a normalized Authorization header with the extracted token only
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: 'Bearer ' + accessToken } },
@@ -100,7 +112,8 @@ Deno.serve(async (req: Request) => {
         .maybeSingle(),
       supabase
         .from('nutrition_logs')
-        .select('quantity_consumed, food_servings(foods(name, category))')
+        // food_servings is stored as an array of servings; select per-serving quantity and food metadata
+        .select('food_servings(quantity_consumed, foods(name, category))')
         .eq('user_id', userId)
         .gte('created_at', sevenDaysAgo.toISOString()),
       supabase
@@ -123,11 +136,14 @@ Deno.serve(async (req: Request) => {
     const latestMetrics = metricsRes.data;
 
     const categoryCounts = (nutritionRes.data || []).reduce((acc: Record<string, number>, log: any) => {
-      const category = log.food_servings?.foods?.category || 'Uncategorized';
-      const quantity = log.quantity_consumed || 0;
-      acc[category] = (acc[category] || 0) + quantity;
+      const servings = Array.isArray(log.food_servings) ? log.food_servings : [];
+      for (const s of servings) {
+        const category = s?.foods?.category ?? 'Uncategorized';
+        const qty = Number.isFinite(s?.quantity_consumed) ? s.quantity_consumed : 1;
+        acc[category] = (acc[category] ?? 0) + qty;
+      }
       return acc;
-    }, {});
+    }, {} as Record<string, number>);
 
     const nutritionSummary = Object.entries(categoryCounts)
       .map(([category, count]) => '- ' + category + ': ' + count + ' serving(s)')
@@ -183,14 +199,14 @@ Deno.serve(async (req: Request) => {
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('OpenAI API error response:', errorText);
+      console.error('OpenAI API error status:', aiResponse.status, 'length:', errorText?.length ?? 0);
       throw new Error('AI API request failed');
     }
 
     const aiData = await aiResponse.json();
     const aiText = aiData?.choices?.[0]?.message?.content;
     if (!aiText) {
-      console.error('OpenAI returned missing content', { aiData });
+      console.error('OpenAI returned missing content; choice count:', (aiData?.choices || []).length);
       throw new Error('AI returned an unexpected response');
     }
 
@@ -198,7 +214,7 @@ Deno.serve(async (req: Request) => {
     try {
       recommendations = JSON.parse(aiText);
     } catch (e) {
-      console.error('Failed to parse AI JSON', { aiText });
+      console.error('Failed to parse AI JSON; length:', (aiText || '').length, e);
       throw new Error('AI returned unparsable JSON');
     }
 
@@ -207,10 +223,28 @@ Deno.serve(async (req: Request) => {
       status: 200,
     });
   } catch (err: any) {
-    console.error('Error caught in function:', err?.message ?? String(err));
-    return new Response(JSON.stringify({ error: err?.message || 'Internal error' }), {
+    // Log the full error server-side (including stack) for operators.
+    console.error('Function error:', err?.stack ?? err?.message ?? String(err));
+
+    // Map well-known error messages to appropriate HTTP statuses.
+    const msg = String(err?.message || 'Internal error').toLowerCase();
+    let status = 500;
+    let clientMessage = 'Internal server error';
+
+    if (msg.includes('profile query failed') || msg.includes('user profile not found') || msg.includes('invalid')) {
+      status = 400;
+      clientMessage = 'Invalid request';
+    } else if (msg.includes('ai api request failed') || msg.includes('ai returned')) {
+      status = 502;
+      clientMessage = 'Upstream service unavailable';
+    } else if (msg.includes('service configuration error')) {
+      status = 500;
+      clientMessage = 'Service configuration error';
+    }
+
+    return new Response(JSON.stringify({ error: clientMessage }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status,
     });
   }
 });
