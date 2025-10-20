@@ -184,7 +184,12 @@ Deno.serve(async (req: Request) => {
       .join('\n');
 
     const workoutsList = (workoutRes.data || [])
-      .map((log: any) => '- ' + (log.notes || 'Workout') + ' for ' + (log.duration_minutes) + ' minutes')
+      .map((log: any) => {
+        const notes = log?.notes || 'Workout';
+        // Use nullish coalescing so 0 is preserved but null/undefined become 'unknown'
+        const duration = log?.duration_minutes ?? 'unknown';
+        return `- ${notes} for ${duration} minutes`;
+      })
       .join('\n') || 'No workouts logged.';
 
     const prompt = [
