@@ -40,23 +40,30 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.warn('generate-nutrition-recommendations: missing Authorization header');
+    const rawAuth = req.headers.get('Authorization') || '';
+    const match = rawAuth.match(/^Bearer\s+(.+)$/i);
+    if (!match) {
+      console.warn('generate-nutrition-recommendations: invalid or missing Authorization header');
       return new Response(JSON.stringify({ error: 'Authorization header required' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'WWW-Authenticate': 'Bearer realm="supabase", error="invalid_token"',
+        },
         status: 401,
       });
     }
 
+    const accessToken = match[1];
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
+    // Pass a normalized Authorization header with the extracted token only
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
+      global: { headers: { Authorization: 'Bearer ' + accessToken } },
     });
 
-    const maskedPrefix = authHeader ? (authHeader.split(' ')[1] || '').slice(0, 12) + '...' : null;
+    const maskedPrefix = accessToken.slice(0, 12) + '...';
 
     const { data: { user } = {}, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {

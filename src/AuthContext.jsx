@@ -31,25 +31,25 @@ export function AuthProvider({ children }) {
     })();
 
     // Set up a listener for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        // Handle token refresh failures explicitly: sign the user out so they can re-authenticate.
-        // Supabase may emit a TOKEN_REFRESH_FAILED or similar event when refresh token is invalid.
-        if (event === 'TOKEN_REFRESH_FAILED' || event === 'TOKEN_REFRESHED_FAILED') {
-          console.warn('AuthProvider: token refresh failed, signing out');
-          // Best-effort sign out to clear any invalid client-side session state.
-          supabase.auth.signOut().catch(() => {});
+    // Supabase emits events such as: INITIAL_SESSION, SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, USER_UPDATED
+    // Listen for SIGNED_OUT to detect when the session is no longer available.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        console.warn('AuthProvider: signed out (session cleared)');
+        // Avoid calling Supabase API methods synchronously inside this callback.
+        // If additional cleanup is required, defer it to the next macrotask.
+        setTimeout(() => {
           setSession(null);
           setUser(null);
           setLoading(false);
-          return;
-        }
-
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+        }, 0);
+        return;
       }
-    );
+
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
     // Cleanup the subscription on component unmount
     return () => {

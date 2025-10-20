@@ -22,7 +22,9 @@ class ErrorBoundary extends React.Component {
 
   handleReload = () => {
     // Force a full reload to attempt to re-fetch any missing chunks
-    window.location.reload(true);
+    // The boolean forceReload parameter is deprecated; use the standard
+    // reload() behavior supported by modern browsers.
+    window.location.reload();
   };
 
   render() {

@@ -22,16 +22,15 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // Listen for auth state changes and handle token-refresh failures gracefully.
 // If the client attempts to refresh and fails (invalid refresh token), clear
 // local storage and sign the client out so UI can re-authenticate cleanly.
-if (typeof window !== 'undefined' && supabase && supabase.auth) {
-	supabase.auth.onAuthStateChange((event) => {
-		if (event === 'TOKEN_REFRESH_FAILED' || event === 'TOKEN_REFRESH_FAILED_ERROR') {
-			console.warn('supabaseClient: token refresh failed, clearing persisted auth and signing out');
-			try {
-				localStorage.removeItem('supabase.auth.token');
-			} catch (err) {
-				// ignore
-			}
-			supabase.auth.signOut().catch(() => {});
-		}
-	});
+if (typeof window !== 'undefined' && supabase?.auth) {
+  // Listen for SIGNED_OUT events to detect cleared sessions. Avoid calling
+  // Supabase API methods synchronously inside this handler; defer if you need
+  // to call supabase.auth.signOut() or other APIs.
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT') {
+      console.warn('supabaseClient: signed out (session cleared)');
+      // If necessary, defer further API calls to the next tick:
+      // setTimeout(() => supabase.auth.signOut().catch(() => {}), 0);
+    }
+  });
 }
