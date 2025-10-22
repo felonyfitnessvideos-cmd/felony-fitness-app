@@ -1,3 +1,8 @@
+/**
+ * SubPageHeader.jsx
+ * A compact header component used across sub-pages that includes a back button,
+ * a centered title, and an optional icon. Keeps a consistent layout for sub-pages.
+ */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';

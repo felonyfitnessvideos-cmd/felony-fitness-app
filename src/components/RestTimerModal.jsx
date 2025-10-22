@@ -5,6 +5,11 @@
  * @date 10/17/2025
  */
 
+/**
+ * RestTimerModal.jsx
+ * Modal component that provides a configurable rest timer UI used between sets.
+ * It displays a countdown and controls to start/pause/reset the timer.
+ */
 import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import { Plus, Minus, X } from 'lucide-react';

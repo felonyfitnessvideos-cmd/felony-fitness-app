@@ -1,4 +1,8 @@
-// FILE: src/components/SuccessModal.jsx
+/**
+ * SuccessModal.jsx
+ * A small reusable modal used to display success messages with a confirmation button.
+ * It is intentionally simple and controlled by its `isOpen` prop to keep usage predictable.
+ */
 
 import React from 'react';
 import './SuccessModal.css';
