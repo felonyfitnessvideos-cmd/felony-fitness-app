@@ -5,8 +5,11 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'scripts', 'node_modules', 'public']),
+  // Centralized ignore patterns (migrated from .eslintignore)
+  globalIgnores(['dist', 'node_modules', 'public']),
   {
+    // Additional explicit ignores via top-level `ignores` for clarity
+    ignores: ['*.log'],
     files: ['**/*.{js,jsx}'],
     extends: [
       js.configs.recommended,
@@ -26,4 +29,20 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  // Lint Node scripts with a Node environment and appropriate parser options
+  {
+    files: ['scripts/**', 'supabase/functions/**'],
+    languageOptions: {
+      globals: globals.node,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
+    },
+    env: { node: true },
+    rules: {
+      // Allow commonjs style in scripts where necessary
+      'no-console': 'off'
+    }
+  }
 ])
