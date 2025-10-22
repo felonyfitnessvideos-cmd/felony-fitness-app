@@ -100,7 +100,7 @@ function EditRoutinePage() {
   // This effect is intended to run only on mount/unmount to clean up timers
   // and abort controllers. It intentionally uses an empty dependency array
   // to ensure the cleanup runs only once on unmount.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
     return () => {
       if (searchDebounceRef.current) {
@@ -108,7 +108,7 @@ function EditRoutinePage() {
         searchDebounceRef.current = null;
       }
       if (searchAbortControllerRef.current) {
-        try { searchAbortControllerRef.current.abort(); } catch (_) { /* ignore */ }
+        try { searchAbortControllerRef.current.abort(); } catch { /* ignore */ }
         searchAbortControllerRef.current = null;
       }
     };
@@ -127,7 +127,7 @@ function EditRoutinePage() {
     // If search term is too short, cancel any in-flight request and clear results
     if (term.length < 3) {
       if (searchAbortControllerRef.current) {
-        try { searchAbortControllerRef.current.abort(); } catch (__) {}
+        try { searchAbortControllerRef.current.abort(); } catch (_err) { void _err; /* ignore */ }
         searchAbortControllerRef.current = null;
       }
       setSearchResults([]);
@@ -139,7 +139,7 @@ function EditRoutinePage() {
     searchDebounceRef.current = setTimeout(async () => {
       // Abort previous in-flight request if present (single consolidated attempt)
       if (searchAbortControllerRef.current) {
-        try { searchAbortControllerRef.current.abort(); } catch (_) { /* ignore */ }
+        try { searchAbortControllerRef.current.abort(); } catch (_err) { void _err; /* ignore */ }
       }
       const controller = new AbortController();
       searchAbortControllerRef.current = controller;

@@ -67,6 +67,7 @@ const calculateAge = (dob) => {
  */
 function ProfilePage() {
   const { user } = useAuth(); // Custom hook to get the authenticated user.
+  const userId = user?.id;
   
   // State for the metric logging form
   const [weight, setWeight] = useState('');
@@ -128,14 +129,13 @@ function ProfilePage() {
   // We intentionally only depend on the user's id and the stable fetchData
   // callback. Including the full `user` object can lead to extra fetches when
   // its reference changes but the identity (id) remains the same.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (user) {
-      fetchData(user.id);
+    if (userId) {
+      fetchData(userId);
     } else {
       setLoading(false); // If no user, stop loading.
     }
-  }, [user?.id, fetchData]);
+  }, [userId, fetchData]);
   
   /**
    * Handles changes in the profile form inputs (DOB, sex).

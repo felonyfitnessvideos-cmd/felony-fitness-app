@@ -50,6 +50,7 @@ const motivationalQuotes = [
 function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const userId = user?.id;
   
   const [quote, setQuote] = useState('');
   /** @type {[DailyGoals, React.Dispatch<React.SetStateAction<DailyGoals>>]} */
@@ -137,17 +138,17 @@ function DashboardPage() {
   // Only depend on the user's id and the stable fetchDashboardData callback.
   // Rationale: including the whole `user` object can cause unnecessary
   // re-fetches if its reference changes while identity (id) remains the same.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // We intentionally depend only on `userId` and stable callbacks below.
   useEffect(() => {
     const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
     setQuote(randomQuote);
     
-    if (user) {
-      fetchDashboardData(user.id);
+    if (userId) {
+      fetchDashboardData(userId);
     } else {
       setLoading(false);
     }
-  }, [user?.id, fetchDashboardData]);
+  }, [userId, fetchDashboardData]);
   
   const handleLogout = async () => {
     await supabase.auth.signOut();

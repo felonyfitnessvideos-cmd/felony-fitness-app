@@ -49,6 +49,7 @@ import './ProgressPage.css';
 
 function ProgressPage() {
   const { user } = useAuth();
+  const userId = user?.id;
   /** @type {[ProgressStats, React.Dispatch<React.SetStateAction<ProgressStats>>]} */
   const [stats, setStats] = useState({ totalWorkouts: 0, avgDuration: 0, avgCalories: 0, avgBurn: 0, activeGoals: 0 });
   /** @type {[ChartDataPoint[], React.Dispatch<React.SetStateAction<ChartDataPoint[]>>]} */
@@ -71,7 +72,7 @@ function ProgressPage() {
   // re-fetches. We intentionally disable the exhaustive-deps rule here so
   // the hook remains stable. If this function needs to capture changing
   // values in the future, update the dependency array and the rationale.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const fetchProgressData = useCallback(async (userId) => {
     try {
       const [workoutLogsRes, nutritionLogsRes, goalsRes] = await Promise.all([
@@ -185,14 +186,13 @@ function ProgressPage() {
   // object because changes to its reference (that don't affect identity)
   // should not retrigger the fetch. Keep this comment as the rationale if
   // updating the dependency array in the future.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (user) {
-      fetchProgressData(user.id);
+    if (userId) {
+      fetchProgressData(userId);
     } else {
       setLoading(false);
     }
-  }, [user?.id, fetchProgressData]);
+  }, [userId, fetchProgressData]);
 
   if (loading) return <div style={{ color: 'white', padding: '2rem' }}>Loading Progress...</div>;
 
@@ -213,7 +213,9 @@ function ProgressPage() {
         <div className="chart-card">
           <h3>Nutrition Trends (Calories Eaten)</h3>
           <LazyRecharts fallback={<div className="loading-message">Loading chart...</div>}>
-            {(libs) => (
+            {// libs is used inside JSX via property access; ESLint sometimes flags this as unused
+            // eslint-disable-next-line no-unused-vars
+            (libs) => (
               <libs.ResponsiveContainer width="100%" height={250}>
                 <libs.LineChart data={nutritionTrends}>
                   <libs.CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
@@ -229,7 +231,9 @@ function ProgressPage() {
         <div className="chart-card">
           <h3>Workout Duration (Minutes)</h3>
           <LazyRecharts fallback={<div className="loading-message">Loading chart...</div>}>
-            {(libs) => (
+            {// libs is used inside JSX via property access; ESLint sometimes flags this as unused
+            // eslint-disable-next-line no-unused-vars
+            (libs) => (
               <libs.ResponsiveContainer width="100%" height={250}>
                 <libs.BarChart data={workoutDurationTrends}>
                   <libs.CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />

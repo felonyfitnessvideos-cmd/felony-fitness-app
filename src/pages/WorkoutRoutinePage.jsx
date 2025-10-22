@@ -23,6 +23,7 @@ import './WorkoutRoutinePage.css';
 
 function WorkoutRoutinePage() {
   const { user } = useAuth();
+  const userId = user?.id;
   /** @type {[Routine[], React.Dispatch<React.SetStateAction<Routine[]>>]} */
   const [routines, setRoutines] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,14 +53,13 @@ function WorkoutRoutinePage() {
 
   // Depend only on the user's id and the stable fetchRoutines callback to
   // avoid unnecessary re-fetches when the `user` object reference changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (user) {
-      fetchRoutines(user.id);
+    if (userId) {
+      fetchRoutines(userId);
     } else {
       setLoading(false);
     }
-  }, [user?.id, fetchRoutines]);
+  }, [userId, fetchRoutines]);
 
   /**
    * Deletes a specific workout routine after user confirmation.
