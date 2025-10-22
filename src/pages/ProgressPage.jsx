@@ -195,6 +195,7 @@ function ProgressPage() {
   }, [userId, fetchProgressData]);
 
   if (loading) return <div style={{ color: 'white', padding: '2rem' }}>Loading Progress...</div>;
+  // Inline chart rendering using LazyRecharts' render prop
 
   return (
     <div className="progress-container">
@@ -213,37 +214,39 @@ function ProgressPage() {
         <div className="chart-card">
           <h3>Nutrition Trends (Calories Eaten)</h3>
           <LazyRecharts fallback={<div className="loading-message">Loading chart...</div>}>
-            {// libs is used inside JSX via property access; ESLint sometimes flags this as unused
-            // eslint-disable-next-line no-unused-vars
-            (libs) => (
-              <libs.ResponsiveContainer width="100%" height={250}>
-                <libs.LineChart data={nutritionTrends}>
-                  <libs.CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-                  <libs.XAxis dataKey="date" stroke="#a0aec0" fontSize={12} />
-                  <libs.YAxis stroke="#a0aec0" fontSize={12} />
-                  <libs.Tooltip contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #4a5568' }} />
-                  <libs.Line type="monotone" dataKey="calories" name="Calories Eaten" stroke="#8884d8" strokeWidth={2} />
-                </libs.LineChart>
-              </libs.ResponsiveContainer>
-            )}
+            {(libs) => {
+              const { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Line } = libs;
+              return (
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={nutritionTrends}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+                    <XAxis dataKey="date" stroke="#a0aec0" fontSize={12} />
+                    <YAxis stroke="#a0aec0" fontSize={12} />
+                    <Tooltip contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #4a5568' }} />
+                    <Line type="monotone" dataKey="calories" name="Calories Eaten" stroke="#8884d8" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              );
+            }}
           </LazyRecharts>
         </div>
         <div className="chart-card">
           <h3>Workout Duration (Minutes)</h3>
           <LazyRecharts fallback={<div className="loading-message">Loading chart...</div>}>
-            {// libs is used inside JSX via property access; ESLint sometimes flags this as unused
-            // eslint-disable-next-line no-unused-vars
-            (libs) => (
-              <libs.ResponsiveContainer width="100%" height={250}>
-                <libs.BarChart data={workoutDurationTrends}>
-                  <libs.CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-                  <libs.XAxis dataKey="date" stroke="#a0aec0" fontSize={12} />
-                  <libs.YAxis stroke="#a0aec0" fontSize={12} />
-                  <libs.Tooltip contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #4a5568' }} />
-                  <libs.Bar dataKey="duration" name="Duration (min)" fill="#82ca9d" />
-                </libs.BarChart>
-              </libs.ResponsiveContainer>
-            )}
+            {(libs) => {
+              const { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar } = libs;
+              return (
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={workoutDurationTrends}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+                    <XAxis dataKey="date" stroke="#a0aec0" fontSize={12} />
+                    <YAxis stroke="#a0aec0" fontSize={12} />
+                    <Tooltip contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #4a5568' }} />
+                    <Bar dataKey="duration" name="Duration (min)" fill="#82ca9d" />
+                  </BarChart>
+                </ResponsiveContainer>
+              );
+            }}
           </LazyRecharts>
         </div>
       </div>

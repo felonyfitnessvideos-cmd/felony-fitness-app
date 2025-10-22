@@ -110,7 +110,9 @@ function NutritionLogPage() {
         try {
           const safePreview = logs.map(l => ({ id: l.id, meal_type: l.meal_type, created_at: l.created_at }));
           console.debug('Fetched logs (preview):', safePreview);
-        } catch (_err) { void _err; console.debug('Fetched logs (count):', Array.isArray(logs) ? logs.length : typeof logs); }
+        } catch {
+          console.debug('Fetched logs (count):', Array.isArray(logs) ? logs.length : typeof logs);
+        }
       }
       setTodaysLogs(logs);
       if (profileResponse.data) setGoals(profileResponse.data);

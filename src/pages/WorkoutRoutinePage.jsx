@@ -67,7 +67,7 @@ function WorkoutRoutinePage() {
    * @async
    */
   const handleDeleteRoutine = async (routineId) => {
-    if (!user) return;
+    if (!userId) return;
 
     if (window.confirm('Are you sure you want to delete this routine? This cannot be undone.')) {
       try {
@@ -75,10 +75,10 @@ function WorkoutRoutinePage() {
           .from('workout_routines')
           .delete()
           .eq('id', routineId)
-          .eq('user_id', user.id);
+          .eq('user_id', userId);
 
         if (error) throw error;
-        fetchRoutines(user.id);
+        fetchRoutines(userId);
       } catch (error) {
         alert(`Error: ${error.message}`);
       }
@@ -91,17 +91,17 @@ function WorkoutRoutinePage() {
    * @async
    */
   const handleToggleActive = async (routine) => {
-    if (!user) return;
+    if (!userId) return;
 
     try {
       const { error } = await supabase
         .from('workout_routines')
         .update({ is_active: !routine.is_active })
         .eq('id', routine.id)
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
       
       if (error) throw error;
-      fetchRoutines(user.id);
+      fetchRoutines(userId);
     } catch (error) {
       alert(`Error: ${error.message}`);
     }

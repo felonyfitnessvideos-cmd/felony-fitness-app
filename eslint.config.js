@@ -17,10 +17,11 @@ export default defineConfig([
       reactRefresh.configs.vite,
     ],
     languageOptions: {
-      ecmaVersion: 2020,
+      // Consolidated ECMAScript target for project
+      ecmaVersion: 2024,
       globals: globals.browser,
       parserOptions: {
-        ecmaVersion: 'latest',
+        ecmaVersion: 2024,
         ecmaFeatures: { jsx: true },
         sourceType: 'module',
       },
@@ -30,12 +31,14 @@ export default defineConfig([
     },
   },
   // Lint Node scripts with a Node environment and appropriate parser options
+  // Ensure scripts and backend functions are linted with Node globals and
+  // do NOT receive browser globals from the top-level override above.
   {
     files: ['scripts/**', 'supabase/functions/**'],
     languageOptions: {
       globals: globals.node,
       parserOptions: {
-        ecmaVersion: 'latest',
+        ecmaVersion: 2024,
         sourceType: 'module',
       },
     },

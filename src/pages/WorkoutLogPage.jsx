@@ -338,8 +338,8 @@ function WorkoutLogPage() {
       console.error("Secure delete failed:", error);
       return alert("Could not delete set.");
     }
-    // Refetch to ensure UI consistency.
-    if (user) await fetchAndStartWorkout(user.id);
+  // Refetch to ensure UI consistency.
+  if (userId) await fetchAndStartWorkout(userId);
   };
 
   /** Enters "edit mode" for a specific set. */
@@ -362,8 +362,8 @@ function WorkoutLogPage() {
       console.error("Secure update failed:", error);
       return alert("Could not update set.");
     }
-    setEditingSet(null);
-    if (user) await fetchAndStartWorkout(user.id);
+  setEditingSet(null);
+  if (userId) await fetchAndStartWorkout(userId);
   };
 
   const handleCancelEdit = () => setEditingSet(null);
