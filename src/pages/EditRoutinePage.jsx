@@ -97,6 +97,10 @@ function EditRoutinePage() {
   }, [fetchInitialData]);
 
   // Cleanup debounce timer and abort controller on unmount
+  // This effect is intended to run only on mount/unmount to clean up timers
+  // and abort controllers. It intentionally uses an empty dependency array
+  // to ensure the cleanup runs only once on unmount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     return () => {
       if (searchDebounceRef.current) {
@@ -104,7 +108,7 @@ function EditRoutinePage() {
         searchDebounceRef.current = null;
       }
       if (searchAbortControllerRef.current) {
-        try { searchAbortControllerRef.current.abort(); } catch (__) {}
+        try { searchAbortControllerRef.current.abort(); } catch (_) { /* ignore */ }
         searchAbortControllerRef.current = null;
       }
     };
@@ -133,9 +137,9 @@ function EditRoutinePage() {
 
     // Debounce the network request
     searchDebounceRef.current = setTimeout(async () => {
-      // Abort previous in-flight request if present
+      // Abort previous in-flight request if present (single consolidated attempt)
       if (searchAbortControllerRef.current) {
-        try { searchAbortControllerRef.current.abort(); } catch (__) {}
+        try { searchAbortControllerRef.current.abort(); } catch (_) { /* ignore */ }
       }
       const controller = new AbortController();
       searchAbortControllerRef.current = controller;

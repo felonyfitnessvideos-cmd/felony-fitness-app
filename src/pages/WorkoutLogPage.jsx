@@ -101,6 +101,12 @@ function WorkoutLogPage() {
     }
   }, [selectedExercise, todaysLog, previousLog]);
 
+  // The fetchAndStartWorkout callback intentionally omits dependencies so it
+  // remains stable across renders. This reduces the chance of duplicate
+  // network requests triggered by unrelated re-renders. If you need to
+  // capture changing external values, add them to the dependency array and
+  // update this rationale accordingly.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchAndStartWorkout = useCallback(async (userId) => {
     setLoading(true);
     try {
@@ -401,7 +407,7 @@ function WorkoutLogPage() {
             </div>
             <div className="input-group">
               <label>Reps</label>
-              <input type="number" value={currentSet.reps} onChange={(e) => setCurrentSet(prev => ({...prev, reps: e.Ttarget.value}))} placeholder="0"/>
+              <input type="number" value={currentSet.reps} onChange={(e) => setCurrentSet(prev => ({...prev, reps: e.target.value}))} placeholder="0"/>
             </div>
           </div>
           <button className="save-set-button" onClick={handleSaveSet}>Save Set</button>
@@ -455,16 +461,16 @@ function WorkoutLogPage() {
               <div className="loading-message">Loading Chart...</div>
             ) : chartData.length > 0 ? (
               <LazyRecharts fallback={<div className="loading-message">Loading chart...</div>}>
-                {({ LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer }) => (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                      <CartesianGrid stroke="#4a5568" strokeDasharray="3 3" />
-                      <XAxis dataKey="date" stroke="#a0aec0" />
-                      <YAxis stroke="#a0aec0" domain={['dataMin - 10', 'dataMax + 10']} />
-                      <Tooltip contentStyle={{ backgroundColor: '#2d3748', border: '1px solid #4a5568' }} />
-                      <Line type="monotone" dataKey="value" name={chartMetric} stroke="#f97316" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
+                {(libs) => (
+                  <libs.ResponsiveContainer width="100%" height={250}>
+                    <libs.LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                      <libs.CartesianGrid stroke="#4a5568" strokeDasharray="3 3" />
+                      <libs.XAxis dataKey="date" stroke="#a0aec0" />
+                      <libs.YAxis stroke="#a0aec0" domain={["dataMin - 10", "dataMax + 10"]} />
+                      <libs.Tooltip contentStyle={{ backgroundColor: '#2d3748', border: '1px solid #4a5568' }} />
+                      <libs.Line type="monotone" dataKey="value" name={chartMetric} stroke="#f97316" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }} />
+                    </libs.LineChart>
+                  </libs.ResponsiveContainer>
                 )}
               </LazyRecharts>
             ) : (

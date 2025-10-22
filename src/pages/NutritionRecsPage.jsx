@@ -40,12 +40,12 @@ function NutritionRecsPage() {
     setRecommendations(null);
 
     let session;
-    try {
-      const s = await supabase.auth.getSession();
-      session = s?.data?.session;
-    } catch (e) {
-      console.warn('Failed to read session from supabase client', e);
-    }
+      try {
+        const s = await supabase.auth.getSession();
+        session = s?.data?.session;
+      } catch (err) {
+        console.warn('Failed to read session from supabase client', err);
+      }
 
     if (!session || !session.access_token) {
       setError('You must be logged in to get recommendations.');
@@ -74,8 +74,8 @@ function NutritionRecsPage() {
         let detail = text;
         try {
           const parsed = JSON.parse(text);
-          detail = parsed.error || JSON.stringify(parsed);
-        } catch (e) { /* not JSON */ }
+              detail = parsed.error || JSON.stringify(parsed);
+            } catch (_err) { void _err; /* not JSON */ }
         throw new Error(`Edge function error ${resp.status}: ${detail}`);
       }
 

@@ -1,4 +1,3 @@
- 
 /**
  * @file ProgressPage.jsx
  * @description A page that displays the user's overall fitness progress, including summary statistics, trend charts, and goal tracking.
@@ -14,12 +13,6 @@
  * - Averages for calories eaten and burned per day are calculated.
  * 5. All calculated stats and chart data are stored in the component's state to be rendered.
  * 6. The page displays these stats in cards, visualizes trends in charts using the `recharts` library, and lists the user's active goals with progress bars.
- */
-
-/**
- * ProgressPage
- * Displays a user's progress metrics and charts. This page consumes body metrics
- * and workout logs to present visualizations and high-level insights.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -71,6 +64,14 @@ function ProgressPage() {
    * @param {string} userId - The UUID of the currently authenticated user.
    * @async
    */
+  // The fetchProgressData callback intentionally omits dependencies below.
+  // Rationale: the Supabase client instance and React state setters used inside
+  // this callback are stable for the lifetime of the app. Re-creating this
+  // function on every render would be wasteful and cause unnecessary
+  // re-fetches. We intentionally disable the exhaustive-deps rule here so
+  // the hook remains stable. If this function needs to capture changing
+  // values in the future, update the dependency array and the rationale.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchProgressData = useCallback(async (userId) => {
     try {
       const [workoutLogsRes, nutritionLogsRes, goalsRes] = await Promise.all([
@@ -79,8 +80,14 @@ function ProgressPage() {
           .select('duration_minutes, created_at, calories_burned')
           .eq('user_id', userId)
           .gt('duration_minutes', 0),
-        // Fetches aggregated nutrition data from a database view for efficiency.
-        supabase.from('v_nutrition_log_details').select('created_at, total_calories, total_protein, water_oz_consumed').eq('user_id', userId),
+        
+        // --- 1. THIS QUERY IS FIXED ---
+        // Changed from 'v_nutrition_log_details' to the 'nutrition_logs' table
+        // to get live, accurate data.
+        supabase.from('nutrition_logs')
+          .select('created_at, quantity_consumed, food_servings(calories)')
+          .eq('user_id', userId),
+        
         supabase.from('goals').select('*').eq('user_id', userId)
       ]);
 
@@ -92,47 +99,67 @@ function ProgressPage() {
       const totalDuration = workoutLogs.reduce((sum, log) => sum + (log.duration_minutes || 0), 0);
       const avgDuration = totalWorkouts > 0 ? Math.round(totalDuration / totalWorkouts) : 0;
       
-      // Aggregate workout data by ISO date key for reliable sorting, keep a display date for charts.
       const durationMap = new Map();
       const burnMap = new Map();
       workoutLogs.forEach(log => {
-        const dt = new Date(log.created_at);
-        const isoKey = dt.toISOString().split('T')[0]; // YYYY-MM-DD
-        const display = dt.toLocaleDateString();
-        const existingDuration = durationMap.get(isoKey) || { date: display, duration: 0 };
+        const dt = new Date(log.created_at); // Creates date in local timezone
+
+        // --- TIMEZONE FIX: Group by local date, not UTC date ---
+        const year = dt.getFullYear();
+        const month = (dt.getMonth() + 1).toString().padStart(2, '0');
+        const day = dt.getDate().toString().padStart(2, '0');
+        const localSortKey = `${year}-${month}-${day}`; // Sortable local date key
+        const displayDate = dt.toLocaleDateString(); // Local display date
+
+        const existingDuration = durationMap.get(localSortKey) || { date: displayDate, duration: 0 };
         existingDuration.duration += (log.duration_minutes || 0);
-        durationMap.set(isoKey, existingDuration);
-        const existingBurn = burnMap.get(isoKey) || { date: display, burn: 0 };
+        durationMap.set(localSortKey, existingDuration);
+        
+        const existingBurn = burnMap.get(localSortKey) || { date: displayDate, burn: 0 };
         existingBurn.burn += (log.calories_burned || 0);
-        burnMap.set(isoKey, existingBurn);
+        burnMap.set(localSortKey, existingBurn);
       });
-      // Convert maps to arrays and sort by ISO date key
+      // Sort by the local date key
       const workoutArray = Array.from(durationMap, ([iso, val]) => ({ iso, ...val }))
         .sort((a, b) => a.iso.localeCompare(b.iso))
         .map(({ date, duration }) => ({ date, duration }));
       setWorkoutDurationTrends(workoutArray);
-  const totalBurn = Array.from(burnMap.values()).reduce((sum, obj) => sum + (obj.burn || 0), 0);
-  const avgBurn = burnMap.size > 0 ? Math.round(totalBurn / burnMap.size) : 0;
+      
+      const totalBurn = Array.from(burnMap.values()).reduce((sum, obj) => sum + (obj.burn || 0), 0);
+      const avgBurn = burnMap.size > 0 ? Math.round(totalBurn / burnMap.size) : 0;
 
       // --- Calculate Nutrition Statistics ---
       if(nutritionLogsRes.error) throw nutritionLogsRes.error;
       const nutritionLogs = nutritionLogsRes.data || [];
 
-      // Aggregate nutrition data by ISO date key for reliable sorting, keep display date for charts.
       const calorieMap = new Map();
       nutritionLogs.forEach(log => {
-        const dt = new Date(log.created_at);
-        const isoKey = dt.toISOString().split('T')[0];
-        const display = dt.toLocaleDateString();
-        const existing = calorieMap.get(isoKey) || { date: display, calories: 0 };
-        existing.calories += (log.total_calories || 0);
-        calorieMap.set(isoKey, existing);
+        const dt = new Date(log.created_at); // Creates date in local timezone
+        
+        // --- TIMEZONE FIX: Group by local date, not UTC date ---
+        const year = dt.getFullYear();
+        const month = (dt.getMonth() + 1).toString().padStart(2, '0');
+        const day = dt.getDate().toString().padStart(2, '0');
+        const localSortKey = `${year}-${month}-${day}`; // Sortable local date key
+        const displayDate = dt.toLocaleDateString(); // Local display date
+
+        const existing = calorieMap.get(localSortKey) || { date: displayDate, calories: 0 };
+        
+        // --- 2. THIS CALCULATION IS FIXED ---
+        // We now calculate calories manually from the raw data.
+        const quantity = log.quantity_consumed || 0;
+        const caloriesPerServing = log.food_servings?.calories || 0;
+        existing.calories += (quantity * caloriesPerServing);
+        
+        calorieMap.set(localSortKey, existing);
       });
+      
+      // Sort by the local date key
       const nutritionArray = Array.from(calorieMap, ([iso, val]) => ({ iso, ...val }))
         .sort((a, b) => a.iso.localeCompare(b.iso))
         .map(({ date, calories }) => ({ date, calories: Math.round(calories) }));
       setNutritionTrends(nutritionArray);
-      // Sum the calories field on each entry (calorieMap stores objects like { date, calories })
+      
       const totalCalories = Array.from(calorieMap.values()).reduce((sum, val) => sum + (Number(val?.calories) || 0), 0);
       let avgCalories = 0;
       if (calorieMap.size > 0) {
@@ -145,7 +172,6 @@ function ProgressPage() {
       const activeGoals = goalsRes.data || [];
       setGoals(activeGoals);
       
-      // Update the main stats state object to re-render the UI.
       setStats({ totalWorkouts, avgDuration, avgCalories, avgBurn, activeGoals: activeGoals.length });
     } catch (error) {
       console.error("Error fetching progress data:", error);
@@ -154,7 +180,12 @@ function ProgressPage() {
     }
   }, []);
 
-  // Effect to trigger the data fetch when the user session is available.
+  // The following effect intentionally depends only on the user's id and the
+  // stable fetchProgressData function. We do NOT include the entire `user`
+  // object because changes to its reference (that don't affect identity)
+  // should not retrigger the fetch. Keep this comment as the rationale if
+  // updating the dependency array in the future.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (user) {
       fetchProgressData(user.id);
@@ -182,34 +213,32 @@ function ProgressPage() {
         <div className="chart-card">
           <h3>Nutrition Trends (Calories Eaten)</h3>
           <LazyRecharts fallback={<div className="loading-message">Loading chart...</div>}>
-            {({ LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer }) => (
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={nutritionTrends}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-                  <XAxis dataKey="date" stroke="#a0aec0" fontSize={12} />
-                  <YAxis stroke="#a0aec0" fontSize={12} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #4a5568' }} />
-                  <Legend />
-                  <Line type="monotone" dataKey="calories" name="Calories Eaten" stroke="#8884d8" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
+            {(libs) => (
+              <libs.ResponsiveContainer width="100%" height={250}>
+                <libs.LineChart data={nutritionTrends}>
+                  <libs.CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+                  <libs.XAxis dataKey="date" stroke="#a0aec0" fontSize={12} />
+                  <libs.YAxis stroke="#a0aec0" fontSize={12} />
+                  <libs.Tooltip contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #4a5568' }} />
+                  <libs.Line type="monotone" dataKey="calories" name="Calories Eaten" stroke="#8884d8" strokeWidth={2} />
+                </libs.LineChart>
+              </libs.ResponsiveContainer>
             )}
           </LazyRecharts>
         </div>
         <div className="chart-card">
           <h3>Workout Duration (Minutes)</h3>
           <LazyRecharts fallback={<div className="loading-message">Loading chart...</div>}>
-            {({ BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer }) => (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={workoutDurationTrends}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-                  <XAxis dataKey="date" stroke="#a0aec0" fontSize={12} />
-                  <YAxis stroke="#a0aec0" fontSize={12} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #4a5568' }} />
-                  <Legend />
-                  <Bar dataKey="duration" name="Duration (min)" fill="#82ca9d" />
-                </BarChart>
-              </ResponsiveContainer>
+            {(libs) => (
+              <libs.ResponsiveContainer width="100%" height={250}>
+                <libs.BarChart data={workoutDurationTrends}>
+                  <libs.CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
+                  <libs.XAxis dataKey="date" stroke="#a0aec0" fontSize={12} />
+                  <libs.YAxis stroke="#a0aec0" fontSize={12} />
+                  <libs.Tooltip contentStyle={{ backgroundColor: '#1a202c', border: '1px solid #4a5568' }} />
+                  <libs.Bar dataKey="duration" name="Duration (min)" fill="#82ca9d" />
+                </libs.BarChart>
+              </libs.ResponsiveContainer>
             )}
           </LazyRecharts>
         </div>

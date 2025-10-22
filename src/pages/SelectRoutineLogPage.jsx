@@ -82,6 +82,9 @@ function SelectRoutineLogPage() {
    * @effect
    * @description Triggers the `fetchActiveRoutines` function once the user object is available.
    */
+  // Only depend on user id and the stable fetchActiveRoutines callback to
+  // avoid unnecessary re-fetches when the user object reference changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (user) {
       fetchActiveRoutines(user.id);

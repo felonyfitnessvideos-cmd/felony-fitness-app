@@ -81,6 +81,9 @@ function NutritionGoalsPage() {
   }, []);
 
   // Effect to trigger the initial data fetch when the user session is available.
+  // Only depend on the user's id and the stable fetchGoals callback. This
+  // avoids unnecessary re-fetches when the user object's reference changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (user) {
       fetchGoals(user.id);

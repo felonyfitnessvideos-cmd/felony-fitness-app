@@ -42,19 +42,7 @@ const femaleBodyFatImages = [
   { label: '10%', src: 'https://placehold.co/150x200/2d3748/ffffff?text=10%25' },
 ];
 
-/**
- * @constant {object} customModalStyles
- * @description Custom styles for the react-modal component to match the app's theme.
- */
-const customModalStyles = {
-  content: {
-    top: '50%', left: '50%', right: 'auto', bottom: 'auto', marginRight: '-50%',
-    transform: 'translate(-50%, -50%)', width: '90%', maxWidth: '500px',
-    background: '#2d3748', color: '#f7fafc', border: '1px solid #4a5568',
-    zIndex: 1000, padding: '1.5rem', borderRadius: '12px'
-  },
-  overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)', zIndex: 999 },
-};
+// Modal styles moved to CSS; react-modal uses CSS classes defined in ProfilePage.css
 
 /**
  * Calculates the age of a person based on their date of birth.
@@ -137,6 +125,10 @@ function ProfilePage() {
   /**
    * Effect hook to trigger data fetching when the user object is available or changes.
    */
+  // We intentionally only depend on the user's id and the stable fetchData
+  // callback. Including the full `user` object can lead to extra fetches when
+  // its reference changes but the identity (id) remains the same.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (user) {
       fetchData(user.id);

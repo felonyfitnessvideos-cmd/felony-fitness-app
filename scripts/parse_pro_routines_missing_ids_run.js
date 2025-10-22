@@ -3,7 +3,7 @@
 // against exercise IDs present in exercises SQL and prints any missing IDs
 // along with which pro_routines reference them.
 
-/* eslint-disable no-console */
+ 
 
 const exercisesSql = `INSERT INTO "public"."exercises" ("id", "name", "description", "category_id", "thumbnail_url", "muscle_group_id", "type") VALUES ('24002306-79aa-40a2-a2fe-3ec986586ac4', 'Ab Wheel Rollout', 'An advanced core exercise that builds immense abdominal strength and stability.', null, null, null, 'Strength'), ('a0e3a2b0-f26e-4d86-b219-3663e4f23b8e', 'Arnold Press', null, null, null, null, 'Strength'), ('895f16bb-3908-4b3b-9c69-72cb0924ad53', 'Assisted Pull-ups', 'A pull-up variation using a machine or band to reduce bodyweight, allowing for the development of back and bicep strength.', null, null, null, 'Strength'), ('028746de-feb0-47c6-8d62-3f34f4e9d02d', 'Barbell Bench Press', null, null, null, null, 'Strength'), ('23eca0a4-5b77-4e2a-a09f-0f059e5cc4b9', 'Barbell Curl', 'A classic exercise for building bicep size and strength.', null, null, null, 'Strength'), ('d4016dc3-4301-4247-9754-36aa558f4c93', 'Barbell Shoulder Press', null, null, null, null, 'Strength'), ('38de58ec-6ac6-4607-9d4f-43a4e94acf87', 'Barbell Squat', 'A foundational lower body exercise targeting the quads, hamstrings, and glutes, often considered the king of leg exercises.', null, null, null, 'Strength');`;
 

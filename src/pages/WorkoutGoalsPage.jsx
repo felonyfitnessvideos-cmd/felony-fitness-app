@@ -62,6 +62,10 @@ function WorkoutGoalsPage() {
     }
   }, []);
 
+  // Depend only on the user's id and the stable fetchGoals callback. Avoid
+  // depending on the full `user` object to prevent redundant fetches when
+  // its reference changes without a change to identity.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (user) {
       fetchGoals(user.id);

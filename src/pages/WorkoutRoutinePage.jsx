@@ -50,6 +50,9 @@ function WorkoutRoutinePage() {
     }
   }, []);
 
+  // Depend only on the user's id and the stable fetchRoutines callback to
+  // avoid unnecessary re-fetches when the `user` object reference changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (user) {
       fetchRoutines(user.id);
