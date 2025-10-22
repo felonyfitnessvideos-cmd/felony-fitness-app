@@ -1,7 +1,10 @@
-/* eslint-env node */
-// scripts/parse_pro_routines_missing_ids.js
-// Parser that scans embedded SQL constants and reports exercise IDs
-// referenced by pro_routines but not present in exercises.
+/**
+ * parse_pro_routines_missing_ids.js
+ * Utility parser used to extract referenced exercise IDs from embedded SQL
+ * constants for `pro_routines` and compare them to the `exercises` data.
+ * The module exports helpers used by tests and a `main` entrypoint used
+ * by maintainers.
+ */
 
 const EXERCISES_SQL = `INSERT INTO "public"."exercises" ("id","name") VALUES
 ('24002306-79aa-40a2-a2fe-3ec986586ac4','Ab Wheel Rollout'),
