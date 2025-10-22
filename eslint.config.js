@@ -39,7 +39,6 @@ export default defineConfig([
         sourceType: 'module',
       },
     },
-    env: { node: true },
     rules: {
       // Allow commonjs style in scripts where necessary
       'no-console': 'off'
