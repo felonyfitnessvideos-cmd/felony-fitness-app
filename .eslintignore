@@ -1,0 +1,5 @@
+# Ignore generated and server-side / Deno-specific code
+src/database.types.ts
+supabase/functions/**
+node_modules/
+dist/
