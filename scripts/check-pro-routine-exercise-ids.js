@@ -1,15 +1,11 @@
-/*
-Diagnostic script: check-pro-routine-exercise-ids.js
-
-Purpose:
-- Query the `pro_routines` table and collect all exercise_ids referenced in the JSON `exercises` array.
-- Query the `exercises` table to see which IDs are missing.
-- Print a report showing which pro_routines reference missing IDs so you can decide how to fix them.
-
-Usage:
-- Requires SUPABASE_URL and SUPABASE_SERVICE_KEY (service role key) in env.
-- Run: node scripts/check-pro-routine-exercise-ids.js
-*/
+/**
+ * check-pro-routine-exercise-ids.js
+ * Utility script used by maintainers to find pro_routines that reference exercise IDs
+ * not present in the `exercises` table. Intended to be run with a service role key.
+ *
+ * Usage: set SUPABASE_URL and SUPABASE_SERVICE_KEY in the environment and run:
+ *   node scripts/check-pro-routine-exercise-ids.js
+ */
 
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';

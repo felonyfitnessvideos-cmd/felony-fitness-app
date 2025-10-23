@@ -1,8 +1,10 @@
+/**
+ * LazyRecharts.jsx
+ * Lightweight helper that dynamically imports the `recharts` library and
+ * exposes its exports to children via a render-prop. This reduces initial
+ * bundle size by deferring the large chart library until it's actually needed.
+ */
 import React, { useState, useEffect } from 'react';
-
-// Dynamically import `recharts` and provide its exports to children via a
-// render-prop. This keeps the heavy `recharts` code out of the initial bundle
-// until a chart is actually rendered.
 export default function LazyRecharts({ children, fallback = null }) {
   const [rechartsModule, setRechartsModule] = useState(null);
 

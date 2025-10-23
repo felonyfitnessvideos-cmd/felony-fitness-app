@@ -75,19 +75,19 @@ function NutritionRecsPage() {
         try {
           const parsed = JSON.parse(text);
               detail = parsed.error || JSON.stringify(parsed);
-            } catch (_err) { void _err; /* not JSON */ }
+            } catch { /* not JSON */ }
         throw new Error(`Edge function error ${resp.status}: ${detail}`);
       }
 
       let data;
       try {
         data = JSON.parse(text);
-      } catch (e) {
+      } catch {
         throw new Error('Edge function returned invalid JSON');
       }
 
       setRecommendations(data);
-    } catch (err) {
+      } catch (err) {
       console.error('Nutrition recommendations error:', err);
       setError(`Error: ${err.message || 'An unexpected error occurred.'}`);
     } finally {

@@ -33,6 +33,7 @@ import './NutritionGoalsPage.css';
 function NutritionGoalsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const userId = user?.id;
   /** @type {[NutritionGoals, React.Dispatch<React.SetStateAction<NutritionGoals>>]} */
   const [goals, setGoals] = useState({
     daily_calorie_goal: '',
@@ -83,14 +84,13 @@ function NutritionGoalsPage() {
   // Effect to trigger the initial data fetch when the user session is available.
   // Only depend on the user's id and the stable fetchGoals callback. This
   // avoids unnecessary re-fetches when the user object's reference changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (user) {
-      fetchGoals(user.id);
+    if (userId) {
+      fetchGoals(userId);
     } else {
       setLoading(false);
     }
-  }, [user?.id, fetchGoals]);
+  }, [userId, fetchGoals]);
 
   /**
    * Handles changes to the form's input fields, updating the local state.

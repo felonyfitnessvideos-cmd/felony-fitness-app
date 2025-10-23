@@ -33,6 +33,7 @@ import './WorkoutGoalsPage.css';
 
 function WorkoutGoalsPage() {
   const { user } = useAuth();
+  const userId = user?.id;
   /** @type {[Goal[], React.Dispatch<React.SetStateAction<Goal[]>>]} */
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,14 +66,13 @@ function WorkoutGoalsPage() {
   // Depend only on the user's id and the stable fetchGoals callback. Avoid
   // depending on the full `user` object to prevent redundant fetches when
   // its reference changes without a change to identity.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (user) {
-      fetchGoals(user.id);
+    if (userId) {
+      fetchGoals(userId);
     } else {
       setLoading(false);
     }
-  }, [user?.id, fetchGoals]);
+  }, [userId, fetchGoals]);
 
   /**
    * Deletes a specific goal after user confirmation.

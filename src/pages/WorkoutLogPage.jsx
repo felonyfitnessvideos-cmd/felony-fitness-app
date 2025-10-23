@@ -49,6 +49,7 @@ function WorkoutLogPage() {
   const { routineId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const userId = user?.id;
 
   const [routine, setRoutine] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -106,7 +107,7 @@ function WorkoutLogPage() {
   // network requests triggered by unrelated re-renders. If you need to
   // capture changing external values, add them to the dependency array and
   // update this rationale accordingly.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const fetchAndStartWorkout = useCallback(async (userId) => {
     setLoading(true);
     try {
@@ -204,15 +205,15 @@ function WorkoutLogPage() {
   }, [routineId]);
 
   useEffect(() => {
-    if (user) {
-      fetchAndStartWorkout(user.id);
+    if (userId) {
+      fetchAndStartWorkout(userId);
     } else {
       setLoading(false);
     }
-  }, [user?.id, routineId, fetchAndStartWorkout]);
+  }, [userId, routineId, fetchAndStartWorkout]);
 
   const fetchChartDataForExercise = useCallback(async (metric, exerciseId) => {
-    if (!user || !exerciseId) return;
+    if (!userId || !exerciseId) return;
     setChartLoading(true);
     let functionName = '';
     switch (metric) {
@@ -223,7 +224,7 @@ function WorkoutLogPage() {
 
     try {
       const { data, error } = await supabase.rpc(functionName, { 
-        p_user_id: user.id,
+        p_user_id: userId,
         p_exercise_id: exerciseId 
       });
       if (error) throw error;
@@ -240,7 +241,7 @@ function WorkoutLogPage() {
     } finally {
       setChartLoading(false);
     }
-  }, [user?.id]);
+  }, [userId]);
 
   useEffect(() => {
     if (activeView === 'chart' && selectedExercise) {
@@ -337,8 +338,8 @@ function WorkoutLogPage() {
       console.error("Secure delete failed:", error);
       return alert("Could not delete set.");
     }
-    // Refetch to ensure UI consistency.
-    if (user) await fetchAndStartWorkout(user.id);
+  // Refetch to ensure UI consistency.
+  if (userId) await fetchAndStartWorkout(userId);
   };
 
   /** Enters "edit mode" for a specific set. */
@@ -361,8 +362,8 @@ function WorkoutLogPage() {
       console.error("Secure update failed:", error);
       return alert("Could not update set.");
     }
-    setEditingSet(null);
-    if (user) await fetchAndStartWorkout(user.id);
+  setEditingSet(null);
+  if (userId) await fetchAndStartWorkout(userId);
   };
 
   const handleCancelEdit = () => setEditingSet(null);
@@ -461,7 +462,9 @@ function WorkoutLogPage() {
               <div className="loading-message">Loading Chart...</div>
             ) : chartData.length > 0 ? (
               <LazyRecharts fallback={<div className="loading-message">Loading chart...</div>}>
-                {(libs) => (
+                {// libs is used inside JSX via property access; ESLint sometimes flags this as unused
+                // eslint-disable-next-line no-unused-vars
+                (libs) => (
                   <libs.ResponsiveContainer width="100%" height={250}>
                     <libs.LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                       <libs.CartesianGrid stroke="#4a5568" strokeDasharray="3 3" />

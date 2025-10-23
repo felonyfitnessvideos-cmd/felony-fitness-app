@@ -1,3 +1,8 @@
+/**
+ * ThemeContext.jsx
+ * Provides a simple ThemeContext with helpers to get and update the user's preferred theme.
+ * The provider applies the theme to document root and persists the preference to the user's profile.
+ */
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../supabaseClient';

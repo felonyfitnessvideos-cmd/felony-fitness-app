@@ -38,6 +38,7 @@ function SelectRoutineLogPage() {
    * @description Accesses the authenticated user's data from the global AuthContext.
    */
   const { user } = useAuth();
+  const userId = user?.id;
   
   /**
    * @state {RoutineSummary[]} activeRoutines - Stores the list of active workout routines fetched from the database.
@@ -84,15 +85,14 @@ function SelectRoutineLogPage() {
    */
   // Only depend on user id and the stable fetchActiveRoutines callback to
   // avoid unnecessary re-fetches when the user object reference changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (user) {
-      fetchActiveRoutines(user.id);
+    if (userId) {
+      fetchActiveRoutines(userId);
     } else {
       // If no user is found, stop the loading state.
       setLoading(false);
     }
-  }, [user?.id, fetchActiveRoutines]);
+  }, [userId, fetchActiveRoutines]);
 
   /**
    * @function handleSelectRoutine

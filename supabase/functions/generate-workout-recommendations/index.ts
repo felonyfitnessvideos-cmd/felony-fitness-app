@@ -1,3 +1,11 @@
+/**
+ * @file supabase/functions/generate-workout-recommendations/index.ts
+ * Edge function that aggregates recent user data and forwards a prompt to
+ * the OpenAI API to generate personalized workout recommendations.
+ *
+ * Note: this file runs on Deno inside Supabase edge functions and intentionally
+ * uses Deno globals for environment access.
+ */
 // @ts-nocheck
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';

@@ -41,6 +41,7 @@ import './NutritionLogPage.css';
 
 function NutritionLogPage() {
   const { user } = useAuth();
+  const userId = user?.id;
   const [activeMeal, setActiveMeal] = useState('Breakfast');
   /** @type {[NutritionLog[], React.Dispatch<React.SetStateAction<NutritionLog[]>>]} */
   const [todaysLogs, setTodaysLogs] = useState([]);
@@ -109,7 +110,7 @@ function NutritionLogPage() {
         try {
           const safePreview = logs.map(l => ({ id: l.id, meal_type: l.meal_type, created_at: l.created_at }));
           console.debug('Fetched logs (preview):', safePreview);
-        } catch (_) {
+        } catch {
           console.debug('Fetched logs (count):', Array.isArray(logs) ? logs.length : typeof logs);
         }
       }
@@ -144,14 +145,14 @@ function NutritionLogPage() {
   // Depend only on the user's id and the stable fetchLogData callback. We
   // intentionally avoid depending on the full `user` object to prevent
   // re-fetches caused by non-essential reference changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   useEffect(() => {
-    if (user) {
-      fetchLogData(user.id);
+    if (userId) {
+      fetchLogData(userId);
     } else {
       setLoading(false);
     }
-  }, [user?.id, fetchLogData]);
+  }, [userId, fetchLogData]);
   
   const handleSearch = useCallback((term) => {
     setSearchTerm(term);
@@ -164,7 +165,7 @@ function NutritionLogPage() {
 
       if (term.length < 3) {
       if (searchAbortControllerRef.current) {
-        try { searchAbortControllerRef.current.abort(); } catch (_) { /* ignore */ }
+        try { searchAbortControllerRef.current.abort(); } catch (_err) { void _err; /* ignore */ }
         searchAbortControllerRef.current = null;
       }
       setSearchResults([]);
@@ -174,7 +175,7 @@ function NutritionLogPage() {
 
     searchDebounceRef.current = setTimeout(async () => {
       if (searchAbortControllerRef.current) {
-        try { searchAbortControllerRef.current.abort(); } catch (_) { /* ignore */ }
+        try { searchAbortControllerRef.current.abort(); } catch (_err) { void _err; /* ignore */ }
       }
       const controller = new AbortController();
       searchAbortControllerRef.current = controller;
@@ -300,7 +301,7 @@ function NutritionLogPage() {
         searchDebounceRef.current = null;
       }
       if (searchAbortControllerRef.current) {
-        try { searchAbortControllerRef.current.abort(); } catch (_) { /* ignore */ }
+        try { searchAbortControllerRef.current.abort(); } catch { /* ignore */ }
         searchAbortControllerRef.current = null;
       }
     };
