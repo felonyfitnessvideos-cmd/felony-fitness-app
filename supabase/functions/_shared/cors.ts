@@ -1,4 +1,8 @@
-// FILE: supabase/functions/_shared/cors.ts
+/**
+ * @file supabase/functions/_shared/cors.ts
+ * Lightweight CORS header helper exported for Supabase edge functions.
+ * Keeping this in a shared module avoids duplication across multiple functions.
+ */
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
