@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import CycleWeekEditor from '../components/CycleWeekEditor.jsx';
+import { supabase } from '../supabaseClient.js';
 
 function MesocycleBuilder() {
   const navigate = useNavigate();
@@ -16,10 +17,27 @@ function MesocycleBuilder() {
   const [startDate, setStartDate] = useState('');
 
   const handleSave = () => {
-    // TODO: persist mesocycle via Supabase and navigate to detail page
-    console.log('Save mesocycle', { name, focus, weeks, startDate });
-    // For now navigate back to list
-    navigate('/mesocycles');
+    (async () => {
+      try {
+        const { data: created, error } = await supabase.from('mesocycles').insert({ name, focus, weeks, start_date: startDate }).select().single();
+        if (error) throw error;
+        const mesocycleId = created.id;
+
+        // Create empty week assignments for the mesocycle (day_index left null)
+        const weeksInserts = [];
+        for (let i = 1; i <= weeks; i++) {
+          weeksInserts.push({ mesocycle_id: mesocycleId, week_index: i });
+        }
+        if (weeksInserts.length > 0) {
+          const { error: wkErr } = await supabase.from('mesocycle_weeks').insert(weeksInserts);
+          if (wkErr) console.warn('mesocycle weeks insert warning', wkErr.message || wkErr);
+        }
+
+        navigate(`/mesocycles/${mesocycleId}`);
+      } catch (err) {
+        console.error('Failed to save mesocycle', err.message ?? err);
+      }
+    })();
   };
 
   return (

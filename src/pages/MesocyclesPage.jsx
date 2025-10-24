@@ -6,17 +6,25 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import SubPageHeader from '../components/SubPageHeader.jsx';
+import { supabase } from '../supabaseClient.js';
 
 function MesocyclesPage() {
   // Placeholder state; will be replaced by Supabase fetch in next iteration
   const [mesocycles, setMesocycles] = useState([]);
 
   useEffect(() => {
-    // TODO: load mesocycles for the current user via Supabase
-    setMesocycles([
-      { id: 'example-1', name: '4-week Hypertrophy', weeks: 4, focus: 'Hypertrophy' },
-      { id: 'example-2', name: '6-week Strength', weeks: 6, focus: 'Strength' },
-    ]);
+    // load mesocycles for the current user via Supabase
+    let mounted = true;
+    (async () => {
+      try {
+        const { data, error } = await supabase.from('mesocycles').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        if (mounted) setMesocycles(data || []);
+      } catch (err) {
+        console.error('Failed to load mesocycles', err.message ?? err);
+      }
+    })();
+    return () => { mounted = false };
   }, []);
 
   return (
