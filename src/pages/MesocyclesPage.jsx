@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import SubPageHeader from '../components/SubPageHeader.jsx';
+import './MesocyclesPage.css';
 import { supabase } from '../supabaseClient.js';
 
 function MesocyclesPage() {

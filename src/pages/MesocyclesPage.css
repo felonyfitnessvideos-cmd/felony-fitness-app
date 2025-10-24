@@ -1,0 +1,5 @@
+.mesocycles-page { padding: 1rem; }
+.mesocycles-actions { margin-bottom: 1rem; }
+.mesocycles-list { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.mesocycle-card { padding: .75rem; border: 1px solid var(--border-color,#e5e7eb); border-radius: .5rem; background: var(--card-bg,#fff); }
+.mesocycle-card h3 { margin: 0 0 .25rem 0; }

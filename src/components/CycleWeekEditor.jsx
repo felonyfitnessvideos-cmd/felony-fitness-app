@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import './CycleWeekEditor.css';
 
 function CycleWeekEditor({ weeks = 4 }) {
   const weekArray = Array.from({ length: weeks }, (_, i) => i + 1);

@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import CycleWeekEditor from '../components/CycleWeekEditor.jsx';
+import './MesocycleBuilder.css';
 import { supabase } from '../supabaseClient.js';
 
 function MesocycleBuilder() {
