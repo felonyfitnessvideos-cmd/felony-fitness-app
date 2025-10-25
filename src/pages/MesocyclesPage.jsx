@@ -39,6 +39,8 @@
  *
  * Export
  * - Default React component: `MesocyclesPage()`
+ *
+ * Audited: 2025-10-25 — JSDoc batch 9
  */
 
 /**

@@ -188,3 +188,5 @@ function AuthPage() {
 }
 
 export default AuthPage;
+
+/** Audited: 2025-10-25 — JSDoc batch 9 */

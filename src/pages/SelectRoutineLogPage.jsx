@@ -158,3 +158,5 @@ function SelectRoutineLogPage() {
 }
 
 export default SelectRoutineLogPage;
+
+/** Audited: 2025-10-25 — JSDoc batch 9 */

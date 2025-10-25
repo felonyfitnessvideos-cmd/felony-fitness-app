@@ -267,3 +267,5 @@ function WorkoutGoalsPage() {
 }
 
 export default WorkoutGoalsPage;
+
+/** Audited: 2025-10-25 — JSDoc batch 9 */

@@ -686,3 +686,5 @@ function WorkoutLogPage() {
 }
 
 export default WorkoutLogPage;
+
+/** Audited: 2025-10-25 — JSDoc batch 9 */

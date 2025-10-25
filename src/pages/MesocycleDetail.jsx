@@ -38,6 +38,8 @@
  * - Default React component: `MesocycleDetail()`
  */
 
+/** Audited: 2025-10-25 — JSDoc batch 9 */
+
 /**
  * MesocycleDetail.jsx
  *

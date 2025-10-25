@@ -13,6 +13,8 @@
  *   per day.
  * - If sessions are missing or in an unexpected format the component will
  *   render an empty state rather than throwing.
+ *
+ * Audited: 2025-10-25 — JSDoc batch 9
  */
 import React from 'react';
 
