@@ -114,8 +114,10 @@ function NutritionGoalsPage() {
    */
   const handleSaveGoals = async () => {
     if (!user?.id) {
+      // Surface the inline status message instead of a blocking alert so
+      // assistive tech and page layout can display the message non-disruptively.
       setMessage('You must be logged in.');
-      return alert("You must be logged in.");
+      return;
     }
 
     setMessage('Saving...');
