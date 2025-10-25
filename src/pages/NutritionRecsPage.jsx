@@ -62,37 +62,24 @@ function NutritionRecsPage() {
 
     try {
       // This page already uses the correct fetch method with the Authorization header.
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!supabaseUrl) {
-        throw new Error('Configuration error: VITE_SUPABASE_URL is not set.');
-      }
-      const funcUrl = `${supabaseUrl.replace(/\/$/, '')}/functions/v1/generate-nutrition-recommendations`;
-
-      const resp = await fetch(funcUrl, {
-        method: 'POST',
+      // Use the Supabase client to invoke the Edge Function so headers and
+      // invocation semantics match other pages (and Supra's client handles
+      // details reliably). Passing the user's access token in the
+      // Authorization header is required by the function to resolve the user.
+      const { data, error } = await supabase.functions.invoke('generate-nutrition-recommendations', {
+        body: {},
         headers: {
+          Authorization: `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`, // <-- This is correct
         },
       });
 
-      const text = await resp.text();
-      if (!resp.ok) {
-        let detail = text;
-        try {
-          const parsed = JSON.parse(text);
-              detail = parsed.error || JSON.stringify(parsed);
-            } catch { /* not JSON */ }
-        throw new Error(`Edge function error ${resp.status}: ${detail}`);
+      if (error) {
+        // Propagate a helpful message to the UI.
+        throw new Error(error.message || 'Edge function invocation failed');
       }
 
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error('Edge function returned invalid JSON');
-      }
-
+      // `data` should already be parsed JSON from the function response.
       setRecommendations(data);
       } catch (err) {
       console.error('Nutrition recommendations error:', err);
@@ -131,7 +118,11 @@ function NutritionRecsPage() {
               <h3>Here's your analysis:</h3>
               <p className="summary">{recommendations.analysis_summary}</p>
               <div className="recommendations-list">
-                {(recommendations.recommendations || []).map((rec, index) => (
+                {(
+                  Array.isArray(recommendations?.recommendations)
+                    ? recommendations.recommendations
+                    : []
+                ).map((rec, index) => (
                   <div key={index} className="rec-card">
                     <h4>{rec.title}</h4>
                     <p className="reason"><strong>Why:</strong> {rec.reason}</p>
