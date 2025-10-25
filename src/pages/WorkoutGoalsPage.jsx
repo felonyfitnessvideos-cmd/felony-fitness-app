@@ -1,4 +1,3 @@
- 
 /**
  * @file WorkoutGoalsPage.jsx
  * @description This page allows users to create, view, update, and delete their workout goals.
@@ -28,11 +27,11 @@ import './WorkoutGoalsPage.css';
  */
 
 /**
- * @typedef {object} NewGoal
- * @property {string} goal_description
- * @property {number} current_value
- * @property {string | number} target_value
- * @property {string} target_date
+ * Page component that lets an authenticated user create, view, edit, and delete workout goals and see simple progress visuals.
+ *
+ * Renders a list of the user's goals with progress bars, a modal form for adding or editing goals, and actions to update or remove goals.
+ * CRUD operations are scoped to the authenticated user; the component loads goals on mount and after changes.
+ * @returns {JSX.Element} The rendered Workout Goals page component.
  */
 
 function WorkoutGoalsPage() {

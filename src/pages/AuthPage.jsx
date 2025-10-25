@@ -31,6 +31,14 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { FaGoogle, FaMicrosoft, FaFacebook } from 'react-icons/fa';
 import './AuthPage.css';
 
+/**
+ * Render the authentication page that provides email/password and OAuth sign-in/up flows.
+ *
+ * Manages local form state, displays status messages and loading state, prevents access when
+ * an active session exists by redirecting to the dashboard, and delegates authentication to
+ * the Supabase client (email sign-in/sign-up and third-party providers such as Google and Microsoft).
+ *
+ * @returns {JSX.Element} The authentication page UI.
 function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

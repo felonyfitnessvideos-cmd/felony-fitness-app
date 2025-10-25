@@ -22,6 +22,19 @@ function isDeloadFocus(focus) {
   return focus === 'Strength' || focus === 'Hypertrophy';
 }
 
+/**
+ * Render an editable grid of weeks and days for assigning routines, rest days, or deload weeks.
+ *
+ * Initializes assignments (from initialAssignments when its length equals weeks*7, otherwise generates defaults),
+ * auto-marks every 5th week as a deload when focus is 'Strength' or 'Hypertrophy', and emits assignment updates via the callback.
+ *
+ * @param {object} props - Component props.
+ * @param {number} [props.weeks=4] - Number of weeks to display; non-finite or non-positive values fall back to 4.
+ * @param {string} [props.focus='Hypertrophy'] - Training focus used to determine automatic deload weeks.
+ * @param {(assignments: Array<{week_index:number,day_index:number,type:'routine'|'rest'|'deload',routine_id: (string|null)}>) => void} [props.onAssignmentsChange] - Called whenever assignments change with the full assignments array.
+ * @param {Array<{week_index:number,day_index:number,type:'routine'|'rest'|'deload',routine_id: (string|null)}>} [props.initialAssignments=[]] - Optional initial assignments; used only when its length equals weeks * 7.
+ * @returns {JSX.Element} The CycleWeekEditor React element.
+ */
 function CycleWeekEditor({ weeks = 4, focus = 'Hypertrophy', onAssignmentsChange = () => {}, initialAssignments = [] }) {
   // Defensive normalization: ensure `weeks` is a finite positive integer.
   // Fall back to 4 weeks when input is missing or invalid.
