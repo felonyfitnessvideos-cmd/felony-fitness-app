@@ -39,6 +39,7 @@ import './AuthPage.css';
  * the Supabase client (email sign-in/sign-up and third-party providers such as Google and Microsoft).
  *
  * @returns {JSX.Element} The authentication page UI.
+ */
 function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
