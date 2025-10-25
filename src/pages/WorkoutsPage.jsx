@@ -36,6 +36,9 @@ function WorkoutsPage() {
         <Link to="/workouts/routines" className="menu-card">
           Routines
         </Link>
+        <Link to="/mesocycles" className="menu-card">
+          Mesocycles
+        </Link>
         <Link to="/workouts/select-routine-log" className="menu-card">
           Log
         </Link>
