@@ -57,7 +57,12 @@ function formatDateShort(d) {
 }
 
 // Normalize a date-like value to YYYY-MM-DD. Accepts Date, timestamp string,
-// or null/undefined. Returns empty string for invalid/missing dates.
+/**
+ * Normalize a date-like value to an ISO date string (YYYY-MM-DD).
+ *
+ * @param {*} val - A Date, timestamp, or date string; may be null or undefined.
+ * @returns {string} The date in `YYYY-MM-DD` format, or an empty string if the input is missing or invalid.
+ */
 function toISODate(val) {
   if (val === null || val === undefined) return '';
   try {
