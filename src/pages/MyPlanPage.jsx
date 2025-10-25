@@ -20,7 +20,6 @@
  * - Clicking a theme button calls `updateUserTheme` with the new theme name ('dark', 'light', etc.), which updates the theme globally via the `ThemeContext`.
  */
 
-import React, { useState, useEffect } from 'react';
 /**
  * MyPlanPage
  *
