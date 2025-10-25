@@ -23,6 +23,9 @@ function isDeloadFocus(focus) {
 }
 
 function CycleWeekEditor({ weeks = 4, focus = 'Hypertrophy', onAssignmentsChange = () => {}, initialAssignments = [] }) {
+  // Defensive normalization: ensure `weeks` is a finite positive integer.
+  // Fall back to 4 weeks when input is missing or invalid.
+  if (!Number.isFinite(weeks) || weeks <= 0) weeks = 4;
   const { user, loading } = useAuth();
   const [routines, setRoutines] = useState([]);
   const [assignments, setAssignments] = useState(() => {

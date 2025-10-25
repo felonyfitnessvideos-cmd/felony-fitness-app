@@ -21,6 +21,12 @@ import './WorkoutRoutinePage.css';
  * @property {string} created_at - The timestamp of when the routine was created.
  */
 
+/**
+ * WorkoutRoutinePage
+ * Displays and manages the user's workout routines. This component assumes
+ * the Supabase query returns an array; missing or unexpected shapes are
+ * tolerated and an empty array is used as a fallback.
+ */
 function WorkoutRoutinePage() {
   const { user } = useAuth();
   const userId = user?.id;

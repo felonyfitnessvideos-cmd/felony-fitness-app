@@ -47,6 +47,12 @@ import './ProgressPage.css';
  * @property {number} target_value
  */
 
+/**
+ * ProgressPage
+ * Aggregates workout and nutrition data into summary statistics and trend
+ * charts. The component defensively treats missing numeric fields as 0
+ * and falls back to empty arrays for chart data to avoid render errors.
+ */
 function ProgressPage() {
   /**
    * Notes

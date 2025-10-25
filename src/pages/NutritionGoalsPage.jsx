@@ -30,6 +30,12 @@ import './NutritionGoalsPage.css';
  * @property {string|number} daily_water_goal_oz
  */
 
+/**
+ * NutritionGoalsPage
+ * Page that allows users to view and edit their daily nutrition goals.
+ * Defensive note: this component expects `user` from AuthContext; if the
+ * user is missing the save handler will early-return and show a message.
+ */
 function NutritionGoalsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -107,7 +113,10 @@ function NutritionGoalsPage() {
    * @async
    */
   const handleSaveGoals = async () => {
-    if (!user) return alert("You must be logged in.");
+    if (!user?.id) {
+      setMessage('You must be logged in.');
+      return alert("You must be logged in.");
+    }
 
     setMessage('Saving...');
     try {

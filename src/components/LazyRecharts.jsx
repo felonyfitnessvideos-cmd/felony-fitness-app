@@ -54,5 +54,6 @@ export default function LazyRecharts({ children, fallback = null }) {
 
   if (!rechartsModule) return fallback;
   // children is expected to be a function that receives the recharts module
+  if (typeof children !== 'function') return fallback;
   return children(rechartsModule);
 }

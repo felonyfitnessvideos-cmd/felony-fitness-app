@@ -39,6 +39,11 @@ import './NutritionLogPage.css';
  * @property {number} protein_g
  */
 
+/**
+ * NutritionLogPage
+ * Page for logging food and water. Includes robust timezone-aware queries and
+ * defensive guards against missing profile data or partial search results.
+ */
 function NutritionLogPage() {
   const { user } = useAuth();
   const userId = user?.id;

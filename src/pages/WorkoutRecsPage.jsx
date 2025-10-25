@@ -9,6 +9,12 @@ import { Dumbbell, Zap, Lightbulb } from 'lucide-react';
 import { useAuth } from '../AuthContext.jsx'; 
 import './WorkoutRecsPage.css';
 
+/**
+ * WorkoutRecsPage
+ * Page that lets the user request AI workout recommendations and displays
+ * the returned suggestions. Rendering logic defensively handles missing
+ * or partial recommendation objects from the edge function.
+ */
 function WorkoutRecsPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);

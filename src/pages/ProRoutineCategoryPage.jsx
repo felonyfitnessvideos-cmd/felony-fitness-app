@@ -77,7 +77,7 @@ function ProRoutineCategoryPage() {
     
     // Use a Map for efficient O(n) lookup instead of a nested loop.
     const nameById = new Map((data ?? []).map((d) => [d.id, d.name]));
-    const exercisesWithDetails = routine.exercises.map((ex) => {
+  const exercisesWithDetails = (routine.exercises || []).map((ex) => {
       // Derive the id from whichever field is present
       const id = ex?.exercise_id ?? ex?.id ?? ex?.exercises?.id;
       // Prefer any name already present on the routine object (e.g., when the
