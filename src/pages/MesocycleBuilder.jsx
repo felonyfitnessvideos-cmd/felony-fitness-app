@@ -81,7 +81,14 @@ function MesocycleBuilder() {
           if (!mounted) return;
           if (wdata && wdata.length > 0) {
             // map rows to assignments format expected by CycleWeekEditor
-            const mapped = wdata.map(w => ({ week_index: w.week_index, day_index: w.day_index, type: w.notes === 'rest' || w.notes === 'deload' ? w.notes : (w.routine_id ? 'routine' : 'routine'), routine_id: w.routine_id }));
+            // Notes -> 'rest'|'deload', otherwise 'routine' when routine_id exists,
+            // otherwise default to 'rest' for empty rows.
+            const mapped = wdata.map(w => ({
+              week_index: w.week_index,
+              day_index: w.day_index,
+              type: (w.notes === 'rest' || w.notes === 'deload') ? w.notes : (w.routine_id ? 'routine' : 'rest'),
+              routine_id: w.routine_id
+            }));
             setAssignments(mapped);
           }
         }

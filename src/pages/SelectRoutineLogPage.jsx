@@ -34,6 +34,14 @@ import './SelectRoutineLogPage.css';
  */
 function SelectRoutineLogPage() {
   /**
+   * Notes
+   * - Some Supabase setups may not return relation counts when RLS or select
+   *   permissions differ. The UI defensively treats the exercise count as
+   *   optional and falls back to 0 when missing.
+   * - Keep the fetch logic lean: prefer explicit selects if this component
+   *   needs additional nested data later.
+   */
+  /**
    * @state
    * @description Accesses the authenticated user's data from the global AuthContext.
    */

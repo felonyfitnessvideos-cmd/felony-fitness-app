@@ -1,7 +1,33 @@
 /**
- * AuthContext
- * Provides React context for Supabase authentication state across the app.
- * Exposes `session`, `user`, and `loading` so components can react to auth changes.
+ * @file AuthContext.jsx
+ * @description
+ * Provides a React Context wrapper around the Supabase authentication client
+ * and exposes a small, stable surface for the rest of the application:
+ *  - session: the Supabase session object or null
+ *  - user: the Supabase user object or null
+ *  - loading: boolean flag while session state is being resolved
+ *
+ * Responsibilities & contracts:
+ * - Initialize the session on first mount using `supabase.auth.getSession()`.
+ * - Subscribe to Supabase auth state changes and surface them via context.
+ * - Never throw — errors while reading session are logged and result in an
+ *   empty session/user state so the app can still render and present auth
+ *   flows to the user.
+ *
+ * Notes / Edge cases:
+ * - Supabase emits multiple events (INITIAL_SESSION, SIGNED_IN, SIGNED_OUT,
+ *   TOKEN_REFRESHED). We normalize these into the `session`/`user` values.
+ * - To avoid synchronous cleanup issues when Supabase calls the callback from
+ *   an internal event, we defer some state updates using setTimeout
+ *   (microtask/macrotask separation) — this prevents accidental synchronous
+ *   access to now-stale closures.
+ *
+ * Export:
+ * - AuthProvider({children}) — React provider component
+ * - useAuth() — hook returning { session, user, loading }
+ *
+ * TODO (coderabbit): verify whether additional user metadata (profiles)
+ * should be eagerly loaded here to reduce duplicate fetches across pages.
  */
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useEffect, useContext } from 'react';
@@ -58,7 +84,11 @@ export function AuthProvider({ children }) {
     // Cleanup the subscription on component unmount
     return () => {
       mounted = false;
-      subscription?.unsubscribe();
+      try {
+        if (subscription && typeof subscription.unsubscribe === 'function') subscription.unsubscribe();
+      } catch (e) {
+        console.debug('AuthProvider: failed to unsubscribe', e);
+      }
     };
   }, []);
 

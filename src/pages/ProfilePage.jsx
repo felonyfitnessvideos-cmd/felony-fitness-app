@@ -68,6 +68,15 @@ const calculateAge = (dob) => {
 function ProfilePage() {
   const { user } = useAuth(); // Custom hook to get the authenticated user.
   const userId = user?.id;
+
+  /**
+   * Notes
+   * - The `user_profiles` select may return no rows for new users; the code
+   *   intentionally treats that as a valid state and forces profile editing.
+   * - The fetchData function ignores the PostgREST 'no row found' sentinel
+   *   (PGRST116) as a non-error. If your Supabase setup returns a different
+   *   error code, adjust the conditional accordingly.
+   */
   
   // State for the metric logging form
   const [weight, setWeight] = useState('');
@@ -75,7 +84,9 @@ function ProfilePage() {
   const [message, setMessage] = useState(''); // Feedback message for metric form
 
   // State for user profile data and form
-  const [profile, setProfile] = useState({ dob: '', sex: '' });
+  // profile may include additional optional fields depending on the DB migration
+  // (e.g. diet_preference). We default them here to avoid uncontrolled inputs.
+  const [profile, setProfile] = useState({ dob: '', sex: '', diet_preference: '' });
   const [age, setAge] = useState(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileMessage, setProfileMessage] = useState(''); // Feedback message for profile form
@@ -96,7 +107,10 @@ function ProfilePage() {
       // Fetch metrics and profile concurrently for better performance.
       const [metricsRes, profileRes] = await Promise.all([
         supabase.from('body_metrics').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
-        supabase.from('user_profiles').select('dob, sex').eq('id', userId).single()
+  // Request diet_preference if present in the schema; if the column doesn't
+  // exist the request will either return no data or an error which we
+  // handle below (PGRST116 = no row found).
+  supabase.from('user_profiles').select('dob, sex, diet_preference').eq('id', userId).single()
       ]);
 
       const { data: metricsData, error: metricsError } = metricsRes;
@@ -108,7 +122,7 @@ function ProfilePage() {
       if (profileError && profileError.code !== 'PGRST116') throw profileError;
       
       if (profileData) {
-        setProfile({ dob: profileData.dob || '', sex: profileData.sex || '' });
+  setProfile({ dob: profileData.dob || '', sex: profileData.sex || '', diet_preference: profileData.diet_preference || '' });
         setAge(calculateAge(profileData.dob));
         // Force editing mode if profile is incomplete.
         setIsEditingProfile(!profileData.dob || !profileData.sex);
@@ -165,7 +179,7 @@ function ProfilePage() {
     // Upsert ensures a new record is created if none exists, or updated if it does.
     const { error } = await supabase
       .from('user_profiles')
-      .upsert({ id: user.id, dob: profile.dob, sex: profile.sex });
+      .upsert({ id: user.id, dob: profile.dob, sex: profile.sex, diet_preference: profile.diet_preference });
       
     if (error) {
       setProfileMessage(error.message);
@@ -246,6 +260,16 @@ function ProfilePage() {
                 </select>
               </div>
             </div>
+              <div className="form-group">
+                <label htmlFor="diet_preference">Diet Preference</label>
+                <div className="input-with-icon">
+                  <select id="diet_preference" name="diet_preference" value={profile.diet_preference} onChange={handleProfileChange}>
+                    <option value="">None</option>
+                    <option value="Vegetarian">Vegetarian</option>
+                    <option value="Vegan">Vegan</option>
+                  </select>
+                </div>
+              </div>
             {/* Live region for profile messages */}
             <div className="form-message" role="status" aria-live="polite" aria-atomic="true">{profileMessage || ''}</div>
             <button type="submit" className="save-button">Save Profile</button>
@@ -260,6 +284,10 @@ function ProfilePage() {
             <div className="profile-stat">
               <span className="label">Sex</span>
               <span className="value">{profile.sex || 'N/A'}</span>
+            </div>
+            <div className="profile-stat">
+              <span className="label">Diet</span>
+              <span className="value">{profile.diet_preference || 'None'}</span>
             </div>
             <button className="edit-button" onClick={() => setIsEditingProfile(true)}>
               <EditIcon size={16} /> Edit

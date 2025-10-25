@@ -24,6 +24,12 @@ import './WorkoutsPage.css';
  * @returns {JSX.Element} The WorkoutsPage component.
  */
 function WorkoutsPage() {
+  /**
+   * Notes
+   * - This is an intentionally simple navigation hub. Keep network-heavy
+   *   operations out of this component to avoid doubling requests when users
+   *   navigate quickly between sub-pages.
+   */
   return (
     <div className="workouts-container">
       <SubPageHeader title="Workouts" icon={<Dumbbell size={28} />} iconColor="#f97316" backTo="/dashboard" />

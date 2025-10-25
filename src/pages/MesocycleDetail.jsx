@@ -109,7 +109,7 @@ function MesocycleDetail() {
         setMesocycle(m || null);
 
   // load mesocycle_week assignments so we can render week layouts even when no sessions exist
-  const { data: weeksRows } = await supabase.from('mesocycle_weeks').select('*').eq('mesocycle_id', mesocycleId).order('week_index,day_index');
+  const { data: weeksRows } = await supabase.from('mesocycle_weeks').select('*').eq('mesocycle_id', mesocycleId).order('week_index', { ascending: true }).order('day_index', { ascending: true });
   setWeeksData(weeksRows || []);
         // also load routine names referenced by this mesocycle via mesocycle_weeks
         const routineIds = Array.from(new Set((weeksRows || []).map(w => w.routine_id).filter(Boolean)));

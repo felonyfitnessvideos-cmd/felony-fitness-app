@@ -39,8 +39,13 @@ function NutritionPage() {
       try {
         const { data, error } = await supabase.rpc('get_random_tip');
         if (error) throw error; // Propagate the error to the catch block.
-        if (data && data.length > 0) {
+        // RPCs sometimes return a single object or an array depending on
+        // server-side implementation. Handle both shapes safely.
+        if (!data) return;
+        if (Array.isArray(data) && data.length > 0) {
           setDailyTip(data[0].tip_text);
+        } else if (data.tip_text) {
+          setDailyTip(data.tip_text);
         }
       } catch (error) {
         console.error('Error fetching random tip:', error);

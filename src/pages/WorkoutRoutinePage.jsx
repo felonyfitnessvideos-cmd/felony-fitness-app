@@ -43,7 +43,7 @@ function WorkoutRoutinePage() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRoutines(data || []);
+      setRoutines(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching routines:', error);
     } finally {

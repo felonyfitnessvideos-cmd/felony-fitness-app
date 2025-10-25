@@ -159,12 +159,15 @@ function ProRoutineCategoryPage() {
             
             <h3>Exercises in this Routine:</h3>
             <ul className="modal-exercise-list">
-              {modalExercises.map((ex) => (
-                <li key={ex.exercise_id || ex.id}>
+              {modalExercises.map((ex, idx) => {
+                const key = ex?.exercise_id ?? ex?.id ?? ex?.exercises?.id ?? `idx-${idx}`;
+                return (
+                  <li key={key}>
                     <span className="exercise-name">{ex.name}</span>
                     <span className="exercise-sets">{ex.target_sets} sets</span>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
 
             <div className="modal-actions">

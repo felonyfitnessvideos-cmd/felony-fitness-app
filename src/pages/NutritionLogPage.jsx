@@ -56,7 +56,9 @@ function NutritionLogPage() {
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   /** @type {[SearchResult | null, React.Dispatch<React.SetStateAction<SearchResult | null>>]} */
   const [selectedFood, setSelectedFood] = useState(null);
-  const [quantity, setQuantity] = useState(1);
+  // Store quantity as a string to avoid mobile keyboards auto-inserting values
+  // when a numeric input is cleared. We sanitize and parse before submitting.
+  const [quantity, setQuantity] = useState('1');
   const [dailyTotals, setDailyTotals] = useState({
     calories: 0, protein: 0, water: 0
   });
@@ -231,12 +233,14 @@ function NutritionLogPage() {
     setSelectedFood(null);
     setSearchTerm('');
     setSearchResults([]);
-    setQuantity(1);
+    setQuantity('1');
   };
   
   const handleLogFood = async () => {
-    if (!selectedFood || !quantity || quantity <= 0 || isNaN(quantity) || !user) return;
-    
+    // Normalize quantity to a number for validation and payload.
+    const qty = typeof quantity === 'string' ? parseFloat(quantity) : quantity;
+    if (!selectedFood || !qty || qty <= 0 || Number.isNaN(qty) || !user) return;
+
     // NOTE: The `log_food_item` RPC function implicitly uses the current timestamp for `created_at`.
     // This is correct and doesn't need to be changed.
     let rpcParams;
@@ -245,7 +249,7 @@ function NutritionLogPage() {
       rpcParams = {
         p_user_id: user.id,
         p_meal_type: activeMeal,
-        p_quantity_consumed: quantity,
+        p_quantity_consumed: qty,
         p_external_food: {
           name: selectedFood.name,
           serving_description: selectedFood.serving_description,
@@ -258,7 +262,7 @@ function NutritionLogPage() {
       rpcParams = {
         p_user_id: user.id,
         p_meal_type: activeMeal,
-        p_quantity_consumed: quantity,
+        p_quantity_consumed: qty,
         p_food_serving_id: selectedFood.serving_id
       };
     }
@@ -404,13 +408,25 @@ function NutritionLogPage() {
                 <p>Serving: {selectedFood.serving_description} ({Math.round(selectedFood.calories)} cal)</p>
                 <div className="quantity-input">
                   <label htmlFor="quantity">Quantity</label>
-                  <input 
+                  <input
                     id="quantity"
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     value={quantity}
-                    onChange={(e) => setQuantity(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                    min="0.1"
-                    step="0.1"
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === '') {
+                        setQuantity('');
+                        return;
+                      }
+                      // Allow only digits and a single decimal point
+                      const sanitized = raw.replace(/[^0-9.]/g, '');
+                      const parts = sanitized.split('.');
+                      const normalized = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : sanitized;
+                      const parsed = parseFloat(normalized);
+                      setQuantity(Number.isNaN(parsed) ? '' : String(normalized));
+                    }}
                   />
                 </div>
             </div>
