@@ -53,6 +53,7 @@ const ProfilePage = React.lazy(() => import('./pages/ProfilePage.jsx'));
 const MesocyclesPage = React.lazy(() => import('./pages/MesocyclesPage.jsx'));
 const MesocycleBuilder = React.lazy(() => import('./pages/MesocycleBuilder.jsx'));
 const MesocycleDetail = React.lazy(() => import('./pages/MesocycleDetail.jsx'));
+const MesocycleLogPage = React.lazy(() => import('./pages/MesocycleLogPage.jsx'));
 
 // Binds the modal to the app's root element for accessibility (e.g., screen readers).
 Modal.setAppElement('#root'); 
@@ -106,6 +107,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/mesocycles" element={<MesocyclesPage />} />
               <Route path="/mesocycles/new" element={<MesocycleBuilder />} />
               <Route path="/mesocycles/:mesocycleId" element={<MesocycleDetail />} />
+              <Route path="/mesocycles/:mesocycleId/log" element={<MesocycleLogPage />} />
             </Route>
             </Routes>
             </React.Suspense>

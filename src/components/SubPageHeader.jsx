@@ -33,7 +33,7 @@ function SubPageHeader({ title, icon, iconColor = 'white', backTo }) {
       </button>
       
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-        {React.cloneElement(icon, { color: iconColor })}
+        {icon && React.isValidElement(icon) ? React.cloneElement(icon, { color: iconColor }) : null}
         <h1 style={{ fontSize: '1.75rem', fontWeight: '800', margin: 0 }}>{title}</h1>
       </div>
 

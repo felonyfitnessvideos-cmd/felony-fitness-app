@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import RestTimerModal from '../components/RestTimerModal.jsx';
@@ -71,6 +71,7 @@ function WorkoutLogPage() {
   const [isSuccessModalOpen, setSuccessModalOpen] = useState(false);
   const [shouldAdvance, setShouldAdvance] = useState(false);
   const [userWeightLbs, setUserWeightLbs] = useState(150);
+  const [sessionMeta, setSessionMeta] = useState(null);
   const [isWorkoutCompletable, setIsWorkoutCompletable] = useState(false);
 
   // Get the whole routine_exercise object (which includes target_sets and exercises)
@@ -81,6 +82,13 @@ function WorkoutLogPage() {
   
   // Get the target sets number from the object above
   const targetSets = useMemo(() => selectedRoutineExercise?.target_sets, [selectedRoutineExercise]);
+    // Adjust target sets according to deload multiplier when a mesocycle session is active
+    const adjustedTargetSets = useMemo(() => {
+      const base = Number(targetSets) || 0;
+      const mult = sessionMeta?.planned_volume_multiplier ?? 1;
+      if (!base) return 0;
+      return Math.max(1, Math.round(base * mult));
+    }, [targetSets, sessionMeta?.planned_volume_multiplier]);
 
   useEffect(() => {
     if (!selectedExercise) return;
@@ -108,18 +116,57 @@ function WorkoutLogPage() {
   // capture changing external values, add them to the dependency array and
   // update this rationale accordingly.
    
-  const fetchAndStartWorkout = useCallback(async (userId) => {
+  const location = useLocation();
+
+  const fetchAndStartWorkout = useCallback(async (userId, opts = {}) => {
     setLoading(true);
     try {
+      // If a mesocycle_session_id was provided in the URL, prefer the
+      // scheduled_date and routine referenced by that session to load the
+      // appropriate day's log for editing.
+      let currentRoutineId = routineId;
+      let scheduledDateFromSession = null;
+      if (opts.mesocycleSessionId) {
+        const { data: sess, error: sessErr } = await supabase.from('cycle_sessions').select('scheduled_date,routine_id,is_deload,planned_volume_multiplier').eq('id', opts.mesocycleSessionId).maybeSingle();
+        if (sessErr) console.warn('Could not load mesocycle session', sessErr);
+        if (sess) {
+          scheduledDateFromSession = sess.scheduled_date;
+          if (sess.routine_id) currentRoutineId = sess.routine_id;
+          // capture deload metadata for UI adjustments
+          setSessionMeta({ is_deload: !!sess.is_deload, planned_volume_multiplier: Number(sess.planned_volume_multiplier || 1) });
+        }
+      }
+
       // Step 1: Fetch the routine details first, ensuring exercises are correctly ordered.
       const { data: routineData, error: routineError } = await supabase
         .from('workout_routines')
         .select(`*, routine_exercises(target_sets, exercise_order, exercises(*, muscle_groups!muscle_group_id(name)))`)
-        .eq('id', routineId)
+        .eq('id', currentRoutineId)
         .order('exercise_order', { foreignTable: 'routine_exercises', ascending: true })
         .single();
 
       if (routineError) throw routineError;
+      // Some DB setups / RLS may prevent nested routine_exercises from returning.
+      // If routine_exercises is missing or empty, fetch them explicitly as a fallback.
+      if (!routineData) throw new Error('Routine not found');
+      console.debug('WorkoutLogPage: fetched routineData', routineData);
+      if (!routineData.routine_exercises || routineData.routine_exercises.length === 0) {
+        try {
+          const { data: reData, error: reErr } = await supabase
+            .from('routine_exercises')
+            .select('*, exercises(*, muscle_groups!muscle_group_id(name))')
+            .eq('routine_id', currentRoutineId)
+            .order('exercise_order', { ascending: true });
+          console.debug('WorkoutLogPage: fallback routine_exercises result', { reData, reErr });
+          if (!reErr && reData) {
+            routineData.routine_exercises = reData;
+          } else if (reErr) {
+            console.warn('Could not load routine_exercises fallback:', reErr);
+          }
+        } catch (err) {
+          console.warn('Fallback fetch for routine_exercises failed:', err?.message ?? err);
+        }
+      }
       setRoutine(routineData);
 
       // Step 2: Fetch the "Last Time" data using the routineId BEFORE creating today's log.
@@ -150,19 +197,26 @@ function WorkoutLogPage() {
         setPreviousLog(prevLogMap);
       }
 
-      // Step 3: Now, find or create today's workout log using the `created_at` timestamp.
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
-
-      const startOfTomorrow = new Date(startOfToday);
+  // Step 3: Determine the day range we want to open/create a log for.
+      // If a mesocycle session was specified, use its scheduled_date; otherwise use today.
+      let targetDate = scheduledDateFromSession || (new URLSearchParams(location.search).get('date')) || null;
+      let startOfDay = new Date();
+      if (targetDate) {
+        // Normalize string date to midnight
+        const parts = (targetDate || '').toString().split('-').map((p) => Number(p));
+        if (parts.length >= 3) startOfDay = new Date(parts[0], parts[1] - 1, parts[2]);
+        else startOfDay = new Date(targetDate);
+      }
+      startOfDay.setHours(0,0,0,0);
+      const startOfTomorrow = new Date(startOfDay);
       startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
       const { data: todaysLogsData, error: todaysLogsError } = await supabase
         .from('workout_logs')
-        .select('id, is_complete, workout_log_entries(*)')
+        .select('id, is_complete, created_at, workout_log_entries(*)')
         .eq('user_id', userId)
-        .eq('routine_id', routineId)
-        .gte('created_at', startOfToday.toISOString())
+        .eq('routine_id', currentRoutineId)
+        .gte('created_at', startOfDay.toISOString())
         .lt('created_at', startOfTomorrow.toISOString());
 
       if (todaysLogsError) throw todaysLogsError;
@@ -183,34 +237,83 @@ function WorkoutLogPage() {
       if (activeLog) {
         currentLogId = activeLog.id;
       } else {
-        const { data: newLog, error: newLogError } = await supabase.from('workout_logs').insert({ 
-          user_id: userId, 
-          routine_id: routineId, 
+        // Create a new log for that scheduled day. We set created_at to the
+        // scheduled date so this log is associated with the mesocycle session.
+        const payload = {
+          user_id: userId,
+          routine_id: currentRoutineId,
           is_complete: false,
-        }).select('id').single();
+          // NOTE: Do NOT set `created_at` to the scheduled day's midnight. That
+          // was causing incorrect duration calculations because the workout's
+          // real start time (now) would be compared against a midnight timestamp
+          // resulting in multi-hour durations. Let the DB set `created_at` to
+          // the current timestamp (or omit it) and link to the scheduled
+          // session via `cycle_session_id` when available.
+        };
+        // Try to see if there's a cycle_session for this user/routine/date so we can link the log
+        const { data: matchingSession } = await supabase.from('cycle_sessions').select('id,mesocycle_id').eq('user_id', userId).eq('routine_id', currentRoutineId).eq('scheduled_date', startOfDay.toISOString().slice(0,10)).maybeSingle();
+        if (matchingSession && matchingSession.id) payload.cycle_session_id = matchingSession.id;
+
+        // Avoid selecting 'cycle_session_id' here in case the DB migration hasn't been applied yet.
+        // We'll attach the session id separately if needed.
+        const { data: newLog, error: newLogError } = await supabase.from('workout_logs').insert(payload).select('id').single();
         if (newLogError) throw newLogError;
         currentLogId = newLog.id;
+        // if we linked a session, expose session meta so finish handler can use it
+        if (matchingSession && matchingSession.id) {
+          setSessionMeta(prev => ({ ...(prev || {}), id: matchingSession.id, mesocycle_id: matchingSession.mesocycle_id }));
+        }
       }
       setWorkoutLogId(currentLogId);
 
-      // Fetch user's weight for calorie calculation
+      // If we found an existing active log but it didn't have cycle_session_id set,
+      // attempt to attach it so later finish updates can find the session.
+      if (activeLog && currentLogId) {
+        try {
+          const { data: existingLog } = await supabase.from('workout_logs').select('id,cycle_session_id').eq('id', currentLogId).maybeSingle();
+          if (existingLog && !existingLog.cycle_session_id) {
+            const { data: matchingSession2 } = await supabase.from('cycle_sessions').select('id,mesocycle_id').eq('user_id', userId).eq('routine_id', currentRoutineId).eq('scheduled_date', startOfDay.toISOString().slice(0,10)).maybeSingle();
+            if (matchingSession2 && matchingSession2.id) {
+              // wrap update in try/catch in case the column doesn't exist on the DB yet
+              try {
+                await supabase.from('workout_logs').update({ cycle_session_id: matchingSession2.id }).eq('id', currentLogId);
+                setSessionMeta(prev => ({ ...(prev || {}), id: matchingSession2.id, mesocycle_id: matchingSession2.mesocycle_id }));
+              } catch (err) {
+                // ignore missing column errors (42703) and continue
+                if (err?.code && err.code !== '42703') console.warn('Failed to attach cycle_session_id to existing log:', err);
+              }
+            }
+          }
+        } catch (err) {
+          // If selecting cycle_session_id or querying cycle_sessions fails because migrations aren't applied,
+          // just ignore and continue — the UI can still log sets and finish the workout.
+          if (err?.code && err.code !== '42703') console.warn('Could not check/attach existing log session:', err);
+        }
+      }
+
+  // Fetch user's weight for calorie calculation
       const { data: metricsData } = await supabase.from('body_metrics').select('weight_lbs').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).single();
       if (metricsData) setUserWeightLbs(metricsData.weight_lbs);
+
+  // If no explicit session meta set, clear it
+  if (!opts.mesocycleSessionId) setSessionMeta(null);
 
     } catch (error) {
       console.error("A critical error occurred while fetching workout data:", error);
     } finally {
       setLoading(false);
     }
-  }, [routineId]);
+  }, [routineId, location.search]);
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const mesocycleSessionId = params.get('mesocycle_session_id');
     if (userId) {
-      fetchAndStartWorkout(userId);
+      fetchAndStartWorkout(userId, { mesocycleSessionId });
     } else {
       setLoading(false);
     }
-  }, [userId, routineId, fetchAndStartWorkout]);
+  }, [userId, routineId, fetchAndStartWorkout, location.search]);
 
   const fetchChartDataForExercise = useCallback(async (metric, exerciseId) => {
     if (!userId || !exerciseId) return;
@@ -269,9 +372,10 @@ function WorkoutLogPage() {
     
     const targetSets = routine.routine_exercises[selectedExerciseIndex]?.target_sets;
     const completedSets = newTodaysLog[selectedExercise.id].length;
+    const adjusted = Math.max(1, Math.round((Number(targetSets) || 0) * (sessionMeta?.planned_volume_multiplier ?? 1)));
     const isLastExercise = selectedExerciseIndex === routine.routine_exercises.length - 1;
     
-    if (targetSets && completedSets >= targetSets) {
+    if (adjusted && completedSets >= adjusted) {
       if (isLastExercise) {
         setIsWorkoutCompletable(true);
       } else {
@@ -319,6 +423,24 @@ function WorkoutLogPage() {
       const { error: updateError } = await supabase.from('workout_logs').update(updatePayload).eq('id', workoutLogId);
       if (updateError) throw updateError;
       
+      // Also mark cycle_session as complete if this log is associated with one
+      try {
+        // Prefer sessionMeta.id if available
+        if (sessionMeta?.id) {
+          await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', sessionMeta.id);
+        } else {
+          // fallback: find cycle_session by user, routine and date
+          const startDateStr = new Date(logData.created_at).toISOString().slice(0,10);
+          const { data: found } = await supabase.from('cycle_sessions').select('id').eq('user_id', userId).eq('routine_id', routineId).eq('scheduled_date', startDateStr).maybeSingle();
+          if (found && found.id) {
+            await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', found.id);
+          }
+        }
+      } catch (err) {
+        // ignore missing-column errors (42703) if migrations haven't been applied yet
+        if (err?.code && err.code !== '42703') console.warn('Could not mark cycle_session complete:', err?.message ?? err);
+      }
+
       setSuccessModalOpen(true);
     } catch (error) {
       alert(`Error finishing workout: ${error.message}`);
@@ -370,9 +492,14 @@ function WorkoutLogPage() {
 
   if (loading) return <div className="loading-message">Loading Workout...</div>;
 
+  // Allow an optional returnTo query param so callers (like mesocycle log) can
+  // control where the back button should go after viewing/editing a session.
+  const queryParams = new URLSearchParams(location.search);
+  const returnTo = queryParams.get('returnTo') || '/workouts/select-routine-log';
+
   return (
     <div className="workout-log-page-container">
-      <SubPageHeader title={routine?.routine_name || 'Workout'} icon={<Dumbbell size={28} />} iconColor="#f97316" backTo="/workouts/select-routine-log" />
+      <SubPageHeader title={routine?.routine_name || 'Workout'} icon={<Dumbbell size={28} />} iconColor="#f97316" backTo={returnTo} />
       
       <div className="log-toggle-header">
         <div className="log-toggle">
@@ -392,10 +519,16 @@ function WorkoutLogPage() {
       {/* --- This JSX remains the same, but will now use the new function --- */}
       <h2 className="current-exercise-name">
         {selectedExercise?.name}
-        {targetSets > 0 && (
+        {adjustedTargetSets > 0 && (
           <span className="set-count-subtitle">
-            &nbsp;- {formatSetCount(targetSets)}
+            &nbsp;- {formatSetCount(adjustedTargetSets)}
+            {sessionMeta && sessionMeta.planned_volume_multiplier !== 1 && (
+              <em style={{ marginLeft: '0.5rem', fontWeight: 400, fontSize: '0.85rem' }}> (base: {formatSetCount(targetSets)})</em>
+            )}
           </span>
+        )}
+        {sessionMeta?.is_deload && (
+          <div style={{ marginLeft: '0.5rem', color: '#92400e', fontSize: '0.85rem' }}>Deload week — volume reduced</div>
         )}
       </h2>
       
@@ -403,13 +536,17 @@ function WorkoutLogPage() {
         <>
           <div className="log-inputs">
             <div className="input-group">
-              <label>Weight</label>
-              <input type="number" value={currentSet.weight} onChange={(e) => setCurrentSet(prev => ({...prev, weight: e.target.value}))} placeholder="0"/>
-            </div>
-            <div className="input-group">
-              <label>Reps</label>
-              <input type="number" value={currentSet.reps} onChange={(e) => setCurrentSet(prev => ({...prev, reps: e.target.value}))} placeholder="0"/>
-            </div>
+                <label>Weight</label>
+                {/* Use text + inputMode to avoid mobile numeric input quirks while still
+                    presenting a numeric keyboard. Sanitize to digits but allow empty
+                    string so users can clear the field without the browser forcing a
+                    default like `1`. */}
+                <input type="text" inputMode="numeric" pattern="[0-9]*" value={currentSet.weight} onChange={(e) => setCurrentSet(prev => ({...prev, weight: e.target.value.replace(/\D/g, '')}))} placeholder="0"/>
+              </div>
+              <div className="input-group">
+                <label>Reps</label>
+                <input type="text" inputMode="numeric" pattern="[0-9]*" value={currentSet.reps} onChange={(e) => setCurrentSet(prev => ({...prev, reps: e.target.value.replace(/\D/g, '')}))} placeholder="0"/>
+              </div>
           </div>
           <button className="save-set-button" onClick={handleSaveSet}>Save Set</button>
 
@@ -421,9 +558,9 @@ function WorkoutLogPage() {
                   <li key={set.id}>
                     {editingSet && editingSet.entryId === set.id ? (
                       <div className="edit-set-form">
-                        <input type="number" value={editSetValue.weight} onChange={(e) => setEditSetValue(prev => ({...prev, weight: e.target.value}))} />
+                        <input type="text" inputMode="numeric" pattern="[0-9]*" value={editSetValue.weight} onChange={(e) => setEditSetValue(prev => ({...prev, weight: e.target.value.replace(/\D/g, '')}))} />
                         <span>lbs x</span>
-                        <input type="number" value={editSetValue.reps} onChange={(e) => setEditSetValue(prev => ({...prev, reps: e.target.value}))} />
+                        <input type="text" inputMode="numeric" pattern="[0-9]*" value={editSetValue.reps} onChange={(e) => setEditSetValue(prev => ({...prev, reps: e.target.value.replace(/\D/g, '')}))} />
                         <button onClick={handleUpdateSet} className="edit-action-btn save"><Check size={16} /></button>
                         <button onClick={handleCancelEdit} className="edit-action-btn cancel"><X size={16} /></button>
                       </div>

@@ -32,6 +32,8 @@
 .main-content {
   flex-grow: 1; /* This is the key property: it tells this element to "grow" and fill all available vertical space not taken by the navbar. */
   overflow-y: auto; /* Enables vertical scrolling ONLY when the content is taller than the container. */
+  /* Ensure content can scroll above the fixed bottom nav. Add extra bottom padding to keep actions visible. */
+  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 0.5rem);
 
   /* The following rules hide the scrollbar for a cleaner, more native-app-like feel. */
   -ms-overflow-style: none;  /* For Internet Explorer and Edge */

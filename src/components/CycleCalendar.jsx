@@ -11,7 +11,7 @@ function formatDate(d) {
   try {
     const dt = new Date(d);
     return dt.toLocaleDateString();
-  } catch (e) {
+  } catch {
     return d;
   }
 }
