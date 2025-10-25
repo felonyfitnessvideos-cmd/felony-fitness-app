@@ -14,12 +14,12 @@ function SuccessModal({ isOpen, onClose, title, message }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <CheckCircle className="modal-icon" size={48} />
+        <CheckCircle className="modal-icon" size={48} aria-hidden="true" />
         <h2 className="modal-title">{title}</h2>
         <p className="modal-message">{message}</p>
-        <button className="modal-button" onClick={onClose}>
+        <button type="button" className="modal-button" onClick={onClose}>
           Continue
         </button>
       </div>

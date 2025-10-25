@@ -74,11 +74,17 @@ function MesocycleDetail() {
     setWeeksData(newWeeks);
 
     try {
+      // Ensure current user owns this mesocycle before persisting changes
+      if (!user || (mesocycle && mesocycle.user_id && mesocycle.user_id !== user.id)) {
+        // revert optimistic update and abort
+        setWeeksData(weeksData);
+        return;
+      }
       // persist swap to DB
       // update 'from' row to take 'to' values
-      const { error: e1 } = await supabase.from('mesocycle_weeks').update({ routine_id: to.routine_id, notes: to.notes, day_type: to.day_type }).eq('id', from.id);
+      const { error: e1 } = await supabase.from('mesocycle_weeks').update({ routine_id: to.routine_id, notes: to.notes, day_type: to.day_type }).eq('id', from.id).eq('user_id', user.id);
       if (e1) throw e1;
-      const { error: e2 } = await supabase.from('mesocycle_weeks').update({ routine_id: from.routine_id, notes: from.notes, day_type: from.day_type }).eq('id', to.id);
+      const { error: e2 } = await supabase.from('mesocycle_weeks').update({ routine_id: from.routine_id, notes: from.notes, day_type: from.day_type }).eq('id', to.id).eq('user_id', user.id);
       if (e2) throw e2;
     } catch (err) {
       console.error('Failed to swap days', err);
@@ -109,7 +115,7 @@ function MesocycleDetail() {
         setMesocycle(m || null);
 
   // load mesocycle_week assignments so we can render week layouts even when no sessions exist
-  const { data: weeksRows } = await supabase.from('mesocycle_weeks').select('*').eq('mesocycle_id', mesocycleId).order('week_index,day_index');
+  const { data: weeksRows } = await supabase.from('mesocycle_weeks').select('*').eq('mesocycle_id', mesocycleId).order('week_index', { ascending: true }).order('day_index', { ascending: true });
   setWeeksData(weeksRows || []);
         // also load routine names referenced by this mesocycle via mesocycle_weeks
         const routineIds = Array.from(new Set((weeksRows || []).map(w => w.routine_id).filter(Boolean)));

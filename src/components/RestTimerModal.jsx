@@ -55,12 +55,11 @@ function RestTimerModal({ isOpen, onClose, initialDuration = 60, isWorkoutComple
 
       const timer = setInterval(() => {
         setTimeLeft(prevTime => {
-          // When the timer is about to hit zero or less.
-          if (prevTime <= 1) {
-            clearInterval(timer);
-            onClose(); // Automatically close the modal.
-            return 0;
-          }
+            if (prevTime <= 1) {
+              clearInterval(timer);
+              if (typeof onClose === 'function') onClose(); // Automatically close the modal if provided.
+              return 0;
+            }
           return prevTime - 1;
         });
       }, 1000);
@@ -119,7 +118,7 @@ function RestTimerModal({ isOpen, onClose, initialDuration = 60, isWorkoutComple
         {/* Conditionally render controls based on workout completion status. */}
         {isWorkoutComplete ? (
           <div className="timer-controls">
-            <button onClick={onFinishWorkout} className="finish-workout-modal-btn">
+            <button onClick={() => typeof onFinishWorkout === 'function' && onFinishWorkout()} className="finish-workout-modal-btn" type="button">
               Finish Workout
             </button>
           </div>

@@ -5,6 +5,15 @@
  *  - scheduled_date (ISO date string)
  *  - name or title
  */
+/**
+ * Notes
+ * - `sessions` should be an array of objects where `scheduled_date` is an
+ *   ISO-formatted date string (YYYY-MM-DD or full timestamp). The component
+ *   groups sessions by the date portion (YYYY-MM-DD) and renders a small list
+ *   per day.
+ * - If sessions are missing or in an unexpected format the component will
+ *   render an empty state rather than throwing.
+ */
 import React from 'react';
 
 function formatDate(d) {

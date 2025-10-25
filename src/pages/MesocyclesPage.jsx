@@ -23,6 +23,12 @@
  * - Uses `supabase` client to query the `mesocycles` table. If the table does
  *   not exist (migration not applied) a helpful message is set in
  *   `errorMessage` to guide the developer/user to apply the migration.
+ *
+ * Notes
+ * - This page is read-only and intentionally uses a lightweight `select('*')`.
+ *   If you need to render nested relations later prefer explicit selects and
+ *   chained `.order()` calls for multi-column ordering to avoid driver
+ *   incompatibilities.
  * - Waits for `useAuth()` to resolve (auth loading) and renders an empty list
  *   for unauthenticated users.
  *
@@ -95,14 +101,15 @@ function MesocyclesPage() {
       <div className="mesocycles-list">
         {mesocycles.length === 0 && <p>No mesocycles yet.</p>}
         {mesocycles.map((m) => (
-          <div key={m.id} className="mesocycle-card">
+          <Link
+            key={m.id}
+            to={`/mesocycles/${m.id}`}
+            className="mesocycle-card"
+            aria-label={`Open mesocycle ${m.name || 'Untitled Mesocycle'}`}
+          >
             <h3>{m.name || 'Untitled Mesocycle'}</h3>
             <p>Focus: {m.focus || 'General'} — {m.weeks ?? 'n/a'} weeks</p>
-            <div className="card-actions">
-              <Link to={`/mesocycles/${m.id}`}>Open</Link>
-              <Link to={`/mesocycles/${m.id}/log`} className="btn small">Open Log</Link>
-            </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

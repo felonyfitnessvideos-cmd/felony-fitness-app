@@ -76,13 +76,15 @@ function EditRoutinePage() {
         
         if (data) {
             setRoutineName(data.routine_name);
-            const sortedExercises = data.routine_exercises.sort((a, b) => a.exercise_order - b.exercise_order);
+            const rawItems = Array.isArray(data.routine_exercises) ? data.routine_exercises : [];
+            const sortedExercises = rawItems.sort((a, b) => (a.exercise_order || 0) - (b.exercise_order || 0));
             const formattedExercises = sortedExercises.map(item => ({
-                ...item.exercises,
+                // Guard nested relation; some DB/RLS setups may omit nested `exercises`.
+                ...(item.exercises || {}),
                 sets: item.target_sets,
                 reps: '8-12',
             }));
-            setRoutineExercises(formattedExercises);
+            setRoutineExercises(formattedExercises.filter(Boolean));
         }
       }
     } catch (error) {

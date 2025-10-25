@@ -48,6 +48,15 @@ import './ProgressPage.css';
  */
 
 function ProgressPage() {
+  /**
+   * Notes
+   * - This page aggregates multiple data sources; some rows (nutrition logs,
+   *   workout logs) may be returned in different shapes depending on RLS and
+   *   relation selections. The code defensively guards missing fields and
+   *   treats absent numeric values as 0.
+   * - Date grouping is intentionally by local date (not UTC) to match user
+   *   expectations when they view daily trends on the client.
+   */
   const { user } = useAuth();
   const userId = user?.id;
   /** @type {[ProgressStats, React.Dispatch<React.SetStateAction<ProgressStats>>]} */

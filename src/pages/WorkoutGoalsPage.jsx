@@ -156,7 +156,8 @@ function WorkoutGoalsPage() {
             target_value: newGoal.target_value,
             target_date: newGoal.target_date,
           })
-          .eq('id', editingGoal.id);
+          .eq('id', editingGoal.id)
+          .eq('user_id', user.id); // Scope update to the current user for safety
         if (error) throw error;
       } else {
         const { error } = await supabase.from('goals').insert({ ...newGoal, user_id: user.id });

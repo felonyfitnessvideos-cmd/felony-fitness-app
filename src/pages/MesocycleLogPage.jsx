@@ -25,6 +25,17 @@
  *   attempt to render whatever data is available. Navigation still functions
  *   and will pass query params to the logger where applicable.
  *
+ * Note
+ * - Dates used to match `cycle_sessions` to `workout_logs` are normalized to
+ *   an explicit YYYY-MM-DD string to avoid timezone / timestamp format
+ *   mismatches between `scheduled_date` and `created_at` values. See the
+ *   TODO below for a reminder when auditing date handling.
+ *
+ * TODO
+ * - Ensure that server-side migrations use consistent date/timestamp types
+ *   (prefer `date` for scheduled_date and `timestamp with time zone` for
+ *   created_at) and confirm normalization assumptions here after migrating.
+ *
  * Export
  * - Default React component: `MesocycleLogPage()`
  */
@@ -43,6 +54,19 @@ function formatDateShort(d) {
   } catch { return d; }
 }
 
+// Normalize a date-like value to YYYY-MM-DD. Accepts Date, timestamp string,
+// or null/undefined. Returns empty string for invalid/missing dates.
+function toISODate(val) {
+  if (val === null || val === undefined) return '';
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return '';
+    return d.toISOString().slice(0, 10);
+  } catch (e) {
+    return '';
+  }
+}
+
 function MesocycleLogPage() {
   const { mesocycleId } = useParams();
   const { user } = useAuth();
@@ -53,6 +77,15 @@ function MesocycleLogPage() {
   const [routinesMap, setRoutinesMap] = useState({});
   const [logsMap, setLogsMap] = useState({});
   const [loading, setLoading] = useState(true);
+
+  /**
+   * Notes
+   * - Date matching between `cycle_sessions.scheduled_date` and
+   *   `workout_logs.created_at` uses YYYY-MM-DD normalization (see `toISODate`)
+   *   to avoid timezone mismatches. This is intentionally a client-side
+   *   compatibility layer; prefer using `date` for scheduled_date server-side
+   *   to avoid ambiguity.
+   */
 
   useEffect(() => {
     let mounted = true;
@@ -89,7 +122,7 @@ function MesocycleLogPage() {
           const { data: logs } = await supabase.from('workout_logs').select('id,routine_id,created_at,is_complete').eq('user_id', user.id).gte('created_at', minDate).lte('created_at', maxDate);
           const map = {};
           (logs || []).forEach(l => {
-            const key = `${l.routine_id}::${(new Date(l.created_at)).toISOString().slice(0,10)}`;
+            const key = `${l.routine_id}::${toISODate(l.created_at)}`;
             map[key] = l;
           });
           if (!mounted) return;
@@ -115,16 +148,17 @@ function MesocycleLogPage() {
     return grouped;
   }, [sessions]);
 
-  const todayISO = new Date().toISOString().slice(0,10);
+  const todayISO = toISODate(new Date());
 
   const currentSession = useMemo(() => {
     // next scheduled session on or after today that doesn't have a completed log
     for (const s of sessions) {
-      const key = `${s.routine_id}::${(s.scheduled_date||'').toString()}`;
+      const schedISO = toISODate(s.scheduled_date);
+      const key = `${s.routine_id}::${schedISO}`;
       const log = logsMap[key];
       if (!log || !log.is_complete) {
         // pick the first incomplete session whose scheduled_date >= today
-        if ((s.scheduled_date || '') >= todayISO) return s;
+        if (schedISO >= todayISO) return s;
       }
     }
     return null;
@@ -163,7 +197,7 @@ function MesocycleLogPage() {
             <div className="days-grid">
               {weeks[wk].map((s) => {
                 const label = routinesMap[s.routine_id] || (s.notes || s.status) || 'Rest';
-                const key = `${s.routine_id}::${(s.scheduled_date||'').toString()}`;
+                const key = `${s.routine_id}::${toISODate(s.scheduled_date)}`;
                 const completed = !!(logsMap[key] && logsMap[key].is_complete);
                 const isDeload = !!(s.is_deload) || s.status === 'deload' || s.notes === 'deload' || s.day_type === 'deload';
                 return (

@@ -2,6 +2,14 @@
  * @file CycleWeekEditor.jsx
  * @description Small UI to show a grid of weeks and allow assigning routines per week.
  * This is a lightweight placeholder used by the MesocycleBuilder scaffold.
+ *
+ * Notes
+ * - The editor auto-assigns deload weeks for Strength/Hypertrophy by default
+ *   (every 5th week). It emits assignments as an array of objects with shape:
+ *   { week_index, day_index, type: 'routine'|'rest'|'deload', routine_id }
+ * - The component gracefully handles cases where the user's routines cannot be
+ *   loaded (e.g., permissions or missing data) by leaving the select options
+ *   limited to 'rest' and 'deload' where applicable.
  */
 
 import React, { useEffect, useState } from 'react';

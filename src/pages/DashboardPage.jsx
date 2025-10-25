@@ -149,6 +149,14 @@ function DashboardPage() {
       setLoading(false);
     }
   }, [userId, fetchDashboardData]);
+
+  /**
+   * Notes
+   * - Some queries return arrays even when selecting a single row; other
+   *   times `.single()` is appropriate. We've opted to defensively handle
+   *   both shapes in `fetchDashboardData` and default to sensible fallbacks
+   *   when data is missing.
+   */
   
   const handleLogout = async () => {
     await supabase.auth.signOut();

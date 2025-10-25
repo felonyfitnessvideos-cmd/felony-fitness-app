@@ -17,6 +17,14 @@ import './SelectProRoutinePage.css';
  * @description Renders a grid of cards, each representing a category of "Pro Routines".
  */
 function SelectProRoutinePage() {
+  /**
+   * Notes
+   * - Category names may contain spaces; routes use `encodeURIComponent` to
+   *   keep URLs safe. If you add new categories, ensure the router path
+   *   matches the link format used here.
+   * - Icons are decorative; avoid embedding user content into icon elements
+   *   to prevent XSS surface area.
+   */
   // Array of category objects to generate the navigation cards dynamically.
   const categories = [
     { name: 'Strength', icon: <Dumbbell size={40} className="card-icon" />, link: '/workouts/routines/pro-category/Strength' },

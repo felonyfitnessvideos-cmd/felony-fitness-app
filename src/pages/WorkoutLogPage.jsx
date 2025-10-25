@@ -4,7 +4,7 @@
  * @project Felony Fitness
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
@@ -45,6 +45,19 @@ const formatSetCount = (num) => {
  * @property {number} value
  */
 
+/**
+ * Top-level notes
+ * - This page coordinates reading a routine, opening or creating a `workout_logs`
+ *   row for the selected day, and managing `workout_log_entries` for each
+ *   exercise. It relies on several server-side RPCs (`get_entries_for_last_session`,
+ *   `delete_workout_set`, `update_workout_set`) to enforce security rules.
+ * - Error modes: network/permission/migration failures are intentionally
+ *   tolerated where possible; critical failures surface an alert or console
+ *   error. Where DB columns may not exist during staged deploys (e.g.,
+ *   `cycle_session_id`) we wrap updates in try/catch and ignore missing-column
+ *   errors to preserve user flow.
+ */
+
 function WorkoutLogPage() {
   const { routineId } = useParams();
   const navigate = useNavigate();
@@ -73,6 +86,9 @@ function WorkoutLogPage() {
   const [userWeightLbs, setUserWeightLbs] = useState(150);
   const [sessionMeta, setSessionMeta] = useState(null);
   const [isWorkoutCompletable, setIsWorkoutCompletable] = useState(false);
+  const [saveSetLoading, setSaveSetLoading] = useState(false);
+  const [rpcLoading, setRpcLoading] = useState(false);
+  const isMountedRef = useRef(true);
 
   // Get the whole routine_exercise object (which includes target_sets and exercises)
   const selectedRoutineExercise = useMemo(() => routine?.routine_exercises[selectedExerciseIndex], [routine, selectedExerciseIndex]);
@@ -90,6 +106,13 @@ function WorkoutLogPage() {
       return Math.max(1, Math.round(base * mult));
     }, [targetSets, sessionMeta?.planned_volume_multiplier]);
 
+  useEffect(() => {
+    // track mounted state to avoid calling setState on an unmounted component
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
+
+  // Ensure the current selected exercise resets currentSet when logs change
   useEffect(() => {
     if (!selectedExercise) return;
 
@@ -271,12 +294,15 @@ function WorkoutLogPage() {
       if (activeLog && currentLogId) {
         try {
           const { data: existingLog } = await supabase.from('workout_logs').select('id,cycle_session_id').eq('id', currentLogId).maybeSingle();
-          if (existingLog && !existingLog.cycle_session_id) {
+            if (existingLog && !existingLog.cycle_session_id) {
             const { data: matchingSession2 } = await supabase.from('cycle_sessions').select('id,mesocycle_id').eq('user_id', userId).eq('routine_id', currentRoutineId).eq('scheduled_date', startOfDay.toISOString().slice(0,10)).maybeSingle();
             if (matchingSession2 && matchingSession2.id) {
               // wrap update in try/catch in case the column doesn't exist on the DB yet
               try {
-                await supabase.from('workout_logs').update({ cycle_session_id: matchingSession2.id }).eq('id', currentLogId);
+                // Ensure we only update rows owned by the current user
+                if (userId) {
+                  await supabase.from('workout_logs').update({ cycle_session_id: matchingSession2.id }).eq('id', currentLogId).eq('user_id', userId);
+                }
                 setSessionMeta(prev => ({ ...(prev || {}), id: matchingSession2.id, mesocycle_id: matchingSession2.mesocycle_id }));
               } catch (err) {
                 // ignore missing column errors (42703) and continue
@@ -301,7 +327,7 @@ function WorkoutLogPage() {
     } catch (error) {
       console.error("A critical error occurred while fetching workout data:", error);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
     }
   }, [routineId, location.search]);
 
@@ -354,6 +380,8 @@ function WorkoutLogPage() {
 
   const handleSaveSet = async () => {
     if (!currentSet.reps || !currentSet.weight || !workoutLogId || !selectedExercise) return;
+    if (saveSetLoading) return; // prevent double submits
+    setSaveSetLoading(true);
     const newSetPayload = {
       log_id: workoutLogId,
       exercise_id: selectedExercise.id,
@@ -363,7 +391,8 @@ function WorkoutLogPage() {
     };
     const { data: newEntry, error } = await supabase.from('workout_log_entries').insert(newSetPayload).select().single();
     if (error) {
-      alert("Could not save set. Please try again.");
+      alert("Could not save set. Please try again." + (error?.message ? ` (${error.message})` : ''));
+      setSaveSetLoading(false);
       return;
     }
     
@@ -384,6 +413,7 @@ function WorkoutLogPage() {
     }
     
     setIsTimerOpen(true);
+    setSaveSetLoading(false);
   };
 
   const handleTimerClose = () => {
@@ -420,20 +450,22 @@ function WorkoutLogPage() {
         calories_burned 
       };
       
-      const { error: updateError } = await supabase.from('workout_logs').update(updatePayload).eq('id', workoutLogId);
+  // Ensure the update is scoped to the current user for safety.
+  const { error: updateError } = await supabase.from('workout_logs').update(updatePayload).eq('id', workoutLogId).eq('user_id', userId);
       if (updateError) throw updateError;
       
       // Also mark cycle_session as complete if this log is associated with one
       try {
         // Prefer sessionMeta.id if available
         if (sessionMeta?.id) {
-          await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', sessionMeta.id);
+          // Mark session complete only if it belongs to the current user
+          if (userId) await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', sessionMeta.id).eq('user_id', userId);
         } else {
           // fallback: find cycle_session by user, routine and date
           const startDateStr = new Date(logData.created_at).toISOString().slice(0,10);
           const { data: found } = await supabase.from('cycle_sessions').select('id').eq('user_id', userId).eq('routine_id', routineId).eq('scheduled_date', startDateStr).maybeSingle();
           if (found && found.id) {
-            await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', found.id);
+            await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', found.id).eq('user_id', userId);
           }
         }
       } catch (err) {
@@ -454,14 +486,20 @@ function WorkoutLogPage() {
 
   /** Deletes a specific set from the current log securely. */
   const handleDeleteSet = async (entryId) => {
-    // SECURITY FIX: Call the secure RPC function.
-    const { error } = await supabase.rpc('delete_workout_set', { p_entry_id: entryId });
-    if (error) {
-      console.error("Secure delete failed:", error);
-      return alert("Could not delete set.");
+    if (rpcLoading) return;
+    setRpcLoading(true);
+    try {
+      // SECURITY FIX: Call the secure RPC function.
+      const { error } = await supabase.rpc('delete_workout_set', { p_entry_id: entryId });
+      if (error) {
+        console.error("Secure delete failed:", error);
+        return alert("Could not delete set." + (error?.message ? ` (${error.message})` : ''));
+      }
+      // Refetch to ensure UI consistency, only if still mounted.
+      if (userId && isMountedRef.current) await fetchAndStartWorkout(userId);
+    } finally {
+      if (isMountedRef.current) setRpcLoading(false);
     }
-  // Refetch to ensure UI consistency.
-  if (userId) await fetchAndStartWorkout(userId);
   };
 
   /** Enters "edit mode" for a specific set. */
@@ -473,19 +511,25 @@ function WorkoutLogPage() {
   /** Saves the updated values for a set being edited securely. */
   const handleUpdateSet = async () => {
     if (!editingSet) return;
-    // SECURITY FIX: Call the secure RPC function.
-    const { error } = await supabase.rpc('update_workout_set', {
-      p_entry_id: editingSet.entryId,
-      p_weight: parseInt(editSetValue.weight, 10),
-      p_reps: parseInt(editSetValue.reps, 10)
-    });
-    
-    if (error) {
-      console.error("Secure update failed:", error);
-      return alert("Could not update set.");
+    if (rpcLoading) return;
+    setRpcLoading(true);
+    try {
+      // SECURITY FIX: Call the secure RPC function.
+      const { error } = await supabase.rpc('update_workout_set', {
+        p_entry_id: editingSet.entryId,
+        p_weight: parseInt(editSetValue.weight, 10),
+        p_reps: parseInt(editSetValue.reps, 10)
+      });
+
+      if (error) {
+        console.error("Secure update failed:", error);
+        return alert("Could not update set." + (error?.message ? ` (${error.message})` : ''));
+      }
+      if (isMountedRef.current) setEditingSet(null);
+      if (userId && isMountedRef.current) await fetchAndStartWorkout(userId);
+    } finally {
+      if (isMountedRef.current) setRpcLoading(false);
     }
-  setEditingSet(null);
-  if (userId) await fetchAndStartWorkout(userId);
   };
 
   const handleCancelEdit = () => setEditingSet(null);
@@ -548,7 +592,7 @@ function WorkoutLogPage() {
                 <input type="text" inputMode="numeric" pattern="[0-9]*" value={currentSet.reps} onChange={(e) => setCurrentSet(prev => ({...prev, reps: e.target.value.replace(/\D/g, '')}))} placeholder="0"/>
               </div>
           </div>
-          <button className="save-set-button" onClick={handleSaveSet}>Save Set</button>
+          <button className="save-set-button" onClick={handleSaveSet} disabled={saveSetLoading}>{saveSetLoading ? 'Saving...' : 'Save Set'}</button>
 
           <div className="log-history-container">
             <div className="log-history-column">
@@ -561,15 +605,15 @@ function WorkoutLogPage() {
                         <input type="text" inputMode="numeric" pattern="[0-9]*" value={editSetValue.weight} onChange={(e) => setEditSetValue(prev => ({...prev, weight: e.target.value.replace(/\D/g, '')}))} />
                         <span>lbs x</span>
                         <input type="text" inputMode="numeric" pattern="[0-9]*" value={editSetValue.reps} onChange={(e) => setEditSetValue(prev => ({...prev, reps: e.target.value.replace(/\D/g, '')}))} />
-                        <button onClick={handleUpdateSet} className="edit-action-btn save"><Check size={16} /></button>
-                        <button onClick={handleCancelEdit} className="edit-action-btn cancel"><X size={16} /></button>
+                        <button onClick={handleUpdateSet} className="edit-action-btn save" disabled={rpcLoading}><Check size={16} /></button>
+                        <button onClick={handleCancelEdit} className="edit-action-btn cancel" disabled={rpcLoading}><X size={16} /></button>
                       </div>
                     ) : (
                       <>
                         <span>{set.weight_lifted_lbs} lbs x {set.reps_completed}</span>
                         <div className="set-actions">
-                          <button onClick={() => handleEditSetClick(set)}><Edit2 size={14}/></button>
-                          <button onClick={() => handleDeleteSet(set.id)}><Trash2 size={14}/></button>
+                          <button onClick={() => handleEditSetClick(set)} disabled={rpcLoading}><Edit2 size={14}/></button>
+                          <button onClick={() => handleDeleteSet(set.id)} disabled={rpcLoading}><Trash2 size={14}/></button>
                         </div>
                       </>
                     )}

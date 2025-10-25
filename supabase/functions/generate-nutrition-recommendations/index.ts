@@ -16,7 +16,7 @@ declare const Deno: {
 
 // @ts-expect-error: CDN ESM import used in Deno runtime; local types are not available.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../_shared/cors';
+import { corsHeaders } from '../_shared/cors.ts';
 
 const OPENAI_API_KEY: string | undefined = Deno.env.get('OPENAI_API_KEY');
 
@@ -26,6 +26,7 @@ interface UserProfile {
   sex?: string | null;
   daily_calorie_goal?: number | null;
   daily_protein_goal?: number | null;
+  diet_preference?: string | null;
 }
 
 interface BodyMetrics {
@@ -134,7 +135,10 @@ Deno.serve(async (req: Request) => {
     const [profileRes, metricsRes, nutritionRes, workoutRes] = await Promise.all([
       supabase
         .from('user_profiles')
-        .select('dob, sex, daily_calorie_goal, daily_protein_goal')
+        // Include diet_preference when available so recommendations can respect
+        // vegetarian/vegan preferences. If the column is not present in the DB
+        // the query will surface an error which the function will report.
+        .select('dob, sex, daily_calorie_goal, daily_protein_goal, diet_preference')
         .eq('id', userId)
         .single(),
       supabase
@@ -201,9 +205,10 @@ Deno.serve(async (req: Request) => {
       '- Sex: ' + (userProfile.sex ?? 'Unknown'),
       '- Weight: ' + (latestMetrics?.weight_lbs || 'N/A') + ' lbs',
       '- Body Fat: ' + (latestMetrics?.body_fat_percentage || 'N/A') + '%',
-      'User Goals:',
-      '- Calories: ' + (userProfile.daily_calorie_goal ?? 'N/A'),
-      '- Protein: ' + (userProfile.daily_protein_goal ?? 'N/A') + 'g',
+  'User Goals:',
+  '- Calories: ' + (userProfile.daily_calorie_goal ?? 'N/A'),
+  '- Protein: ' + (userProfile.daily_protein_goal ?? 'N/A') + 'g',
+  '- Diet: ' + (userProfile.diet_preference ?? 'None'),
       '7-Day Nutrition Summary (by category):',
       (nutritionSummary || 'No nutrition logged.'),
       'Recent Workouts:',

@@ -35,6 +35,13 @@ function MyPlanPage() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const { theme, updateUserTheme } = useTheme(); // Get theme state and updater function
 
+  /**
+   * Notes
+   * - `updateUserTheme` is provided by `ThemeContext`. Guard calls to it
+   *   in case the context implementation changes or the hook returns a
+   *   no-op in lightweight environments (e.g., storybook / tests).
+   */
+
   const openSettingsModal = () => setIsSettingsModalOpen(true);
   const closeSettingsModal = () => setIsSettingsModalOpen(false);
 
@@ -124,7 +131,7 @@ function MyPlanPage() {
               </button>
               <button
                 className={`theme-btn ${theme === 'high-contrast' ? 'active' : ''}`}
-                onClick={() => updateUserTheme('high-contrast')}
+                onClick={() => updateUserTheme && updateUserTheme('high-contrast')}
                 aria-pressed={theme === 'high-contrast'}
               >
                 High Contrast
