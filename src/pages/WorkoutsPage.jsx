@@ -23,6 +23,12 @@ import './WorkoutsPage.css';
  * Renders the main menu for the Workouts section.
  * @returns {JSX.Element} The WorkoutsPage component.
  */
+/**
+ * WorkoutsPage
+ * Lightweight navigation hub for the Workouts section. Keep network-heavy
+ * operations out of this component to avoid duplicate requests when users
+ * rapidly navigate between sub-pages.
+ */
 function WorkoutsPage() {
   /**
    * Notes

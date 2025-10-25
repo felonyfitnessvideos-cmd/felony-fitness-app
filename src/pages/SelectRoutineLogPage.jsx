@@ -130,7 +130,7 @@ function SelectRoutineLogPage() {
             <div className="routine-card-info">
               <h3>{routine.routine_name}</h3>
               {/* The exercise count comes from the Supabase query's relation count */}
-              <span>{routine.routine_exercises[0]?.count || 0} exercises</span>
+              <span>{(routine.routine_exercises && routine.routine_exercises[0] && routine.routine_exercises[0].count) ? routine.routine_exercises[0].count : 0} exercises</span>
             </div>
             <ChevronRight size={24} className="arrow-icon" />
           </button>

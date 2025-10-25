@@ -16,6 +16,12 @@ import './SelectProRoutinePage.css';
  * @component SelectProRoutinePage
  * @description Renders a grid of cards, each representing a category of "Pro Routines".
  */
+/**
+ * SelectProRoutinePage
+ * Hub for choosing a pro routine category. The categories list is static in
+ * this component; if moved to a dynamic source ensure `encodeURIComponent`
+ * is used when building the route.
+ */
 function SelectProRoutinePage() {
   /**
    * Notes

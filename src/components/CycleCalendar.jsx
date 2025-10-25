@@ -18,10 +18,11 @@ import React from 'react';
 
 function formatDate(d) {
   try {
+    if (!d) return '';
     const dt = new Date(d);
     return dt.toLocaleDateString();
   } catch {
-    return d;
+    return String(d);
   }
 }
 
