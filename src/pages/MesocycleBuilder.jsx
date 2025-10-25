@@ -36,6 +36,8 @@
  * - Default React component: `MesocycleBuilder()`
  */
 
+/** Audited: 2025-10-25 — JSDoc batch 9 */
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';

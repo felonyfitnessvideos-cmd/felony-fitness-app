@@ -1,4 +1,8 @@
 /**
+ * SuccessModal (documented)
+ * Small presentational modal used across the app to show success confirmations.
+ */
+/**
  * SuccessModal.jsx
  * A small reusable modal used to display success messages with a confirmation button.
  * It is intentionally simple and controlled by its `isOpen` prop to keep usage predictable.

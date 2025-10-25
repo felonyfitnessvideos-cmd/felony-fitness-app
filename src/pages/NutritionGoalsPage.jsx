@@ -99,6 +99,17 @@ function NutritionGoalsPage() {
   }, [userId, fetchGoals]);
 
   /**
+   * NutritionGoalsPage — manage user's nutrition goals (calories, macros).
+   *
+   * Responsibilities:
+   * - load and persist nutrition goals to `user_profiles` or a goals table
+   * - show inline status messages instead of blocking alerts
+   *
+   * Notes:
+   * - guards are in place for staged DB deployments where columns may be
+   *   missing; UI shows best-effort state.
+   */
+  /**
    * Handles changes to the form's input fields, updating the local state.
    * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
    */

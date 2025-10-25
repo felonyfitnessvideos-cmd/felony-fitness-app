@@ -36,6 +36,8 @@
  *   (prefer `date` for scheduled_date and `timestamp with time zone` for
  *   created_at) and confirm normalization assumptions here after migrating.
  *
+ * Audited: 2025-10-25 — JSDoc batch 9
+ *
  * Export
  * - Default React component: `MesocycleLogPage()`
  */

@@ -1,3 +1,7 @@
+/**
+ * MyPlanPage (doc): displays subscription and app settings.
+ * This page is presentational and delegates theme updates to ThemeContext.
+ */
  
 /**
  * @file MyPlanPage.jsx
@@ -16,6 +20,13 @@
  * - Clicking a theme button calls `updateUserTheme` with the new theme name ('dark', 'light', etc.), which updates the theme globally via the `ThemeContext`.
  */
 
+import React, { useState, useEffect } from 'react';
+/**
+ * MyPlanPage
+ *
+ * Small page that shows the user's current plan/routine. Non-critical UI —
+ * best-effort data loading with graceful fallbacks when data is missing.
+ */
 import React, { useState } from 'react';
 import SubPageHeader from '../components/SubPageHeader.jsx'; 
 import { ClipboardList, ShieldCheck, DollarSign, Key, Zap, Diamond, Settings, X } from 'lucide-react';

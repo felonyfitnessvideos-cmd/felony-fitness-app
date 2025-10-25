@@ -50,6 +50,7 @@ function CycleWeekEditor({ weeks = 4, focus = 'Hypertrophy', onAssignmentsChange
   }, [user, loading]);
 
   // initialize assignments when weeks or focus changes
+      /** Audited: 2025-10-25 — JSDoc batch 9 */
   useEffect(() => {
     // If initial assignments provided (editing mode), use them when lengths match
     if (initialAssignments && initialAssignments.length > 0) {

@@ -12,7 +12,17 @@
  * 5. When a user clicks a routine, `handleSelectRoutine` navigates them to the `WorkoutLogPage` with the corresponding routine ID in the URL.
  */
 
+/**
+ * SelectRoutineLogPage (doc): lightweight helper to pick a routine to log.
+ */
 import React, { useState, useEffect, useCallback } from 'react';
+/**
+ * SelectRoutineLogPage
+ *
+ * Thin helper page used by the worklogger to pick a routine to start from.
+ * It performs a best-effort load and navigates to the logger with query
+ * params describing the chosen routine.
+ */
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
@@ -148,3 +158,5 @@ function SelectRoutineLogPage() {
 }
 
 export default SelectRoutineLogPage;
+
+/** Audited: 2025-10-25 — JSDoc batch 9 */

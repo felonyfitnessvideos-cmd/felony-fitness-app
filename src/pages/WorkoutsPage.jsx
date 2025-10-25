@@ -13,6 +13,20 @@
  * - Recommendations: To get AI-powered workout advice.
  */
 
+/**
+ * WorkoutsPage.jsx
+ *
+ * High level list of user workouts and shortcuts to create or import new
+ * routines. This page is intentionally small and delegates rendering to
+ * shared components.
+ */
+/**
+ * WorkoutsPage — list available workouts and quick actions.
+ *
+ * Notes:
+ * - loads user routines and public templates
+ * - uses ownership scoping when calling destructive RPCs
+ */
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Dumbbell } from 'lucide-react';

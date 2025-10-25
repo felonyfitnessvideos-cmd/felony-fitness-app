@@ -8,6 +8,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
+/**
+ * NutritionLogPage — log daily nutrition entries.
+ *
+ * Responsibilities:
+ * - add/edit nutrition log entries with sanitized numeric input
+ * - normalize dates and avoid timezone surprises on mobile
+ *
+ * Notes:
+ * - uses text + inputMode for numeric fields to avoid mobile quirks and
+ *   sanitizes values before persisting.
+ */
 import { Apple, Search, Camera, X, Droplets, Loader2 } from 'lucide-react';
 import Modal from 'react-modal';
 import { useAuth } from '../AuthContext.jsx';

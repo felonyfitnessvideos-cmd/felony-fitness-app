@@ -1,6 +1,18 @@
 /**
+ * WorkoutRecsPage (doc): request AI-generated workout recommendations and
+ * display results. Handles invocation via Supabase functions and shows
+ * graceful error messages.
+ */
+/**
  * WorkoutRecsPage
  * Page to request AI-generated workout recommendations and view suggested routines.
+ */
+/**
+ * WorkoutRecsPage — shows AI-generated workout recommendations.
+ *
+ * Uses the serverless edge-function `generate-workout-recommendations` and
+ * shows a small summary. Guard against non-array responses from the
+ * function for safe rendering.
  */
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient.js';

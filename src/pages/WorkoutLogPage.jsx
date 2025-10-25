@@ -1,4 +1,8 @@
 /**
+ * WorkoutLogPage (doc): active workout logger for a selected routine.
+ * Coordinates creating/editing `workout_logs` and manages entries for exercises.
+ */
+/**
  * @file WorkoutLogPage.jsx
  * @description The main page for actively logging a workout session based on a selected routine.
  * @project Felony Fitness
@@ -682,3 +686,5 @@ function WorkoutLogPage() {
 }
 
 export default WorkoutLogPage;
+
+/** Audited: 2025-10-25 — JSDoc batch 9 */

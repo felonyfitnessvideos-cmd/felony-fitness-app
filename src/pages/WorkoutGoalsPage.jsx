@@ -5,6 +5,10 @@
  * @project Felony Fitness
  */
 
+/**
+ * WorkoutGoalsPage (doc): manages workout-specific goals and progress.
+ * Provides CRUD and simple progress visuals; backend enforces ownership.
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
@@ -263,3 +267,5 @@ function WorkoutGoalsPage() {
 }
 
 export default WorkoutGoalsPage;
+
+/** Audited: 2025-10-25 — JSDoc batch 9 */

@@ -15,6 +15,13 @@
  * 6. The page displays these stats in cards, visualizes trends in charts using the `recharts` library, and lists the user's active goals with progress bars.
  */
 
+/**
+ * ProgressPage.jsx
+ *
+ * Visualization and summary of user progress across workouts and nutrition.
+ * Uses lightweight chart components; rendering guards protect against
+ * missing data during early-stage or staged migrations.
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
@@ -95,6 +102,12 @@ function ProgressPage() {
         supabase.from('workout_logs')
           .select('duration_minutes, created_at, calories_burned')
           .eq('user_id', userId)
+  /**
+   * ProgressPage — visualizes user progress and historical metrics.
+   *
+   * This page renders charts and summarized data. It prefers cached data and
+   * avoids heavy queries on mount; charts are lazy-loaded when visible.
+   */
           .gt('duration_minutes', 0),
         
         // --- 1. THIS QUERY IS FIXED ---
