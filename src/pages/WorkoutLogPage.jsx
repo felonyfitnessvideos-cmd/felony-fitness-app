@@ -4,7 +4,7 @@
  * @project Felony Fitness
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
@@ -86,6 +86,9 @@ function WorkoutLogPage() {
   const [userWeightLbs, setUserWeightLbs] = useState(150);
   const [sessionMeta, setSessionMeta] = useState(null);
   const [isWorkoutCompletable, setIsWorkoutCompletable] = useState(false);
+  const [saveSetLoading, setSaveSetLoading] = useState(false);
+  const [rpcLoading, setRpcLoading] = useState(false);
+  const isMountedRef = useRef(true);
 
   // Get the whole routine_exercise object (which includes target_sets and exercises)
   const selectedRoutineExercise = useMemo(() => routine?.routine_exercises[selectedExerciseIndex], [routine, selectedExerciseIndex]);
@@ -103,6 +106,13 @@ function WorkoutLogPage() {
       return Math.max(1, Math.round(base * mult));
     }, [targetSets, sessionMeta?.planned_volume_multiplier]);
 
+  useEffect(() => {
+    // track mounted state to avoid calling setState on an unmounted component
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
+
+  // Ensure the current selected exercise resets currentSet when logs change
   useEffect(() => {
     if (!selectedExercise) return;
 
@@ -317,7 +327,7 @@ function WorkoutLogPage() {
     } catch (error) {
       console.error("A critical error occurred while fetching workout data:", error);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
     }
   }, [routineId, location.search]);
 
@@ -370,6 +380,8 @@ function WorkoutLogPage() {
 
   const handleSaveSet = async () => {
     if (!currentSet.reps || !currentSet.weight || !workoutLogId || !selectedExercise) return;
+    if (saveSetLoading) return; // prevent double submits
+    setSaveSetLoading(true);
     const newSetPayload = {
       log_id: workoutLogId,
       exercise_id: selectedExercise.id,
@@ -379,7 +391,8 @@ function WorkoutLogPage() {
     };
     const { data: newEntry, error } = await supabase.from('workout_log_entries').insert(newSetPayload).select().single();
     if (error) {
-      alert("Could not save set. Please try again.");
+      alert("Could not save set. Please try again." + (error?.message ? ` (${error.message})` : ''));
+      setSaveSetLoading(false);
       return;
     }
     
@@ -400,6 +413,7 @@ function WorkoutLogPage() {
     }
     
     setIsTimerOpen(true);
+    setSaveSetLoading(false);
   };
 
   const handleTimerClose = () => {
@@ -472,14 +486,20 @@ function WorkoutLogPage() {
 
   /** Deletes a specific set from the current log securely. */
   const handleDeleteSet = async (entryId) => {
-    // SECURITY FIX: Call the secure RPC function.
-    const { error } = await supabase.rpc('delete_workout_set', { p_entry_id: entryId });
-    if (error) {
-      console.error("Secure delete failed:", error);
-      return alert("Could not delete set.");
+    if (rpcLoading) return;
+    setRpcLoading(true);
+    try {
+      // SECURITY FIX: Call the secure RPC function.
+      const { error } = await supabase.rpc('delete_workout_set', { p_entry_id: entryId });
+      if (error) {
+        console.error("Secure delete failed:", error);
+        return alert("Could not delete set." + (error?.message ? ` (${error.message})` : ''));
+      }
+      // Refetch to ensure UI consistency, only if still mounted.
+      if (userId && isMountedRef.current) await fetchAndStartWorkout(userId);
+    } finally {
+      if (isMountedRef.current) setRpcLoading(false);
     }
-  // Refetch to ensure UI consistency.
-  if (userId) await fetchAndStartWorkout(userId);
   };
 
   /** Enters "edit mode" for a specific set. */
@@ -491,19 +511,25 @@ function WorkoutLogPage() {
   /** Saves the updated values for a set being edited securely. */
   const handleUpdateSet = async () => {
     if (!editingSet) return;
-    // SECURITY FIX: Call the secure RPC function.
-    const { error } = await supabase.rpc('update_workout_set', {
-      p_entry_id: editingSet.entryId,
-      p_weight: parseInt(editSetValue.weight, 10),
-      p_reps: parseInt(editSetValue.reps, 10)
-    });
-    
-    if (error) {
-      console.error("Secure update failed:", error);
-      return alert("Could not update set.");
+    if (rpcLoading) return;
+    setRpcLoading(true);
+    try {
+      // SECURITY FIX: Call the secure RPC function.
+      const { error } = await supabase.rpc('update_workout_set', {
+        p_entry_id: editingSet.entryId,
+        p_weight: parseInt(editSetValue.weight, 10),
+        p_reps: parseInt(editSetValue.reps, 10)
+      });
+
+      if (error) {
+        console.error("Secure update failed:", error);
+        return alert("Could not update set." + (error?.message ? ` (${error.message})` : ''));
+      }
+      if (isMountedRef.current) setEditingSet(null);
+      if (userId && isMountedRef.current) await fetchAndStartWorkout(userId);
+    } finally {
+      if (isMountedRef.current) setRpcLoading(false);
     }
-  setEditingSet(null);
-  if (userId) await fetchAndStartWorkout(userId);
   };
 
   const handleCancelEdit = () => setEditingSet(null);
@@ -566,7 +592,7 @@ function WorkoutLogPage() {
                 <input type="text" inputMode="numeric" pattern="[0-9]*" value={currentSet.reps} onChange={(e) => setCurrentSet(prev => ({...prev, reps: e.target.value.replace(/\D/g, '')}))} placeholder="0"/>
               </div>
           </div>
-          <button className="save-set-button" onClick={handleSaveSet}>Save Set</button>
+          <button className="save-set-button" onClick={handleSaveSet} disabled={saveSetLoading}>{saveSetLoading ? 'Saving...' : 'Save Set'}</button>
 
           <div className="log-history-container">
             <div className="log-history-column">
@@ -579,15 +605,15 @@ function WorkoutLogPage() {
                         <input type="text" inputMode="numeric" pattern="[0-9]*" value={editSetValue.weight} onChange={(e) => setEditSetValue(prev => ({...prev, weight: e.target.value.replace(/\D/g, '')}))} />
                         <span>lbs x</span>
                         <input type="text" inputMode="numeric" pattern="[0-9]*" value={editSetValue.reps} onChange={(e) => setEditSetValue(prev => ({...prev, reps: e.target.value.replace(/\D/g, '')}))} />
-                        <button onClick={handleUpdateSet} className="edit-action-btn save"><Check size={16} /></button>
-                        <button onClick={handleCancelEdit} className="edit-action-btn cancel"><X size={16} /></button>
+                        <button onClick={handleUpdateSet} className="edit-action-btn save" disabled={rpcLoading}><Check size={16} /></button>
+                        <button onClick={handleCancelEdit} className="edit-action-btn cancel" disabled={rpcLoading}><X size={16} /></button>
                       </div>
                     ) : (
                       <>
                         <span>{set.weight_lifted_lbs} lbs x {set.reps_completed}</span>
                         <div className="set-actions">
-                          <button onClick={() => handleEditSetClick(set)}><Edit2 size={14}/></button>
-                          <button onClick={() => handleDeleteSet(set.id)}><Trash2 size={14}/></button>
+                          <button onClick={() => handleEditSetClick(set)} disabled={rpcLoading}><Edit2 size={14}/></button>
+                          <button onClick={() => handleDeleteSet(set.id)} disabled={rpcLoading}><Trash2 size={14}/></button>
                         </div>
                       </>
                     )}
