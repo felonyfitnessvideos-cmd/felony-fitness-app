@@ -1,4 +1,8 @@
 /**
+ * LazyRecharts (documented)
+ * Helper that defers loading the heavy `recharts` library until needed.
+ */
+/**
  * @file LazyRecharts.jsx
  * @description
  * Small utility component that lazily loads the `recharts` library and

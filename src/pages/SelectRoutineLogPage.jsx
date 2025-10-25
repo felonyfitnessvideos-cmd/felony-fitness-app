@@ -12,6 +12,13 @@
  * 5. When a user clicks a routine, `handleSelectRoutine` navigates them to the `WorkoutLogPage` with the corresponding routine ID in the URL.
  */
 
+/**
+ * SelectRoutineLogPage.jsx
+ *
+ * Lets the user pick a routine to start logging a workout. Simple utility
+ * page that fetches available user routines and navigates to the workout
+ * logger with appropriate query params.
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';

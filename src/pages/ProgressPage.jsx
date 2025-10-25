@@ -15,6 +15,13 @@
  * 6. The page displays these stats in cards, visualizes trends in charts using the `recharts` library, and lists the user's active goals with progress bars.
  */
 
+/**
+ * ProgressPage.jsx
+ *
+ * Visualization and summary of user progress across workouts and nutrition.
+ * Uses lightweight chart components; rendering guards protect against
+ * missing data during early-stage or staged migrations.
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';

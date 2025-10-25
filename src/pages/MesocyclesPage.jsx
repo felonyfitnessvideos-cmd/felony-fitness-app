@@ -41,6 +41,13 @@
  * - Default React component: `MesocyclesPage()`
  */
 
+/**
+ * MesocyclesPage.jsx
+ *
+ * Lists a user's mesocycles and provides quick actions (view, edit,
+ * duplicate). Cards are full-clickable; this component focuses on
+ * presentation and delegates data mutations to page handlers.
+ */
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import SubPageHeader from '../components/SubPageHeader.jsx';

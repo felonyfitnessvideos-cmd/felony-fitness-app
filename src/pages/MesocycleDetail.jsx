@@ -38,6 +38,13 @@
  * - Default React component: `MesocycleDetail()`
  */
 
+/**
+ * MesocycleDetail.jsx
+ *
+ * Detail view for a single mesocycle. Shows weeks, allows swapping weeks
+ * and persisting the order. Ownership checks are performed before any
+ * destructive operations.
+ */
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import SubPageHeader from '../components/SubPageHeader.jsx';

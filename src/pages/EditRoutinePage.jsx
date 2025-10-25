@@ -5,6 +5,13 @@
  * @project Felony Fitness
  */
 
+/**
+ * EditRoutinePage.jsx
+ *
+ * Editor for a workout routine. Handles CRUD of sets/exercises and local
+ * ordering. Mutations are scoped to the current user; UI provides optimistic
+ * updates and reverts on error.
+ */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';

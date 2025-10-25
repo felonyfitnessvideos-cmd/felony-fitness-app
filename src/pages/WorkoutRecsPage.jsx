@@ -1,4 +1,9 @@
 /**
+ * WorkoutRecsPage (documented)
+ * Lightweight page that requests AI-generated workout recommendations and
+ * displays the returned suggestions. Keeps network/error handling localized.
+ */
+/**
  * WorkoutRecsPage
  * Page to request AI-generated workout recommendations and view suggested routines.
  */

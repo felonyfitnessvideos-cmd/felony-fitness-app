@@ -5,6 +5,13 @@
  * @project Felony Fitness
  */
 
+/**
+ * WorkoutRoutinePage.jsx
+ *
+ * Shows a single workout routine and its exercises. Allows starting a
+ * workout, duplicating or editing routines. Keep heavy mutation logic in
+ * page-level handlers so components remain presentational.
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';

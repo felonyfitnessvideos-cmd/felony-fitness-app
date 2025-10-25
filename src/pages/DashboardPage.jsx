@@ -5,6 +5,13 @@
  * @project Felony Fitness
  */
 
+/**
+ * DashboardPage.jsx
+ *
+ * The landing page after sign-in. Aggregates small widgets (progress,
+ * recommended workouts, nutrition snapshot) and links into deeper pages.
+ * Keep this file lightweight — heavy logic belongs in components.
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';

@@ -5,6 +5,13 @@
  * @project Felony Fitness
  */
 
+/**
+ * WorkoutGoalsPage.jsx
+ *
+ * Page for creating and tracking workout goals. Provides CRUD for goals and
+ * minimal progress indicators. Mutations are scoped to the authenticated
+ * user and verified by row-level security on the backend.
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
