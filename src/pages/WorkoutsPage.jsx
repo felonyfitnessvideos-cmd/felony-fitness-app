@@ -27,7 +27,7 @@
  * - loads user routines and public templates
  * - uses ownership scoping when calling destructive RPCs
  */
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Dumbbell } from 'lucide-react';
 import SubPageHeader from '../components/SubPageHeader.jsx';
