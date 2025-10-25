@@ -284,12 +284,15 @@ function WorkoutLogPage() {
       if (activeLog && currentLogId) {
         try {
           const { data: existingLog } = await supabase.from('workout_logs').select('id,cycle_session_id').eq('id', currentLogId).maybeSingle();
-          if (existingLog && !existingLog.cycle_session_id) {
+            if (existingLog && !existingLog.cycle_session_id) {
             const { data: matchingSession2 } = await supabase.from('cycle_sessions').select('id,mesocycle_id').eq('user_id', userId).eq('routine_id', currentRoutineId).eq('scheduled_date', startOfDay.toISOString().slice(0,10)).maybeSingle();
             if (matchingSession2 && matchingSession2.id) {
               // wrap update in try/catch in case the column doesn't exist on the DB yet
               try {
-                await supabase.from('workout_logs').update({ cycle_session_id: matchingSession2.id }).eq('id', currentLogId);
+                // Ensure we only update rows owned by the current user
+                if (userId) {
+                  await supabase.from('workout_logs').update({ cycle_session_id: matchingSession2.id }).eq('id', currentLogId).eq('user_id', userId);
+                }
                 setSessionMeta(prev => ({ ...(prev || {}), id: matchingSession2.id, mesocycle_id: matchingSession2.mesocycle_id }));
               } catch (err) {
                 // ignore missing column errors (42703) and continue
@@ -433,20 +436,22 @@ function WorkoutLogPage() {
         calories_burned 
       };
       
-      const { error: updateError } = await supabase.from('workout_logs').update(updatePayload).eq('id', workoutLogId);
+  // Ensure the update is scoped to the current user for safety.
+  const { error: updateError } = await supabase.from('workout_logs').update(updatePayload).eq('id', workoutLogId).eq('user_id', userId);
       if (updateError) throw updateError;
       
       // Also mark cycle_session as complete if this log is associated with one
       try {
         // Prefer sessionMeta.id if available
         if (sessionMeta?.id) {
-          await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', sessionMeta.id);
+          // Mark session complete only if it belongs to the current user
+          if (userId) await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', sessionMeta.id).eq('user_id', userId);
         } else {
           // fallback: find cycle_session by user, routine and date
           const startDateStr = new Date(logData.created_at).toISOString().slice(0,10);
           const { data: found } = await supabase.from('cycle_sessions').select('id').eq('user_id', userId).eq('routine_id', routineId).eq('scheduled_date', startDateStr).maybeSingle();
           if (found && found.id) {
-            await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', found.id);
+            await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', found.id).eq('user_id', userId);
           }
         }
       } catch (err) {

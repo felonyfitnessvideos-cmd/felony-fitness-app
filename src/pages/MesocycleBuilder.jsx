@@ -178,6 +178,16 @@ function MesocycleBuilder() {
         if (toInsert.length > 0) {
           // If editing, remove existing week rows and re-insert to reflect changes
           if (editingMesocycleId) {
+            // Ensure the mesocycle belongs to the current user before deleting rows
+            const { data: ownerCheck, error: ownerErr } = await supabase.from('mesocycles').select('id').eq('id', mesocycleId).eq('user_id', user.id).maybeSingle();
+            if (ownerErr) {
+              console.warn('Failed to verify mesocycle ownership', ownerErr.message || ownerErr);
+            }
+            if (!ownerCheck) {
+              setErrorMessage('Permission denied: cannot modify mesocycles you do not own.');
+              setIsSaving(false);
+              return;
+            }
             const { error: delErr } = await supabase.from('mesocycle_weeks').delete().eq('mesocycle_id', mesocycleId);
             if (delErr) console.warn('Warning deleting old mesocycle weeks', delErr.message || delErr);
           }
