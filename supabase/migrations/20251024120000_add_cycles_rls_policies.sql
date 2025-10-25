@@ -70,8 +70,14 @@ CREATE POLICY IF NOT EXISTS "select_own_macrocycles" ON public.macrocycles
   FOR SELECT
   USING (user_id = auth.uid());
 
+-- INSERT: only enforce WITH CHECK (USING isn't evaluated for INSERT)
+CREATE POLICY IF NOT EXISTS "insert_own_macrocycles" ON public.macrocycles
+  FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+
+-- UPDATE/DELETE: require row ownership for access and for new values
 CREATE POLICY IF NOT EXISTS "modify_own_macrocycles" ON public.macrocycles
-  FOR INSERT, UPDATE, DELETE
+  FOR UPDATE, DELETE
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 

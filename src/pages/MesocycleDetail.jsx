@@ -109,7 +109,7 @@ function MesocycleDetail() {
         setMesocycle(m || null);
 
   // load mesocycle_week assignments so we can render week layouts even when no sessions exist
-  const { data: weeksRows } = await supabase.from('mesocycle_weeks').select('*').eq('mesocycle_id', mesocycleId).order('week_index,day_index');
+  const { data: weeksRows } = await supabase.from('mesocycle_weeks').select('*').eq('mesocycle_id', mesocycleId).order('week_index', { ascending: true }).order('day_index', { ascending: true });
   setWeeksData(weeksRows || []);
         // also load routine names referenced by this mesocycle via mesocycle_weeks
         const routineIds = Array.from(new Set((weeksRows || []).map(w => w.routine_id).filter(Boolean)));
@@ -122,7 +122,7 @@ function MesocycleDetail() {
 
   // load cycle_sessions for mesocycle (if any) to help map scheduled dates and completion
   try {
-    const { data: cs } = await supabase.from('cycle_sessions').select('id,scheduled_date,is_deload,is_complete,planned_volume_multiplier').eq('mesocycle_id', mesocycleId).order('scheduled_date', { ascending: true });
+  const { data: cs } = await supabase.from('cycle_sessions').select('id,scheduled_date,routine_id,is_deload,is_complete,planned_volume_multiplier').eq('mesocycle_id', mesocycleId).order('scheduled_date', { ascending: true });
     setSessions(cs || []);
   } catch (err) {
     // If the migration hasn't been applied yet (or column selection fails), fall back to using workout_logs only.
@@ -251,8 +251,9 @@ function MesocycleDetail() {
               if (scheduledDateStr) {
                 const session = (sessions || []).find(s => {
                   if (!s || !s.scheduled_date) return false;
-                  // compare YYYY-MM-DD
-                  return s.scheduled_date.slice(0,10) === scheduledDateStr;
+                  // require both scheduled date and routine_id to match to avoid
+                  // attributing completion to a different routine that shares the same date
+                  return s.scheduled_date.slice(0,10) === scheduledDateStr && String(s.routine_id) === String(routineId);
                 });
                 if (session && typeof session.is_complete !== 'undefined') {
                   completed = Boolean(session.is_complete);

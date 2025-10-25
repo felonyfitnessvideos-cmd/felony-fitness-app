@@ -81,7 +81,18 @@ function MesocycleBuilder() {
           if (!mounted) return;
           if (wdata && wdata.length > 0) {
             // map rows to assignments format expected by CycleWeekEditor
-            const mapped = wdata.map(w => ({ week_index: w.week_index, day_index: w.day_index, type: w.notes === 'rest' || w.notes === 'deload' ? w.notes : (w.routine_id ? 'routine' : 'routine'), routine_id: w.routine_id }));
+            const mapped = wdata.map(w => {
+              let type;
+              if (w.notes === 'rest' || w.notes === 'deload') {
+                type = w.notes;
+              } else if (w.routine_id) {
+                type = 'routine';
+              } else {
+                // no routine assigned and notes not a deload/rest -> treat as rest
+                type = 'rest';
+              }
+              return { week_index: w.week_index, day_index: w.day_index, type, routine_id: w.routine_id };
+            });
             setAssignments(mapped);
           }
         }
@@ -172,10 +183,20 @@ function MesocycleBuilder() {
           // If editing, remove existing week rows and re-insert to reflect changes
           if (editingMesocycleId) {
             const { error: delErr } = await supabase.from('mesocycle_weeks').delete().eq('mesocycle_id', mesocycleId);
-            if (delErr) console.warn('Warning deleting old mesocycle weeks', delErr.message || delErr);
+            if (delErr) {
+              console.error('Failed deleting old mesocycle weeks', delErr);
+              setErrorMessage('Failed to delete existing week assignments: ' + (delErr.message || String(delErr)));
+              setIsSaving(false);
+              return; // abort save flow
+            }
           }
           const { error: wkErr } = await supabase.from('mesocycle_weeks').insert(toInsert);
-          if (wkErr) console.warn('mesocycle weeks insert warning', wkErr.message || wkErr);
+          if (wkErr) {
+            console.error('Failed inserting mesocycle weeks', wkErr);
+            setErrorMessage('Failed to save week assignments: ' + (wkErr.message || String(wkErr)));
+            setIsSaving(false);
+            return; // abort save flow and do not show success UI
+          }
         }
 
         setIsSaving(false);

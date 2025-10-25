@@ -79,3 +79,8 @@ CREATE TRIGGER trg_macrocycles_updated_at
 BEFORE UPDATE ON macrocycles
 FOR EACH ROW
 EXECUTE FUNCTION refresh_updated_at_column();
+
+CREATE TRIGGER trg_cycle_sessions_updated_at
+BEFORE UPDATE ON cycle_sessions
+FOR EACH ROW
+EXECUTE FUNCTION refresh_updated_at_column();
