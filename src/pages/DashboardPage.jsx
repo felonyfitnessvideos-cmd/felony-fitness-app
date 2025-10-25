@@ -12,6 +12,16 @@
  * recommended workouts, nutrition snapshot) and links into deeper pages.
  * Keep this file lightweight — heavy logic belongs in components.
  */
+/**
+ * DashboardPage — primary user dashboard.
+ *
+ * Responsibilities:
+ * - show quick stats (progress, streaks)
+ * - link to common actions
+ *
+ * This component is UI-only: heavy data fetching is deferred to child pages
+ * to keep initial render snappy.
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';

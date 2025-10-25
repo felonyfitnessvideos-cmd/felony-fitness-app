@@ -13,13 +13,16 @@
  */
 
 /**
- * SelectRoutineLogPage.jsx
- *
- * Lets the user pick a routine to start logging a workout. Simple utility
- * page that fetches available user routines and navigates to the workout
- * logger with appropriate query params.
+ * SelectRoutineLogPage (doc): lightweight helper to pick a routine to log.
  */
 import React, { useState, useEffect, useCallback } from 'react';
+/**
+ * SelectRoutineLogPage
+ *
+ * Thin helper page used by the worklogger to pick a routine to start from.
+ * It performs a best-effort load and navigates to the logger with query
+ * params describing the chosen routine.
+ */
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';

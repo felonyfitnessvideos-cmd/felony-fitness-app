@@ -12,6 +12,20 @@
  * workout, duplicating or editing routines. Keep heavy mutation logic in
  * page-level handlers so components remain presentational.
  */
+/**
+ * WorkoutRoutinePage (doc): shows a workout routine and actions like start/duplicate.
+ */
+/**
+ * WorkoutRoutinePage — shows a routine and allows the user to start logging.
+ *
+ * Responsibilities:
+ * - load a routine by id
+ * - render exercises and mesocycles
+ * - provide navigation to the workout logger
+ *
+ * This file adds small runtime guards to avoid setState-on-unmounted
+ * and to handle missing data during staged DB migrations.
+ */
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';

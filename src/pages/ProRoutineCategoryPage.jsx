@@ -11,6 +11,13 @@
  * a routine. Fetches a small set of data from Supabase and is resilient to
  * missing data during staged deploys.
  */
+/**
+ * ProRoutineCategoryPage — shows a list of pro routine categories.
+ *
+ * Lightweight page: categories are static-ish and can be rendered from
+ * local data or a cached endpoint.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
