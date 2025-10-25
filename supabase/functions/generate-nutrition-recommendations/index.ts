@@ -196,7 +196,7 @@ Deno.serve(async (req: Request) => {
       })
       .join('\n') || 'No workouts logged.';
 
-    const prompt = [
+  const prompt = [
       'You are an expert fitness and nutrition coach for Felony Fitness, an organization helping formerly incarcerated individuals.',
       'Your tone should be encouraging, straightforward, and supportive.',
       'Analyze the following user data from the last 7 days and provide 3 actionable nutrition-related recommendations.',
@@ -227,6 +227,43 @@ Deno.serve(async (req: Request) => {
       '}',
     ].join('\n');
 
+    // Temporary debug response: if caller includes ?debug=1 or header x-debug: true
+    // return a safe, non-sensitive snapshot of computed inputs (no secrets).
+    try {
+      const url = new URL(req.url);
+      const debugQuery = url.searchParams.get('debug') === '1';
+      const debugHeader = (req.headers.get('x-debug') || '').toLowerCase() === 'true';
+      const debugMode = debugQuery || debugHeader;
+      if (debugMode) {
+        // Build a small, safe debug payload (avoid PII like full DOB or tokens).
+        const safeProfile = {
+          daily_calorie_goal: userProfile.daily_calorie_goal ?? null,
+          daily_protein_goal: userProfile.daily_protein_goal ?? null,
+          diet_preference: userProfile.diet_preference ?? null,
+        };
+
+        const debugPayload = {
+          debug: true,
+          user_id: userId,
+          profile: safeProfile,
+          nutrition_summary_preview: nutritionSummary.slice(0, 2000),
+          recent_workouts_preview: workoutsList.slice(0, 2000),
+          prompt_preview: prompt.slice(0, 2000),
+        };
+
+        return new Response(JSON.stringify(debugPayload), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+    } catch (dbgErr) {
+      // If debug path check fails for any reason, continue to normal flow.
+      // Use String(...) to avoid relying on dbgErr having a `message` property.
+      console.warn('Debug path check failed:', String(dbgErr));
+    }
+
+    // Call OpenAI. Be defensive: capture status and body to help debug
+    // transient upstream issues. Do NOT log API keys or full responses.
     const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -242,24 +279,42 @@ Deno.serve(async (req: Request) => {
     });
 
     if (!aiResponse.ok) {
+      // Include some diagnostic context in logs and return a 502 to the client.
       const errorText = await aiResponse.text();
-      console.error('OpenAI API error status:', aiResponse.status, 'length:', errorText?.length ?? 0);
-      throw new Error('AI API request failed');
+      const truncated = (errorText || '').slice(0, 2000);
+      console.error('OpenAI API error', { status: aiResponse.status, bodyPreviewLength: truncated.length });
+      console.error('OpenAI API body preview:', truncated);
+      return new Response(JSON.stringify({ error: 'Upstream AI service error', detail: `OpenAI status ${aiResponse.status}` }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 502,
+      });
     }
 
-    const aiData = await aiResponse.json();
+    const aiData = await aiResponse.json().catch((e) => {
+      console.error('OpenAI JSON parse error:', e?.message ?? e);
+      return null;
+    });
     const aiText = aiData?.choices?.[0]?.message?.content;
     if (!aiText) {
       console.error('OpenAI returned missing content; choice count:', (aiData?.choices || []).length);
-      throw new Error('AI returned an unexpected response');
+      return new Response(JSON.stringify({ error: 'AI returned unexpected response' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 502,
+      });
     }
 
     let recommendations;
     try {
       recommendations = JSON.parse(aiText);
     } catch (e) {
-      console.error('Failed to parse AI JSON; length:', (aiText || '').length, e);
-      throw new Error('AI returned unparsable JSON');
+      // Log a preview of the AI text to help debugging, but avoid logging secrets.
+      const preview = (aiText || '').slice(0, 2000);
+      console.error('Failed to parse AI JSON; preview length:', preview.length);
+      console.error('AI text preview:', preview);
+      return new Response(JSON.stringify({ error: 'AI returned unparsable JSON' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 502,
+      });
     }
 
     return new Response(JSON.stringify(recommendations), {

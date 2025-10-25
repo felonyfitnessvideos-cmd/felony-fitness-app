@@ -1,3 +1,8 @@
+/**
+ * AuthPage (doc): handles sign-in and sign-up flows for users.
+ * Lightweight page that delegates auth logic to Supabase client and
+ * surfaces friendly messages. No side-effects beyond auth redirects.
+ */
  
 /**
  * @file AuthPage.jsx
@@ -183,3 +188,5 @@ function AuthPage() {
 }
 
 export default AuthPage;
+
+/** Audited: 2025-10-25 — JSDoc batch 9 */

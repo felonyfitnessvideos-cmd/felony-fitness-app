@@ -5,6 +5,28 @@
  * @project Felony Fitness
  */
 
+/**
+ * EditRoutinePage.jsx
+ *
+ * Editor for a workout routine. Handles CRUD of sets/exercises and local
+ * ordering. Mutations are scoped to the current user; UI provides optimistic
+ * updates and reverts on error.
+ */
+/**
+ * EditRoutinePage (doc): editor for a single routine. Handles CRUD for
+ * exercises and sets, and keeps optimistic UI updates local to the page.
+ */
+/**
+ * EditRoutinePage — edit a routine and its mesocycles.
+ *
+ * Contract:
+ * - Inputs: routineId via route params
+ * - Outputs: calls to Supabase to save routine/mesocycle updates
+ * - Errors: network or RLS errors are surfaced via UI message
+ *
+ * Edge-cases handled: missing columns during staged deploys, component
+ * unmounts during async saves, and optimistic updates with reverts.
+ */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';

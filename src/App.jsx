@@ -14,6 +14,13 @@
  * and to visually indicate the user's current location with an "active" class.
  */
 
+/**
+ * App.jsx
+ *
+ * Application shell: routes, bottom navigation and high-level layout. Keep
+ * this file minimal; route-level components implement their own behavior
+ * and data fetching.
+ */
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { Home, Dumbbell, Apple, TrendingUp, User } from 'lucide-react';

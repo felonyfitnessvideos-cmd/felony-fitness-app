@@ -5,6 +5,18 @@
  * @project Felony Fitness
  */
 
+/**
+ * SelectProRoutinePage.jsx
+ *
+ * Small helper page that lists available pro routines and lets the user
+ * select one to preview or apply. This file contains only presentational
+ * logic and router links; no side-effects are performed here.
+ */
+/**
+ * SelectProRoutinePage — lets users pick a pro routine template.
+ *
+ * The page lists available paid (pro) routines and allows previewing them.
+ */
 import React from 'react';
 import { Link } from 'react-router-dom';
 import SubPageHeader from '../components/SubPageHeader.jsx';
