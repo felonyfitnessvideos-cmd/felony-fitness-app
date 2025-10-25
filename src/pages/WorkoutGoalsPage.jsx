@@ -1,4 +1,3 @@
- 
 /**
  * @file WorkoutGoalsPage.jsx
  * @description This page allows users to create, view, update, and delete their workout goals.
@@ -24,11 +23,30 @@ import './WorkoutGoalsPage.css';
  */
 
 /**
- * @typedef {object} NewGoal
- * @property {string} goal_description
- * @property {number} current_value
- * @property {string | number} target_value
- * @property {string} target_date
+ * Load goals for the specified user and store them in component state.
+ * @param {string} userId - The UUID of the authenticated user whose goals should be loaded.
+ */
+
+/**
+ * Delete a goal owned by the current user after asking for confirmation.
+ * @param {string} goalId - The UUID of the goal to delete.
+ */
+
+/**
+ * Open the modal for creating a new goal or editing an existing one.
+ * @param {Goal | null} [goal=null] - The goal to edit; if omitted or null the modal is prepared for creating a new goal.
+ */
+
+/** Close the modal and clear any editing state. */
+
+/**
+ * Update the modal form state in response to an input change event.
+ * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
+ */
+
+/**
+ * Create a new goal or update an existing one, then refresh the goals list.
+ * @param {React.FormEvent<HTMLFormElement>} e - The form submission event.
  */
 
 function WorkoutGoalsPage() {

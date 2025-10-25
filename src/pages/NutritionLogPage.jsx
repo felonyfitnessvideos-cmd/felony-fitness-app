@@ -1,4 +1,3 @@
- 
 /**
  * @file NutritionLogPage.jsx
  * @description This page allows users to log their daily food and water intake for different meals.
@@ -29,14 +28,12 @@ import './NutritionLogPage.css';
  */
 
 /**
- * @typedef {object} SearchResult
- * @property {boolean} is_external
- * @property {string} [food_id]
- * @property {string} name
- * @property {string} [serving_id]
- * @property {string} serving_description
- * @property {number} calories
- * @property {number} protein_g
+ * Load today's nutrition logs and user goals, then compute and set aggregated daily totals.
+ *
+ * Queries the database for the current user's nutrition_logs within the user's local day and for
+ * the user's profile goals, then updates component state: todaysLogs, goals (when available),
+ * dailyTotals (calories, protein, water), and loading.
+ * @param {string} userId - The UUID of the authenticated user.
  */
 
 function NutritionLogPage() {
@@ -443,4 +440,3 @@ function NutritionLogPage() {
 }
 
 export default NutritionLogPage;
-

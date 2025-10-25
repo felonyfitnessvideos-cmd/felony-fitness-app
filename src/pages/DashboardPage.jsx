@@ -1,4 +1,3 @@
- 
 /**
  * @file DashboardPage.jsx
  * @description The main dashboard page, serving as the central hub for the user's daily stats.
@@ -40,11 +39,14 @@ const motivationalQuotes = [
  */
 
 /**
- * @typedef {object} ActiveGoal
- * @property {string} id
- * @property {string} goal_description
- * @property {number} current_value
- * @property {number} target_value
+ * Load today's dashboard data for the given user and update component state.
+ *
+ * Fetches the user's daily goals, today's nutrition logs (aggregated into totals),
+ * active goals, and the most recent workout entry for today, then updates the
+ * component state for goals, nutrition, activeGoals, training, and loading.
+ *
+ * On error, training is reset to a "Rest Day" placeholder and loading is cleared.
+ * @param {string} userId - UUID of the authenticated user whose dashboard to load.
  */
 
 function DashboardPage() {
@@ -247,4 +249,3 @@ function DashboardPage() {
 }
 
 export default DashboardPage;
-

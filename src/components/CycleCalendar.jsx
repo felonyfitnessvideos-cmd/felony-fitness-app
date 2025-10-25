@@ -16,6 +16,11 @@
  */
 import React from 'react';
 
+/**
+ * Format a date input into a locale-specific date string.
+ * @param {string|Date|number} d - A date value (ISO date string, Date object, or timestamp).
+ * @returns {string|*} Locale-formatted date string for the input, or the original value if it cannot be parsed.
+ */
 function formatDate(d) {
   try {
     const dt = new Date(d);

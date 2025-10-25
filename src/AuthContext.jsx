@@ -35,6 +35,14 @@ import { supabase } from './supabaseClient';
 
 const AuthContext = createContext();
 
+/**
+ * Provides authentication state to descendants and supplies a stable { session, user, loading } surface via AuthContext.
+ *
+ * The component initializes and listens for auth state changes, updates context state accordingly, and renders its children only after the initial auth check completes.
+ * @param {Object} props
+ * @param {import('react').ReactNode} props.children - Child elements to render once the provider has finished the initial loading phase.
+ * @returns {import('react').JSX.Element} The AuthContext provider element that wraps the application and conditionally renders children.
+ */
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);

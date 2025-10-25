@@ -47,6 +47,11 @@ import { supabase } from '../supabaseClient.js';
 import { useAuth } from '../AuthContext.jsx';
 import './MesocycleLogPage.css';
 
+/**
+ * Format a date-like input into a short weekday, abbreviated month, and day string.
+ * @param {Date|string|number|null|undefined} d - A Date object, timestamp, or date string; may be null/undefined.
+ * @returns {string} The formatted date like "Mon, Oct 21". If formatting fails or the input is invalid, returns the original input unchanged.
+ */
 function formatDateShort(d) {
   try {
     const dt = new Date(d);
@@ -55,7 +60,11 @@ function formatDateShort(d) {
 }
 
 // Normalize a date-like value to YYYY-MM-DD. Accepts Date, timestamp string,
-// or null/undefined. Returns empty string for invalid/missing dates.
+/**
+ * Normalize a date-like value to a YYYY-MM-DD string.
+ * @param {Date|string|number|null|undefined} val - Date object, timestamp, or date string to normalize.
+ * @returns {string} A `YYYY-MM-DD` formatted date, or an empty string if the input is null, undefined, or invalid.
+ */
 function toISODate(val) {
   if (val === null || val === undefined) return '';
   try {
@@ -67,6 +76,15 @@ function toISODate(val) {
   }
 }
 
+/**
+ * Render a mesocycle's scheduled sessions grouped by week and provide navigation to log or view workout logs.
+ *
+ * Fetches mesocycle metadata, its cycle sessions, associated routine names, and the current user's workout logs
+ * within the sessions' date range to determine completion state. Displays sessions grouped by week, shows
+ * completion and deload badges, and allows opening the workout logger/viewer for a session.
+ *
+ * @returns {JSX.Element} The React element for the mesocycle log page.
+ */
 function MesocycleLogPage() {
   const { mesocycleId } = useParams();
   const { user } = useAuth();

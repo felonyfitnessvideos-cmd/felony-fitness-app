@@ -48,6 +48,14 @@ import './MesocyclesPage.css';
 import { supabase } from '../supabaseClient.js';
 import { useAuth } from '../AuthContext.jsx';
 
+/**
+ * Render the Mesocycles page showing the current user's mesocycles and controls to create or open them.
+ *
+ * Loads mesocycles for the authenticated user and displays them as navigable cards. If a fetch fails,
+ * a user-facing error message is shown (including a specific guidance message when the database table is missing).
+ *
+ * @returns {JSX.Element} The page UI displaying the mesocycles list, action controls, and any fetch error message.
+ */
 function MesocyclesPage() {
   // Placeholder state; will be replaced by Supabase fetch in next iteration
   const [mesocycles, setMesocycles] = useState([]);

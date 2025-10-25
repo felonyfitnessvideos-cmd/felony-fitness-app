@@ -1,4 +1,3 @@
- 
 /**
  * @file EditRoutinePage.jsx
  * @description This page allows users to create a new workout routine or edit an existing one.
@@ -23,17 +22,11 @@ import './EditRoutinePage.css';
  */
 
 /**
- * @typedef {object} Exercise
- * @property {string} id - The UUID of the exercise.
- * @property {string} name - The name of the exercise.
- * @property {string} [description] - A short description.
- * @property {string} [category_id] - The UUID for the category (e.g., Strength).
- * @property {string} [type] - The type of exercise (e.g., 'Strength').
- * @property {boolean} [is_external] - Flag indicating if the exercise is from the AI.
- * @property {number | string} sets - The number of sets for the routine.
- * @property {string} reps - The rep range (e.g., "8-12").
- * @property {Array<object>} [exercise_muscle_groups] - Join table data.
- * @property {string} [primary_muscle] - The primary muscle from the AI response.
+ * Page component for creating a new workout routine or editing an existing one.
+ *
+ * Renders a form to set the routine name, search and add existing exercises (debounced, abortable search), create custom exercises, reorder and configure sets/reps for exercises, and persist the routine.
+ * When saving, resolves or creates any missing exercise records, associates muscle groups, and inserts or replaces routine items atomically.
+ * @returns {JSX.Element} The Edit Routine page element.
  */
 
 function EditRoutinePage() {

@@ -8,6 +8,16 @@ import React from 'react';
 import './SuccessModal.css';
 import { CheckCircle } from 'lucide-react';
 
+/**
+ * Render a success modal that displays a title, message, a success icon, and a confirmation button.
+ *
+ * @param {Object} props - Component props.
+ * @param {boolean} props.isOpen - Whether the modal is visible.
+ * @param {function} props.onClose - Callback invoked to close the modal (called when overlay or button is clicked).
+ * @param {string} props.title - Heading text shown in the modal.
+ * @param {string} props.message - Body text shown in the modal.
+ * @returns {JSX.Element|null} The modal element when `isOpen` is true, or `null` when `isOpen` is false.
+ */
 function SuccessModal({ isOpen, onClose, title, message }) {
   if (!isOpen) {
     return null;

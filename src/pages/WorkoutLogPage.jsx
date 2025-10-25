@@ -46,16 +46,15 @@ const formatSetCount = (num) => {
  */
 
 /**
- * Top-level notes
- * - This page coordinates reading a routine, opening or creating a `workout_logs`
- *   row for the selected day, and managing `workout_log_entries` for each
- *   exercise. It relies on several server-side RPCs (`get_entries_for_last_session`,
- *   `delete_workout_set`, `update_workout_set`) to enforce security rules.
- * - Error modes: network/permission/migration failures are intentionally
- *   tolerated where possible; critical failures surface an alert or console
- *   error. Where DB columns may not exist during staged deploys (e.g.,
- *   `cycle_session_id`) we wrap updates in try/catch and ignore missing-column
- *   errors to preserve user flow.
+ * Render the workout logging page for a selected routine and manage the current
+ * workout session, including loading the routine, creating or reading today's
+ * workout_log, managing workout_log_entries, displaying history and charts,
+ * and handling timers, edits, deletes, and finalizing the workout.
+ *
+ * Uses server-side RPCs for secure operations (e.g., fetching last-session data,
+ * updating and deleting sets) and tolerates certain migration-related missing
+ * database columns when applicable.
+ * @returns {JSX.Element} The workout logging UI for the selected routine and session.
  */
 
 function WorkoutLogPage() {

@@ -47,6 +47,13 @@ import { useNavigate } from 'react-router-dom';
 import { Check, ArrowUp, ArrowDown } from 'lucide-react';
 import { useAuth } from '../AuthContext.jsx';
 
+/**
+ * Render the detailed view for a single mesocycle, showing a weekly date scroller, day-by-day routine assignments, completion state, and controls for editing or reordering days.
+ *
+ * Performs loading of mesocycle metadata, week/day assignments, referenced routines, optional cycle sessions, and workout logs to determine scheduled dates and completion. Provides UI actions to navigate to the workout logger, edit/assign routines, and move day assignments within the current week (with optimistic updates and server persistence).
+ *
+ * @returns {JSX.Element} The mesocycle detail UI element.
+ */
 function MesocycleDetail() {
   const { mesocycleId } = useParams();
   const [mesocycle, setMesocycle] = useState(null);

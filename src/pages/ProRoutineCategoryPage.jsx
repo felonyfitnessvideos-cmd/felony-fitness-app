@@ -12,7 +12,13 @@ import Modal from 'react-modal';
 import { Dumbbell, Info, X } from 'lucide-react';
 import './ProRoutineCategoryPage.css';
 
-// Modal styling is handled in CSS to respect theme variables and prefers-reduced-motion
+/**
+ * Renders the Pro Routine Category page that lists pro routines for the current category, shows routine details in a modal, and provides an action to add a pro routine to the user's routines.
+ *
+ * The component fetches pro routines for the route's category, loads exercise details when a routine's modal is opened, and invokes a backend RPC to copy a pro routine into the current user's routines.
+ *
+ * @returns {JSX.Element} The page component.
+ */
 
 function ProRoutineCategoryPage() {
   const { categoryName } = useParams();
@@ -184,4 +190,3 @@ function ProRoutineCategoryPage() {
 }
 
 export default ProRoutineCategoryPage;
-

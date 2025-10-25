@@ -46,6 +46,19 @@ import { supabase } from '../supabaseClient.js';
 import { useAuth } from '../AuthContext.jsx';
 import SuccessModal from '../components/SuccessModal.jsx';
 
+/**
+ * Render a form-driven editor for creating or updating a mesocycle template.
+ *
+ * Presents metadata fields (name, focus, weeks, start date) and a CycleWeekEditor to manage per-week/day assignments,
+ * persists mesocycle and week rows to Supabase (inserting or updating as appropriate), and handles edit-mode loading.
+ *
+ * - Validates that name is non-empty and weeks is a positive integer before saving.
+ * - Ensures a user_profiles row exists via upsert to satisfy foreign-key constraints.
+ * - In edit mode, verifies ownership before deleting and re-inserting mesocycle week rows.
+ * - Shows an error message on recoverable failures and opens a success modal on successful save, then navigates to the mesocycle detail page.
+ *
+ * @returns {JSX.Element} The MesocycleBuilder component UI.
+ */
 function MesocycleBuilder() {
   const navigate = useNavigate();
   const [name, setName] = useState('');

@@ -1,4 +1,3 @@
- 
 /**
  * @file SelectProRoutinePage.jsx
  * @description A hub page for users to select a category of professionally designed workout routines.
@@ -13,8 +12,12 @@ import { Dumbbell, Zap, HeartPulse, Shield, Wind, Repeat } from 'lucide-react';
 import './SelectProRoutinePage.css';
 
 /**
- * @component SelectProRoutinePage
- * @description Renders a grid of cards, each representing a category of "Pro Routines".
+ * Render the Select Pro Routine page with a grid of category navigation cards.
+ *
+ * Each card represents a professional routine category and links to
+ * /workouts/routines/pro-category/{encoded category name}. Cards include
+ * decorative icons and accessible labels describing the destination.
+ * @returns {JSX.Element} The rendered Select Pro Routine page element.
  */
 function SelectProRoutinePage() {
   /**
@@ -61,4 +64,3 @@ function SelectProRoutinePage() {
 }
 
 export default SelectProRoutinePage;
-

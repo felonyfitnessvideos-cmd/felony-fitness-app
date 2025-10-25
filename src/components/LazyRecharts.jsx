@@ -29,6 +29,14 @@ import React, { useState, useEffect } from 'react';
 // chart components mount simultaneously.
 let cachedRecharts = null;
 
+/**
+ * Lazily loads the `recharts` library and renders children with the loaded module or a fallback while loading.
+ *
+ * @param {Object} props
+ * @param {(module: Object) => import('react').ReactNode} props.children - Render-prop called with the `recharts` namespace (e.g., components like `LineChart`, `Line`, `ResponsiveContainer`) once the library is loaded.
+ * @param {import('react').ReactNode} [props.fallback=null] - Node to render while `recharts` is loading or if loading fails.
+ * @returns {import('react').ReactNode} The result of calling `children` with the loaded `recharts` module, or `fallback` if the module is not available.
+ */
 export default function LazyRecharts({ children, fallback = null }) {
   const [rechartsModule, setRechartsModule] = useState(cachedRecharts);
 

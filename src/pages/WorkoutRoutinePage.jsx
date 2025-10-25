@@ -1,4 +1,3 @@
- 
 /**
  * @file WorkoutRoutinePage.jsx
  * @description This page displays a list of all workout routines created by the user, allowing them to manage them.
@@ -19,6 +18,21 @@ import './WorkoutRoutinePage.css';
  * @property {string} routine_name - The name of the routine.
  * @property {boolean} is_active - Whether the routine is available for logging.
  * @property {string} created_at - The timestamp of when the routine was created.
+ */
+
+/**
+ * Fetches all workout routines for the given user and updates component state.
+ * @param {string} userId - The UUID of the authenticated user whose routines will be fetched.
+ */
+ 
+/**
+ * Deletes a specific workout routine after explicit user confirmation.
+ * @param {string} routineId - The UUID of the routine to be deleted.
+ */
+
+/**
+ * Toggles the `is_active` status of a workout routine and persists the change.
+ * @param {Routine} routine - The routine object to update.
  */
 
 function WorkoutRoutinePage() {
@@ -164,4 +178,3 @@ function WorkoutRoutinePage() {
 }
 
 export default WorkoutRoutinePage;
-

@@ -40,11 +40,10 @@ import './ProgressPage.css';
  */
 
 /**
- * @typedef {object} Goal
- * @property {string} id
- * @property {string} goal_description
- * @property {number} current_value
- * @property {number} target_value
+ * Load and aggregate the user's workouts, nutrition, and goals, then update the component state with computed stats and daily trends.
+ *
+ * This function groups entries by local date, treats missing numeric fields as 0, computes per-day totals and averages (duration, calories, and burn), and stores the resulting values in the component state: `stats`, `nutritionTrends`, `workoutDurationTrends`, `goals`, and `loading`.
+ * @param {string} userId - UUID of the user whose progress data will be fetched and processed.
  */
 
 function ProgressPage() {

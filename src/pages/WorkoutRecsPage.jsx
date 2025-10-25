@@ -9,6 +9,13 @@ import { Dumbbell, Zap, Lightbulb } from 'lucide-react';
 import { useAuth } from '../AuthContext.jsx'; 
 import './WorkoutRecsPage.css';
 
+/**
+ * Render the Recommendations page that lets a signed-in user request AI-generated workout recommendations and view the resulting analysis and suggested routine.
+ *
+ * Manages local loading, error, and recommendations state; validates the Supabase session before invoking the serverless recommendation function and displays corresponding loading, error, introductory, or results views.
+ *
+ * @returns {JSX.Element} The React element for the Recommendations page.
+ */
 function WorkoutRecsPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);

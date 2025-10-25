@@ -25,6 +25,16 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
+/**
+ * Render a sub-page header with a keyboard-focusable back control, a centered title, and an optional leading icon.
+ *
+ * @param {Object} props
+ * @param {string} [props.title] - Text displayed as the centered title.
+ * @param {import('react').ReactNode} [props.icon] - Optional leading icon; if a valid React element, it will be cloned and rendered with the specified color.
+ * @param {string} [props.iconColor='white'] - Color applied to the provided icon.
+ * @param {string} [props.backTo] - Route to navigate to when the back control is activated; if omitted, navigation falls back to history back (navigate(-1)).
+ * @returns {import('react').ReactElement} A React element representing the sub-page header.
+ */
 function SubPageHeader({ title = '', icon, iconColor = 'white', backTo }) {
   const navigate = useNavigate();
 

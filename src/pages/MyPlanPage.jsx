@@ -1,4 +1,3 @@
- 
 /**
  * @file MyPlanPage.jsx
  * @description This page displays the user's current subscription plan, shows other available plans, and provides access to app settings like theme selection.
@@ -27,8 +26,8 @@ import './MyPlanPage.css';
 // Modal styling moved to CSS (.settings-modal-overlay, .settings-modal-content)
 
 /**
- * Renders the "My Plan" page, showing subscription options and providing access to settings.
- * @returns {JSX.Element}
+ * Render the My Plan page with the current subscription, available upgrade options, and access to settings.
+ * @returns {JSX.Element} The rendered My Plan page element, including the plans grid and settings modal.
  */
 function MyPlanPage() {
   const { user } = useAuth(); // Get user from the central auth context
