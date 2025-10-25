@@ -55,10 +55,10 @@ import './ProgressPage.css';
  */
 
 /**
- * ProgressPage
- * Aggregates workout and nutrition data into summary statistics and trend
- * charts. The component defensively treats missing numeric fields as 0
- * and falls back to empty arrays for chart data to avoid render errors.
+ * Display a user's fitness progress: summary stats, daily trend charts, and active goals.
+ *
+ * Aggregates workout and nutrition data from the database, groups metrics by local date,
+ * treats missing numeric fields as 0, and provides data for lazy-loaded charts and goal progress bars.
  */
 function ProgressPage() {
   /**
