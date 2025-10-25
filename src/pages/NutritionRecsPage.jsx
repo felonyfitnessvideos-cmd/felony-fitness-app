@@ -29,6 +29,13 @@ import './NutritionRecsPage.css';
  * @property {Recommendation[]} recommendations - An array of specific recommendation objects.
  */
 
+/**
+ * NutritionRecsPage component
+ * Provides a UI to request AI nutrition recommendations and display results.
+ * Defensive note: this component expects the edge function to return an object
+ * matching the `RecommendationsData` typedef. Missing fields are handled
+ * gracefully by the rendering logic.
+ */
 function NutritionRecsPage() {
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
@@ -124,7 +131,7 @@ function NutritionRecsPage() {
               <h3>Here's your analysis:</h3>
               <p className="summary">{recommendations.analysis_summary}</p>
               <div className="recommendations-list">
-                {recommendations.recommendations.map((rec, index) => (
+                {(recommendations.recommendations || []).map((rec, index) => (
                   <div key={index} className="rec-card">
                     <h4>{rec.title}</h4>
                     <p className="reason"><strong>Why:</strong> {rec.reason}</p>

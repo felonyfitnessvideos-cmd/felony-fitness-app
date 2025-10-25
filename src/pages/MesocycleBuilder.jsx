@@ -79,16 +79,25 @@ function MesocycleBuilder() {
           // load week assignments
           const { data: wdata } = await supabase.from('mesocycle_weeks').select('*').eq('mesocycle_id', editingMesocycleId);
           if (!mounted) return;
-          if (wdata && wdata.length > 0) {
-            // map rows to assignments format expected by CycleWeekEditor
-            // Notes -> 'rest'|'deload', otherwise 'routine' when routine_id exists,
-            // otherwise default to 'rest' for empty rows.
-            const mapped = wdata.map(w => ({
-              week_index: w.week_index,
-              day_index: w.day_index,
-              type: (w.notes === 'rest' || w.notes === 'deload') ? w.notes : (w.routine_id ? 'routine' : 'rest'),
-              routine_id: w.routine_id
-            }));
+            if (wdata && wdata.length > 0) {
+            // Derive type explicitly for readability and future maintenance:
+            // - explicit note values ('rest' | 'deload') take precedence
+            // - if a routine_id exists it's a 'routine'
+            // - otherwise default to 'rest'
+            const mapped = wdata.map(w => {
+              let type = 'rest';
+              if (w.notes === 'rest' || w.notes === 'deload') {
+                type = w.notes;
+              } else if (w.routine_id) {
+                type = 'routine';
+              }
+              return {
+                week_index: w.week_index,
+                day_index: w.day_index,
+                type,
+                routine_id: w.routine_id
+              };
+            });
             setAssignments(mapped);
           }
         }
