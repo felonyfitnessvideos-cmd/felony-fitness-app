@@ -173,17 +173,28 @@ Deno.serve(async (req: Request) => {
     // during staged schema rollouts or client/server mismatches.
     if (nutritionRes.error) {
       const msg = String(nutritionRes.error.message || '').toLowerCase();
-      if (msg.includes('food_servings_1') || msg.includes('quantity_consumed')) {
-        console.warn('Nested nutrition select failed; retrying with raw food_servings select');
+      // If the error mentions food_servings or nested expansion failures,
+      // avoid attempting to select a non-existent `food_servings` column on
+      // `nutrition_logs`. Instead, try to retrieve the lightweight
+      // references (id, food_servings_id). If that also fails, continue so
+      // downstream fallbacks will query the `food_servings` table by
+      // user/date window.
+      if (msg.includes('food_servings') || msg.includes('food_servings_1') || msg.includes('quantity_consumed')) {
+        console.warn('Nutrition logs nested select failed; retrying with id, food_servings_id select');
         const fallback = await supabase
           .from('nutrition_logs')
-          .select('food_servings')
+          .select('id, food_servings_id')
           .eq('user_id', userId)
           .gte('created_at', sevenDaysAgo.toISOString());
-        if (fallback.error) throw new Error('Nutrition query failed: ' + (fallback.error.message ?? 'unknown'));
-        // replace nutritionRes with fallback shape so downstream code continues
-        // to treat nutritionRes.data as an array of rows with food_servings.
-        (nutritionRes as any).data = fallback.data;
+
+        if (fallback.error) {
+          // If even the simple select fails, log and set empty data so the
+          // downstream logic will attempt the broad food_servings fallback.
+          console.warn('Fallback nutrition_logs id select failed:', String(fallback.error.message || fallback.error));
+          (nutritionRes as any).data = [];
+        } else {
+          (nutritionRes as any).data = fallback.data;
+        }
       } else {
         throw new Error('Nutrition query failed: ' + (nutritionRes.error.message ?? 'unknown'));
       }
