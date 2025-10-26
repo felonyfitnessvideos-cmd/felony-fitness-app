@@ -150,8 +150,12 @@ Deno.serve(async (req: Request) => {
         .maybeSingle(),
       supabase
         .from('nutrition_logs')
-        // food_servings is stored as an array of servings; select per-serving quantity and food metadata
-        .select('food_servings(quantity_consumed, foods(name, category))')
+        // The schema in some deployments stores `food_servings` as a
+        // separate table and the `nutrition_logs` row holds a
+        // `food_servings_id` reference. Select the log id and the
+        // food_servings_id so we can resolve the actual servings in a
+        // follow-up query. This is robust across both schemas.
+        .select('id, food_servings_id')
         .eq('user_id', userId)
         .gte('created_at', sevenDaysAgo.toISOString()),
       supabase
@@ -163,7 +167,27 @@ Deno.serve(async (req: Request) => {
 
     if (profileRes.error) throw new Error('Profile query failed: ' + (profileRes.error.message ?? 'unknown'));
     if (metricsRes.error) throw new Error('Metrics query failed: ' + (metricsRes.error.message ?? 'unknown'));
-    if (nutritionRes.error) throw new Error('Nutrition query failed: ' + (nutritionRes.error.message ?? 'unknown'));
+    // Defensive: if a previous deployment used a nested select that caused
+    // a PostgREST error about non-existent expanded columns, re-run a
+    // simpler query selecting the raw `food_servings` column. This helps
+    // during staged schema rollouts or client/server mismatches.
+    if (nutritionRes.error) {
+      const msg = String(nutritionRes.error.message || '').toLowerCase();
+      if (msg.includes('food_servings_1') || msg.includes('quantity_consumed')) {
+        console.warn('Nested nutrition select failed; retrying with raw food_servings select');
+        const fallback = await supabase
+          .from('nutrition_logs')
+          .select('food_servings')
+          .eq('user_id', userId)
+          .gte('created_at', sevenDaysAgo.toISOString());
+        if (fallback.error) throw new Error('Nutrition query failed: ' + (fallback.error.message ?? 'unknown'));
+        // replace nutritionRes with fallback shape so downstream code continues
+        // to treat nutritionRes.data as an array of rows with food_servings.
+        (nutritionRes as any).data = fallback.data;
+      } else {
+        throw new Error('Nutrition query failed: ' + (nutritionRes.error.message ?? 'unknown'));
+      }
+    }
     if (workoutRes.error) throw new Error('Workout query failed: ' + (workoutRes.error.message ?? 'unknown'));
 
     if (!profileRes.data) {
@@ -173,15 +197,64 @@ Deno.serve(async (req: Request) => {
   const userProfile = profileRes.data as UserProfile;
   const latestMetrics = metricsRes.data as BodyMetrics | undefined;
 
-    const categoryCounts = (nutritionRes.data || []).reduce((acc: Record<string, number>, log: any) => {
-      const servings = Array.isArray(log.food_servings) ? log.food_servings : [];
-      for (const s of servings) {
-        const category = s?.foods?.category ?? 'Uncategorized';
-        const qty = Number.isFinite(s?.quantity_consumed) ? s.quantity_consumed : 1;
-        acc[category] = (acc[category] ?? 0) + qty;
+    // Build category counts. Support two storage patterns:
+    // 1) `nutrition_logs` contains a `food_servings` JSON array on the row.
+    // 2) `food_servings` is a separate table and `nutrition_logs` contains
+    //    a `food_servings_id` reference. We detect the pattern and fetch
+    //    servings accordingly.
+    let categoryCounts: Record<string, number> = {};
+
+    const rows = nutritionRes.data || [];
+    if (rows.length === 0) {
+      categoryCounts = {};
+    } else if (Array.isArray(rows) && rows[0] && Object.prototype.hasOwnProperty.call(rows[0], 'food_servings')) {
+      // Pattern 1: inline food_servings JSON on each log row
+      categoryCounts = (rows as any[]).reduce((acc: Record<string, number>, log: any) => {
+        const servings = Array.isArray(log.food_servings) ? log.food_servings : [];
+        for (const s of servings) {
+          const category = s?.foods?.category ?? 'Uncategorized';
+          const qty = Number.isFinite(s?.quantity_consumed) ? s.quantity_consumed : 1;
+          acc[category] = (acc[category] ?? 0) + qty;
+        }
+        return acc;
+      }, {} as Record<string, number>);
+    } else {
+      // Pattern 2: separate food_servings table referenced by food_servings_id
+      // Collect all referenced IDs (support single ID or arrays of IDs)
+      const ids = new Set<number | string>();
+      for (const r of rows) {
+        const ref = r?.food_servings_id;
+        if (!ref) continue;
+        if (Array.isArray(ref)) {
+          for (const id of ref) ids.add(id);
+        } else if (typeof ref === 'string' && ref.includes(',')) {
+          // sometimes stored as comma-separated list
+          for (const id of ref.split(',').map(s => s.trim()).filter(Boolean)) ids.add(id);
+        } else {
+          ids.add(ref);
+        }
       }
-      return acc;
-    }, {} as Record<string, number>);
+
+      const idList = Array.from(ids);
+      if (idList.length > 0) {
+        const fsRes = await supabase
+          .from('food_servings')
+          .select('quantity_consumed, foods(name, category)')
+          .in('id', idList as any[]);
+        if (fsRes.error) {
+          throw new Error('Nutrition query failed: ' + (fsRes.error.message ?? 'unknown'));
+        }
+
+        categoryCounts = (fsRes.data || []).reduce((acc: Record<string, number>, s: any) => {
+          const category = s?.foods?.category ?? 'Uncategorized';
+          const qty = Number.isFinite(s?.quantity_consumed) ? s.quantity_consumed : 1;
+          acc[category] = (acc[category] ?? 0) + qty;
+          return acc;
+        }, {} as Record<string, number>);
+      } else {
+        categoryCounts = {};
+      }
+    }
 
     const nutritionSummary = Object.entries(categoryCounts)
       .map(([category, count]) => '- ' + category + ': ' + count + ' serving(s)')
