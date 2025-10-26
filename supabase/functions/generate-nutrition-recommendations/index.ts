@@ -237,22 +237,49 @@ Deno.serve(async (req: Request) => {
 
       const idList = Array.from(ids);
       if (idList.length > 0) {
+        // Try to fetch referenced food_servings rows by id.
         const fsRes = await supabase
           .from('food_servings')
-          .select('quantity_consumed, foods(name, category)')
+          .select('id, quantity_consumed, quantity, qty, foods(name, category), category, food_name, created_at')
           .in('id', idList as any[]);
-        if (fsRes.error) {
-          throw new Error('Nutrition query failed: ' + (fsRes.error.message ?? 'unknown'));
-        }
 
-        categoryCounts = (fsRes.data || []).reduce((acc: Record<string, number>, s: any) => {
-          const category = s?.foods?.category ?? 'Uncategorized';
-          const qty = Number.isFinite(s?.quantity_consumed) ? s.quantity_consumed : 1;
-          acc[category] = (acc[category] ?? 0) + qty;
-          return acc;
-        }, {} as Record<string, number>);
-      } else {
-        categoryCounts = {};
+        if (fsRes.error) {
+          // If the direct join fails (schema mismatch), fall back to searching
+          // the `food_servings` table by user and time window below.
+          console.warn('Direct food_servings lookup by id failed, will try time-window fallback:', String(fsRes.error.message || fsRes.error));
+        } else if (fsRes.data && fsRes.data.length > 0) {
+          categoryCounts = (fsRes.data || []).reduce((acc: Record<string, number>, s: any) => {
+            // determine category field
+            const category = s?.foods?.category ?? s?.category ?? s?.food?.category ?? s?.food_name ?? 'Uncategorized';
+            const qty = Number.isFinite(s?.quantity_consumed) ? s.quantity_consumed : (Number.isFinite(s?.quantity) ? s.quantity : (Number.isFinite(s?.qty) ? s.qty : 1));
+            acc[category] = (acc[category] ?? 0) + qty;
+            return acc;
+          }, {} as Record<string, number>);
+        }
+      }
+
+      // If we still have no categoryCounts (schema variant), try a broad fallback:
+      // query the food_servings table for entries in the last 7 days for this user.
+      if (!Object.keys(categoryCounts).length) {
+        try {
+          const broad = await supabase
+            .from('food_servings')
+            .select('id, quantity_consumed, quantity, qty, foods(name, category), category, food_name, user_id, created_at')
+            .eq('user_id', userId)
+            .gte('created_at', sevenDaysAgo.toISOString());
+
+          if (!broad.error && Array.isArray(broad.data) && broad.data.length > 0) {
+            categoryCounts = (broad.data || []).reduce((acc: Record<string, number>, s: any) => {
+              const category = s?.foods?.category ?? s?.category ?? s?.food?.category ?? s?.food_name ?? 'Uncategorized';
+              const qty = Number.isFinite(s?.quantity_consumed) ? s.quantity_consumed : (Number.isFinite(s?.quantity) ? s.quantity : (Number.isFinite(s?.qty) ? s.qty : 1));
+              acc[category] = (acc[category] ?? 0) + qty;
+              return acc;
+            }, {} as Record<string, number>);
+          }
+        } catch (broadErr) {
+          console.warn('Broad food_servings fallback failed:', String(broadErr));
+          // fall through to possibly empty categoryCounts
+        }
       }
     }
 
