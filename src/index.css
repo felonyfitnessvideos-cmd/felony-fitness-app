@@ -14,6 +14,8 @@
   /* Additional variables for meal planner components */
   --primary-color: #f97316; /* Use accent color as primary */
   --hover-color: #4a5568; /* Slightly lighter than border for hover states */
+  --input-bg: #2d3748; /* Input background color */
+  --primary-rgb: 249, 115, 22; /* RGB values for primary color */
 
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -36,6 +38,8 @@
   /* Additional variables for meal planner components */
   --primary-color: #f97316; /* Keep accent color consistent */
   --hover-color: #e2e8f0; /* Light gray for hover */
+  --input-bg: #ffffff; /* Input background color for light theme */
+  --primary-rgb: 249, 115, 22; /* RGB values for primary color */
 }
 
 /* 3. Define the colors for the "high-contrast" theme */
@@ -51,6 +55,8 @@
   /* Additional variables for meal planner components */
   --primary-color: #ffc400; /* Use accent color as primary */
   --hover-color: #4d4d4d; /* Use border color for hover */
+  --input-bg: #1a1a1a; /* Input background color for high contrast */
+  --primary-rgb: 255, 196, 0; /* RGB values for primary color */
 }
 
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
-import { Plus, Search, X, Save, Clock, ChefHat } from 'lucide-react';
+import { Plus, Search, X, Save, ChefHat } from 'lucide-react';
 import './MealBuilder.css';
 
 /**
@@ -40,14 +40,7 @@ const MealBuilder = ({
   /** @type {[Object, Function]} State for meal metadata and details */
   const [mealData, setMealData] = useState({
     name: '',
-    description: '',
     category: 'breakfast',
-    serving_size: 1,
-    serving_unit: 'serving',
-    prep_time: '',
-    cook_time: '',
-    difficulty_level: 1,
-    instructions: '',
     tags: []
   });
 
@@ -84,14 +77,7 @@ const MealBuilder = ({
     if (editingMeal) {
       setMealData({
         name: editingMeal.name || '',
-        description: editingMeal.description || '',
         category: editingMeal.category || 'breakfast',
-        serving_size: editingMeal.serving_size || 1,
-        serving_unit: editingMeal.serving_unit || 'serving',
-        prep_time: editingMeal.prep_time || '',
-        cook_time: editingMeal.cook_time || '',
-        difficulty_level: editingMeal.difficulty_level || 1,
-        instructions: editingMeal.instructions || '',
         tags: editingMeal.tags || []
       });
       
@@ -103,14 +89,7 @@ const MealBuilder = ({
       // Reset form for new meal
       setMealData({
         name: '',
-        description: '',
         category: 'breakfast',
-        serving_size: 1,
-        serving_unit: 'serving',
-        prep_time: '',
-        cook_time: '',
-        difficulty_level: 1,
-        instructions: '',
         tags: []
       });
       setMealFoods([]);
@@ -198,7 +177,7 @@ const MealBuilder = ({
   };
 
   /**
-   * Search for foods by name in the database
+   * Search for foods by name - first in database, then via OpenAI API for missing foods
    * 
    * @async
    * @param {string} searchTerm - Search query to match against food names
@@ -212,14 +191,37 @@ const MealBuilder = ({
 
     setIsSearching(true);
     try {
-      const { data, error } = await supabase
+      // First search in database
+      const { data: dbResults, error } = await supabase
         .from('food_servings')
         .select('*')
         .ilike('food_name', `%${searchTerm}%`)
         .limit(20);
 
       if (error) throw error;
-      setSearchResults(data || []);
+
+      if (dbResults && dbResults.length > 0) {
+        setSearchResults(dbResults);
+      } else {
+        // No results in database, try OpenAI food search API
+        try {
+          const { data: apiResults, error: apiError } = await supabase.functions.invoke('food-search', {
+            body: { query: searchTerm }
+          });
+
+          if (apiError) throw apiError;
+          
+          // The API should return foods and save them to the database
+          if (apiResults && apiResults.length > 0) {
+            setSearchResults(apiResults);
+          } else {
+            setSearchResults([]);
+          }
+        } catch (apiError) {
+          console.error('Error with food search API:', apiError);
+          setSearchResults([]);
+        }
+      }
     } catch (error) {
       console.error('Error searching foods:', error);
       setSearchResults([]);
@@ -425,81 +427,11 @@ const MealBuilder = ({
                 </select>
               </div>
             </div>
-
-            <div className="form-group">
-              <label>Description</label>
-              <textarea
-                value={mealData.description}
-                onChange={(e) => setMealData({...mealData, description: e.target.value})}
-                placeholder="Brief description of the meal"
-                rows="2"
-              />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>Serving Size</label>
-                <input
-                  type="number"
-                  min="0.1"
-                  step="0.1"
-                  value={mealData.serving_size}
-                  onChange={(e) => setMealData({...mealData, serving_size: parseFloat(e.target.value) || 1})}
-                />
-              </div>
-              <div className="form-group">
-                <label>Serving Unit</label>
-                <input
-                  type="text"
-                  value={mealData.serving_unit}
-                  onChange={(e) => setMealData({...mealData, serving_unit: e.target.value})}
-                  placeholder="serving, cup, bowl, etc."
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>
-                  <Clock className="icon small" />
-                  Prep Time (min)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={mealData.prep_time}
-                  onChange={(e) => setMealData({...mealData, prep_time: parseInt(e.target.value) || ''})}
-                />
-              </div>
-              <div className="form-group">
-                <label>
-                  <Clock className="icon small" />
-                  Cook Time (min)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={mealData.cook_time}
-                  onChange={(e) => setMealData({...mealData, cook_time: parseInt(e.target.value) || ''})}
-                />
-              </div>
-              <div className="form-group">
-                <label>Difficulty (1-5)</label>
-                <select
-                  value={mealData.difficulty_level}
-                  onChange={(e) => setMealData({...mealData, difficulty_level: parseInt(e.target.value)})}
-                >
-                  {[1, 2, 3, 4, 5].map(level => (
-                    <option key={level} value={level}>{level}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
           </div>
 
           {/* Food Search and List Section */}
           <div className="meal-foods-section">
-            <h3>Ingredients</h3>
+            <h3>Foods</h3>
             
             {/* Food Search */}
             <div className="food-search">
@@ -572,27 +504,17 @@ const MealBuilder = ({
               
               {mealFoods.length === 0 && (
                 <div className="no-foods">
-                  <p>No ingredients added yet. Search and add foods above.</p>
+                  <p>No foods added yet. Search and add foods above.</p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Instructions Section */}
-          <div className="instructions-section">
-            <h3>Cooking Instructions</h3>
-            <textarea
-              value={mealData.instructions}
-              onChange={(e) => setMealData({...mealData, instructions: e.target.value})}
-              placeholder="Enter cooking instructions (optional)"
-              rows="4"
-            />
-          </div>
         </div>
 
         {/* Nutrition Summary */}
         <div className="nutrition-summary">
-          <h3>Nutrition Per Serving</h3>
+          <h3>Nutrition Per Meal</h3>
           <div className="nutrition-grid">
             <div className="nutrition-item">
               <div className="nutrition-value">{Math.round(nutrition.calories)}</div>

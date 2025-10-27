@@ -80,6 +80,9 @@
   border-radius: 8px;
   padding: 20px;
   border: 1px solid var(--border-color);
+  overflow: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .meal-details-section h3,
@@ -146,16 +149,21 @@
 
 .search-input-container {
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .search-input-container input {
   width: 100%;
+  max-width: 100%;
   padding: 12px 12px 12px 40px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--input-bg);
   color: var(--text-primary);
   font-size: 1rem;
+  box-sizing: border-box;
 }
 
 .search-input-container input:focus {
