@@ -386,7 +386,14 @@ function EditRoutinePage() {
               <button onClick={() => moveExercise(index, 'up')} disabled={index === 0}><ArrowUpCircle size={24} /></button>
               <button onClick={() => moveExercise(index, 'down')} disabled={index === routineExercises.length - 1}><ArrowDownCircle size={24} /></button>
             </div>
-            <img src={ex.thumbnail_url || 'https://placehold.co/50x50/4a5568/ffffff?text=IMG'} alt={ex.name} className="exercise-thumbnail"/>
+            <img 
+              src={ex.thumbnail_url || 'https://placehold.co/50x50/4a5568/ffffff?text=IMG'} 
+              alt={ex.name} 
+              className="exercise-thumbnail"
+              width="50"
+              height="50"
+              loading="lazy"
+            />
             <div className="exercise-details">
               <h4>{ex.name}</h4>
               <div className="exercise-inputs">

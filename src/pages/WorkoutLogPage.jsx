@@ -553,7 +553,13 @@ function WorkoutLogPage() {
       <div className="thumbnail-scroller">
         {routine?.routine_exercises.map((item, index) => (
             <button key={item.exercises.id} className={`thumbnail-btn ${index === selectedExerciseIndex ? 'selected' : ''}`} onClick={() => setSelectedExerciseIndex(index)}>
-            <img src={item.exercises.thumbnail_url || 'https://placehold.co/50x50/4a556j8/ffffff?text=IMG'} alt={item.exercises.name} />
+            <img 
+              src={item.exercises.thumbnail_url || 'https://placehold.co/50x50/4a556j8/ffffff?text=IMG'} 
+              alt={item.exercises.name}
+              width="50"
+              height="50"
+              loading="lazy"
+            />
             </button>
         ))}
       </div>

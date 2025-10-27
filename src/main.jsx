@@ -27,6 +27,7 @@ import Modal from 'react-modal';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './AuthContext.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import { initPerformanceOptimizations } from './utils/performance.js';
 
 // Import all page components
 import App from './App.jsx';
@@ -61,6 +62,9 @@ const MyMealsPage = React.lazy(() => import('./pages/MyMealsPage.jsx'));
 // Binds the modal to the app's root element for accessibility (e.g., screen readers).
 Modal.setAppElement('#root'); 
 
+// Initialize performance optimizations
+initPerformanceOptimizations();
+
 // Renders the main React application into the DOM.
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -69,7 +73,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         {/* The AuthProvider makes user session data available to all components. */}
         <AuthProvider>
           <ErrorBoundary>
-            <React.Suspense fallback={<div>Loading...</div>}>
+            <React.Suspense fallback={
+              <div className="loading-container">
+                <div>⚡ Loading...</div>
+              </div>
+            }>
             <Routes>
             {/* Route 1: The public login page. It does not use the main App layout. */}
             <Route path="/" element={<AuthPage />} />
