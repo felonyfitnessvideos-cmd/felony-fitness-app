@@ -1,7 +1,7 @@
 /* MyMealsPage.css */
 .my-meals-page {
   min-height: 100vh;
-  background: var(--bg-color);
+  background: var(--background-color);
   padding: 20px;
 }
 
