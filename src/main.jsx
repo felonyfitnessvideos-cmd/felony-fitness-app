@@ -54,6 +54,9 @@ const MesocyclesPage = React.lazy(() => import('./pages/MesocyclesPage.jsx'));
 const MesocycleBuilder = React.lazy(() => import('./pages/MesocycleBuilder.jsx'));
 const MesocycleDetail = React.lazy(() => import('./pages/MesocycleDetail.jsx'));
 const MesocycleLogPage = React.lazy(() => import('./pages/MesocycleLogPage.jsx'));
+// Meal Planner pages
+const WeeklyMealPlannerPage = React.lazy(() => import('./pages/WeeklyMealPlannerPage.jsx'));
+const MyMealsPage = React.lazy(() => import('./pages/MyMealsPage.jsx'));
 
 // Binds the modal to the app's root element for accessibility (e.g., screen readers).
 Modal.setAppElement('#root'); 
@@ -99,6 +102,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/nutrition/goals" element={<NutritionGoalsPage />} />
               <Route path="/nutrition/log" element={<NutritionLogPage />} />
               <Route path="/nutrition/recommendations" element={<NutritionRecsPage />} />
+              
+              {/* --- Meal Planner routes --- */}
+              <Route path="/nutrition/meal-planner" element={<WeeklyMealPlannerPage />} />
+              <Route path="/nutrition/my-meals" element={<MyMealsPage />} />
 
               {/* --- Profile route --- */}
               <Route path="/profile" element={<ProfilePage />} />
