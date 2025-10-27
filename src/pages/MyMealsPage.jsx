@@ -165,34 +165,6 @@ const MyMealsPage = () => {
 
 
 
-
-  const filterMeals = () => {
-    let filtered = meals;
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(meal =>
-        meal.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        meal.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        meal.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(meal => meal.category === selectedCategory);
-    }
-
-    // Filter by tags
-    if (selectedTags.length > 0) {
-      filtered = filtered.filter(meal =>
-        meal.tags && selectedTags.every(tag => meal.tags.includes(tag))
-      );
-    }
-
-    setFilteredMeals(filtered);
-  };
-
   const toggleFavorite = async (mealId, currentFavorite) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
