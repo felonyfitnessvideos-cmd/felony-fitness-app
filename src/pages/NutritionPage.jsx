@@ -13,10 +13,10 @@ import { supabase } from '../supabaseClient.js';
 import './NutritionPage.css';
 
 /**
- * Renders the main nutrition page, which acts as a hub for nutrition-related features.
- * This component fetches and displays a random daily nutrition tip from the database upon loading.
+ * Nutrition hub component that displays a header, navigation cards, and a daily nutrition tip.
  *
- * @returns {JSX.Element} The rendered nutrition page component, containing a header, navigation links, and a daily tip card.
+ * Fetches a random tip from the database on mount and displays it in a "Daily Tip" card; if fetching fails a fallback message is shown.
+ * @returns {JSX.Element} The nutrition page element containing the header, navigation links, and daily tip card.
  */
 function NutritionPage() {
   /**

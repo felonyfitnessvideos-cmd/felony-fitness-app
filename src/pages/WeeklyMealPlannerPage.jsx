@@ -84,10 +84,9 @@ const WeeklyMealPlannerPage = () => {
   }, [planEntries]);
 
   /**
-   * Generate array of dates for a week starting from Monday
-   * 
-   * @param {Date} date - Reference date to calculate week from
-   * @returns {Date[]} Array of 7 Date objects representing the week
+   * Return seven Date objects for the week (Monday through Sunday) that contains the given reference date.
+   * @param {Date} date - A reference date within the target week.
+   * @returns {Date[]} Array of 7 new Date objects ordered from Monday to Sunday for the week containing `date`.
    */
   function getWeekDates(date) {
     const week = [];
