@@ -1,14 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { Calendar, Plus, Edit, Trash2, ShoppingCart, Target, ChefHat, X } from 'lucide-react';
 import MealBuilder from '../components/MealBuilder';
+import { MEAL_TYPES, DAYS_OF_WEEK, getWeekDates } from '../constants/mealPlannerConstants';
 import './WeeklyMealPlannerPage.css';
-
-/** @constant {string[]} Available meal types for planning */
-const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack1', 'snack2'];
-
-/** @constant {string[]} Days of the week for meal planning grid */
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 /**
  * WeeklyMealPlannerPage component for managing weekly meal plans
@@ -29,13 +24,13 @@ const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'S
  */
 const WeeklyMealPlannerPage = () => {
   /** @type {[Date[], Function]} Current week's date array for meal planning */
-  const [currentWeek, setCurrentWeek] = useState(getWeekDates(new Date()));
+  const [currentWeek, setCurrentWeek] = useState(() => getWeekDates(new Date()));
   
   /** @type {[Object|null, Function]} Currently active meal plan */
   const [activePlan, setActivePlan] = useState(null);
   
   /** @type {[Array, Function]} User's available meal plans */
-  const [_mealPlans, setMealPlans] = useState([]);
+  const [mealPlans, setMealPlans] = useState([]);
   
   /** @type {[Array, Function]} Meal entries for the current week/plan */
   const [planEntries, setPlanEntries] = useState([]);
@@ -44,7 +39,7 @@ const WeeklyMealPlannerPage = () => {
   const [userMeals, setUserMeals] = useState([]);
   
   /** @type {[Object|null, Function]} Currently selected meal for assignment */
-  const [_selectedMeal, _setSelectedMeal] = useState(null);
+  const [selectedMeal, setSelectedMeal] = useState(null);
   
   /** @type {[Object|null, Function]} Selected time slot for meal assignment */
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -59,7 +54,7 @@ const WeeklyMealPlannerPage = () => {
   const [weeklyNutrition, setWeeklyNutrition] = useState({});
   
   /** @type {[Object|null, Function]} User's nutrition goals for comparison */
-  const [_nutritionGoals, setNutritionGoals] = useState(null);
+  const [nutritionGoals, setNutritionGoals] = useState(null);
   
   /** @type {[string, Function]} Selected meal category filter */
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -67,51 +62,13 @@ const WeeklyMealPlannerPage = () => {
   /** @type {[boolean, Function]} Loading state for initial data fetch */
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  useEffect(() => {
-    if (activePlan) {
-      loadPlanEntries();
-    }
-  }, [activePlan, currentWeek]);
-
-  useEffect(() => {
-    if (planEntries.length > 0) {
-      calculateWeeklyNutrition();
-    }
-  }, [planEntries]);
-
   /**
-   * Generate array of dates for a week starting from Monday
-   * 
-   * @param {Date} date - Reference date to calculate week from
-   * @returns {Date[]} Array of 7 Date objects representing the week
-   */
-  function getWeekDates(date) {
-    const week = [];
-    const startOfWeek = new Date(date);
-    const day = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
-    startOfWeek.setDate(diff);
-
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(startOfWeek);
-      day.setDate(startOfWeek.getDate() + i);
-      week.push(day);
-    }
-    return week;
-  }
-
-  /**
-   * Load initial data required for the meal planner
-   * Fetches nutrition goals, meal plans, and user meals
+   * Load initial data including nutrition goals, meal plans, and user meals
    * 
    * @async
    * @returns {Promise<void>}
    */
-  const loadInitialData = async () => {
+  const loadInitialData = useCallback(async () => {
     try {
       setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
@@ -143,7 +100,121 @@ const WeeklyMealPlannerPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  /**
+   * Load plan entries for the current week and active plan
+   * 
+   * @async
+   * @returns {Promise<void>}
+   */
+  const loadPlanEntries = useCallback(async () => {
+    if (!activePlan) return;
+
+    try {
+      const startDate = currentWeek[0].toISOString().split('T')[0];
+      const endDate = currentWeek[6].toISOString().split('T')[0];
+
+      const { data, error } = await supabase
+        .from('meal_plan_entries')
+        .select(`
+          *,
+          meals (
+            id,
+            name,
+            category,
+            meal_foods (
+              quantity,
+              food_servings (
+                calories,
+                protein,
+                carbs,
+                fat,
+                fiber,
+                sugar
+              )
+            )
+          )
+        `)
+        .eq('weekly_meal_plan_id', activePlan.id)
+        .gte('plan_date', startDate)
+        .lte('plan_date', endDate);
+
+      if (error) throw error;
+      setPlanEntries(data || []);
+    } catch (error) {
+      console.error('Error loading plan entries:', error);
+    }
+  }, [activePlan, currentWeek]);
+
+  /**
+   * Calculate weekly nutrition totals
+   * 
+   * @returns {void}
+   */
+  const calculateWeeklyNutrition = useCallback(() => {
+    const dailyNutrition = {};
+
+    // Initialize each day
+    currentWeek.forEach(date => {
+      const dateStr = date.toISOString().split('T')[0];
+      dailyNutrition[dateStr] = {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        fiber: 0,
+        sugar: 0
+      };
+    });
+
+    // Calculate nutrition for each entry
+    planEntries.forEach(entry => {
+      const dateStr = entry.plan_date;
+      const servings = entry.servings || 1;
+
+      if (!dailyNutrition[dateStr]) return;
+
+      entry.meals.meal_foods.forEach(mealFood => {
+        const food = mealFood.food_servings;
+        const quantity = mealFood.quantity * servings;
+
+        dailyNutrition[dateStr].calories += (food.calories * quantity || 0);
+        dailyNutrition[dateStr].protein += (food.protein * quantity || 0);
+        dailyNutrition[dateStr].carbs += (food.carbs * quantity || 0);
+        dailyNutrition[dateStr].fat += (food.fat * quantity || 0);
+        dailyNutrition[dateStr].fiber += (food.fiber * quantity || 0);
+        dailyNutrition[dateStr].sugar += (food.sugar * quantity || 0);
+      });
+    });
+
+    setWeeklyNutrition(dailyNutrition);
+  }, [planEntries, currentWeek]);
+
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
+
+  useEffect(() => {
+    loadPlanEntries();
+  }, [loadPlanEntries]);
+
+  useEffect(() => {
+    if (planEntries.length > 0) {
+      calculateWeeklyNutrition();
+    }
+  }, [calculateWeeklyNutrition, planEntries]);
+
+
+
+  /**
+   * Load initial data required for the meal planner
+   * Fetches nutrition goals, meal plans, and user meals
+   * 
+   * @async
+   * @returns {Promise<void>}
+   */
+
 
   /**
    * Load user's meal plans from database

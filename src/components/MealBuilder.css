@@ -59,6 +59,12 @@
   color: var(--text-primary);
 }
 
+.close-btn:focus-visible,
+.close-btn:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
 .meal-builder-content {
   padding: 24px;
   display: flex;

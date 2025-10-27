@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { ShoppingCart, Check, X, Plus, Edit, Save, Trash2, Download, Calendar } from 'lucide-react';
+import { FOOD_CATEGORIES } from '../constants/mealPlannerConstants';
 import './ShoppingListGenerator.css';
 
 /**
@@ -43,9 +44,6 @@ const ShoppingListGenerator = ({ isOpen, onClose, weekPlan, weekDates }) => {
   /** @type {[string, Function]} Text input for new custom item */
   const [newCustomItem, setNewCustomItem] = useState('');
   
-  /** @type {[Object|null, Function]} Item currently being edited */
-  const [_editingItem, _setEditingItem] = useState(null);
-  
   /** @type {[boolean, Function]} Loading state for list generation */
   const [isLoading, setIsLoading] = useState(false);
   
@@ -53,22 +51,13 @@ const ShoppingListGenerator = ({ isOpen, onClose, weekPlan, weekDates }) => {
   const [groupByCategory, setGroupByCategory] = useState(true);
 
   /** @constant {Object} Food categories for organizing shopping list items */
-  const foodCategories = {
-    'Produce': ['fruits', 'vegetables', 'herbs', 'fresh'],
-    'Meat & Seafood': ['chicken', 'beef', 'pork', 'fish', 'salmon', 'turkey', 'bacon'],
-    'Dairy & Eggs': ['milk', 'cheese', 'yogurt', 'eggs', 'butter', 'cream'],
-    'Grains & Bread': ['bread', 'rice', 'quinoa', 'pasta', 'oats', 'tortilla'],
-    'Pantry': ['oil', 'vinegar', 'spices', 'sauce', 'dressing', 'nuts', 'seeds'],
-    'Condiments': ['mayo', 'mustard', 'ketchup', 'salsa', 'honey'],
-    'Frozen': ['frozen'],
-    'Other': []
-  };
+  const foodCategories = FOOD_CATEGORIES;
 
   useEffect(() => {
     if (isOpen && weekPlan) {
       generateShoppingList();
     }
-  }, [isOpen, weekPlan]);
+  }, [isOpen, weekPlan, generateShoppingList]);
 
   /**
    * Generate shopping list from meal plan entries
@@ -77,7 +66,7 @@ const ShoppingListGenerator = ({ isOpen, onClose, weekPlan, weekDates }) => {
    * @async
    * @returns {Promise<void>}
    */
-  const generateShoppingList = async () => {
+  const generateShoppingList = useCallback(async () => {
     setIsLoading(true);
     try {
       // Get all meal plan entries for the current week
@@ -161,7 +150,7 @@ const ShoppingListGenerator = ({ isOpen, onClose, weekPlan, weekDates }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [weekPlan, weekDates, groupByCategory, foodCategories, categorizeFood]);
 
   /**
    * Categorize a food item based on its name
@@ -169,7 +158,7 @@ const ShoppingListGenerator = ({ isOpen, onClose, weekPlan, weekDates }) => {
    * @param {string} foodName - Name of the food to categorize
    * @returns {string} Category name for the food
    */
-  const categorizeFood = (foodName) => {
+  const categorizeFood = useCallback((foodName) => {
     const name = foodName.toLowerCase();
     
     for (const [category, keywords] of Object.entries(foodCategories)) {
@@ -179,7 +168,7 @@ const ShoppingListGenerator = ({ isOpen, onClose, weekPlan, weekDates }) => {
     }
     
     return 'Other';
-  };
+  }, [foodCategories]);
 
   /**
    * Format quantity for display in shopping list

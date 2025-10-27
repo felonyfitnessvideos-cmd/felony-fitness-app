@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { Plus, Search, X, Save, Clock, ChefHat } from 'lucide-react';
 import './MealBuilder.css';
@@ -118,11 +118,42 @@ const MealBuilder = ({
   }, [editingMeal, isOpen]);
 
   /**
+   * Calculate total nutrition values for all foods in the meal
+   * Updates nutrition state with calculated totals based on food quantities
+   * 
+   * @returns {void}
+   */
+  const calculateNutrition = useCallback(() => {
+    const totals = mealFoods.reduce((acc, item) => {
+      const food = item.food_servings;
+      const quantity = item.quantity || 0;
+      
+      return {
+        calories: acc.calories + (food.calories * quantity || 0),
+        protein: acc.protein + (food.protein * quantity || 0),
+        carbs: acc.carbs + (food.carbs * quantity || 0),
+        fat: acc.fat + (food.fat * quantity || 0),
+        fiber: acc.fiber + (food.fiber * quantity || 0),
+        sugar: acc.sugar + (food.sugar * quantity || 0)
+      };
+    }, {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      fiber: 0,
+      sugar: 0
+    });
+
+    setNutrition(totals);
+  }, [mealFoods]);
+
+  /**
    * Recalculate nutrition totals whenever meal foods are modified
    */
   useEffect(() => {
     calculateNutrition();
-  }, [mealFoods]);
+  }, [calculateNutrition]);
 
   /**
    * Load existing meal foods from database for editing mode
@@ -255,36 +286,7 @@ const MealBuilder = ({
     setMealFoods(mealFoods.filter((_, i) => i !== index));
   };
 
-  /**
-   * Calculate total nutrition values for all foods in the meal
-   * Updates nutrition state with calculated totals based on food quantities
-   * 
-   * @returns {void}
-   */
-  const calculateNutrition = () => {
-    const totals = mealFoods.reduce((acc, item) => {
-      const food = item.food_servings;
-      const quantity = item.quantity || 0;
-      
-      return {
-        calories: acc.calories + (food.calories * quantity || 0),
-        protein: acc.protein + (food.protein * quantity || 0),
-        carbs: acc.carbs + (food.carbs * quantity || 0),
-        fat: acc.fat + (food.fat * quantity || 0),
-        fiber: acc.fiber + (food.fiber * quantity || 0),
-        sugar: acc.sugar + (food.sugar * quantity || 0)
-      };
-    }, {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      fiber: 0,
-      sugar: 0
-    });
 
-    setNutrition(totals);
-  };
 
   /**
    * Save the meal to the database (create new or update existing)

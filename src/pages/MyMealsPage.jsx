@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { Search, Plus, Edit, Trash2, Heart, Clock, ChefHat, Filter, Star, Copy } from 'lucide-react';
 import MealBuilder from '../components/MealBuilder';
+import { MEAL_CATEGORIES, calculateMealNutrition } from '../constants/mealPlannerConstants';
 import './MyMealsPage.css';
 
 /**
@@ -50,20 +51,38 @@ const MyMealsPage = () => {
   const [availableTags, setAvailableTags] = useState([]);
 
   /** @constant {Array<Object>} Available meal categories for filtering */
-  const categories = [
-    { value: 'all', label: 'All Meals' },
-    { value: 'breakfast', label: 'Breakfast' },
-    { value: 'lunch', label: 'Lunch' },
-    { value: 'dinner', label: 'Dinner' },
-    { value: 'snack', label: 'Snacks' }
-  ];
+  const categories = MEAL_CATEGORIES;
 
-  useEffect(() => {
-    loadMeals();
-  }, []);
+  /**
+   * Filter meals based on search term, category, and tags
+   * 
+   * @returns {void}
+   */
+  const filterMeals = useCallback(() => {
+    let filtered = meals;
 
-  useEffect(() => {
-    filterMeals();
+    // Filter by search term
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(meal =>
+        meal.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        meal.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        meal.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(meal => meal.category === selectedCategory);
+    }
+
+    // Filter by tags
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter(meal =>
+        meal.tags?.some(tag => selectedTags.includes(tag))
+      );
+    }
+
+    setFilteredMeals(filtered);
   }, [meals, searchTerm, selectedCategory, selectedTags]);
 
   /**
@@ -73,7 +92,7 @@ const MyMealsPage = () => {
    * @async
    * @returns {Promise<void>}
    */
-  const loadMeals = async () => {
+  const loadMeals = useCallback(async () => {
     try {
       setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
@@ -133,38 +152,19 @@ const MyMealsPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  /**
-   * Calculate total nutrition values for a meal based on its foods
-   * 
-   * @param {Array} mealFoods - Array of meal_foods with quantities and nutrition data
-   * @returns {Object} Calculated nutrition totals (calories, protein, carbs, fat, fiber, sugar)
-   */
-  const calculateMealNutrition = (mealFoods) => {
-    if (!mealFoods) return { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0 };
+  useEffect(() => {
+    loadMeals();
+  }, [loadMeals]);
 
-    return mealFoods.reduce((acc, item) => {
-      const food = item.food_servings;
-      const quantity = item.quantity || 0;
-      
-      return {
-        calories: acc.calories + (food.calories * quantity || 0),
-        protein: acc.protein + (food.protein * quantity || 0),
-        carbs: acc.carbs + (food.carbs * quantity || 0),
-        fat: acc.fat + (food.fat * quantity || 0),
-        fiber: acc.fiber + (food.fiber * quantity || 0),
-        sugar: acc.sugar + (food.sugar * quantity || 0)
-      };
-    }, {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      fiber: 0,
-      sugar: 0
-    });
-  };
+  useEffect(() => {
+    filterMeals();
+  }, [filterMeals]);
+
+
+
+
 
   const filterMeals = () => {
     let filtered = meals;
