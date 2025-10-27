@@ -28,7 +28,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient.js';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { FaGoogle, FaMicrosoft, FaFacebook } from 'react-icons/fa';
+import { FaGoogle, FaMicrosoft } from 'react-icons/fa';
 import './AuthPage.css';
 
 /**
@@ -93,7 +93,7 @@ function AuthPage() {
 
   /**
    * Handles user authentication via third-party OAuth providers (e.g., Google).
-   * @param {'google' | 'azure' | 'facebook'} provider - The name of the OAuth provider.
+   * @param {'google' | 'azure'} provider - The name of the OAuth provider.
    * @async
    */
   const handleSocialAuth = async (provider) => {
@@ -130,9 +130,6 @@ function AuthPage() {
           </button>
           <button onClick={() => handleSocialAuth('azure')} disabled={loading}>
             <FaMicrosoft size={20} /> Continue with Microsoft
-          </button>
-          <button onClick={() => alert("Facebook auth not configured.")} disabled={loading}>
-            <FaFacebook size={20} /> Continue with Facebook
           </button>
         </div>
 
