@@ -4,6 +4,11 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa'; // Import the plugin
 
 export default defineConfig({
+  // Enable optimized development
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'lucide-react'],
+    exclude: ['react-icons'] // Exclude unused packages
+  },
   plugins: [
     react(),
     VitePWA({ // Add the PWA plugin configuration
@@ -75,7 +80,7 @@ export default defineConfig({
           if (id.includes('@supabase') || id.includes('supabase')) return 'supabase';
           if (id.includes('react') || id.includes('scheduler')) return 'react';
           if (id.includes('react-router')) return 'router';
-          if (id.includes('lucide-react') || id.includes('react-icons')) return 'icons';
+          if (id.includes('lucide-react')) return 'icons';
           
           // Group smaller utilities
           if (id.includes('@dnd-kit') || id.includes('react-modal')) return 'ui-utils';
