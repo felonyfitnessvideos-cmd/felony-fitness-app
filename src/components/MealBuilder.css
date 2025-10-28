@@ -237,6 +237,33 @@
   flex-shrink: 0;
 }
 
+.search-loading {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.loading-spinner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.loading-spinner::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Selected Foods */
 .selected-foods {
   display: flex;
@@ -322,7 +349,7 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 20px 24px;
-  margin: 0 24px;
+  margin: 0;
 }
 
 .nutrition-summary h3 {

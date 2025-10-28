@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { Plus, Search, X, Save, ChefHat } from 'lucide-react';
 import './MealBuilder.css';
@@ -54,7 +54,13 @@ const MealBuilder = ({
   const [searchResults, setSearchResults] = useState([]);
   
   /** @type {[boolean, Function]} State for food search loading indicator */
-  const [_isSearching, setIsSearching] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  
+  /** @type {React.MutableRefObject} Reference for search debounce timeout */
+  const searchDebounceRef = useRef(null);
+  
+  /** @type {React.MutableRefObject} Reference for search abort controller */
+  const searchAbortControllerRef = useRef(null);
   
   /** @type {[Object, Function]} State for calculated nutrition totals */
   const [nutrition, setNutrition] = useState({
@@ -134,6 +140,19 @@ const MealBuilder = ({
     calculateNutrition();
   }, [calculateNutrition]);
 
+  // Cleanup search timers and controllers on unmount
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+      if (searchAbortControllerRef.current) {
+        try { searchAbortControllerRef.current.abort(); } catch { /* ignore */ }
+        searchAbortControllerRef.current = null;
+      }
+    };
+  }, []);
+
   /**
    * Load existing meal foods from database for editing mode
    * 
@@ -177,61 +196,94 @@ const MealBuilder = ({
   };
 
   /**
-   * Search for foods by name - first in database, then via OpenAI API for missing foods
+   * Search for foods using the same comprehensive search as NutritionLogPage
+   * Uses food-search function for both database and OpenAI API results with debouncing
    * 
-   * @async
    * @param {string} searchTerm - Search query to match against food names
-   * @returns {Promise<void>}
    */
-  const searchFoods = async (searchTerm) => {
+  const searchFoods = useCallback((searchTerm) => {
+    // Clear existing timeout
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    
     if (!searchTerm.trim()) {
       setSearchResults([]);
+      setIsSearching(false);
       return;
     }
 
-    setIsSearching(true);
-    try {
-      // First search in database
-      const { data: dbResults, error } = await supabase
-        .from('food_servings')
-        .select('*')
-        .ilike('food_name', `%${searchTerm}%`)
-        .limit(20);
-
-      if (error) throw error;
-
-      if (dbResults && dbResults.length > 0) {
-        setSearchResults(dbResults);
-      } else {
-        // No results in database, try OpenAI food search API
-        try {
-          const { data: apiResults, error: apiError } = await supabase.functions.invoke('food-search', {
-            body: { query: searchTerm }
-          });
-
-          if (apiError) throw apiError;
-          
-          // The API should return foods and save them to the database
-          if (apiResults && apiResults.length > 0) {
-            setSearchResults(apiResults);
-          } else {
-            setSearchResults([]);
-          }
-        } catch (apiError) {
-          console.error('Error with food search API:', apiError);
-          setSearchResults([]);
-        }
+    searchDebounceRef.current = setTimeout(async () => {
+      if (searchAbortControllerRef.current) {
+        try { searchAbortControllerRef.current.abort(); } catch (_err) { void _err; /* ignore */ }
       }
-    } catch (error) {
-      console.error('Error searching foods:', error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
+      const controller = new AbortController();
+      searchAbortControllerRef.current = controller;
+
+      setIsSearching(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('food-search', {
+          body: { query: searchTerm },
+          signal: controller.signal,
+        });
+        
+        if (error) throw error;
+        if (controller.signal.aborted) return;
+
+        let standardizedResults = [];
+        if (data?.source === 'local') {
+          // Database results - convert to consistent format
+          standardizedResults = (data.results || []).flatMap(food => 
+            (food.food_servings || []).map(serving => ({
+              id: serving.id,
+              food_name: food.name,
+              serving_size: serving.serving_size,
+              serving_unit: serving.serving_unit,
+              calories: serving.calories,
+              protein: serving.protein_g,
+              carbs: serving.carbs_g,
+              fat: serving.fat_g,
+              fiber: serving.fiber_g,
+              sugar: serving.sugar_g,
+              is_external: false,
+              food_id: food.id,
+              serving_id: serving.id,
+              serving_description: serving.serving_description
+            }))
+          );
+        } else if (data?.source === 'external') {
+          // OpenAI API results - already in correct format
+          standardizedResults = (data.results || []).map(item => ({
+            ...item,
+            is_external: true,
+            food_name: item.name,
+            // Map external format to internal format
+            id: item.serving_id || item.id,
+            protein: item.protein_g,
+            carbs: item.carbs_g,
+            fat: item.fat_g,
+            fiber: item.fiber_g,
+            sugar: item.sugar_g
+          }));
+        }
+        
+        setSearchResults(standardizedResults);
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          // ignore
+        } else {
+          console.error('Error searching foods:', error);
+        }
+      } finally {
+        setIsSearching(false);
+        searchAbortControllerRef.current = null;
+      }
+    }, 300);
+  }, []);
 
   /**
    * Add a food item to the meal or increase quantity if already present
+   * Handles both database and external API food results
    * 
    * @param {Object} food - Food item from search results
    * @param {number} food.id - Unique food serving ID
@@ -239,7 +291,8 @@ const MealBuilder = ({
    * @param {number} food.calories - Calories per serving
    */
   const addFoodToMeal = (food) => {
-    const existingIndex = mealFoods.findIndex(item => item.food_servings_id === food.id);
+    const servingId = food.serving_id || food.id;
+    const existingIndex = mealFoods.findIndex(item => item.food_servings_id === servingId);
     
     if (existingIndex >= 0) {
       // Increase quantity if food already exists
@@ -247,13 +300,27 @@ const MealBuilder = ({
       updated[existingIndex].quantity += 1;
       setMealFoods(updated);
     } else {
+      // Convert search result to meal food format
+      const foodServingData = {
+        id: servingId,
+        food_name: food.food_name || food.name,
+        serving_size: food.serving_size || 1,
+        serving_unit: food.serving_unit || 'serving',
+        calories: food.calories || 0,
+        protein: food.protein || food.protein_g || 0,
+        carbs: food.carbs || food.carbs_g || 0,
+        fat: food.fat || food.fat_g || 0,
+        fiber: food.fiber || food.fiber_g || 0,
+        sugar: food.sugar || food.sugar_g || 0
+      };
+      
       // Add new food
       setMealFoods([...mealFoods, {
         id: null, // New item, no ID yet
-        food_servings_id: food.id,
+        food_servings_id: servingId,
         quantity: 1,
         notes: '',
-        food_servings: food
+        food_servings: foodServingData
       }]);
     }
     
@@ -449,7 +516,13 @@ const MealBuilder = ({
               </div>
               
               {/* Search Results */}
-              {searchResults.length > 0 && (
+              {isSearching && (
+                <div className="search-loading">
+                  <div className="loading-spinner">Searching foods...</div>
+                </div>
+              )}
+              
+              {!isSearching && searchResults.length > 0 && (
                 <div className="search-results">
                   {searchResults.map(food => (
                     <div
@@ -510,37 +583,37 @@ const MealBuilder = ({
             </div>
           </div>
 
-        </div>
-
-        {/* Nutrition Summary */}
-        <div className="nutrition-summary">
-          <h3>Nutrition Per Meal</h3>
-          <div className="nutrition-grid">
-            <div className="nutrition-item">
-              <div className="nutrition-value">{Math.round(nutrition.calories)}</div>
-              <div className="nutrition-label">Calories</div>
-            </div>
-            <div className="nutrition-item">
-              <div className="nutrition-value">{Math.round(nutrition.protein)}g</div>
-              <div className="nutrition-label">Protein</div>
-            </div>
-            <div className="nutrition-item">
-              <div className="nutrition-value">{Math.round(nutrition.carbs)}g</div>
-              <div className="nutrition-label">Carbs</div>
-            </div>
-            <div className="nutrition-item">
-              <div className="nutrition-value">{Math.round(nutrition.fat)}g</div>
-              <div className="nutrition-label">Fat</div>
-            </div>
-            <div className="nutrition-item">
-              <div className="nutrition-value">{Math.round(nutrition.fiber)}g</div>
-              <div className="nutrition-label">Fiber</div>
-            </div>
-            <div className="nutrition-item">
-              <div className="nutrition-value">{Math.round(nutrition.sugar)}g</div>
-              <div className="nutrition-label">Sugar</div>
+          {/* Nutrition Summary */}
+          <div className="nutrition-summary">
+            <h3>Nutrition Per Meal</h3>
+            <div className="nutrition-grid">
+              <div className="nutrition-item">
+                <div className="nutrition-value">{Math.round(nutrition.calories)}</div>
+                <div className="nutrition-label">Calories</div>
+              </div>
+              <div className="nutrition-item">
+                <div className="nutrition-value">{Math.round(nutrition.protein)}g</div>
+                <div className="nutrition-label">Protein</div>
+              </div>
+              <div className="nutrition-item">
+                <div className="nutrition-value">{Math.round(nutrition.carbs)}g</div>
+                <div className="nutrition-label">Carbs</div>
+              </div>
+              <div className="nutrition-item">
+                <div className="nutrition-value">{Math.round(nutrition.fat)}g</div>
+                <div className="nutrition-label">Fat</div>
+              </div>
+              <div className="nutrition-item">
+                <div className="nutrition-value">{Math.round(nutrition.fiber)}g</div>
+                <div className="nutrition-label">Fiber</div>
+              </div>
+              <div className="nutrition-item">
+                <div className="nutrition-value">{Math.round(nutrition.sugar)}g</div>
+                <div className="nutrition-label">Sugar</div>
+              </div>
             </div>
           </div>
+
         </div>
 
         {/* Action Buttons */}
