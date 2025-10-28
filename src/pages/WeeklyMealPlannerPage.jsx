@@ -362,6 +362,17 @@ const WeeklyMealPlannerPage = () => {
 
   const handleSlotClick = (date, mealType) => {
     setSelectedSlot({ date: date.toISOString().split('T')[0], mealType });
+    
+    // Auto-select the appropriate category based on meal type
+    const categoryMap = {
+      breakfast: 'breakfast',
+      lunch: 'lunch', 
+      dinner: 'dinner',
+      snack1: 'snack',
+      snack2: 'snack'
+    };
+    setSelectedCategory(categoryMap[mealType] || 'all');
+    
     setShowMealSelector(true);
   };
 

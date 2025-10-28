@@ -114,25 +114,28 @@ const MyMealsPage = () => {
               serving_description
             )
           ),
-          user_meals!inner (
+          user_meals (
             is_favorite,
             custom_name,
             notes
           )
         `)
-        .eq('user_meals.user_id', user.id)
+        .or(`user_id.eq.${user.id},user_meals.user_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       // Calculate nutrition for each meal and extract tags
-      const mealsWithNutrition = data.map(meal => ({
-        ...meal,
-        nutrition: calculateMealNutrition(meal.meal_foods),
-        display_name: meal.user_meals[0]?.custom_name || meal.name,
-        is_favorite: meal.user_meals[0]?.is_favorite || false,
-        user_notes: meal.user_meals[0]?.notes || ''
-      }));
+      const mealsWithNutrition = data.map(meal => {
+        const userMeal = meal.user_meals && meal.user_meals.length > 0 ? meal.user_meals[0] : null;
+        return {
+          ...meal,
+          nutrition: calculateMealNutrition(meal.meal_foods),
+          display_name: userMeal?.custom_name || meal.name,
+          is_favorite: userMeal?.is_favorite || false,
+          user_notes: userMeal?.notes || ''
+        };
+      });
 
       // Extract all unique tags
       const allTags = new Set();
