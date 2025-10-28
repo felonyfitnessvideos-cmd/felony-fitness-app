@@ -3,6 +3,7 @@
   min-height: 100vh;
   background: var(--background-color);
   padding: 20px;
+  padding-bottom: 80px; /* Space for bottom nav bar */
 }
 
 .loading-container {
@@ -599,4 +600,40 @@
     justify-content: space-between;
     align-items: center;
   }
+}
+
+/* No meals found styling */
+.no-meals-found {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+
+.no-meals-found p {
+  margin: 0 0 20px 0;
+  font-size: 1rem;
+}
+
+.create-meal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.create-meal-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.create-meal-btn .icon {
+  width: 16px;
+  height: 16px;
 }

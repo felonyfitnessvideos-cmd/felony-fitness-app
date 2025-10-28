@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { Calendar, Plus, Edit, Trash2, ShoppingCart, Target, ChefHat, X } from 'lucide-react';
 import MealBuilder from '../components/MealBuilder';
-import { MEAL_TYPES, DAYS_OF_WEEK, getWeekDates } from '../constants/mealPlannerConstants';
+import { MEAL_TYPES, DAYS_OF_WEEK, getWeekDates, calculateMealNutrition } from '../constants/mealPlannerConstants';
 import './WeeklyMealPlannerPage.css';
 
 /**
@@ -127,11 +127,9 @@ const WeeklyMealPlannerPage = () => {
               quantity,
               food_servings (
                 calories,
-                protein,
-                carbs,
-                fat,
-                fiber,
-                sugar
+                protein_g,
+                carbs_g,
+                fat_g
               )
             )
           )
@@ -251,7 +249,33 @@ const WeeklyMealPlannerPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
+      // Get user's saved meals from user_meals table
+      const { data: userSavedMeals, error: userMealsError } = await supabase
+        .from('user_meals')
+        .select(`
+          is_favorite,
+          custom_name,
+          notes,
+          meals (
+            *,
+            meal_foods (
+              quantity,
+              food_servings (
+                calories,
+                protein_g,
+                carbs_g,
+                fat_g
+              )
+            )
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (userMealsError) throw userMealsError;
+
+      // Get premade meals
+      const { data: premadeMeals, error: premadeError } = await supabase
         .from('meals')
         .select(`
           *,
@@ -265,20 +289,48 @@ const WeeklyMealPlannerPage = () => {
             )
           )
         `)
-        .or(`user_id.eq.${user.id},is_premade.eq.true`)
+        .eq('is_premade', true)
         .order('created_at', { ascending: false });
+
+      if (premadeError) throw premadeError;
+
+      // Combine user saved meals and premade meals
+      const userMealsData = userSavedMeals.map(um => ({
+        ...um.meals,
+        user_meals: [{
+          is_favorite: um.is_favorite,
+          custom_name: um.custom_name,
+          notes: um.notes
+        }]
+      }));
+
+      const data = [...userMealsData, ...premadeMeals];
+      const error = null;
 
       if (error) throw error;
       
-      // Calculate nutrition for each meal
-      const mealsWithNutrition = data.map(meal => ({
-        ...meal,
-        nutrition: calculateMealNutrition(meal.meal_foods)
-      }));
+      // Calculate nutrition for each meal and handle user_meals relationship
+      const mealsWithNutrition = data.map(meal => {
+        const userMeal = meal.user_meals && meal.user_meals.length > 0 ? meal.user_meals[0] : null;
+        return {
+          ...meal,
+          nutrition: calculateMealNutrition(meal.meal_foods),
+          display_name: userMeal?.custom_name || meal.name,
+          is_favorite: userMeal?.is_favorite || false,
+        };
+      });
+      
+      // Debug: Log loaded meals in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('WeeklyMealPlanner - Raw meals data:', data);
+        console.log('WeeklyMealPlanner - Processed meals:', mealsWithNutrition);
+        console.log('WeeklyMealPlanner - Breakfast meals:', mealsWithNutrition.filter(m => m.category === 'breakfast'));
+      }
       
       setUserMeals(mealsWithNutrition);
     } catch (error) {
       console.error('Error loading user meals:', error);
+      setUserMeals([]); // Ensure we set empty array on error
     }
   };
 
@@ -613,36 +665,74 @@ const WeeklyMealPlannerPage = () => {
         <div className="meal-selector-overlay">
           <div className="meal-selector-modal">
             <div className="meal-selector-header">
-              <h3>Select a Meal</h3>
+              <h3>
+                {selectedCategory === 'all' 
+                  ? 'Select a Meal' 
+                  : `Select a ${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Meal`
+                }
+              </h3>
               <button onClick={() => setShowMealSelector(false)} className="close-btn">
                 <X className="icon" />
               </button>
             </div>
             
             <div className="meal-selector-content">
-              <div className="meal-categories">
-                {['all', 'breakfast', 'lunch', 'dinner', 'snack'].map(category => (
-                  <button
-                    key={category}
-                    className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
-                    onClick={() => setSelectedCategory(category)}
-                  >
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                  </button>
-                ))}
-              </div>
+              {/* Only show category tabs if selectedCategory is 'all' - when adding to specific meal slot, don't show tabs */}
+              {selectedCategory === 'all' && (
+                <div className="meal-categories">
+                  {['all', 'breakfast', 'lunch', 'dinner', 'snack'].map(category => (
+                    <button
+                      key={category}
+                      className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
+                      onClick={() => setSelectedCategory(category)}
+                    >
+                      {category.charAt(0).toUpperCase() + category.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              )}
               
               <div className="meal-list">
-                {userMeals
-                  .filter(meal => selectedCategory === 'all' || meal.category === selectedCategory)
-                  .map(meal => (
+                {(() => {
+                  // Debug: Log filtering process
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('Filtering meals - selectedCategory:', selectedCategory, 'userMeals:', userMeals);
+                  }
+                  
+                  const filteredMeals = userMeals.filter(meal => {
+                    const matches = selectedCategory === 'all' || meal.category === selectedCategory;
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log(`Meal ${meal.name} (category: ${meal.category}) matches ${selectedCategory}:`, matches);
+                    }
+                    return matches;
+                  });
+                  
+                  if (filteredMeals.length === 0) {
+                    return (
+                      <div className="no-meals-found">
+                        <p>No {selectedCategory === 'all' ? '' : selectedCategory} meals found.</p>
+                        <button 
+                          className="create-meal-btn"
+                          onClick={() => {
+                            setShowMealSelector(false);
+                            setShowMealBuilder(true);
+                          }}
+                        >
+                          <Plus className="icon" />
+                          Create New Meal
+                        </button>
+                      </div>
+                    );
+                  }
+                  
+                  return filteredMeals.map(meal => (
                     <div
                       key={meal.id}
                       className="meal-option"
                       onClick={() => addMealToSlot(meal)}
                     >
                       <div className="meal-info">
-                        <div className="meal-name">{meal.name}</div>
+                        <div className="meal-name">{meal.display_name || meal.name}</div>
                         <div className="meal-description">{meal.description}</div>
                         <div className="meal-nutrition">
                           {Math.round(meal.nutrition.calories)} cal • 
@@ -656,7 +746,8 @@ const WeeklyMealPlannerPage = () => {
                         {meal.is_premade && <span className="premade-badge">Premade</span>}
                       </div>
                     </div>
-                  ))}
+                  ));
+                })()}
               </div>
             </div>
           </div>

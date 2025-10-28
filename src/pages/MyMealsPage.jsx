@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { Search, Plus, Edit, Trash2, Heart, Clock, ChefHat, Filter, Star, Copy } from 'lucide-react';
 import MealBuilder from '../components/MealBuilder';
 import { MEAL_CATEGORIES, calculateMealNutrition } from '../constants/mealPlannerConstants';
+import { useAuth } from '../AuthContext';
 import './MyMealsPage.css';
 
 /**
@@ -23,6 +25,9 @@ import './MyMealsPage.css';
  * <MyMealsPage />
  */
 const MyMealsPage = () => {
+  const { user, session, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  
   /** @type {[Array, Function]} User's complete meal collection */
   const [meals, setMeals] = useState([]);
   
@@ -49,6 +54,8 @@ const MyMealsPage = () => {
   
   /** @type {[Array, Function]} All available tags from user's meals */
   const [availableTags, setAvailableTags] = useState([]);
+
+
 
   /** @constant {Array<Object>} Available meal categories for filtering */
   const categories = MEAL_CATEGORIES;
@@ -95,10 +102,40 @@ const MyMealsPage = () => {
   const loadMeals = useCallback(async () => {
     try {
       setIsLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
 
-      const { data, error } = await supabase
+      // Get user's saved meals from user_meals table
+      const { data: userSavedMeals, error: userMealsError } = await supabase
+        .from('user_meals')
+        .select(`
+          is_favorite,
+          custom_name,
+          notes,
+          meals (
+            *,
+            meal_foods (
+              quantity,
+              notes,
+              food_servings (
+                calories,
+                protein_g,
+                carbs_g,
+                fat_g,
+                serving_description
+              )
+            )
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (userMealsError) throw userMealsError;
+
+      // Get premade meals that user might want to browse
+      const { data: premadeMeals, error: premadeError } = await supabase
         .from('meals')
         .select(`
           *,
@@ -106,24 +143,30 @@ const MyMealsPage = () => {
             quantity,
             notes,
             food_servings (
-              food_name,
               calories,
               protein_g,
               carbs_g,
               fat_g,
               serving_description
             )
-          ),
-          user_meals (
-            is_favorite,
-            custom_name,
-            notes
           )
         `)
-        .or(`user_id.eq.${user.id},user_meals.user_id.eq.${user.id}`)
+        .eq('is_premade', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (premadeError) throw premadeError;
+
+      // Combine user saved meals and premade meals
+      const userMealsData = userSavedMeals?.map(um => ({
+        ...um.meals,
+        user_meals: [{
+          is_favorite: um.is_favorite,
+          custom_name: um.custom_name,
+          notes: um.notes
+        }]
+      })) || [];
+
+      const data = [...userMealsData, ...(premadeMeals || [])];
 
       // Calculate nutrition for each meal and extract tags
       const mealsWithNutrition = data.map(meal => {
@@ -152,7 +195,7 @@ const MyMealsPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     loadMeals();
@@ -327,6 +370,30 @@ const MyMealsPage = () => {
       />
     ));
   };
+
+  if (authLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Checking authentication...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="loading-container">
+        <p>Please log in to view your meals.</p>
+        <button 
+          onClick={() => navigate('/')} 
+          className="create-meal-btn"
+          style={{ marginTop: '20px' }}
+        >
+          Go to Login
+        </button>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

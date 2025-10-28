@@ -64,6 +64,12 @@ export function calculateMealNutrition(mealFoods) {
     const food = item.food_servings;
     const quantity = item.quantity || 0;
     
+    // Handle null or undefined food_servings
+    if (!food) {
+      console.warn('Missing food_servings data for meal food item:', item);
+      return acc;
+    }
+    
     return {
       calories: acc.calories + (food.calories * quantity || 0),
       protein: acc.protein + (food.protein_g * quantity || 0),
