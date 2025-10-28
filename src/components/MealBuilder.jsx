@@ -559,7 +559,10 @@ const MealBuilder = ({
                       className="quantity-input-inline"
                     />
                     {/* Show serving description and food name in natural format */}
-                    {item.food_servings.serving_description?.replace(/^\d+(\.\d+)?\s*/, '') || `${item.food_servings.serving_unit} ${item.food_servings.food_name}`}
+                    {item.food_servings.serving_description ? 
+                      `${item.food_servings.serving_description.replace(/^\d+(\.\d+)?\s*/, '')} ${item.food_servings.food_name}` : 
+                      `${item.food_servings.serving_unit} ${item.food_servings.food_name}`
+                    }
                   </div>
                   <button
                     onClick={() => removeFoodFromMeal(index)}
