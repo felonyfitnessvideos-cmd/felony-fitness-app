@@ -55,10 +55,10 @@ export function getWeekDates(date) {
  * Calculate total nutrition values for a meal based on its foods
  * 
  * @param {Array} mealFoods - Array of meal_foods with quantities and nutrition data
- * @returns {Object} Calculated nutrition totals (calories, protein, carbs, fat, fiber, sugar)
+ * @returns {Object} Calculated nutrition totals (calories, protein, carbs, fat)
  */
 export function calculateMealNutrition(mealFoods) {
-  if (!mealFoods) return { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0 };
+  if (!mealFoods) return { calories: 0, protein: 0, carbs: 0, fat: 0 };
 
   return mealFoods.reduce((acc, item) => {
     const food = item.food_servings;
@@ -66,18 +66,14 @@ export function calculateMealNutrition(mealFoods) {
     
     return {
       calories: acc.calories + (food.calories * quantity || 0),
-      protein: acc.protein + (food.protein * quantity || 0),
-      carbs: acc.carbs + (food.carbs * quantity || 0),
-      fat: acc.fat + (food.fat * quantity || 0),
-      fiber: acc.fiber + (food.fiber * quantity || 0),
-      sugar: acc.sugar + (food.sugar * quantity || 0)
+      protein: acc.protein + (food.protein_g * quantity || 0),
+      carbs: acc.carbs + (food.carbs_g * quantity || 0),
+      fat: acc.fat + (food.fat_g * quantity || 0)
     };
   }, {
     calories: 0,
     protein: 0,
     carbs: 0,
-    fat: 0,
-    fiber: 0,
-    sugar: 0
+    fat: 0
   });
 }

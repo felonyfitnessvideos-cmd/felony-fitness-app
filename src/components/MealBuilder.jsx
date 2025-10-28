@@ -67,9 +67,7 @@ const MealBuilder = ({
     calories: 0,
     protein: 0,
     carbs: 0,
-    fat: 0,
-    fiber: 0,
-    sugar: 0
+    fat: 0
   });
   
   /** @type {[boolean, Function]} State for meal save operation loading */
@@ -115,19 +113,15 @@ const MealBuilder = ({
       
       return {
         calories: acc.calories + (food.calories * quantity || 0),
-        protein: acc.protein + (food.protein * quantity || 0),
-        carbs: acc.carbs + (food.carbs * quantity || 0),
-        fat: acc.fat + (food.fat * quantity || 0),
-        fiber: acc.fiber + (food.fiber * quantity || 0),
-        sugar: acc.sugar + (food.sugar * quantity || 0)
+        protein: acc.protein + (food.protein_g * quantity || 0),
+        carbs: acc.carbs + (food.carbs_g * quantity || 0),
+        fat: acc.fat + (food.fat_g * quantity || 0)
       };
     }, {
       calories: 0,
       protein: 0,
       carbs: 0,
-      fat: 0,
-      fiber: 0,
-      sugar: 0
+      fat: 0
     });
 
     setNutrition(totals);
@@ -170,13 +164,9 @@ const MealBuilder = ({
             id,
             food_name,
             calories,
-            protein,
-            carbs,
-            fat,
-            fiber,
-            sugar,
-            serving_size,
-            serving_unit,
+            protein_g,
+            carbs_g,
+            fat_g,
             serving_description
           )
         `)
@@ -305,15 +295,11 @@ const MealBuilder = ({
       const foodServingData = {
         id: servingId,
         food_name: food.food_name || food.name,
-        serving_size: food.serving_size || 1,
-        serving_unit: food.serving_unit || 'serving',
         serving_description: food.serving_description || `${food.serving_size || 1} ${food.serving_unit || 'serving'}`,
         calories: food.calories || 0,
-        protein: food.protein || food.protein_g || 0,
-        carbs: food.carbs || food.carbs_g || 0,
-        fat: food.fat || food.fat_g || 0,
-        fiber: food.fiber || food.fiber_g || 0,
-        sugar: food.sugar || food.sugar_g || 0
+        protein_g: food.protein_g || food.protein || 0,
+        carbs_g: food.carbs_g || food.carbs || 0,
+        fat_g: food.fat_g || food.fat || 0
       };
       
       // Add new food
@@ -433,6 +419,19 @@ const MealBuilder = ({
         .insert(mealFoodsData);
 
       if (foodsError) throw foodsError;
+
+      // Add meal to user_meals table so it shows up in MyMealsPage
+      if (!editingMeal?.id) {
+        const { error: userMealError } = await supabase
+          .from('user_meals')
+          .insert([{
+            user_id: user.id,
+            meal_id: mealId,
+            is_favorite: false
+          }]);
+
+        if (userMealError) throw userMealError;
+      }
 
       // Call onSave callback
       if (onSave) {
@@ -600,14 +599,6 @@ const MealBuilder = ({
               <div className="nutrition-item">
                 <div className="nutrition-value">{Math.round(nutrition.fat)}g</div>
                 <div className="nutrition-label">Fat</div>
-              </div>
-              <div className="nutrition-item">
-                <div className="nutrition-value">{Math.round(nutrition.fiber)}g</div>
-                <div className="nutrition-label">Fiber</div>
-              </div>
-              <div className="nutrition-item">
-                <div className="nutrition-value">{Math.round(nutrition.sugar)}g</div>
-                <div className="nutrition-label">Sugar</div>
               </div>
             </div>
           </div>

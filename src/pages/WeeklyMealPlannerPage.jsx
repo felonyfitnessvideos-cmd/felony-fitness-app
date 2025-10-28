@@ -162,9 +162,7 @@ const WeeklyMealPlannerPage = () => {
         calories: 0,
         protein: 0,
         carbs: 0,
-        fat: 0,
-        fiber: 0,
-        sugar: 0
+        fat: 0
       };
     });
 
@@ -180,11 +178,9 @@ const WeeklyMealPlannerPage = () => {
         const quantity = mealFood.quantity * servings;
 
         dailyNutrition[dateStr].calories += (food.calories * quantity || 0);
-        dailyNutrition[dateStr].protein += (food.protein * quantity || 0);
-        dailyNutrition[dateStr].carbs += (food.carbs * quantity || 0);
-        dailyNutrition[dateStr].fat += (food.fat * quantity || 0);
-        dailyNutrition[dateStr].fiber += (food.fiber * quantity || 0);
-        dailyNutrition[dateStr].sugar += (food.sugar * quantity || 0);
+        dailyNutrition[dateStr].protein += (food.protein_g * quantity || 0);
+        dailyNutrition[dateStr].carbs += (food.carbs_g * quantity || 0);
+        dailyNutrition[dateStr].fat += (food.fat_g * quantity || 0);
       });
     });
 
@@ -263,11 +259,9 @@ const WeeklyMealPlannerPage = () => {
             quantity,
             food_servings (
               calories,
-              protein,
-              carbs,
-              fat,
-              fiber,
-              sugar
+              protein_g,
+              carbs_g,
+              fat_g
             )
           )
         `)
@@ -295,19 +289,15 @@ const WeeklyMealPlannerPage = () => {
       
       return {
         calories: acc.calories + (food.calories * quantity || 0),
-        protein: acc.protein + (food.protein * quantity || 0),
-        carbs: acc.carbs + (food.carbs * quantity || 0),
-        fat: acc.fat + (food.fat * quantity || 0),
-        fiber: acc.fiber + (food.fiber * quantity || 0),
-        sugar: acc.sugar + (food.sugar * quantity || 0)
+        protein: acc.protein + (food.protein_g * quantity || 0),
+        carbs: acc.carbs + (food.carbs_g * quantity || 0),
+        fat: acc.fat + (food.fat_g * quantity || 0)
       };
     }, {
       calories: 0,
       protein: 0,
       carbs: 0,
-      fat: 0,
-      fiber: 0,
-      sugar: 0
+      fat: 0
     });
   };
 

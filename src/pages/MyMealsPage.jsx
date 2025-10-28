@@ -108,13 +108,10 @@ const MyMealsPage = () => {
             food_servings (
               food_name,
               calories,
-              protein,
-              carbs,
-              fat,
-              fiber,
-              sugar,
-              serving_size,
-              serving_unit
+              protein_g,
+              carbs_g,
+              fat_g,
+              serving_description
             )
           ),
           user_meals!inner (
