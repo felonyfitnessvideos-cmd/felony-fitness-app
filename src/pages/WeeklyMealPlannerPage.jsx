@@ -337,19 +337,11 @@ const WeeklyMealPlannerPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Deactivate all plans
-      await supabase
-        .from('weekly_meal_plans')
-        .update({ is_active: false })
-        .eq('user_id', user.id);
-
-      // Activate selected plan
-      const { data, error } = await supabase
-        .from('weekly_meal_plans')
-        .update({ is_active: true })
-        .eq('id', planId)
-        .select()
-        .single();
+      // Use atomic function to safely set active plan
+      const { data, error } = await supabase.rpc('set_active_meal_plan', {
+        plan_uuid: planId,
+        user_uuid: user.id
+      });
 
       if (error) throw error;
       
