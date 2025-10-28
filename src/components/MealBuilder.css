@@ -272,46 +272,42 @@
 }
 
 .food-item {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 12px;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 12px;
+  padding: 12px 16px;
   background: var(--input-bg);
   border: 1px solid var(--border-color);
   border-radius: 8px;
 }
 
-.food-details {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.food-details .food-name {
+.food-display {
   font-weight: 500;
   color: var(--text-primary);
-}
-
-.food-details .food-serving {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.food-controls {
+  font-size: 1rem;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
 
-.quantity-input {
-  width: 80px;
-  padding: 6px 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--card-color);
+.quantity-input-inline {
+  background: transparent;
+  border: none;
+  font-weight: 500;
+  font-size: 1rem;
   color: var(--text-primary);
-  text-align: center;
+  width: 50px;
+  text-align: left;
+  padding: 0;
+  margin: 0;
+}
+
+.quantity-input-inline:focus {
+  outline: 1px solid var(--primary-color);
+  outline-offset: 2px;
+  border-radius: 4px;
+  background: var(--input-bg);
+  padding: 2px 4px;
 }
 
 .remove-btn {
@@ -322,18 +318,12 @@
   border-radius: 6px;
   color: var(--text-secondary);
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .remove-btn:hover {
   background: var(--error-color);
   color: white;
-}
-
-.food-nutrition {
-  font-weight: 500;
-  color: var(--primary-color);
-  text-align: right;
-  min-width: 60px;
 }
 
 .no-foods {

@@ -547,31 +547,23 @@ const MealBuilder = ({
             <div className="selected-foods">
               {mealFoods.map((item, index) => (
                 <div key={`${item.food_servings_id}-${index}`} className="food-item">
-                  <div className="food-details">
-                    <div className="food-name">{item.food_servings.food_name}</div>
-                    <div className="food-serving">
-                      {item.food_servings.serving_size} {item.food_servings.serving_unit} each
-                    </div>
-                  </div>
-                  <div className="food-controls">
+                  <div className="food-display">
                     <input
                       type="number"
                       min="0.1"
                       step="0.1"
                       value={item.quantity}
                       onChange={(e) => updateFoodQuantity(index, e.target.value)}
-                      className="quantity-input"
+                      className="quantity-input-inline"
                     />
-                    <button
-                      onClick={() => removeFoodFromMeal(index)}
-                      className="remove-btn"
-                    >
-                      <X className="icon" />
-                    </button>
+                    {item.food_servings.serving_unit} {item.food_servings.food_name}
                   </div>
-                  <div className="food-nutrition">
-                    {Math.round(item.food_servings.calories * item.quantity)} cal
-                  </div>
+                  <button
+                    onClick={() => removeFoodFromMeal(index)}
+                    className="remove-btn"
+                  >
+                    <X className="icon" />
+                  </button>
                 </div>
               ))}
               
