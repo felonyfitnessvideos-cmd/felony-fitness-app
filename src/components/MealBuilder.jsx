@@ -176,7 +176,8 @@ const MealBuilder = ({
             fiber,
             sugar,
             serving_size,
-            serving_unit
+            serving_unit,
+            serving_description
           )
         `)
         .eq('meal_id', mealId);
@@ -306,6 +307,7 @@ const MealBuilder = ({
         food_name: food.food_name || food.name,
         serving_size: food.serving_size || 1,
         serving_unit: food.serving_unit || 'serving',
+        serving_description: food.serving_description || `${food.serving_size || 1} ${food.serving_unit || 'serving'}`,
         calories: food.calories || 0,
         protein: food.protein || food.protein_g || 0,
         carbs: food.carbs || food.carbs_g || 0,
@@ -533,7 +535,7 @@ const MealBuilder = ({
                       <div className="food-info">
                         <span className="food-name">{food.food_name}</span>
                         <span className="food-serving">
-                          {food.serving_size} {food.serving_unit} - {food.calories} cal
+                          {food.serving_description} - {food.calories} cal
                         </span>
                       </div>
                       <Plus className="add-icon" />
@@ -556,7 +558,8 @@ const MealBuilder = ({
                       onChange={(e) => updateFoodQuantity(index, e.target.value)}
                       className="quantity-input-inline"
                     />
-                    {item.food_servings.serving_unit} {item.food_servings.food_name}
+                    {/* Show serving description and food name in natural format */}
+                    {item.food_servings.serving_description?.replace(/^\d+(\.\d+)?\s*/, '') || `${item.food_servings.serving_unit} ${item.food_servings.food_name}`}
                   </div>
                   <button
                     onClick={() => removeFoodFromMeal(index)}
