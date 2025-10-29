@@ -1,4 +1,5 @@
 -- Add workout calculation functions for 1RM, weight volume, and set volume
+-- This fixes the issue where charts show no data because they only looked for is_complete = true
 
 -- Drop existing functions if they exist with incorrect signatures
 DROP FUNCTION IF EXISTS public.calculate_exercise_1rm(uuid, uuid);
@@ -29,7 +30,7 @@ BEGIN
         JOIN workout_logs wl ON wle.log_id = wl.id
         WHERE wl.user_id = p_user_id
           AND wle.exercise_id = p_exercise_id
-          AND wl.is_complete = true
+          AND (wl.is_complete = true OR wl.is_complete IS NULL)
           AND wle.weight_lifted_lbs > 0
           AND wle.reps_completed > 0
         GROUP BY wl.created_at::date
@@ -57,7 +58,7 @@ BEGIN
     JOIN workout_logs wl ON wle.log_id = wl.id
     WHERE wl.user_id = p_user_id
       AND wle.exercise_id = p_exercise_id
-      AND wl.is_complete = true
+      AND (wl.is_complete = true OR wl.is_complete IS NULL)
       AND wle.weight_lifted_lbs > 0
       AND wle.reps_completed > 0
     GROUP BY wl.created_at::date
@@ -80,7 +81,7 @@ BEGIN
     JOIN workout_logs wl ON wle.log_id = wl.id
     WHERE wl.user_id = p_user_id
       AND wle.exercise_id = p_exercise_id
-      AND wl.is_complete = true
+      AND (wl.is_complete = true OR wl.is_complete IS NULL)
       AND wle.weight_lifted_lbs > 0
       AND wle.reps_completed > 0
     GROUP BY wl.created_at::date
