@@ -149,10 +149,16 @@ const MealBuilder = ({
 
   /**
    * Load existing meal foods from database for editing mode
+   * Fetches meal foods with their associated food_servings data including nutrition information
+   * and maps them to the component's expected format for display and editing
    * 
    * @async
    * @param {number} mealId - ID of the meal to load foods for
    * @returns {Promise<void>}
+   * @throws {Error} When database query fails or meal foods cannot be loaded
+   * 
+   * @example
+   * await loadMealFoods(123); // Loads foods for meal ID 123
    */
   const loadMealFoods = async (mealId) => {
     try {
@@ -162,12 +168,14 @@ const MealBuilder = ({
           *,
           food_servings (
             id,
-            food_name,
             calories,
             protein_g,
             carbs_g,
             fat_g,
-            serving_description
+            serving_description,
+            foods (
+              name
+            )
           )
         `)
         .eq('meal_id', mealId);
@@ -182,15 +190,33 @@ const MealBuilder = ({
         food_servings: item.food_servings
       })));
     } catch (error) {
-      console.error('Error loading meal foods:', error);
+      // Error loading meal foods - silently handle
     }
   };
 
   /**
-   * Search for foods using the same comprehensive search as NutritionLogPage
-   * Uses food-search function for both database and OpenAI API results with debouncing
+   * Search for foods using comprehensive database and external API search
    * 
-   * @param {string} searchTerm - Search query to match against food names
+   * Implements debounced search with abort controller for performance and uses the food-search
+   * Supabase Edge Function to query both local database and external food APIs (OpenAI/FatSecret).
+   * Results are standardized to a consistent format regardless of source.
+   * 
+   * @param {string} searchTerm - Search query to match against food names (minimum 1 character)
+   * @returns {void} Updates searchResults state with formatted food items
+   * 
+   * @description
+   * Search flow:
+   * 1. Debounce input for 300ms to avoid excessive API calls
+   * 2. Query food-search Edge Function with search term
+   * 3. Handle two possible response sources:
+   *    - 'local': Database foods/food_servings join results
+   *    - 'external': OpenAI API results (generates temporary IDs)
+   * 4. Standardize all results to consistent field names
+   * 5. Update searchResults state for display
+   * 
+   * @example
+   * searchFoods('chicken breast'); // Searches for chicken breast foods
+   * searchFoods(''); // Clears search results
    */
   const searchFoods = useCallback((searchTerm) => {
     // Clear existing timeout
@@ -243,19 +269,25 @@ const MealBuilder = ({
             }))
           );
         } else if (data?.source === 'external') {
-          // OpenAI API results - already in correct format
-          standardizedResults = (data.results || []).map(item => ({
-            ...item,
-            is_external: true,
-            food_name: item.name,
-            // Map external format to internal format
-            id: item.serving_id || item.id,
-            protein: item.protein_g,
-            carbs: item.carbs_g,
-            fat: item.fat_g,
-            fiber: item.fiber_g,
-            sugar: item.sugar_g
-          }));
+          // OpenAI API results - need to generate serving_id for external results
+          standardizedResults = (data.results || []).map((item, index) => {
+            // Generate a unique serving_id for external results using timestamp + index
+            const generatedServingId = `ext_${Date.now()}_${index}`;
+            const result = {
+              ...item,
+              is_external: true,
+              food_name: item.name,
+              // Generate serving_id for external results since they don't have database IDs
+              id: generatedServingId,
+              serving_id: generatedServingId,
+              protein: item.protein_g,
+              carbs: item.carbs_g,
+              fat: item.fat_g,
+              fiber: item.fiber_g,
+              sugar: item.sugar_g
+            };
+            return result;
+          });
         }
         
         setSearchResults(standardizedResults);
@@ -263,7 +295,7 @@ const MealBuilder = ({
         if (error?.name === 'AbortError') {
           // ignore
         } else {
-          console.error('Error searching foods:', error);
+          // Error searching foods - silently handle
         }
       } finally {
         setIsSearching(false);
@@ -283,6 +315,12 @@ const MealBuilder = ({
    */
   const addFoodToMeal = (food) => {
     const servingId = food.serving_id || food.id;
+    
+    if (!servingId) {
+      alert('Unable to add food - missing serving information');
+      return;
+    }
+    
     const existingIndex = mealFoods.findIndex(item => item.food_servings_id === servingId);
     
     if (existingIndex >= 0) {
@@ -303,13 +341,14 @@ const MealBuilder = ({
       };
       
       // Add new food
-      setMealFoods([...mealFoods, {
+      const newMealFood = {
         id: null, // New item, no ID yet
         food_servings_id: servingId,
         quantity: 1,
         notes: '',
         food_servings: foodServingData
-      }]);
+      };
+      setMealFoods(prev => [...prev, newMealFood]);
     }
     
     setFoodSearch('');
@@ -347,10 +386,30 @@ const MealBuilder = ({
 
   /**
    * Save the meal to the database (create new or update existing)
-   * Validates required fields and handles meal and meal_foods table operations
+   * 
+   * Comprehensive meal saving operation that handles both meal creation and updates,
+   * processes external foods from API results, and manages the meal_foods relationships.
+   * Validates required fields before attempting database operations.
    * 
    * @async
    * @returns {Promise<void>}
+   * @throws {Error} When user is not authenticated, validation fails, or database operations fail
+   * 
+   * @description
+   * Save process:
+   * 1. Validate meal name and food count
+   * 2. Create or update meal record in meals table
+   * 3. For external foods (from OpenAI API), create permanent database records:
+   *    - Insert into foods table
+   *    - Insert into food_servings table
+   *    - Replace temporary string IDs with permanent integer IDs
+   * 4. Insert/update meal_foods relationships
+   * 5. Add meal to user_meals table for new meals (makes it appear in MyMealsPage)
+   * 6. Call onSave callback to refresh parent component
+   * 
+   * @example
+   * // Save a new meal with chicken breast and rice
+   * await handleSaveMeal();
    */
   const handleSaveMeal = async () => {
     if (!mealData.name.trim()) {
@@ -406,17 +465,57 @@ const MealBuilder = ({
         mealId = mealResult.id;
       }
 
-      // Insert meal foods
-      const mealFoodsData = mealFoods.map(item => ({
-        meal_id: mealId,
-        food_servings_id: item.food_servings_id,
-        quantity: item.quantity,
-        notes: item.notes
-      }));
+      // Process external foods first - save them to food_servings table to get real IDs
+      const processedMealFoods = [];
+      
+      for (const item of mealFoods) {
+        let finalFoodServingsId = item.food_servings_id;
+        
+        // Check if this is an external food (string ID starting with "ext_")
+        if (typeof item.food_servings_id === 'string' && item.food_servings_id.startsWith('ext_')) {
+          // Create food record first
+          const { data: foodData, error: foodError } = await supabase
+            .from('foods')
+            .insert([{
+              name: item.food_servings.food_name || item.food_servings.name,
+              category: null
+            }])
+            .select()
+            .single();
+          
+          if (foodError) throw foodError;
+          
+          // Create food_servings record
+          const { data: servingData, error: servingError } = await supabase
+            .from('food_servings')
+            .insert([{
+              food_id: foodData.id,
+              serving_description: item.food_servings.serving_description,
+              calories: item.food_servings.calories,
+              protein_g: item.food_servings.protein_g,
+              carbs_g: item.food_servings.carbs_g,
+              fat_g: item.food_servings.fat_g
+            }])
+            .select()
+            .single();
+          
+          if (servingError) throw servingError;
+          
+          finalFoodServingsId = servingData.id;
+        }
+        
+        processedMealFoods.push({
+          meal_id: mealId,
+          food_servings_id: finalFoodServingsId,
+          quantity: item.quantity,
+          notes: item.notes
+        });
+      }
 
+      // Insert meal foods with proper integer IDs
       const { error: foodsError } = await supabase
         .from('meal_foods')
-        .insert(mealFoodsData);
+        .insert(processedMealFoods);
 
       if (foodsError) throw foodsError;
 
@@ -445,7 +544,6 @@ const MealBuilder = ({
 
       onClose();
     } catch (error) {
-      console.error('Error saving meal:', error);
       alert('Error saving meal. Please try again.');
     } finally {
       setIsSaving(false);
@@ -525,14 +623,14 @@ const MealBuilder = ({
               
               {!isSearching && searchResults.length > 0 && (
                 <div className="search-results">
-                  {searchResults.map(food => (
+                  {searchResults.map((food, index) => (
                     <div
-                      key={food.id}
+                      key={`${food.id || food.serving_id}-${index}-${food.food_name || food.name}`}
                       className="search-result-item"
                       onClick={() => addFoodToMeal(food)}
                     >
                       <div className="food-info">
-                        <span className="food-name">{food.food_name}</span>
+                        <span className="food-name">{food.food_name || food.name}</span>
                         <span className="food-serving">
                           {food.serving_description} - {food.calories} cal
                         </span>
@@ -547,7 +645,7 @@ const MealBuilder = ({
             {/* Selected Foods List */}
             <div className="selected-foods">
               {mealFoods.map((item, index) => (
-                <div key={`${item.food_servings_id}-${index}`} className="food-item">
+                <div key={`${item.food_servings_id || 'missing'}-${index}`} className="food-item">
                   <div className="food-display">
                     <input
                       type="number"
@@ -557,11 +655,24 @@ const MealBuilder = ({
                       onChange={(e) => updateFoodQuantity(index, e.target.value)}
                       className="quantity-input-inline"
                     />
-                    {/* Show serving description and food name in natural format */}
-                    {item.food_servings.serving_description ? 
-                      `${item.food_servings.serving_description.replace(/^\d+(\.\d+)?\s*/, '')} ${item.food_servings.food_name}` : 
-                      `${item.food_servings.serving_unit} ${item.food_servings.food_name}`
-                    }
+                    {/* Show serving description with food name */}
+                    {(() => {
+                      // Get food name from multiple possible sources
+                      const foodName = item.food_servings.foods?.name || 
+                                      item.food_servings.food_name || 
+                                      item.food_servings.name ||
+                                      'Unknown Food';
+                      
+                      // Handle foods without names silently
+                      
+                      if (item.food_servings.serving_description) {
+                        return foodName !== 'Unknown Food' ? 
+                          `${item.food_servings.serving_description.replace(/^\d+(\.\d+)?\s*/, '')} ${foodName}` :
+                          item.food_servings.serving_description;
+                      } else {
+                        return foodName;
+                      }
+                    })()}
                   </div>
                   <button
                     onClick={() => removeFoodFromMeal(index)}

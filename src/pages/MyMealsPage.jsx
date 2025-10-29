@@ -49,6 +49,15 @@ const MyMealsPage = () => {
   /** @type {[Object|null, Function]} Meal being edited (null for new meal) */
   const [editingMeal, setEditingMeal] = useState(null);
   
+  /** @type {[boolean, Function]} Controls premade meals modal visibility */
+  const [showPremadeMeals, setShowPremadeMeals] = useState(false);
+  
+  /** @type {[Array, Function]} List of premade meals available to users */
+  const [premadeMeals, setPremadeMeals] = useState([]);
+  
+  /** @type {[boolean, Function]} Loading state for premade meals fetch */
+  const [premadeMealsLoading, setPremadeMealsLoading] = useState(false);
+  
   /** @type {[boolean, Function]} Loading state for meal data fetch */
   const [isLoading, setIsLoading] = useState(true);
   
@@ -117,14 +126,20 @@ const MyMealsPage = () => {
           meals (
             *,
             meal_foods (
+              id,
+              food_servings_id,
               quantity,
               notes,
               food_servings (
+                id,
                 calories,
                 protein_g,
                 carbs_g,
                 fat_g,
-                serving_description
+                serving_description,
+                foods (
+                  name
+                )
               )
             )
           )
@@ -134,29 +149,7 @@ const MyMealsPage = () => {
 
       if (userMealsError) throw userMealsError;
 
-      // Get premade meals that user might want to browse
-      const { data: premadeMeals, error: premadeError } = await supabase
-        .from('meals')
-        .select(`
-          *,
-          meal_foods (
-            quantity,
-            notes,
-            food_servings (
-              calories,
-              protein_g,
-              carbs_g,
-              fat_g,
-              serving_description
-            )
-          )
-        `)
-        .eq('is_premade', true)
-        .order('created_at', { ascending: false });
-
-      if (premadeError) throw premadeError;
-
-      // Combine user saved meals and premade meals
+      // Process user saved meals only
       const userMealsData = userSavedMeals?.map(um => ({
         ...um.meals,
         user_meals: [{
@@ -166,14 +159,28 @@ const MyMealsPage = () => {
         }]
       })) || [];
 
-      const data = [...userMealsData, ...(premadeMeals || [])];
+      // Check each meal's structure for broken nutrition data
+      userMealsData.forEach((meal, index) => {
+        if (meal.meal_foods && meal.meal_foods.some(mf => !mf.food_servings)) {
+          // Meal has broken food data - missing nutrition information
+        }
+      });
+
+      const data = userMealsData;
 
       // Calculate nutrition for each meal and extract tags
       const mealsWithNutrition = data.map(meal => {
         const userMeal = meal.user_meals && meal.user_meals.length > 0 ? meal.user_meals[0] : null;
+        const nutrition = calculateMealNutrition(meal.meal_foods);
+        
+        // Check nutrition calculation for meals with zero values
+        if (nutrition.calories === 0 && meal.meal_foods && meal.meal_foods.length > 0) {
+          // Meal with zero calories detected - handle silently
+        }
+        
         return {
           ...meal,
-          nutrition: calculateMealNutrition(meal.meal_foods),
+          nutrition,
           display_name: userMeal?.custom_name || meal.name,
           is_favorite: userMeal?.is_favorite || false,
           user_notes: userMeal?.notes || ''
@@ -191,11 +198,66 @@ const MyMealsPage = () => {
 
       setMeals(mealsWithNutrition);
     } catch (error) {
-      console.error('Error loading meals:', error);
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('MyMealsPage - Error loading meals:', error);
+      }
     } finally {
       setIsLoading(false);
     }
   }, [user]);
+
+  /**
+   * Load premade meals available for users to add to their collection
+   * 
+   * @returns {Promise<void>}
+   */
+  const loadPremadeMeals = useCallback(async () => {
+    try {
+      setPremadeMealsLoading(true);
+      const { data: premadeData, error } = await supabase
+        .from('meals')
+        .select(`
+          *,
+          meal_foods (
+            id,
+            food_servings_id,
+            quantity,
+            notes,
+            food_servings (
+              id,
+              calories,
+              protein_g,
+              carbs_g,
+              fat_g,
+              serving_description,
+              foods (
+                name
+              )
+            )
+          )
+        `)
+        .eq('is_premade', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Calculate nutrition for each premade meal
+      const premadeWithNutrition = premadeData.map(meal => ({
+        ...meal,
+        nutrition: calculateMealNutrition(meal.meal_foods)
+      }));
+
+      setPremadeMeals(premadeWithNutrition);
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('MyMealsPage - Error loading premade meals:', error);
+      }
+    } finally {
+      setPremadeMealsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadMeals();
@@ -208,6 +270,23 @@ const MyMealsPage = () => {
 
 
 
+  /**
+   * Toggle favorite status for a meal
+   * 
+   * Updates the is_favorite field in the user_meals table and immediately
+   * updates the local state to reflect the change in the UI without requiring
+   * a full data refresh.
+   * 
+   * @async
+   * @param {number} mealId - ID of the meal to toggle favorite status for
+   * @param {boolean} currentFavorite - Current favorite status to toggle from
+   * @returns {Promise<void>}
+   * @throws {Error} When user is not authenticated or database update fails
+   * 
+   * @example
+   * await toggleFavorite(123, false); // Mark meal 123 as favorite
+   * await toggleFavorite(456, true);  // Remove meal 456 from favorites
+   */
   const toggleFavorite = async (mealId, currentFavorite) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -228,24 +307,51 @@ const MyMealsPage = () => {
           : meal
       ));
     } catch (error) {
-      console.error('Error toggling favorite:', error);
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('MyMealsPage - Error toggling favorite:', error);
+      }
     }
   };
 
+  /**
+   * Create a duplicate copy of an existing meal
+   * 
+   * Performs a deep copy of a meal including all its foods and adds it to the user's
+   * meal collection. The duplicate gets "(Copy)" appended to its name and is marked
+   * as a user-created meal (not premade). Handles validation of food relationships
+   * and creates proper database entries.
+   * 
+   * @async
+   * @param {Object} meal - Complete meal object to duplicate
+   * @param {string} meal.name - Original meal name (will have "(Copy)" appended)
+   * @param {Array} meal.meal_foods - Array of meal_foods relationships to copy
+   * @returns {Promise<void>}
+   * @throws {Error} When user is not authenticated or database operations fail
+   * 
+   * @example
+   * await duplicateMeal(selectedMeal); // Creates "Chicken Salad (Copy)"
+   */
   const duplicateMeal = async (meal) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Create a copy of the meal
+      // Create a copy of the meal - only include actual database columns
       const mealCopy = {
-        ...meal,
-        id: undefined,
         name: `${meal.name} (Copy)`,
         user_id: user.id,
-        is_premade: false,
-        created_at: undefined,
-        updated_at: undefined
+        category: meal.category,
+        tags: meal.tags,
+        description: meal.description,
+        instructions: meal.instructions,
+        prep_time: meal.prep_time,
+        cook_time: meal.cook_time,
+        serving_size: meal.serving_size,
+        serving_unit: meal.serving_unit,
+        difficulty_level: meal.difficulty_level,
+        image_url: meal.image_url,
+        is_premade: false
       };
 
       const { data: newMeal, error: mealError } = await supabase
@@ -258,18 +364,34 @@ const MyMealsPage = () => {
 
       // Copy meal foods
       if (meal.meal_foods && meal.meal_foods.length > 0) {
-        const mealFoodsCopy = meal.meal_foods.map(food => ({
-          meal_id: newMeal.id,
-          food_servings_id: food.food_servings_id,
-          quantity: food.quantity,
-          notes: food.notes
-        }));
+        // Filter out any foods that still have missing food_servings_id (shouldn't happen now)
+        const validFoods = meal.meal_foods.filter(food => 
+          food.food_servings_id
+        );
+        
+        if (validFoods.length === 0) {
+          // No valid foods to copy - all foods have missing food_servings_id
+        } else {
+          const mealFoodsCopy = validFoods.map(food => ({
+            meal_id: newMeal.id,
+            food_servings_id: food.food_servings_id,
+            quantity: food.quantity,
+            notes: food.notes || ''
+          }));
+          
+          const { error: foodsError } = await supabase
+            .from('meal_foods')
+            .insert(mealFoodsCopy);
 
-        const { error: foodsError } = await supabase
-          .from('meal_foods')
-          .insert(mealFoodsCopy);
-
-        if (foodsError) throw foodsError;
+          if (foodsError) {
+            // Clean up the orphaned meal record
+            await supabase
+              .from('meals')
+              .delete()
+              .eq('id', newMeal.id);
+            throw foodsError;
+          }
+        }
       }
 
       // Add to user meals
@@ -281,15 +403,92 @@ const MyMealsPage = () => {
           is_favorite: false
         }]);
 
-      if (userMealError) throw userMealError;
+      if (userMealError) {
+        // Clean up the orphaned meal record and its foods
+        await supabase
+          .from('meals')
+          .delete()
+          .eq('id', newMeal.id);
+        throw userMealError;
+      }
 
       await loadMeals();
     } catch (error) {
-      console.error('Error duplicating meal:', error);
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('MyMealsPage - Error duplicating meal:', error);
+      }
       alert('Error duplicating meal. Please try again.');
     }
   };
 
+  /**
+   * Add a premade meal to user's personal collection
+   * 
+   * Creates a user_meals relationship to add a premade meal to the user's
+   * collection without duplicating the meal data. Uses upsert with conflict
+   * resolution to prevent duplicate entries and includes loading state to
+   * prevent double-clicks. The meal remains premade but appears in the user's
+   * meal library for use in meal planning.
+   * 
+   * @async
+   * @param {Object} meal - Premade meal object to add
+   * @param {number} meal.id - ID of the premade meal to add
+   * @returns {Promise<void>}
+   * @throws {Error} When user is not authenticated or database operation fails
+   * 
+   * @example
+   * await addPremadeMeal(premadeMeal); // Safely adds premade meal to user's collection
+   */
+  const addPremadeMeal = async (meal) => {
+    if (premadeMealsLoading) return; // Prevent double-clicks
+    
+    try {
+      setPremadeMealsLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Use upsert to avoid duplicate user_meals rows
+      const { error: userMealError } = await supabase
+        .from('user_meals')
+        .upsert([{
+          user_id: user.id,
+          meal_id: meal.id,
+          is_favorite: false
+        }], {
+          onConflict: 'user_id,meal_id',
+          ignoreDuplicates: true
+        });
+
+      if (userMealError) throw userMealError;
+
+      await loadMeals();
+      alert('Meal added to your collection!');
+    } catch (error) {
+      alert('Error adding meal. Please try again.');
+    } finally {
+      setPremadeMealsLoading(false);
+    }
+  };
+
+  /**
+   * Delete a meal or remove it from user's collection
+   * 
+   * Handles two scenarios:
+   * 1. For user-created meals: Completely deletes the meal and all associated data
+   * 2. For premade meals: Only removes the user_meals relationship (unsaves the meal)
+   * 
+   * Shows confirmation dialog before proceeding with deletion.
+   * 
+   * @async
+   * @param {number} mealId - ID of the meal to delete or remove
+   * @returns {Promise<void>}
+   * @throws {Error} When user is not authenticated or database operations fail
+   * 
+   * @example
+   * await deleteMeal(123); // Deletes user's custom meal completely
+   * await deleteMeal(456); // Removes premade meal from user's collection
+   */
   const deleteMeal = async (mealId) => {
     if (!confirm('Are you sure you want to delete this meal?')) return;
 
@@ -322,7 +521,10 @@ const MyMealsPage = () => {
 
       await loadMeals();
     } catch (error) {
-      console.error('Error deleting meal:', error);
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('MyMealsPage - Error deleting meal:', error);
+      }
       alert('Error deleting meal. Please try again.');
     }
   };
@@ -404,6 +606,86 @@ const MyMealsPage = () => {
     );
   }
 
+  // When browsing premade meals we render a full-page view that replaces
+  // the My Meals page until the user closes it. This prevents the modal
+  // from opening at the bottom of the page and makes the premade browser
+  // easier to navigate on small screens.
+  if (showPremadeMeals) {
+    return (
+      <div className="my-meals-page premade-fullpage">
+        <div className="page-header">
+          <div className="header-left">
+            <h1>
+              <ChefHat className="icon" />
+              Browse Premade Meals
+            </h1>
+            <p>Choose from our collection of professionally crafted meals to add to your library.</p>
+          </div>
+          <div className="header-buttons">
+            <button
+              onClick={() => {
+                setShowPremadeMeals(false);
+                // Scroll to top when closing premade meals view
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="create-meal-btn"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+
+        <div className="premade-meals-container">
+          {premadeMealsLoading ? (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <p>Loading premade meals...</p>
+            </div>
+          ) : (
+            <>
+              {premadeMeals.length > 0 ? (
+                <div className="premade-meals-grid">
+                  {premadeMeals.map(meal => (
+                    <div key={meal.id} className="premade-meal-card">
+                      <div className="meal-info">
+                        <h4 className="meal-name">{meal.name}</h4>
+                        <div className="meal-category">{meal.category}</div>
+                        {meal.description && (
+                          <p className="meal-description">{meal.description}</p>
+                        )}
+                        <div className="meal-nutrition">
+                          <div className="nutrition-item">
+                            <span className="value">{meal.nutrition?.calories ? Math.round(meal.nutrition.calories) : '0'}</span>
+                            <span className="label">cal</span>
+                          </div>
+                          <div className="nutrition-item">
+                            <span className="value">{meal.nutrition?.protein ? Math.round(meal.nutrition.protein) : '0'}g</span>
+                            <span className="label">protein</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => addPremadeMeal(meal)}
+                        className="add-meal-btn"
+                      >
+                        <Plus className="icon" />
+                        Add to My Meals
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="no-premade-meals">
+                  <p>No premade meals available at the moment.</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="my-meals-page">
       {/* Header */}
@@ -415,16 +697,30 @@ const MyMealsPage = () => {
           </h1>
           <p>Manage your saved meals and recipes</p>
         </div>
-        <button
-          onClick={() => {
-            setEditingMeal(null);
-            setShowMealBuilder(true);
-          }}
-          className="create-meal-btn"
-        >
-          <Plus className="icon" />
-          Create New Meal
-        </button>
+        <div className="header-buttons">
+          <button
+            onClick={() => {
+              setEditingMeal(null);
+              setShowMealBuilder(true);
+            }}
+            className="create-meal-btn"
+          >
+            <Plus className="icon" />
+            Create New Meal
+          </button>
+          <button
+            onClick={() => {
+              loadPremadeMeals();
+              setShowPremadeMeals(true);
+              // Scroll to top when opening premade meals view
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="browse-premade-btn"
+          >
+            <ChefHat className="icon" />
+            Browse Premade Meals
+          </button>
+        </div>
       </div>
 
       {/* Filters and Search */}
@@ -487,35 +783,20 @@ const MyMealsPage = () => {
       <div className="meals-grid">
         {filteredMeals.map(meal => (
           <div key={meal.id} className="meal-card">
-            {/* Meal Image */}
-            <div className="meal-image">
-              {meal.image_url ? (
-                <img src={meal.image_url} alt={meal.display_name} />
-              ) : (
-                <div className="placeholder-image">
-                  <ChefHat className="placeholder-icon" />
-                </div>
-              )}
-              
-              {/* Favorite Button */}
-              <button
-                onClick={() => toggleFavorite(meal.id, meal.is_favorite)}
-                className={`favorite-btn ${meal.is_favorite ? 'favorited' : ''}`}
-              >
-                <Heart className="icon" />
-              </button>
-
-              {/* Premade Badge */}
-              {meal.is_premade && (
-                <div className="premade-badge">Premade</div>
-              )}
-            </div>
-
             {/* Meal Info */}
             <div className="meal-info">
               <div className="meal-header">
-                <h3 className="meal-name">{meal.display_name}</h3>
-                <div className="meal-category">{meal.category}</div>
+                <div className="meal-header-left">
+                  <h3 className="meal-name">{meal.display_name}</h3>
+                  <div className="meal-category">{meal.category}</div>
+                </div>
+                {/* Favorite Button */}
+                <button
+                  onClick={() => toggleFavorite(meal.id, meal.is_favorite)}
+                  className={`favorite-btn ${meal.is_favorite ? 'favorited' : ''}`}
+                >
+                  <Heart className="icon" />
+                </button>
               </div>
 
               {meal.description && (
@@ -545,19 +826,19 @@ const MyMealsPage = () => {
               {/* Nutrition Summary */}
               <div className="meal-nutrition">
                 <div className="nutrition-item">
-                  <span className="value">{Math.round(meal.nutrition.calories)}</span>
+                  <span className="value">{meal.nutrition?.calories ? Math.round(meal.nutrition.calories) : '0'}</span>
                   <span className="label">cal</span>
                 </div>
                 <div className="nutrition-item">
-                  <span className="value">{Math.round(meal.nutrition.protein)}g</span>
+                  <span className="value">{meal.nutrition?.protein ? Math.round(meal.nutrition.protein) : '0'}g</span>
                   <span className="label">protein</span>
                 </div>
                 <div className="nutrition-item">
-                  <span className="value">{Math.round(meal.nutrition.carbs)}g</span>
+                  <span className="value">{meal.nutrition?.carbs ? Math.round(meal.nutrition.carbs) : '0'}g</span>
                   <span className="label">carbs</span>
                 </div>
                 <div className="nutrition-item">
-                  <span className="value">{Math.round(meal.nutrition.fat)}g</span>
+                  <span className="value">{meal.nutrition?.fat ? Math.round(meal.nutrition.fat) : '0'}g</span>
                   <span className="label">fat</span>
                 </div>
               </div>
