@@ -98,7 +98,10 @@ const WeeklyMealPlannerPage = () => {
       // Load user meals
       await loadUserMeals();
     } catch (error) {
-      // Error loading initial data - silently handle
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('WeeklyMealPlannerPage - Error loading initial data:', error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -143,7 +146,10 @@ const WeeklyMealPlannerPage = () => {
       if (error) throw error;
       setPlanEntries(data || []);
     } catch (error) {
-      // Error loading plan entries - silently handle
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('WeeklyMealPlannerPage - Error loading plan entries:', error);
+      }
     }
   }, [activePlan, currentWeek]);
 
@@ -256,7 +262,10 @@ const WeeklyMealPlannerPage = () => {
         await setActiveMealPlan(data[0].id);
       }
     } catch (error) {
-      // Error loading meal plans - silently handle
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('WeeklyMealPlannerPage - Error loading meal plans:', error);
+      }
     }
   };
 
@@ -441,7 +450,10 @@ const WeeklyMealPlannerPage = () => {
       setActivePlan(data);
       await loadMealPlans();
     } catch (error) {
-      // Error setting active meal plan - silently handle
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('WeeklyMealPlannerPage - Error setting active meal plan:', error);
+      }
     }
   };
 
@@ -521,7 +533,10 @@ const WeeklyMealPlannerPage = () => {
       
       await loadPlanEntries();
     } catch (error) {
-      // Error removing meal from plan - silently handle
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('WeeklyMealPlannerPage - Error removing meal from plan:', error);
+      }
     }
   };
 
@@ -677,7 +692,7 @@ const WeeklyMealPlannerPage = () => {
                     <div key={entry.id} className="meal-entry">
                       <div className="meal-name">{entry.meals.name}</div>
                       <div className="meal-servings">
-                        {entry.servings} {entry.meals.serving_unit}
+                        {entry.servings} {entry.meals?.serving_unit || 'servings'}
                       </div>
                       <div className="meal-calories">
                         {Math.round(calculateMealNutrition(entry.meals.meal_foods, entry.servings).calories)} cal

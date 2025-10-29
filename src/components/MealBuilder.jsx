@@ -348,7 +348,7 @@ const MealBuilder = ({
         notes: '',
         food_servings: foodServingData
       };
-      setMealFoods([...mealFoods, newMealFood]);
+      setMealFoods(prev => [...prev, newMealFood]);
     }
     
     setFoodSearch('');

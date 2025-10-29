@@ -198,7 +198,10 @@ const MyMealsPage = () => {
 
       setMeals(mealsWithNutrition);
     } catch (error) {
-      // Error loading meals - silently handle
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('MyMealsPage - Error loading meals:', error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -247,7 +250,10 @@ const MyMealsPage = () => {
 
       setPremadeMeals(premadeWithNutrition);
     } catch (error) {
-      // Error loading premade meals - silently handle
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('MyMealsPage - Error loading premade meals:', error);
+      }
     } finally {
       setPremadeMealsLoading(false);
     }
@@ -301,7 +307,10 @@ const MyMealsPage = () => {
           : meal
       ));
     } catch (error) {
-      // Error toggling favorite - silently handle
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('MyMealsPage - Error toggling favorite:', error);
+      }
     }
   };
 
@@ -375,6 +384,11 @@ const MyMealsPage = () => {
             .insert(mealFoodsCopy);
 
           if (foodsError) {
+            // Clean up the orphaned meal record
+            await supabase
+              .from('meals')
+              .delete()
+              .eq('id', newMeal.id);
             throw foodsError;
           }
         }
@@ -389,10 +403,21 @@ const MyMealsPage = () => {
           is_favorite: false
         }]);
 
-      if (userMealError) throw userMealError;
+      if (userMealError) {
+        // Clean up the orphaned meal record and its foods
+        await supabase
+          .from('meals')
+          .delete()
+          .eq('id', newMeal.id);
+        throw userMealError;
+      }
 
       await loadMeals();
     } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('MyMealsPage - Error duplicating meal:', error);
+      }
       alert('Error duplicating meal. Please try again.');
     }
   };
@@ -401,8 +426,10 @@ const MyMealsPage = () => {
    * Add a premade meal to user's personal collection
    * 
    * Creates a user_meals relationship to add a premade meal to the user's
-   * collection without duplicating the meal data. The meal remains premade
-   * but appears in the user's meal library for use in meal planning.
+   * collection without duplicating the meal data. Uses upsert with conflict
+   * resolution to prevent duplicate entries and includes loading state to
+   * prevent double-clicks. The meal remains premade but appears in the user's
+   * meal library for use in meal planning.
    * 
    * @async
    * @param {Object} meal - Premade meal object to add
@@ -411,21 +438,27 @@ const MyMealsPage = () => {
    * @throws {Error} When user is not authenticated or database operation fails
    * 
    * @example
-   * await addPremadeMeal(premadeMeal); // Adds premade meal to user's collection
+   * await addPremadeMeal(premadeMeal); // Safely adds premade meal to user's collection
    */
   const addPremadeMeal = async (meal) => {
+    if (premadeMealsLoading) return; // Prevent double-clicks
+    
     try {
+      setPremadeMealsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Add to user_meals table to save it to their collection
+      // Use upsert to avoid duplicate user_meals rows
       const { error: userMealError } = await supabase
         .from('user_meals')
-        .insert([{
+        .upsert([{
           user_id: user.id,
           meal_id: meal.id,
           is_favorite: false
-        }]);
+        }], {
+          onConflict: 'user_id,meal_id',
+          ignoreDuplicates: true
+        });
 
       if (userMealError) throw userMealError;
 
@@ -433,6 +466,8 @@ const MyMealsPage = () => {
       alert('Meal added to your collection!');
     } catch (error) {
       alert('Error adding meal. Please try again.');
+    } finally {
+      setPremadeMealsLoading(false);
     }
   };
 
@@ -486,6 +521,10 @@ const MyMealsPage = () => {
 
       await loadMeals();
     } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.warn('MyMealsPage - Error deleting meal:', error);
+      }
       alert('Error deleting meal. Please try again.');
     }
   };
