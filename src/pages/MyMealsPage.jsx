@@ -357,9 +357,7 @@ const MyMealsPage = () => {
       if (meal.meal_foods && meal.meal_foods.length > 0) {
         // Filter out any foods that still have missing food_servings_id (shouldn't happen now)
         const validFoods = meal.meal_foods.filter(food => 
-          food.food_servings_id && 
-          food.food_servings_id !== undefined &&
-          food.food_servings_id !== null
+          food.food_servings_id
         );
         
         if (validFoods.length === 0) {
