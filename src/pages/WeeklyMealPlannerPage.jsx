@@ -50,6 +50,8 @@ const WeeklyMealPlannerPage = () => {
   /** @type {[boolean, Function]} Controls meal selector modal visibility */
   const [showMealSelector, setShowMealSelector] = useState(false);
   
+
+  
   /** @type {[Object, Function]} Calculated nutrition totals by day */
   const [weeklyNutrition, setWeeklyNutrition] = useState({});
   
@@ -211,10 +213,24 @@ const WeeklyMealPlannerPage = () => {
 
 
   /**
-   * Load user's meal plans from database
+   * Load user's meal plans from database and set active plan
+   * 
+   * Fetches all weekly meal plans for the current user and determines which plan
+   * should be active. If no plan is marked as active, makes the most recent plan
+   * active automatically.
    * 
    * @async
    * @returns {Promise<void>}
+   * @throws {Error} When user is not authenticated or database query fails
+   * 
+   * @description
+   * Plan activation logic:
+   * 1. Look for a plan marked with is_active=true
+   * 2. If none found, activate the most recent plan
+   * 3. Update activePlan state to trigger plan entries loading
+   * 
+   * @example
+   * await loadMealPlans(); // Loads plans and sets active plan
    */
   const loadMealPlans = async () => {
     try {
@@ -244,6 +260,27 @@ const WeeklyMealPlannerPage = () => {
     }
   };
 
+  /**
+   * Load user's saved meals for meal selection in planner
+   * 
+   * Fetches all meals from the user's personal collection (saved meals) with
+   * nutrition data for display in the meal selector. Excludes premade meals
+   * that haven't been saved to the user's collection.
+   * 
+   * @async
+   * @returns {Promise<void>}  
+   * @throws {Error} When user is not authenticated or database query fails
+   * 
+   * @description
+   * Loads meals with:
+   * - Complete meal metadata (name, category, etc.)
+   * - Associated meal_foods with nutrition data
+   * - User preferences (favorite status, custom names)
+   * - Calculated nutrition totals for display
+   * 
+   * @example
+   * await loadUserMeals(); // Populates userMeals state for meal selector
+   */
   const loadUserMeals = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -274,27 +311,7 @@ const WeeklyMealPlannerPage = () => {
 
       if (userMealsError) throw userMealsError;
 
-      // Get premade meals
-      const { data: premadeMeals, error: premadeError } = await supabase
-        .from('meals')
-        .select(`
-          *,
-          meal_foods (
-            quantity,
-            food_servings (
-              calories,
-              protein_g,
-              carbs_g,
-              fat_g
-            )
-          )
-        `)
-        .eq('is_premade', true)
-        .order('created_at', { ascending: false });
-
-      if (premadeError) throw premadeError;
-
-      // Combine user saved meals and premade meals
+      // Process user saved meals only (no premade meals in meal planner)
       const userMealsData = userSavedMeals.map(um => ({
         ...um.meals,
         user_meals: [{
@@ -304,7 +321,7 @@ const WeeklyMealPlannerPage = () => {
         }]
       }));
 
-      const data = [...userMealsData, ...premadeMeals];
+      const data = userMealsData;
       const error = null;
 
       if (error) throw error;
@@ -334,16 +351,27 @@ const WeeklyMealPlannerPage = () => {
     }
   };
 
-  const calculateMealNutrition = (mealFoods) => {
+  /**
+   * Calculate total nutrition values for a meal based on its foods and servings
+   * 
+   * @param {Array} mealFoods - Array of meal_foods with quantities and nutrition data
+   * @param {number} [servings=1] - Number of servings to multiply nutrition by
+   * @returns {Object} Calculated nutrition totals (calories, protein, carbs, fat)
+   * 
+   * @example
+   * const nutrition = calculateMealNutrition(meal.meal_foods, 2);
+   * // Returns: { calories: 600, protein: 40, carbs: 20, fat: 15 }
+   */
+  const calculateMealNutrition = (mealFoods, servings = 1) => {
     return mealFoods.reduce((acc, item) => {
       const food = item.food_servings;
       const quantity = item.quantity || 0;
       
       return {
-        calories: acc.calories + (food.calories * quantity || 0),
-        protein: acc.protein + (food.protein_g * quantity || 0),
-        carbs: acc.carbs + (food.carbs_g * quantity || 0),
-        fat: acc.fat + (food.fat_g * quantity || 0)
+        calories: acc.calories + (food.calories * quantity * servings || 0),
+        protein: acc.protein + (food.protein_g * quantity * servings || 0),
+        carbs: acc.carbs + (food.carbs_g * quantity * servings || 0),
+        fat: acc.fat + (food.fat_g * quantity * servings || 0)
       };
     }, {
       calories: 0,
@@ -353,6 +381,28 @@ const WeeklyMealPlannerPage = () => {
     });
   };
 
+  /**
+   * Create a new weekly meal plan for the current week
+   * 
+   * Creates a new meal plan covering the currently displayed week (Monday-Sunday)
+   * and automatically sets it as the active plan. Deactivates any existing active
+   * plans to ensure only one plan is active at a time.
+   * 
+   * @async
+   * @returns {Promise<void>}
+   * @throws {Error} When user is not authenticated or database operations fail
+   * 
+   * @description
+   * Plan creation process:
+   * 1. Calculate start/end dates from current week
+   * 2. Generate descriptive plan name with week date
+   * 3. Deactivate existing active plans
+   * 4. Create new plan marked as active
+   * 5. Update local state and reload plans
+   * 
+   * @example
+   * await createNewMealPlan(); // Creates "Meal Plan - Week of 12/4/2023"
+   */
   const createNewMealPlan = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -420,6 +470,31 @@ const WeeklyMealPlannerPage = () => {
     setShowMealSelector(true);
   };
 
+
+
+  /**
+   * Add a selected meal to a specific time slot in the meal plan
+   * 
+   * Creates a meal_plan_entries record linking a meal to a specific date and meal type
+   * within the active meal plan. Allows specifying the number of servings.
+   * 
+   * @async
+   * @param {Object} meal - Complete meal object to add to the plan
+   * @param {number} meal.id - Database ID of the meal to add
+   * @param {number} [servings=1] - Number of servings to plan for this meal
+   * @returns {Promise<void>}
+   * @throws {Error} When no active plan, no selected slot, or database operation fails
+   * 
+   * @description
+   * Requires both activePlan and selectedSlot to be set (from handleSlotClick).
+   * After successful addition:
+   * 1. Reloads plan entries to show the new meal
+   * 2. Closes the meal selector modal
+   * 3. Clears the selected slot state
+   * 
+   * @example
+   * await addMealToSlot(chickenSalad, 2); // Adds 2 servings of chicken salad
+   */
   const addMealToSlot = async (meal, servings = 1) => {
     if (!activePlan || !selectedSlot) return;
 
@@ -466,6 +541,16 @@ const WeeklyMealPlannerPage = () => {
     setCurrentWeek(getWeekDates(newDate));
   };
 
+  /**
+   * Convert meal type key to display-friendly label
+   * 
+   * @param {string} mealType - Internal meal type identifier
+   * @returns {string} Human-readable meal type label
+   * 
+   * @example
+   * formatMealType('snack1'); // Returns "Snack 1"
+   * formatMealType('breakfast'); // Returns "Breakfast"
+   */
   const formatMealType = (mealType) => {
     const typeMap = {
       breakfast: 'Breakfast',
@@ -477,6 +562,16 @@ const WeeklyMealPlannerPage = () => {
     return typeMap[mealType] || mealType;
   };
 
+  /**
+   * Get all meal entries for a specific date and meal type
+   * 
+   * @param {Date} date - Date to search for entries
+   * @param {string} mealType - Meal type to filter by (breakfast, lunch, etc.)
+   * @returns {Array} Array of meal plan entry objects
+   * 
+   * @example
+   * const breakfastMeals = getMealsByTypeAndDate(new Date(), 'breakfast');
+   */
   const getMealsByTypeAndDate = (date, mealType) => {
     const dateStr = date.toISOString().split('T')[0];
     return planEntries.filter(entry => 
@@ -484,6 +579,16 @@ const WeeklyMealPlannerPage = () => {
     );
   };
 
+  /**
+   * Get calculated nutrition totals for a specific day
+   * 
+   * @param {Date} date - Date to get nutrition totals for
+   * @returns {Object} Daily nutrition totals (calories, protein, carbs, fat)
+   * 
+   * @example
+   * const todayNutrition = getDayNutrition(new Date());
+   * console.log(`Today's calories: ${todayNutrition.calories}`);
+   */
   const getDayNutrition = (date) => {
     const dateStr = date.toISOString().split('T')[0];
     return weeklyNutrition[dateStr] || {
@@ -593,6 +698,7 @@ const WeeklyMealPlannerPage = () => {
                           removeMealFromSlot(entry.id);
                         }}
                         className="remove-meal-btn"
+                        title="Remove meal from plan"
                       >
                         <Trash2 className="icon" />
                       </button>
@@ -753,6 +859,8 @@ const WeeklyMealPlannerPage = () => {
           </div>
         </div>
       )}
+
+
     </div>
   );
 };

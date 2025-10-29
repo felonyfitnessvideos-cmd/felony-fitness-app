@@ -1,4 +1,25 @@
-/* MealBuilder.css */
+/**
+ * @fileoverview MealBuilder component styles
+ * 
+ * Comprehensive styling for the MealBuilder modal component which provides
+ * meal creation and editing functionality. Includes responsive design
+ * patterns, smooth scrolling, and proper focus management.
+ * 
+ * Key Features:
+ * - Modal overlay with centered positioning
+ * - Sticky header and footer for better UX
+ * - Responsive food search dropdown with smooth scrolling
+ * - Inline quantity editing for meal foods
+ * - Mobile-first responsive design
+ * - Proper focus states for accessibility
+ * 
+ * @author Felony Fitness App Team
+ * @version 1.0.0
+ */
+
+/* ========================================
+   MODAL OVERLAY & CONTAINER
+   ======================================== */
 .meal-builder-overlay {
   position: fixed;
   top: 0;
@@ -21,6 +42,9 @@
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  /* Improve scroll behavior */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 .meal-builder-header {
@@ -72,7 +96,9 @@
   gap: 24px;
 }
 
-/* Form Sections */
+/* ========================================
+   FORM SECTIONS & INPUT STYLING
+   ======================================== */
 .meal-details-section,
 .meal-foods-section,
 .instructions-section {
@@ -141,10 +167,16 @@
   min-height: 80px;
 }
 
-/* Food Search */
+/* ========================================
+   FOOD SEARCH & RESULTS DROPDOWN
+   ======================================== */
+
+/* Food search container with dropdown positioning */
 .food-search {
   position: relative;
   margin-bottom: 20px;
+  /* Ensure the dropdown doesn't get clipped */
+  z-index: 10;
 }
 
 .search-input-container {
@@ -182,6 +214,7 @@
   height: 18px;
 }
 
+/* Dropdown results container with high z-index to prevent clipping */
 .search-results {
   position: absolute;
   top: 100%;
@@ -190,10 +223,14 @@
   background: var(--card-color);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  max-height: 300px;
+  max-height: 250px;
   overflow-y: auto;
-  z-index: 100;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  z-index: 1001; /* High z-index to ensure dropdown appears above other elements */
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+  margin-top: 4px;
+  /* Ensure smooth scrolling on mobile devices */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 .search-result-item {
@@ -264,7 +301,11 @@
   to { transform: rotate(360deg); }
 }
 
-/* Selected Foods */
+/* ========================================
+   SELECTED FOODS LIST
+   ======================================== */
+
+/* List of foods added to the meal with inline quantity editing */
 .selected-foods {
   display: flex;
   flex-direction: column;
@@ -290,6 +331,7 @@
   gap: 4px;
 }
 
+/* Inline quantity editor - allows users to edit serving amounts directly in the food list */
 .quantity-input-inline {
   background: transparent;
   border: none;
@@ -333,7 +375,11 @@
   font-style: italic;
 }
 
-/* Nutrition Summary */
+/* ========================================
+   NUTRITION SUMMARY GRID
+   ======================================== */
+
+/* Real-time nutrition calculation display */
 .nutrition-summary {
   background: var(--background-color);
   border: 1px solid var(--border-color);
@@ -377,7 +423,11 @@
   letter-spacing: 0.5px;
 }
 
-/* Action Buttons */
+/* ========================================
+   ACTION BUTTONS (SAVE/CANCEL)
+   ======================================== */
+
+/* Sticky footer with save and cancel actions */
 .meal-builder-actions {
   display: flex;
   justify-content: flex-end;
@@ -438,7 +488,11 @@
   height: 14px;
 }
 
-/* Responsive Design */
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+/* Mobile-first responsive design for tablets and phones */
 @media (max-width: 768px) {
   .meal-builder-overlay {
     padding: 10px;
