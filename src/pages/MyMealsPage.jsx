@@ -159,10 +159,10 @@ const MyMealsPage = () => {
         }]
       })) || [];
 
-      // Debug each meal's structure for broken nutrition data
+      // Check each meal's structure for broken nutrition data
       userMealsData.forEach((meal, index) => {
         if (meal.meal_foods && meal.meal_foods.some(mf => !mf.food_servings)) {
-          console.warn(`⚠️ Meal "${meal.name}" has broken food data - missing nutrition information`);
+          // Meal has broken food data - missing nutrition information
         }
       });
 
@@ -173,19 +173,9 @@ const MyMealsPage = () => {
         const userMeal = meal.user_meals && meal.user_meals.length > 0 ? meal.user_meals[0] : null;
         const nutrition = calculateMealNutrition(meal.meal_foods);
         
-        // Debug nutrition calculation for meals with zero values
+        // Check nutrition calculation for meals with zero values
         if (nutrition.calories === 0 && meal.meal_foods && meal.meal_foods.length > 0) {
-          console.warn('Meal with zero calories:', meal.name);
-          console.warn('Full meal data:', meal);
-          meal.meal_foods.forEach((mealFood, index) => {
-            console.warn(`Food ${index}:`, {
-              meal_foods_id: mealFood.id,
-              food_servings_id: mealFood.food_servings_id,
-              quantity: mealFood.quantity,
-              notes: mealFood.notes,
-              food_servings: mealFood.food_servings
-            });
-          });
+          // Meal with zero calories detected - handle silently
         }
         
         return {
@@ -208,7 +198,7 @@ const MyMealsPage = () => {
 
       setMeals(mealsWithNutrition);
     } catch (error) {
-      console.error('Error loading meals:', error);
+      // Error loading meals - silently handle
     } finally {
       setIsLoading(false);
     }
@@ -257,7 +247,7 @@ const MyMealsPage = () => {
 
       setPremadeMeals(premadeWithNutrition);
     } catch (error) {
-      console.error('Error loading premade meals:', error);
+      // Error loading premade meals - silently handle
     } finally {
       setPremadeMealsLoading(false);
     }
@@ -311,7 +301,7 @@ const MyMealsPage = () => {
           : meal
       ));
     } catch (error) {
-      console.error('Error toggling favorite:', error);
+      // Error toggling favorite - silently handle
     }
   };
 
@@ -373,7 +363,7 @@ const MyMealsPage = () => {
         );
         
         if (validFoods.length === 0) {
-          console.warn('⚠️ No valid foods to copy - all foods have missing food_servings_id');
+          // No valid foods to copy - all foods have missing food_servings_id
         } else {
           const mealFoodsCopy = validFoods.map(food => ({
             meal_id: newMeal.id,
@@ -381,15 +371,12 @@ const MyMealsPage = () => {
             quantity: food.quantity,
             notes: food.notes || ''
           }));
-
-          console.log('🍽️ Copying foods to new meal:', mealFoodsCopy);
           
           const { error: foodsError } = await supabase
             .from('meal_foods')
             .insert(mealFoodsCopy);
 
           if (foodsError) {
-            console.error('Error inserting meal foods:', foodsError);
             throw foodsError;
           }
         }
@@ -408,7 +395,6 @@ const MyMealsPage = () => {
 
       await loadMeals();
     } catch (error) {
-      console.error('Error duplicating meal:', error);
       alert('Error duplicating meal. Please try again.');
     }
   };
@@ -448,7 +434,6 @@ const MyMealsPage = () => {
       await loadMeals();
       alert('Meal added to your collection!');
     } catch (error) {
-      console.error('Error adding premade meal:', error);
       alert('Error adding meal. Please try again.');
     }
   };
@@ -503,7 +488,6 @@ const MyMealsPage = () => {
 
       await loadMeals();
     } catch (error) {
-      console.error('Error deleting meal:', error);
       alert('Error deleting meal. Please try again.');
     }
   };

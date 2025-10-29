@@ -190,7 +190,7 @@ const MealBuilder = ({
         food_servings: item.food_servings
       })));
     } catch (error) {
-      console.error('Error loading meal foods:', error);
+      // Error loading meal foods - silently handle
     }
   };
 
@@ -270,8 +270,6 @@ const MealBuilder = ({
           );
         } else if (data?.source === 'external') {
           // OpenAI API results - need to generate serving_id for external results
-          console.log('🔍 Raw external results:', data.results);
-          console.log('🔍 First raw item:', data.results?.[0]);
           standardizedResults = (data.results || []).map((item, index) => {
             // Generate a unique serving_id for external results using timestamp + index
             const generatedServingId = `ext_${Date.now()}_${index}`;
@@ -288,18 +286,16 @@ const MealBuilder = ({
               fiber: item.fiber_g,
               sugar: item.sugar_g
             };
-            console.log('🔍 Mapped external result:', result);
             return result;
           });
         }
         
-        console.log('🔍 Search results found:', standardizedResults.length);
         setSearchResults(standardizedResults);
       } catch (error) {
         if (error?.name === 'AbortError') {
           // ignore
         } else {
-          console.error('Error searching foods:', error);
+          // Error searching foods - silently handle
         }
       } finally {
         setIsSearching(false);
@@ -318,12 +314,9 @@ const MealBuilder = ({
    * @param {number} food.calories - Calories per serving
    */
   const addFoodToMeal = (food) => {
-    console.log('🍎 Adding food to meal:', food);
     const servingId = food.serving_id || food.id;
-    console.log('🍎 Determined serving ID:', servingId);
     
     if (!servingId) {
-      console.error('❌ No serving ID found for food:', food);
       alert('Unable to add food - missing serving information');
       return;
     }
@@ -355,7 +348,6 @@ const MealBuilder = ({
         notes: '',
         food_servings: foodServingData
       };
-      console.log('🍎 Adding new meal food:', newMealFood);
       setMealFoods([...mealFoods, newMealFood]);
     }
     
@@ -481,8 +473,6 @@ const MealBuilder = ({
         
         // Check if this is an external food (string ID starting with "ext_")
         if (typeof item.food_servings_id === 'string' && item.food_servings_id.startsWith('ext_')) {
-          console.log('🔄 Processing external food:', item.food_servings);
-          
           // Create food record first
           const { data: foodData, error: foodError } = await supabase
             .from('foods')
@@ -512,7 +502,6 @@ const MealBuilder = ({
           if (servingError) throw servingError;
           
           finalFoodServingsId = servingData.id;
-          console.log('✅ Created food_servings record with ID:', finalFoodServingsId);
         }
         
         processedMealFoods.push({
@@ -555,7 +544,6 @@ const MealBuilder = ({
 
       onClose();
     } catch (error) {
-      console.error('Error saving meal:', error);
       alert('Error saving meal. Please try again.');
     } finally {
       setIsSaving(false);
@@ -675,16 +663,7 @@ const MealBuilder = ({
                                       item.food_servings.name ||
                                       'Unknown Food';
                       
-                      // Debug log for foods without names
-                      if (!item.food_servings.foods?.name) {
-                        console.log('🔍 Food missing foods.name:', {
-                          serving_id: item.food_servings_id,
-                          serving_description: item.food_servings.serving_description,
-                          foods_relation: item.food_servings.foods,
-                          food_name_fallback: item.food_servings.food_name,
-                          name_fallback: item.food_servings.name
-                        });
-                      }
+                      // Handle foods without names silently
                       
                       if (item.food_servings.serving_description) {
                         return foodName !== 'Unknown Food' ? 

@@ -123,11 +123,7 @@ export function calculateMealNutrition(mealFoods) {
     
     // Handle null or undefined food_servings
     if (!food) {
-      console.warn('Missing food_servings data for meal food item:', {
-        quantity: item.quantity,
-        notes: item.notes,
-        food_servings_id: item.food_servings_id
-      });
+      // Missing food_servings data for meal food item - skip calculation
       return acc;
     }
     

@@ -98,7 +98,7 @@ const WeeklyMealPlannerPage = () => {
       // Load user meals
       await loadUserMeals();
     } catch (error) {
-      console.error('Error loading initial data:', error);
+      // Error loading initial data - silently handle
     } finally {
       setIsLoading(false);
     }
@@ -143,7 +143,7 @@ const WeeklyMealPlannerPage = () => {
       if (error) throw error;
       setPlanEntries(data || []);
     } catch (error) {
-      console.error('Error loading plan entries:', error);
+      // Error loading plan entries - silently handle
     }
   }, [activePlan, currentWeek]);
 
@@ -256,7 +256,7 @@ const WeeklyMealPlannerPage = () => {
         await setActiveMealPlan(data[0].id);
       }
     } catch (error) {
-      console.error('Error loading meal plans:', error);
+      // Error loading meal plans - silently handle
     }
   };
 
@@ -337,16 +337,8 @@ const WeeklyMealPlannerPage = () => {
         };
       });
       
-      // Debug: Log loaded meals in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log('WeeklyMealPlanner - Raw meals data:', data);
-        console.log('WeeklyMealPlanner - Processed meals:', mealsWithNutrition);
-        console.log('WeeklyMealPlanner - Breakfast meals:', mealsWithNutrition.filter(m => m.category === 'breakfast'));
-      }
-      
       setUserMeals(mealsWithNutrition);
     } catch (error) {
-      console.error('Error loading user meals:', error);
       setUserMeals([]); // Ensure we set empty array on error
     }
   };
@@ -429,7 +421,6 @@ const WeeklyMealPlannerPage = () => {
       setActivePlan(data);
       await loadMealPlans();
     } catch (error) {
-      console.error('Error creating meal plan:', error);
       alert('Error creating meal plan. Please try again.');
     }
   };
@@ -450,7 +441,7 @@ const WeeklyMealPlannerPage = () => {
       setActivePlan(data);
       await loadMealPlans();
     } catch (error) {
-      console.error('Error setting active meal plan:', error);
+      // Error setting active meal plan - silently handle
     }
   };
 
@@ -515,7 +506,6 @@ const WeeklyMealPlannerPage = () => {
       setShowMealSelector(false);
       setSelectedSlot(null);
     } catch (error) {
-      console.error('Error adding meal to plan:', error);
       alert('Error adding meal to plan. Please try again.');
     }
   };
@@ -531,7 +521,7 @@ const WeeklyMealPlannerPage = () => {
       
       await loadPlanEntries();
     } catch (error) {
-      console.error('Error removing meal from plan:', error);
+      // Error removing meal from plan - silently handle
     }
   };
 
@@ -587,7 +577,7 @@ const WeeklyMealPlannerPage = () => {
    * 
    * @example
    * const todayNutrition = getDayNutrition(new Date());
-   * console.log(`Today's calories: ${todayNutrition.calories}`);
+   * // Access nutrition values: todayNutrition.calories, todayNutrition.protein, etc.
    */
   const getDayNutrition = (date) => {
     const dateStr = date.toISOString().split('T')[0];
@@ -801,15 +791,8 @@ const WeeklyMealPlannerPage = () => {
               <div className="meal-list">
                 {(() => {
                   // Debug: Log filtering process
-                  if (process.env.NODE_ENV === 'development') {
-                    console.log('Filtering meals - selectedCategory:', selectedCategory, 'userMeals:', userMeals);
-                  }
-                  
                   const filteredMeals = userMeals.filter(meal => {
                     const matches = selectedCategory === 'all' || meal.category === selectedCategory;
-                    if (process.env.NODE_ENV === 'development') {
-                      console.log(`Meal ${meal.name} (category: ${meal.category}) matches ${selectedCategory}:`, matches);
-                    }
                     return matches;
                   });
                   
