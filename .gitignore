@@ -33,3 +33,4 @@ dist-ssr
 
 # Build output
 /dist# Ignore local database/backup dumps\nbackups/\n
+.vercel

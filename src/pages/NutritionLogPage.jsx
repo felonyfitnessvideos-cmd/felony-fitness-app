@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient.js';
+import { nutritionAPI } from '../utils/nutritionAPI.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 /**
  * NutritionLogPage — log daily nutrition entries.
@@ -200,17 +201,18 @@ function NutritionLogPage() {
 
       setIsSearching(true);
       try {
-        const { data, error } = await supabase.functions.invoke('food-search', {
-          body: { query: term },
-          signal: controller.signal,
-        });
-        if (error) throw error;
+        const result = await nutritionAPI.searchFood(term);
 
         if (controller.signal.aborted) return;
 
+        // Show quality message to user if there are issues
+        if (result.message && (result.quality === 'medium' || result.quality === 'duplicate_warning')) {
+          console.warn('🔍 Food Search:', result.message);
+        }
+
         let standardizedResults = [];
-        if (data?.source === 'local') {
-            standardizedResults = (data.results || []).flatMap(food => 
+        if (result.source === 'local') {
+            standardizedResults = (result.results || []).flatMap(food => 
               (food.food_servings || []).map(serving => ({
                   is_external: false,
                   food_id: food.id,
@@ -221,8 +223,16 @@ function NutritionLogPage() {
                   protein_g: serving.protein_g,
               }))
             );
-        } else if (data?.source === 'external') {
-            standardizedResults = (data.results || []).map(item => ({ ...item, is_external: true }));
+        } else if (result.source === 'external') {
+            standardizedResults = (result.results || []).map(item => ({ 
+              ...item, 
+              is_external: true,
+              quality_score: item.quality_score || result.quality_score
+            }));
+        } else if (result.source === 'duplicate_check') {
+            // Show similar foods as suggestions instead of empty results
+            console.info('💡 Similar foods found:', result.similar_foods);
+            standardizedResults = []; // Don't show duplicates in results
         }
         setSearchResults(standardizedResults);
 

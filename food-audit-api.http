@@ -1,0 +1,403 @@
+### Supabase Food Value Audit REST API Queries  
+### Use Ctrl+Click on "Send Request" to execute queries
+### Current Status: 257 total foods, checking NULL values and categorization
+
+@supabase_url = https://wkmrdelhoeqhsdifrarn.supabase.co
+@api_key = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrbXJkZWxob2VxaHNkaWZyYXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MjYxNzIsImV4cCI6MjA3MzIwMjE3Mn0.izD-ENFv1ufuNFbUF8KSWLCP3hpOtjkPDoIuOUXGXFQ
+
+###
+
+# 1. NULL CATEGORY ANALYSIS - Foods with missing categories (3 found)
+GET {{supabase_url}}/rest/v1/foods?category=is.null&select=id,name,category&order=name
+apikey: {{api_key}}
+Content-Type: application/json
+
+###
+
+# 2. NULL PDCAAS SCORES - Foods with missing protein quality scores
+GET {{supabase_url}}/rest/v1/foods?pdcaas_score=is.null&select=id,name,category,pdcaas_score&order=name&limit=20
+apikey: {{api_key}}
+Content-Type: application/json
+
+###
+
+# 3. FOOD_SERVINGS NULL VALUES - Missing nutritional data in servings
+GET {{supabase_url}}/rest/v1/food_servings?or=(calories.is.null,protein_g.is.null,carbs_g.is.null,fat_g.is.null)&select=id,food_id,serving_description,calories,protein_g,carbs_g,fat_g&limit=20
+apikey: {{api_key}}
+Content-Type: application/json
+
+###
+
+# 4. FIX NULL CATEGORIES - Update the 3 foods with missing categories
+
+# Fix Banana Bread Cake → Desserts & Sweets
+PATCH {{supabase_url}}/rest/v1/foods?id=eq.92
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "category": "Desserts & Sweets"
+}
+
+###
+
+# Fix Fish and Chips → Seafood (primary ingredient is fish)
+PATCH {{supabase_url}}/rest/v1/foods?id=eq.93
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "category": "Seafood"
+}
+
+###
+
+# Fix Ham Sandwich → Meat & Poultry (primary ingredient is ham)
+PATCH {{supabase_url}}/rest/v1/foods?id=eq.91
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "category": "Meat & Poultry"
+}
+
+###
+
+# 5. VERIFY CATEGORY FIXES - Check that NULL categories are gone ✅ COMPLETE
+GET {{supabase_url}}/rest/v1/foods?category=is.null&select=id,name,category&order=name
+apikey: {{api_key}}
+Content-Type: application/json
+
+###
+
+# 6. FIX UNCATEGORIZED FOODS - Update by primary ingredient (42 total)
+
+# VEGETABLES (5 items: Beans and Rice, Fried Rice, Fried Rice with Peanut, Baby Carrots, Spring Mix)
+PATCH {{supabase_url}}/rest/v1/foods?id=in.(88,82,87,48,41)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "category": "Vegetables"
+}
+
+###
+
+# MEAT & POULTRY (2 items: Chicken and Rice Bowl, Chicken Sandwich)
+PATCH {{supabase_url}}/rest/v1/foods?id=in.(94,61)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "category": "Meat & Poultry"
+}
+
+###
+
+# DAIRY (2 items: Mac and Cheese, Greek Yogurt with Apple Sauce)
+PATCH {{supabase_url}}/rest/v1/foods?id=in.(51,47)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "category": "Dairy"
+}
+
+###
+
+# BREADS & GRAINS (2 items: Pepperoni Pizza, Tamales with Green Chilies)
+PATCH {{supabase_url}}/rest/v1/foods?id=in.(44,80)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "category": "Breads & Grains"
+}
+
+###
+
+# SEAFOOD (2 items: Shrimp Dumpling Soup, Tuna Sandwich)
+PATCH {{supabase_url}}/rest/v1/foods?id=in.(81,46)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "category": "Seafood"
+}
+
+###
+
+# FRUITS (2 items: Apple Sauce, Peaches Canned Light Syrup)
+PATCH {{supabase_url}}/rest/v1/foods?id=in.(65,42)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "category": "Fruits"
+}
+
+###
+
+# DESSERTS & SWEETS (4 items: 1/2 Three Musketeers Bar, Blizzard, Chocolate Milkshake, Funnel Cake)
+PATCH {{supabase_url}}/rest/v1/foods?id=in.(90,56,73,83)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "category": "Desserts & Sweets"
+}
+
+###
+
+# BREAKFAST & CEREALS (2 items: Frosted Flakes, Frosted Mini-Wheats)
+PATCH {{supabase_url}}/rest/v1/foods?id=in.(52,77)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "category": "Breakfast & Cereals"
+}
+
+###
+
+# PROTEIN & SUPPLEMENTS (8 items: All protein powders, eggs, etc.)
+PATCH {{supabase_url}}/rest/v1/foods?id=in.(97,43,85,54,60,71,45,89,63,75)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "category": "Protein & Supplements"
+}
+
+###
+
+# BEVERAGES (7 items: All coffee variants, Vanilla Cold Brew)
+PATCH {{supabase_url}}/rest/v1/foods?id=in.(86,79,53,74,58,62)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "category": "Beverages"
+}
+
+###
+
+# SANDWICHES (4 items: PB&J variants, Taco Sandwich, Large Wet Steak Burrito, Double Bacon Cheese)
+PATCH {{supabase_url}}/rest/v1/foods?id=in.(76,66,57,55,72)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "category": "Sandwiches"
+}
+
+###
+
+# 7. VERIFY UNCATEGORIZED CLEANUP - Should be empty after fixes ✅ COMPLETE
+GET {{supabase_url}}/rest/v1/foods?category=eq.Uncategorized&select=id,name,category&order=name
+apikey: {{api_key}}
+Content-Type: application/json
+
+###
+
+# 8. FIX NUTRITIONAL NULL VALUES - Set logical zeros vs. research needed
+
+# ZERO CARBS - Black Coffee & Espresso (pure liquid, no carbs)
+PATCH {{supabase_url}}/rest/v1/food_servings?id=in.(1,3)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "carbs_g": 0.00,
+  "fat_g": 0.00
+}
+
+###
+
+# ZERO CARBS - All Fish Fillets (pure protein, essentially no carbs)
+PATCH {{supabase_url}}/rest/v1/food_servings?id=in.(5,6,8,9,10,11,12,13,14)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "carbs_g": 0.00
+}
+
+###
+
+# ZERO FAT - Rice varieties (grains are essentially fat-free)
+PATCH {{supabase_url}}/rest/v1/food_servings?id=in.(15,16,17,18,19,20)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "fat_g": 0.00
+}
+
+###
+
+# 9. FOODS NEEDING RESEARCH - Get remaining NULL values that need actual data
+GET {{supabase_url}}/rest/v1/food_servings?or=(carbs_g.is.null,fat_g.is.null)&select=id,food_id,serving_description,calories,protein_g,carbs_g,fat_g,foods(name,category)&limit=30
+apikey: {{api_key}}
+Content-Type: application/json
+
+###
+
+# 10. COUNT PROGRESS - How many NULL values remain ✅ 83 remaining
+GET {{supabase_url}}/rest/v1/food_servings?or=(carbs_g.is.null,fat_g.is.null)&select=count
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: count=exact
+
+###
+
+# 11. CATEGORY 1: VEGETABLES (LARGEST) - Research and update vegetable nutritional values
+
+# VEGETABLES - Low-carb vegetables (Most vegetable mixes: ~7g carbs, 0.5g fat per cup)
+PATCH {{supabase_url}}/rest/v1/food_servings?id=in.(25,26,28,29,30,34,35,39,46)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "carbs_g": 7.0,
+  "fat_g": 0.5
+}
+
+###
+
+# VEGETABLES - Higher-carb vegetables (Peas and Carrots, Three Bean Salad, Succotash)
+PATCH {{supabase_url}}/rest/v1/food_servings?id=in.(27,31,32,33)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "carbs_g": 15.0,
+  "fat_g": 1.0
+}
+
+###
+
+# 12. CATEGORY 2: GRAINS (HIGH PRIORITY) - Rice varieties need carb values
+
+# RICE VARIETIES - Standard rice: ~45g carbs, 0g fat per cup cooked
+PATCH {{supabase_url}}/rest/v1/food_servings?id=in.(15,16,21,22,23,24)
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: return=minimal
+
+{
+  "carbs_g": 45.0
+}
+
+###
+
+# 13. VERIFY VEGETABLE AND GRAIN UPDATES
+GET {{supabase_url}}/rest/v1/food_servings?or=(carbs_g.is.null,fat_g.is.null)&select=count
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: count=exact
+
+###
+
+# 3. All Foods (for manual calculation analysis)
+GET {{supabase_url}}/rest/v1/foods?select=id,name,calories_per_100g,protein_per_100g,carbs_per_100g,fat_per_100g&order=calories_per_100g.desc.nullslast
+apikey: {{api_key}}
+Content-Type: application/json
+
+###
+
+# 4. Foods with Very High Calories (>900 cal/100g)
+GET {{supabase_url}}/rest/v1/foods?calories_per_100g=gt.900&select=id,name,calories_per_100g,protein_per_100g,carbs_per_100g,fat_per_100g&order=calories_per_100g.desc
+apikey: {{api_key}}
+Content-Type: application/json
+
+###
+
+# 5. Foods with Impossible Protein Values (>100g per 100g)
+GET {{supabase_url}}/rest/v1/foods?protein_per_100g=gt.100&select=id,name,calories_per_100g,protein_per_100g,carbs_per_100g,fat_per_100g&order=protein_per_100g.desc
+apikey: {{api_key}}
+Content-Type: application/json
+
+###
+
+# 6. Foods Used in Meal Entries (High Priority to Fix)
+GET {{supabase_url}}/rest/v1/foods?id=in.(select distinct food_id from nutrition_logs)&or=(calories_per_100g.is.null,calories_per_100g.eq.0,protein_per_100g.is.null,carbs_per_100g.is.null,fat_per_100g.is.null)&select=id,name,calories_per_100g,protein_per_100g,carbs_per_100g,fat_per_100g
+apikey: {{api_key}}
+Content-Type: application/json
+
+###
+
+# 7. Count Total Foods
+GET {{supabase_url}}/rest/v1/foods?select=count
+apikey: {{api_key}}
+Content-Type: application/json
+Prefer: count=exact
+
+###
+
+# 8. Food Servings (Related Nutritional Data)
+GET {{supabase_url}}/rest/v1/food_servings?select=*,foods(name)&order=id.desc&limit=50
+apikey: {{api_key}}
+Content-Type: application/json
+
+###
+
+# 9. Nutrition Log Details (See What Users Are Actually Logging)
+GET {{supabase_url}}/rest/v1/v_nutrition_log_details?select=*&order=created_at.desc&limit=20
+apikey: {{api_key}}
+Content-Type: application/json
+
+###
+
+# 10. Foods by Category (to check category-specific issues)
+GET {{supabase_url}}/rest/v1/foods?select=category,count()&group=category
+apikey: {{api_key}}
+Content-Type: application/json
+
+###
+
+# 11. Recent Nutrition Logs (to see actively used foods)
+GET {{supabase_url}}/rest/v1/nutrition_logs?select=*,foods(name,calories_per_100g)&order=created_at.desc&limit=30
+apikey: {{api_key}}
+Content-Type: application/json
+
+###
+
+# 12. Update a Food Entry (Example - Fix a food with missing calories)
+# PATCH {{supabase_url}}/rest/v1/foods?id=eq.FOOD_ID
+# apikey: {{api_key}}
+# Content-Type: application/json
+# Prefer: return=minimal
+# 
+# {
+#   "calories_per_100g": 250,
+#   "protein_per_100g": 15.5,
+#   "carbs_per_100g": 30.0,
+#   "fat_per_100g": 8.2
+# }
+
+###
+
+# 13. Get Foods Without Any Serving Data
+GET {{supabase_url}}/rest/v1/foods?id=not.in.(select distinct food_id from food_servings)&select=id,name,calories_per_100g,protein_per_100g,carbs_per_100g,fat_per_100g&limit=50
+apikey: {{api_key}}
+Content-Type: application/json
