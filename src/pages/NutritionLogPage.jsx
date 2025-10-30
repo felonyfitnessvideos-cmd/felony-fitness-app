@@ -281,7 +281,9 @@ function NutritionLogPage() {
           serving_description: selectedFood.serving_description,
           calories: selectedFood.calories,
           protein_g: selectedFood.protein_g,
-          category: 'Uncategorized'
+          carbs_g: selectedFood.carbs_g || 0,
+          fat_g: selectedFood.fat_g || 0,
+          category: 'Fast Food' // Better default category
         }
       };
     } else {
@@ -293,9 +295,12 @@ function NutritionLogPage() {
       };
     }
 
-    const { error } = await supabase.rpc('log_food_item', rpcParams);
+    console.log('🔍 DEBUG: Calling log_food_item with params:', rpcParams);
+    const { data, error } = await supabase.rpc('log_food_item', rpcParams);
+    console.log('🔍 DEBUG: log_food_item response:', { data, error });
 
     if (error) {
+      console.error('❌ log_food_item error:', error);
       alert(`Error logging food: ${error.message}`);
     } else {
       await fetchLogData(user.id);
