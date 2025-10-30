@@ -32,5 +32,16 @@ dist-ssr
 .env.*
 
 # Build output
-/dist# Ignore local database/backup dumps\nbackups/\n
+/dist
+
+# Ignore local database/backup dumps
+backups/
+
+# Testing
+/coverage/
+*.lcov
+test-results/
+playwright-report/
+
+# Vercel
 .vercel
