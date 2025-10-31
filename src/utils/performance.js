@@ -77,7 +77,7 @@ export const initPerformanceOptimizations = () => {
     lazyLoadImages();
     registerSW();
     
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.MODE === 'development') {
       monitorPerformance();
     }
   }, 1000);

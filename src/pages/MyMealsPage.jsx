@@ -25,7 +25,7 @@ import './MyMealsPage.css';
  * <MyMealsPage />
  */
 const MyMealsPage = () => {
-  const { user, session, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   
   /** @type {[Array, Function]} User's complete meal collection */
@@ -198,8 +198,7 @@ const MyMealsPage = () => {
 
       setMeals(mealsWithNutrition);
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env?.DEV) {
         console.warn('MyMealsPage - Error loading meals:', error);
       }
     } finally {
@@ -250,8 +249,8 @@ const MyMealsPage = () => {
 
       setPremadeMeals(premadeWithNutrition);
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env?.DEV) {
+         
         console.warn('MyMealsPage - Error loading premade meals:', error);
       }
     } finally {
@@ -307,8 +306,8 @@ const MyMealsPage = () => {
           : meal
       ));
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env?.DEV) {
+         
         console.warn('MyMealsPage - Error toggling favorite:', error);
       }
     }
@@ -414,8 +413,8 @@ const MyMealsPage = () => {
 
       await loadMeals();
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env?.DEV) {
+         
         console.warn('MyMealsPage - Error duplicating meal:', error);
       }
       alert('Error duplicating meal. Please try again.');
@@ -521,8 +520,8 @@ const MyMealsPage = () => {
 
       await loadMeals();
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env?.DEV) {
+         
         console.warn('MyMealsPage - Error deleting meal:', error);
       }
       alert('Error deleting meal. Please try again.');

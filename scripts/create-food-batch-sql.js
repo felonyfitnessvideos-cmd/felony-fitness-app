@@ -97,22 +97,22 @@ function generateSQL(foods) {
     return `('${cleanName}', '${cleanCategory}', ${pdcaas})`;
   }).join(',\n');
   
-  const servingsSQL = foods.map((food, index) => {
+  const servingsSQL = foods.map((food) => {
     const cleanName = food.name.replace(/'/g, "''");
     return `        WHEN f.name = '${cleanName}' THEN ${Math.round(food.calories || 0)}`;
   }).join('\n');
   
-  const proteinSQL = foods.map((food, index) => {
+  const proteinSQL = foods.map((food) => {
     const cleanName = food.name.replace(/'/g, "''");
     return `        WHEN f.name = '${cleanName}' THEN ${Math.round((food.protein_g || 0) * 10) / 10}`;
   }).join('\n');
   
-  const carbsSQL = foods.map((food, index) => {
+  const carbsSQL = foods.map((food) => {
     const cleanName = food.name.replace(/'/g, "''");
     return `        WHEN f.name = '${cleanName}' THEN ${Math.round((food.carbs_g || 0) * 10) / 10}`;
   }).join('\n');
   
-  const fatSQL = foods.map((food, index) => {
+  const fatSQL = foods.map((food) => {
     const cleanName = food.name.replace(/'/g, "''");
     return `        WHEN f.name = '${cleanName}' THEN ${Math.round((food.fat_g || 0) * 10) / 10}`;
   }).join('\n');

@@ -147,7 +147,7 @@ class AuthenticatedFoodImporter {
       foodRecord.quality_score = Math.min(qualityScore, 100);
 
       // Insert into database
-      const { data: insertedFood, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('foods')
         .insert([foodRecord])
         .select()

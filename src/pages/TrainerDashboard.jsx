@@ -14,7 +14,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Routes, Route, useLocation } from 'react-router-dom';
-import { supabase } from '../supabaseClient';
 import { 
   Users, 
   TrendingUp, 
@@ -52,7 +51,7 @@ import './TrainerDashboard.css';
  * <TrainerDashboard />
  */
 const TrainerDashboard = () => {
-  const { user, session, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { isTabletOrLarger } = useResponsive();

@@ -98,8 +98,8 @@ const WeeklyMealPlannerPage = () => {
       // Load user meals
       await loadUserMeals();
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env?.DEV) {
+         
         console.warn('WeeklyMealPlannerPage - Error loading initial data:', error);
       }
     } finally {
@@ -146,8 +146,8 @@ const WeeklyMealPlannerPage = () => {
       if (error) throw error;
       setPlanEntries(data || []);
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env?.DEV) {
+         
         console.warn('WeeklyMealPlannerPage - Error loading plan entries:', error);
       }
     }
@@ -262,8 +262,8 @@ const WeeklyMealPlannerPage = () => {
         await setActiveMealPlan(data[0].id);
       }
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env?.DEV) {
+         
         console.warn('WeeklyMealPlannerPage - Error loading meal plans:', error);
       }
     }
@@ -450,8 +450,8 @@ const WeeklyMealPlannerPage = () => {
       setActivePlan(data);
       await loadMealPlans();
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env?.DEV) {
+         
         console.warn('WeeklyMealPlannerPage - Error setting active meal plan:', error);
       }
     }
@@ -533,8 +533,8 @@ const WeeklyMealPlannerPage = () => {
       
       await loadPlanEntries();
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env?.DEV) {
+         
         console.warn('WeeklyMealPlannerPage - Error removing meal from plan:', error);
       }
     }

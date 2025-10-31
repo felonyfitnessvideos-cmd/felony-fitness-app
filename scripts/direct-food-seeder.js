@@ -74,7 +74,7 @@ async function seedDatabase() {
       }
 
       // Insert the food
-      const { data: insertedFood, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('foods')
         .insert([{
           ...food,

@@ -1,3 +1,4 @@
+/* eslint-env node */
 /**
  * Test script for Multi-API Nutrition Pipeline
  * Verifies API keys are working and pipeline is functional

@@ -54,9 +54,9 @@ const SidebarNav = ({ navItems }) => (
       <h2>Felony Fitness</h2>
     </div>
     <div className="sidebar-links">
-      {navItems.map(({ to, icon: Icon, label }) => (
+      {navItems.map(({ to, icon: IconComponent, label }) => (
         <NavLink key={to} to={to} className="sidebar-link">
-          <Icon size={20} />
+          <IconComponent size={20} />
           <span>{label}</span>
         </NavLink>
       ))}
@@ -69,9 +69,9 @@ const SidebarNav = ({ navItems }) => (
  */
 const BottomNav = ({ navItems }) => (
   <nav className="bottom-nav">
-    {navItems.map(({ to, icon: Icon, label }) => (
+    {navItems.map(({ to, icon: IconComponent, label }) => (
       <NavLink key={to} to={to} className="nav-link">
-        <Icon />
+        <IconComponent />
         <span>{label}</span>
       </NavLink>
     ))}

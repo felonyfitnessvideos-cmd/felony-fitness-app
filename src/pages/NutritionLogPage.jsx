@@ -101,7 +101,7 @@ function NutritionLogPage() {
 
       // DEBUGGING: Log the exact timestamps being sent to the database (guarded).
     /* global process */
-    if (process.env.NODE_ENV !== 'production') {
+    if (import.meta.env?.DEV) {
         console.debug('Fetching logs between (UTC):', startOfToday.toISOString(), 'and', startOfTomorrow.toISOString());
       }
 
@@ -125,7 +125,7 @@ function NutritionLogPage() {
       
       const logs = logsResponse.data || [];
       // DEBUGGING: Avoid logging full objects in production; only show non-sensitive fields in development.
-      if (process.env.NODE_ENV !== 'production') {
+      if (import.meta.env?.DEV) {
         try {
           const safePreview = logs.map(l => ({ id: l.id, meal_type: l.meal_type, created_at: l.created_at }));
           console.debug('Fetched logs (preview):', safePreview);
