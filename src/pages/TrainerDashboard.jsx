@@ -55,7 +55,7 @@ const TrainerDashboard = () => {
   const { user, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isTabletOrLarger, deviceType, width } = useResponsive();
+  const { isTabletOrLarger } = useResponsive();
   
   /** @type {[boolean, Function]} Loading state for trainer dashboard */
   const [isLoading, setIsLoading] = useState(true);
@@ -69,10 +69,6 @@ const TrainerDashboard = () => {
   const navigateToClients = () => navigate('/trainer-dashboard/clients');
   const navigateToMessages = () => navigate('/trainer-dashboard/messages');
   const navigateToOnboarding = () => navigate('/trainer-dashboard/onboarding');
-  const navigateToHome = () => navigate('/trainer-dashboard');
-
-  // Check if we're on a sub-page
-  const isSubPage = location.pathname !== '/trainer-dashboard';
 
   /**
    * Initialize trainer dashboard
@@ -89,7 +85,8 @@ const TrainerDashboard = () => {
       // Simulate loading time
       await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
+      // Only log in development
+      if (import.meta.env?.DEV) {
         console.warn('TrainerDashboard - Error initializing:', error);
       }
     } finally {
