@@ -13,26 +13,29 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Routes, Route, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { 
   Users, 
   TrendingUp, 
   Calendar, 
   MessageSquare, 
-  Search, 
-  Filter, 
   ArrowLeft,
   BarChart3,
-  User,
-  Target,
-  Activity,
-  X,
   Dumbbell,
-  Apple
+  Apple,
+  Clock,
+  UserPlus,
+  Send,
+  ChefHat
 } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import useResponsive from '../hooks/useResponsive.jsx';
+import TrainerCalendar from './trainer/TrainerCalendar.jsx';
+import TrainerPrograms from './trainer/TrainerPrograms.jsx';
+import TrainerClients from './trainer/TrainerClients.jsx';
+import TrainerMessages from './trainer/TrainerMessages.jsx';
+import ClientOnboarding from './trainer/ClientOnboarding.jsx';
 import './TrainerDashboard.css';
 
 /**
@@ -51,147 +54,48 @@ import './TrainerDashboard.css';
 const TrainerDashboard = () => {
   const { user, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isTabletOrLarger, deviceType, width } = useResponsive();
   
-  /** @type {[Array, Function]} List of clients assigned to the trainer */
-  const [clients, setClients] = useState([]);
-  
-  /** @type {[Object|null, Function]} Currently selected client for detailed view */
-  const [selectedClient, setSelectedClient] = useState(null);
-  
-  /** @type {[boolean, Function]} Loading state for client data */
+  /** @type {[boolean, Function]} Loading state for trainer dashboard */
   const [isLoading, setIsLoading] = useState(true);
   
-  /** @type {[string, Function]} Search term for filtering clients */
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  /** @type {[string, Function]} Current filter for client status */
-  const [statusFilter, setStatusFilter] = useState('all');
-  
-  /** @type {[Object, Function]} Client progress data and metrics */
-  const [clientMetrics, setClientMetrics] = useState({});
+  /** @type {[string|null, Function]} Currently active workspace tool */
+  const [activeWorkspaceTool, setActiveWorkspaceTool] = useState(null);
+
+  // Navigation functions for trainer sections
+  const navigateToCalendar = () => navigate('/trainer-dashboard/calendar');
+  const navigateToPrograms = () => navigate('/trainer-dashboard/programs');
+  const navigateToClients = () => navigate('/trainer-dashboard/clients');
+  const navigateToMessages = () => navigate('/trainer-dashboard/messages');
+  const navigateToOnboarding = () => navigate('/trainer-dashboard/onboarding');
+  const navigateToHome = () => navigate('/trainer-dashboard');
+
+  // Check if we're on a sub-page
+  const isSubPage = location.pathname !== '/trainer-dashboard';
 
   /**
-   * Load all clients assigned to the current trainer
-   * 
-   * Fetches client list with basic profile information and recent activity.
-   * Includes error handling for network issues and missing data.
+   * Initialize trainer dashboard
    * 
    * @async
    * @returns {Promise<void>}
    */
-  const loadClients = useCallback(async () => {
+  const initializeDashboard = useCallback(async () => {
     if (!user) return;
     
     try {
       setIsLoading(true);
-      
-      // For demo purposes, we'll create mock client data
-      // In a real implementation, this would query actual trainer-client relationships
-      const mockClients = [
-        {
-          id: '1',
-          name: 'John Dough',
-          email: 'john.dough@example.com',
-          joinDate: '2024-01-15T00:00:00Z',
-          status: 'active',
-          goals: { daily_calorie_goal: 2000, daily_protein_goal: 150 },
-          lastActive: '2024-10-28T10:30:00Z'
-        },
-        {
-          id: '2',
-          name: 'Sarah Rigplier',
-          email: 'sarah.rigplier@example.com',
-          joinDate: '2024-02-20T00:00:00Z',
-          status: 'active',
-          goals: { daily_calorie_goal: 1800, daily_protein_goal: 120 },
-          lastActive: '2024-10-27T14:15:00Z'
-        },
-        {
-          id: '3',
-          name: 'Jane Doe',
-          email: 'jane.doe@example.com',
-          joinDate: '2024-03-10T00:00:00Z',
-          status: 'active',
-          goals: { daily_calorie_goal: 1900, daily_protein_goal: 130 },
-          lastActive: '2024-10-26T08:45:00Z'
-        },
-        {
-          id: '4', 
-          name: 'Mary Hand',
-          email: 'mary.hand@example.com',
-          joinDate: '2024-04-05T00:00:00Z',
-          status: 'active',
-          goals: { daily_calorie_goal: 2100, daily_protein_goal: 140 },
-          lastActive: '2024-10-25T16:20:00Z'
-        }
-      ];
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setClients(mockClients);
+      // Initialize any dashboard-wide data here
+      // Simulate loading time
+      await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.warn('TrainerDashboard - Error loading clients:', error);
+        console.warn('TrainerDashboard - Error initializing:', error);
       }
     } finally {
       setIsLoading(false);
     }
   }, [user]);
-
-  /**
-   * Load detailed metrics for a specific client
-   * 
-   * @async
-   * @param {string} clientId - ID of the client to load metrics for
-   * @returns {Promise<void>}
-   */
-  const loadClientMetrics = useCallback(async (clientId) => {
-    if (!clientId) return;
-    
-    try {
-      // In a real implementation, this would load client's recent nutrition and workout data
-      setClientMetrics({
-        nutrition: [],
-        workouts: [],
-        weeklyStats: {
-          nutritionLogs: 0,
-          workoutSessions: 0,
-          avgCalories: 0,
-          consistency: 0
-        }
-      });
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.warn('TrainerDashboard - Error loading client metrics:', error);
-      }
-    }
-  }, []);
-
-  /**
-   * Filter clients based on search term and status
-   * 
-   * @returns {Array} Filtered list of clients
-   */
-  const filteredClients = clients.filter(client => {
-    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  /**
-   * Handle client selection for detailed view
-   * 
-   * @param {Object} client - Client object to select
-   */
-  const handleClientSelect = (client) => {
-    setSelectedClient(client);
-    loadClientMetrics(client.id);
-  };
 
   /**
    * Return to main dashboard
@@ -200,12 +104,12 @@ const TrainerDashboard = () => {
     navigate('/dashboard');
   };
 
-  // Load clients on component mount
+  // Initialize dashboard on component mount
   useEffect(() => {
     if (user) {
-      loadClients();
+      initializeDashboard();
     }
-  }, [user, loadClients]);
+  }, [user, initializeDashboard]);
 
   // Redirect if not on tablet or larger screen
   useEffect(() => {
@@ -221,6 +125,142 @@ const TrainerDashboard = () => {
       document.body.classList.remove('trainer-dashboard-page');
     };
   }, []);
+
+  /**
+   * Render workspace content based on active tool
+   */
+  const renderWorkspaceContent = () => {
+    if (!activeWorkspaceTool) {
+      return (
+        <div className="workspace-placeholder">
+          <Calendar size={48} />
+          <h3>Select a Core Tool</h3>
+          <p>Choose a tool above to start working with appointments, programs, messages, or nutrition plans.</p>
+        </div>
+      );
+    }
+
+    switch (activeWorkspaceTool) {
+      case 'scheduling':
+        return (
+          <div className="scheduling-workspace">
+            <div className="workspace-header">
+              <Clock size={20} />
+              <h4>Smart Scheduling Workspace</h4>
+            </div>
+            <div className="scheduling-tools">
+              <div className="quick-appointments">
+                <h5>Quick Appointments</h5>
+                <div className="appointment-templates">
+                  <div className="appointment-template" draggable>Personal Training - 60min</div>
+                  <div className="appointment-template" draggable>Consultation - 30min</div>
+                  <div className="appointment-template" draggable>Group Class - 45min</div>
+                </div>
+              </div>
+              <div className="drag-zone">
+                <p>Drag appointments onto calendar above or create new ones here</p>
+                <button className="create-appointment-btn">+ New Appointment</button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'progress':
+        return (
+          <div className="progress-workspace">
+            <div className="workspace-header">
+              <TrendingUp size={20} />
+              <h4>Progress Tracking Workspace</h4>
+            </div>
+            <div className="progress-tools">
+              <div className="metrics-panel">
+                <h5>Client Metrics</h5>
+                <div className="metric-cards">
+                  <div className="metric-card">Weight Progress</div>
+                  <div className="metric-card">Workout Consistency</div>
+                  <div className="metric-card">Nutrition Adherence</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'workout':
+        return (
+          <div className="workout-workspace">
+            <div className="workspace-header">
+              <Dumbbell size={20} />
+              <h4>Workout Builder Workspace</h4>
+            </div>
+            <div className="workout-tools">
+              <div className="exercise-library">
+                <h5>Exercise Library</h5>
+                <div className="exercise-templates">
+                  <div className="exercise-template" draggable>Push-up - 3x12</div>
+                  <div className="exercise-template" draggable>Squat - 3x15</div>
+                  <div className="exercise-template" draggable>Plank - 60s</div>
+                </div>
+              </div>
+              <div className="program-builder">
+                <h5>Drag & Drop to Client Programs</h5>
+                <div className="drop-zone">Drop exercises here to build routines</div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'messaging':
+        return (
+          <div className="messaging-workspace">
+            <div className="workspace-header">
+              <MessageSquare size={20} />
+              <h4>Group Messaging Hub</h4>
+            </div>
+            <div className="messaging-tools">
+              <div className="message-templates">
+                <h5>Class Announcements</h5>
+                <div className="template-buttons">
+                  <button className="template-btn">Class Reminder</button>
+                  <button className="template-btn">Schedule Change</button>
+                  <button className="template-btn">New Class Available</button>
+                </div>
+              </div>
+              <div className="send-panel">
+                <textarea placeholder="Compose group message..."></textarea>
+                <button className="send-btn"><Send size={16} /> Send to All</button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'nutrition':
+        return (
+          <div className="nutrition-workspace">
+            <div className="workspace-header">
+              <ChefHat size={20} />
+              <h4>Nutrition Planner Workspace</h4>
+            </div>
+            <div className="nutrition-tools">
+              <div className="meal-templates">
+                <h5>Meal Plan Templates</h5>
+                <div className="meal-cards">
+                  <div className="meal-card" draggable>High Protein Breakfast</div>
+                  <div className="meal-card" draggable>Pre-Workout Snack</div>
+                  <div className="meal-card" draggable>Post-Workout Meal</div>
+                </div>
+              </div>
+              <div className="nutrition-assignment">
+                <h5>Assign to Clients</h5>
+                <div className="client-nutrition-zone">Drag meal plans to client profiles</div>
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   if (authLoading || isLoading) {
     return (
@@ -247,7 +287,7 @@ const TrainerDashboard = () => {
       <header className="trainer-header">
         <button onClick={handleBackToDashboard} className="back-button">
           <ArrowLeft size={20} />
-          <span>Back to Dashboard</span>
+          <span>Back to Main Dashboard</span>
         </button>
         <div className="header-title-wrapper">
           <h1>Trainer Dashboard</h1>
@@ -258,170 +298,91 @@ const TrainerDashboard = () => {
 
       <div className="trainer-main-content">
         <div className="dashboard-layout">
-          {/* Left Sidebar - Quick Access Tools */}
-          <aside className="quick-tools-sidebar">
-            <div className="tool-item">
-              <Calendar size={20} />
-              <span>Calendar</span>
-            </div>
-            <div className="tool-item">
-              <BarChart3 size={20} />
-              <span>Programs</span>
-            </div>
-            <div className="tool-item">
-              <Users size={20} />
-              <span>Clients</span>
-            </div>
-            <div className="tool-item">
-              <MessageSquare size={20} />
-              <span>Messages</span>
-            </div>
-          </aside>
-
-          {/* Center - Clients Section */}
-          <section className="clients-main-section">
-            <div className="section-header">
-              <h2><Users size={24} />My Clients</h2>
-              <div className="client-controls">
-                <div className="search-box">
-                  <Search size={18} />
-                  <input
-                    type="text"
-                    placeholder="Search clients..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="status-filter"
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
+          {/* Top Section - Sidebar + Content */}
+          <div className="dashboard-top-section">
+            {/* Left Sidebar - Quick Access Tools */}
+            <aside className="quick-tools-sidebar">
+              <div 
+                className={`tool-item ${location.pathname === '/trainer-dashboard/calendar' ? 'active' : ''}`}
+                onClick={navigateToCalendar}
+              >
+                <Calendar size={20} />
+                <span>Calendar</span>
               </div>
-            </div>
-
-            {/* Client Cards - Column Layout */}
-            <div className="clients-column">
-              {filteredClients.map(client => (
-                <div
-                  key={client.id}
-                  className="client-card"
-                  onClick={() => handleClientSelect(client)}
-                >
-                  <div className="client-avatar">
-                    <User size={32} />
-                  </div>
-                  <div className="client-info">
-                    <h3>{client.name}</h3>
-                    <p className="client-email">{client.email}</p>
-                    <p className="client-status">
-                      <span className={`status-indicator ${client.status}`}></span>
-                      {client.status}
-                    </p>
-                  </div>
-                  <button className="view-client-btn">View</button>
-                </div>
-              ))}
-            </div>
-
-            {filteredClients.length === 0 && (
-              <div className="empty-state">
-                <Users size={48} />
-                <h3>No clients found</h3>
-                <p>
-                  {searchTerm || statusFilter !== 'all' 
-                    ? 'Try adjusting your search or filter criteria.'
-                    : 'No clients are currently assigned to you.'}
-                </p>
+              <div 
+                className={`tool-item ${location.pathname === '/trainer-dashboard/programs' ? 'active' : ''}`}
+                onClick={navigateToPrograms}
+              >
+                <BarChart3 size={20} />
+                <span>Programs</span>
               </div>
-            )}
-          </section>
+              <div 
+                className={`tool-item ${location.pathname === '/trainer-dashboard/clients' ? 'active' : ''}`}
+                onClick={navigateToClients}
+              >
+                <Users size={20} />
+                <span>Clients</span>
+              </div>
+              <div 
+                className={`tool-item ${location.pathname === '/trainer-dashboard/messages' ? 'active' : ''}`}
+                onClick={navigateToMessages}
+              >
+                <MessageSquare size={20} />
+                <span>Messages</span>
+              </div>
+              <div 
+                className={`tool-item onboarding-btn ${location.pathname === '/trainer-dashboard/onboarding' ? 'active' : ''}`}
+                onClick={navigateToOnboarding}
+              >
+                <UserPlus size={20} />
+                <span>New Client</span>
+              </div>
+            </aside>
 
-          {/* Right Sidebar - Core Tools */}
-          <aside className="core-tools-sidebar">
-            <div className="core-tools">
-              <h3>Core Tools</h3>
-              <div className="tools-grid">
-                <div className="tool-placeholder">
-                  <Calendar size={18} />
-                  <div>
-                    <h4>Smart Scheduling</h4>
-                    <p>Calendar with session reminders</p>
-                  </div>
-                </div>
-                <div className="tool-placeholder">
-                  <TrendingUp size={18} />
-                  <div>
-                    <h4>Progress Tracker</h4>
-                    <p>Visual charts for metrics</p>
-                  </div>
-                </div>
-                <div className="tool-placeholder">
-                  <Dumbbell size={18} />
-                  <div>
-                    <h4>Workout Builder</h4>
-                    <p>Modular training templates</p>
-                  </div>
-                </div>
-                <div className="tool-placeholder">
-                  <Apple size={18} />
-                  <div>
-                    <h4>Nutrition Planner</h4>
-                    <p>Meal tracking & macros</p>
-                  </div>
-                </div>
-                <div className="tool-placeholder">
-                  <MessageSquare size={18} />
-                  <div>
-                    <h4>Messaging Hub</h4>
-                    <p>Secure client chat</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
-        </div>
-
-        {/* Selected Client Detail Modal/Overlay */}
-        {selectedClient && (
-          <div className="client-detail-overlay">
-            <div className="client-detail-modal">
-              <div className="detail-header">
-                <h2>{selectedClient.name} - Client Details</h2>
-                <button 
-                  className="close-detail-btn"
-                  onClick={() => setSelectedClient(null)}
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div className="client-detail-grid">
-                <div className="detail-card">
-                  <h3><Target size={20} />Goals</h3>
-                  <div className="goals-list">
-                    <p>Daily Calories: {selectedClient.goals?.daily_calorie_goal || 'Not set'}</p>
-                    <p>Daily Protein: {selectedClient.goals?.daily_protein_goal || 'Not set'}g</p>
-                  </div>
-                </div>
-                
-                <div className="detail-card">
-                  <h3><Activity size={20} />Recent Activity</h3>
-                  <p>Last Active: {new Date(selectedClient.lastActive).toLocaleDateString()}</p>
-                </div>
-                
-                <div className="detail-card">
-                  <h3><Calendar size={20} />Schedule</h3>
-                  <p>Next Session: Coming soon...</p>
-                </div>
-              </div>
+            {/* Right Content Container */}
+            <div className="content-container">
+              {/* Main Content - Router Views */}
+              <main className="router-content-area">
+                <Routes>
+                  <Route path="/" element={<TrainerCalendar />} />
+                  <Route path="/calendar" element={<TrainerCalendar />} />
+                  <Route path="/programs" element={<TrainerPrograms />} />
+                  <Route path="/clients" element={<TrainerClients />} />
+                  <Route path="/messages" element={<TrainerMessages />} />
+                  <Route path="/onboarding" element={<ClientOnboarding />} />
+                </Routes>
+              </main>
             </div>
           </div>
-        )}
+
+          <div className="core-tools-workspace">
+            <div className="tools-selector">
+              <div className={`workspace-tool ${activeWorkspaceTool === 'scheduling' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTool('scheduling')}>
+                <Calendar size={16} />
+                <span>Smart Scheduling</span>
+              </div>
+              <div className={`workspace-tool ${activeWorkspaceTool === 'progress' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTool('progress')}>
+                <TrendingUp size={16} />
+                <span>Progress Tracker</span>
+              </div>
+              <div className={`workspace-tool ${activeWorkspaceTool === 'workout' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTool('workout')}>
+                <Dumbbell size={16} />
+                <span>Workout Builder</span>
+              </div>
+              <div className={`workspace-tool ${activeWorkspaceTool === 'messaging' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTool('messaging')}>
+                <MessageSquare size={16} />
+                <span>Messaging Hub</span>
+              </div>
+              <div className={`workspace-tool ${activeWorkspaceTool === 'nutrition' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTool('nutrition')}>
+                <Apple size={16} />
+                <span>Nutrition Planner</span>
+              </div>
+            </div>
+            <div className="workspace-content">
+              {renderWorkspaceContent()}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
