@@ -27,7 +27,7 @@ import Modal from 'react-modal';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './AuthContext.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
-import { initPerformanceOptimizations } from './utils/performance.js';
+
 
 // Import all page components
 import App from './App.jsx';
@@ -63,9 +63,6 @@ const TrainerDashboard = React.lazy(() => import('./pages/TrainerDashboard.jsx')
 
 // Binds the modal to the app's root element for accessibility (e.g., screen readers).
 Modal.setAppElement('#root'); 
-
-// Initialize performance optimizations
-initPerformanceOptimizations();
 
 // Renders the main React application into the DOM.
 ReactDOM.createRoot(document.getElementById('root')).render(

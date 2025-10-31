@@ -64,7 +64,8 @@ export const lazyLoadImages = () => {
  * @returns {Promise<void>}
  */
 export const registerSW = async () => {
-  if ('serviceWorker' in navigator) {
+  // Only register service worker in production
+  if ('serviceWorker' in navigator && import.meta.env.PROD) {
     try {
       await navigator.serviceWorker.register('/sw.js', {
         scope: '/',

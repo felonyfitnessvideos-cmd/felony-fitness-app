@@ -80,11 +80,16 @@ const TrainerDashboard = () => {
   // Trainer dashboard is available to all users on desktop/tablet devices
 
   const initializeDashboard = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
     
     try {
       setIsLoading(true);
       // Initialize any dashboard-wide data here
+      // Add a small delay to prevent flash
+      await new Promise(resolve => setTimeout(resolve, 100));
     } catch (error) {
       // Only log in development
       if (import.meta.env?.DEV) {
@@ -104,9 +109,8 @@ const TrainerDashboard = () => {
 
   // Initialize dashboard on component mount
   useEffect(() => {
-    if (user) {
-      initializeDashboard();
-    }
+    // Always try to initialize, function handles user check internally
+    initializeDashboard();
   }, [user, initializeDashboard]);
 
   // Redirect if not on tablet or larger screen (mobile users get standard dashboard)

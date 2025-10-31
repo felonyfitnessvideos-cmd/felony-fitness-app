@@ -21,10 +21,11 @@
  * this file minimal; route-level components implement their own behavior
  * and data fetching.
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { Home, Dumbbell, Apple, TrendingUp, User, UserCog } from 'lucide-react';
 import { useResponsive } from './hooks/useResponsive';
+import { initPerformanceOptimizations } from './utils/performance.js';
 import './App.css';
 
 /**
@@ -86,6 +87,11 @@ const BottomNav = ({ navItems }) => (
  */
 function App() {
   const { isTabletOrLarger } = useResponsive();
+
+  // Initialize performance optimizations after app mounts
+  useEffect(() => {
+    initPerformanceOptimizations();
+  }, []);
 
   return (
     <div className={`app-container ${isTabletOrLarger ? 'desktop-layout' : 'mobile-layout'}`}>
