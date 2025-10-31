@@ -119,10 +119,11 @@ class NutritionPipeline {
 
       if (queueError) throw queueError;
 
-      // Get overall pipeline metrics
-      const { data: pipelineMetrics, error: metricsError } = await supabase
+      // Get overall pipeline metrics (single row)
+      const { data: pipelineMetricsRow, error: metricsError } = await supabase
         .from('nutrition_pipeline_status')
-        .select('*');
+        .select('*')
+        .maybeSingle();
 
       if (metricsError) throw metricsError;
 
@@ -138,7 +139,7 @@ class NutritionPipeline {
       return {
         success: true,
         queue_status: queueStatus || [],
-        pipeline_metrics: pipelineMetrics || [],
+        pipeline_metrics: pipelineMetricsRow || {},
         recent_activity: recentActivity || []
       };
 
@@ -280,6 +281,17 @@ class NutritionPipeline {
       const { data: qualityDistribution, error: qualityError } = await supabase
         .rpc('get_quality_distribution');
 
+      if (qualityError) {
+        console.error('Quality distribution query error:', qualityError);
+        return {
+          success: false,
+          error: `Failed to get quality distribution: ${qualityError.message}`,
+          quality_distribution: [],
+          needs_attention: [],
+          recent_improvements: []
+        };
+      }
+
       // Get foods needing attention
       const { data: needsAttention, error: attentionError } = await supabase
         .from('foods')
@@ -287,6 +299,17 @@ class NutritionPipeline {
         .lt('quality_score', 70)
         .order('quality_score', { ascending: true })
         .limit(20);
+
+      if (attentionError) {
+        console.error('Needs attention query error:', attentionError);
+        return {
+          success: false,
+          error: `Failed to get foods needing attention: ${attentionError.message}`,
+          quality_distribution: qualityDistribution || [],
+          needs_attention: [],
+          recent_improvements: []
+        };
+      }
 
       // Get recent improvements
       const { data: recentImprovements, error: improvementsError } = await supabase
@@ -296,6 +319,17 @@ class NutritionPipeline {
         .gte('quality_score', 80)
         .order('last_enrichment', { ascending: false })
         .limit(10);
+
+      if (improvementsError) {
+        console.error('Recent improvements query error:', improvementsError);
+        return {
+          success: false,
+          error: `Failed to get recent improvements: ${improvementsError.message}`,
+          quality_distribution: qualityDistribution || [],
+          needs_attention: needsAttention || [],
+          recent_improvements: []
+        };
+      }
 
       return {
         success: true,
