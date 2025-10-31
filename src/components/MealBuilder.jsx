@@ -190,7 +190,8 @@ const MealBuilder = ({
         food_servings: item.food_servings
       })));
     } catch (error) {
-      // Error loading meal foods - silently handle
+      // Error loading meal foods - log for debugging
+      console.error('Error loading meal foods:', error);
     }
   };
 
@@ -544,6 +545,7 @@ const MealBuilder = ({
 
       onClose();
     } catch (error) {
+      console.error('Error saving meal:', error);
       alert('Error saving meal. Please try again.');
     } finally {
       setIsSaving(false);

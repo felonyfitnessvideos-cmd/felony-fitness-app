@@ -1,23 +1,19 @@
 /**
- * Simple calendar/list view for cycle sessions.
- * Expects sessions to be an array of objects with at least:
- *  - id
- *  - scheduled_date (ISO date string)
- *  - name or title
- */
-/**
- * Notes
- * - `sessions` should be an array of objects where `scheduled_date` is an
- *   ISO-formatted date string (YYYY-MM-DD or full timestamp). The component
- *   groups sessions by the date portion (YYYY-MM-DD) and renders a small list
- *   per day.
- * - If sessions are missing or in an unexpected format the component will
- *   render an empty state rather than throwing.
- *
- * Audited: 2025-10-25 — JSDoc batch 9
+ * @file CycleCalendar.jsx
+ * @description Simple calendar/list view for cycle sessions grouped by date
+ * @project Felony Fitness
+ * 
+ * This component provides a visual calendar interface for displaying scheduled
+ * workout sessions. It groups sessions by date and renders them in a clean
+ * list format with proper date formatting and error handling.
  */
 import React from 'react';
 
+/**
+ * Formats a date value for display in the calendar
+ * @param {string|Date} d - The date to format (ISO string or Date object)
+ * @returns {string} - Formatted date string or original value if formatting fails
+ */
 function formatDate(d) {
   try {
     if (!d) return '';
@@ -28,6 +24,12 @@ function formatDate(d) {
   }
 }
 
+/**
+ * Calendar component that displays workout sessions grouped by date
+ * @param {Object} props - Component props
+ * @param {Array} props.sessions - Array of session objects with id, scheduled_date, and name/title
+ * @returns {JSX.Element} - Calendar view with sessions grouped by date
+ */
 export default function CycleCalendar({ sessions = [] }) {
   if (!sessions.length) return <p>No scheduled sessions yet.</p>;
 

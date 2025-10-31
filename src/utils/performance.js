@@ -1,12 +1,26 @@
 /**
- * Performance optimization utilities
- * Client-side performance enhancements
+ * @file performance.js
+ * @description Performance optimization utilities for client-side enhancements
+ * @project Felony Fitness
+ * 
+ * This module provides various performance optimization utilities including:
+ * - Route prefetching for critical paths
+ * - Lazy image loading with Intersection Observer
+ * - Service Worker registration for caching
+ * - Performance monitoring and metrics collection
  */
 
-// Preload critical routes
+/**
+ * Critical routes that should be prefetched for better navigation performance
+ * @type {string[]}
+ */
 const criticalRoutes = ['/dashboard', '/workouts', '/nutrition'];
 
-// Prefetch critical routes after main app loads
+/**
+ * Prefetches critical routes after main app loads to improve navigation performance
+ * Uses requestIdleCallback to avoid blocking the main thread
+ * @returns {void}
+ */
 export const prefetchCriticalRoutes = () => {
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
@@ -20,7 +34,11 @@ export const prefetchCriticalRoutes = () => {
   }
 };
 
-// Optimize images with Intersection Observer
+/**
+ * Implements lazy loading for images using Intersection Observer API
+ * Images with data-src attribute will be loaded when they enter the viewport
+ * @returns {void}
+ */
 export const lazyLoadImages = () => {
   if ('IntersectionObserver' in window) {
     const imageObserver = new IntersectionObserver((entries, observer) => {
@@ -40,7 +58,11 @@ export const lazyLoadImages = () => {
   }
 };
 
-// Service Worker registration optimization
+/**
+ * Registers a service worker for caching and offline functionality
+ * Only registers in production builds to avoid development issues
+ * @returns {Promise<void>}
+ */
 export const registerSW = async () => {
   if ('serviceWorker' in navigator) {
     try {
@@ -54,7 +76,11 @@ export const registerSW = async () => {
   }
 };
 
-// Resource timing monitoring
+/**
+ * Monitors performance metrics using the Performance API
+ * Logs timing information for Core Web Vitals and resource loading
+ * @returns {void}
+ */
 export const monitorPerformance = () => {
   if ('PerformanceObserver' in window) {
     const observer = new PerformanceObserver((list) => {
@@ -69,7 +95,11 @@ export const monitorPerformance = () => {
   }
 };
 
-// Initialize performance optimizations
+/**
+ * Initializes all performance optimizations after initial render
+ * Combines route prefetching, image lazy loading, SW registration, and monitoring
+ * @returns {void}
+ */
 export const initPerformanceOptimizations = () => {
   // Run after initial render
   setTimeout(() => {

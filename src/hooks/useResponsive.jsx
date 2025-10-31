@@ -7,7 +7,7 @@
  * to help components adapt their layout and functionality based on device type.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
  * Responsive breakpoints following common device standards
@@ -182,10 +182,10 @@ export const useResponsive = () => {
  * const ResponsiveHeader = withResponsive(Header);
  * // Header component will receive responsive props automatically
  */
-export const withResponsive = (Component) => {
+export const withResponsive = (_WrappedComponent) => {
   return function ResponsiveComponent(props) {
     const responsive = useResponsive();
-    return <Component {...props} responsive={responsive} />;
+    return <_WrappedComponent {...props} responsive={responsive} />;
   };
 };
 

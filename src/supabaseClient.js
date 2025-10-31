@@ -1,12 +1,17 @@
 /**
- * Supabase client singleton
+ * @file supabaseClient.js
+ * @description Supabase client singleton for browser app authentication and database operations
+ * @project Felony Fitness
+ * 
  * Creates a shared Supabase client for the browser app and centralizes
  * handling of token refresh failures by clearing persisted tokens and
  * forcing sign out when necessary.
  */
 import { createClient } from '@supabase/supabase-js'
 
+/** @type {string} Supabase project URL from environment variables */
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+/** @type {string} Supabase anonymous key from environment variables */
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('supabaseClient: missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY');

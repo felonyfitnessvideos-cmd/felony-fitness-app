@@ -100,7 +100,6 @@ function NutritionLogPage() {
       startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
       // DEBUGGING: Log the exact timestamps being sent to the database (guarded).
-    /* global process */
     if (import.meta.env?.DEV) {
         console.debug('Fetching logs between (UTC):', startOfToday.toISOString(), 'and', startOfTomorrow.toISOString());
       }

@@ -9,7 +9,7 @@ import { Calendar, Plus, Clock, User, MapPin } from 'lucide-react';
 
 const TrainerCalendar = () => {
   const [appointments, setAppointments] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [_selectedDate, _setSelectedDate] = useState(new Date());
   
   // Mock appointments data
   useEffect(() => {

@@ -160,7 +160,7 @@ const MyMealsPage = () => {
       })) || [];
 
       // Check each meal's structure for broken nutrition data
-      userMealsData.forEach((meal, index) => {
+      userMealsData.forEach((meal) => {
         if (meal.meal_foods && meal.meal_foods.some(mf => !mf.food_servings)) {
           // Meal has broken food data - missing nutrition information
         }
@@ -464,6 +464,7 @@ const MyMealsPage = () => {
       await loadMeals();
       alert('Meal added to your collection!');
     } catch (error) {
+      console.error('Error adding meal:', error);
       alert('Error adding meal. Please try again.');
     } finally {
       setPremadeMealsLoading(false);

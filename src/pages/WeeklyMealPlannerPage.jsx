@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { Calendar, Plus, Edit, Trash2, ShoppingCart, Target, ChefHat, X } from 'lucide-react';
 import MealBuilder from '../components/MealBuilder';
-import { MEAL_TYPES, DAYS_OF_WEEK, getWeekDates, calculateMealNutrition } from '../constants/mealPlannerConstants';
+import { MEAL_TYPES, DAYS_OF_WEEK, getWeekDates } from '../constants/mealPlannerConstants';
 import './WeeklyMealPlannerPage.css';
 
 /**
@@ -30,7 +30,7 @@ const WeeklyMealPlannerPage = () => {
   const [activePlan, setActivePlan] = useState(null);
   
   /** @type {[Array, Function]} User's available meal plans */
-  const [mealPlans, setMealPlans] = useState([]);
+  const [_mealPlans, setMealPlans] = useState([]);
   
   /** @type {[Array, Function]} Meal entries for the current week/plan */
   const [planEntries, setPlanEntries] = useState([]);
@@ -39,7 +39,7 @@ const WeeklyMealPlannerPage = () => {
   const [userMeals, setUserMeals] = useState([]);
   
   /** @type {[Object|null, Function]} Currently selected meal for assignment */
-  const [selectedMeal, setSelectedMeal] = useState(null);
+  const [_selectedMeal, _setSelectedMeal] = useState(null);
   
   /** @type {[Object|null, Function]} Selected time slot for meal assignment */
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -56,7 +56,7 @@ const WeeklyMealPlannerPage = () => {
   const [weeklyNutrition, setWeeklyNutrition] = useState({});
   
   /** @type {[Object|null, Function]} User's nutrition goals for comparison */
-  const [nutritionGoals, setNutritionGoals] = useState(null);
+  const [_nutritionGoals, setNutritionGoals] = useState(null);
   
   /** @type {[string, Function]} Selected meal category filter */
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -105,7 +105,7 @@ const WeeklyMealPlannerPage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [loadMealPlans, loadUserMeals]);
 
   /**
    * Load plan entries for the current week and active plan
@@ -238,7 +238,7 @@ const WeeklyMealPlannerPage = () => {
    * @example
    * await loadMealPlans(); // Loads plans and sets active plan
    */
-  const loadMealPlans = async () => {
+  const loadMealPlans = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -267,7 +267,7 @@ const WeeklyMealPlannerPage = () => {
         console.warn('WeeklyMealPlannerPage - Error loading meal plans:', error);
       }
     }
-  };
+  }, [setActiveMealPlan]);
 
   /**
    * Load user's saved meals for meal selection in planner
@@ -290,7 +290,7 @@ const WeeklyMealPlannerPage = () => {
    * @example
    * await loadUserMeals(); // Populates userMeals state for meal selector
    */
-  const loadUserMeals = async () => {
+  const loadUserMeals = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -348,9 +348,10 @@ const WeeklyMealPlannerPage = () => {
       
       setUserMeals(mealsWithNutrition);
     } catch (error) {
+      console.error('Error loading user meals:', error);
       setUserMeals([]); // Ensure we set empty array on error
     }
-  };
+  }, []);
 
   /**
    * Calculate total nutrition values for a meal based on its foods and servings
@@ -430,11 +431,12 @@ const WeeklyMealPlannerPage = () => {
       setActivePlan(data);
       await loadMealPlans();
     } catch (error) {
+      console.error('Error creating meal plan:', error);
       alert('Error creating meal plan. Please try again.');
     }
   };
 
-  const setActiveMealPlan = async (planId) => {
+  const setActiveMealPlan = useCallback(async (planId) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -455,7 +457,7 @@ const WeeklyMealPlannerPage = () => {
         console.warn('WeeklyMealPlannerPage - Error setting active meal plan:', error);
       }
     }
-  };
+  }, [loadMealPlans]);
 
   const handleSlotClick = (date, mealType) => {
     setSelectedSlot({ date: date.toISOString().split('T')[0], mealType });
@@ -518,6 +520,7 @@ const WeeklyMealPlannerPage = () => {
       setShowMealSelector(false);
       setSelectedSlot(null);
     } catch (error) {
+      console.error('Error adding meal to plan:', error);
       alert('Error adding meal to plan. Please try again.');
     }
   };
@@ -765,7 +768,7 @@ const WeeklyMealPlannerPage = () => {
       <MealBuilder
         isOpen={showMealBuilder}
         onClose={() => setShowMealBuilder(false)}
-        onSave={(meal) => {
+        onSave={(_meal) => {
           loadUserMeals();
           setShowMealBuilder(false);
         }}
