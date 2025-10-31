@@ -130,7 +130,17 @@ const TrainerClients = () => {
           <div key={client.id} className="client-card">
             <div className="client-main-info">
               <div className="client-avatar">
-                {client.name.split(' ').map(n => n[0]).join('')}
+                {(() => {
+                  if (!client.name) return '?';
+                  const nameParts = client.name.trim().split(' ').filter(part => part.length > 0);
+                  if (nameParts.length === 0) return '?';
+                  if (nameParts.length === 1) {
+                    // Single word: take first two characters or first character
+                    return nameParts[0].substring(0, 2).toUpperCase();
+                  }
+                  // Multiple words: take first character of first two words
+                  return nameParts.slice(0, 2).map(part => part[0].toUpperCase()).join('');
+                })()}
               </div>
               
               <div className="client-details">

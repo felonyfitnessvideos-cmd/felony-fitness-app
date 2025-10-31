@@ -366,26 +366,56 @@ const TrainerDashboard = () => {
 
           <div className="core-tools-workspace">
             <div className="tools-selector">
-              <div className={`workspace-tool ${activeWorkspaceTool === 'scheduling' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTool('scheduling')}>
+              <button 
+                type="button"
+                className={`workspace-tool ${activeWorkspaceTool === 'scheduling' ? 'active' : ''}`} 
+                onClick={() => setActiveWorkspaceTool('scheduling')}
+                aria-pressed={activeWorkspaceTool === 'scheduling'}
+                aria-label="Smart Scheduling Tool"
+              >
                 <Calendar size={16} />
                 <span>Smart Scheduling</span>
-              </div>
-              <div className={`workspace-tool ${activeWorkspaceTool === 'progress' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTool('progress')}>
+              </button>
+              <button 
+                type="button"
+                className={`workspace-tool ${activeWorkspaceTool === 'progress' ? 'active' : ''}`} 
+                onClick={() => setActiveWorkspaceTool('progress')}
+                aria-pressed={activeWorkspaceTool === 'progress'}
+                aria-label="Progress Tracker Tool"
+              >
                 <TrendingUp size={16} />
                 <span>Progress Tracker</span>
-              </div>
-              <div className={`workspace-tool ${activeWorkspaceTool === 'workout' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTool('workout')}>
+              </button>
+              <button 
+                type="button"
+                className={`workspace-tool ${activeWorkspaceTool === 'workout' ? 'active' : ''}`} 
+                onClick={() => setActiveWorkspaceTool('workout')}
+                aria-pressed={activeWorkspaceTool === 'workout'}
+                aria-label="Workout Builder Tool"
+              >
                 <Dumbbell size={16} />
                 <span>Workout Builder</span>
-              </div>
-              <div className={`workspace-tool ${activeWorkspaceTool === 'messaging' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTool('messaging')}>
+              </button>
+              <button 
+                type="button"
+                className={`workspace-tool ${activeWorkspaceTool === 'messaging' ? 'active' : ''}`} 
+                onClick={() => setActiveWorkspaceTool('messaging')}
+                aria-pressed={activeWorkspaceTool === 'messaging'}
+                aria-label="Messaging Hub Tool"
+              >
                 <MessageSquare size={16} />
                 <span>Messaging Hub</span>
-              </div>
-              <div className={`workspace-tool ${activeWorkspaceTool === 'nutrition' ? 'active' : ''}`} onClick={() => setActiveWorkspaceTool('nutrition')}>
+              </button>
+              <button 
+                type="button"
+                className={`workspace-tool ${activeWorkspaceTool === 'nutrition' ? 'active' : ''}`} 
+                onClick={() => setActiveWorkspaceTool('nutrition')}
+                aria-pressed={activeWorkspaceTool === 'nutrition'}
+                aria-label="Nutrition Planner Tool"
+              >
                 <Apple size={16} />
                 <span>Nutrition Planner</span>
-              </div>
+              </button>
             </div>
             <div className="workspace-content">
               {renderWorkspaceContent()}

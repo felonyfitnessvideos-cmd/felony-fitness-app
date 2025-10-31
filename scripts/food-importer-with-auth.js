@@ -59,11 +59,12 @@ class AuthenticatedFoodImporter {
     try {
       console.log(`🔍 Searching: ${name}`);
       
-      // Check if food already exists
+      // Check if food already exists (exact case-insensitive match)
+      const normalizedName = name.trim().toLowerCase();
       const { data: existingFood, error: checkError } = await supabase
         .from('foods')
         .select('id, name')
-        .ilike('name', `%${name.split(' ')[0]}%`)
+        .ilike('name', normalizedName)
         .limit(1);
 
       if (checkError) {

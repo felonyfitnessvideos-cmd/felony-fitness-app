@@ -90,7 +90,16 @@ export default defineConfig([
         Headers: 'readonly',
         URL: 'readonly',
         URLSearchParams: 'readonly',
+        URLPattern: 'readonly',
         fetch: 'readonly',
+        console: 'readonly',
+        crypto: 'readonly',
+        TextEncoder: 'readonly',
+        TextDecoder: 'readonly',
+        JSON: 'readonly',
+        Promise: 'readonly',
+        Error: 'readonly',
+        RegExp: 'readonly',
       },
       parserOptions: {
         ecmaVersion: 2024,
@@ -100,7 +109,7 @@ export default defineConfig([
     rules: {
       'no-console': 'off',
       'no-unused-vars': ['error', { args: 'none', varsIgnorePattern: '^_' }],
-      'no-undef': 'off',
+      'no-undef': 'error', // Restore undef protection now that globals are properly defined
     }
   }
 ])

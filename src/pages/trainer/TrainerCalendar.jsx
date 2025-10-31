@@ -13,11 +13,14 @@ const TrainerCalendar = () => {
   
   // Mock appointments data
   useEffect(() => {
+    // Generate today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+    
     setAppointments([
       {
         id: 1,
         clientName: "John Dough",
-        date: "2025-10-30",
+        date: today,
         time: "10:00 AM",
         duration: 60,
         type: "Personal Training",
@@ -27,7 +30,7 @@ const TrainerCalendar = () => {
       {
         id: 2,
         clientName: "Jane Smith", 
-        date: "2025-10-30",
+        date: today,
         time: "2:00 PM",
         duration: 45,
         type: "Consultation",

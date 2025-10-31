@@ -5,9 +5,21 @@
 
 import fetch from 'node-fetch';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-const SUPABASE_URL = 'https://wkmrdelhoeqhsdifrarn.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrbXJkZWxob2VxaHNkaWZyYXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2MjYxNzIsImV4cCI6MjA3MzIwMjE3Mn0.izD-ENFv1ufuNFbUF8KSWLCP3hpOtjkPDoIuOUXGXFQ';
+// Get Supabase credentials from environment variables
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+
+// Validate required environment variables
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error('❌ Missing required environment variables:');
+  if (!SUPABASE_URL) console.error('  - SUPABASE_URL');
+  if (!SUPABASE_ANON_KEY) console.error('  - SUPABASE_ANON_KEY');
+  console.error('\nPlease set these environment variables or add them to your .env file');
+  process.exit(1);
+}
 
 // Get the best foods from key categories
 const PRIORITY_FOODS = [
@@ -82,9 +94,11 @@ async function createFoodBatchSQL() {
   // Generate SQL script
   const sqlScript = generateSQL(allFoods);
   
-  // Write to file
-  fs.writeFileSync('scripts/api-foods-batch.sql', sqlScript);
-  console.log(`✅ Generated SQL script: scripts/api-foods-batch.sql`);
+  // Write to file using absolute path
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const outputPath = join(__dirname, 'api-foods-batch.sql');
+  fs.writeFileSync(outputPath, sqlScript);
+  console.log(`✅ Generated SQL script: ${outputPath}`);
   console.log(`🎯 Ready to import ${allFoods.length} high-quality foods!`);
 }
 
