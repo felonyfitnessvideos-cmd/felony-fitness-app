@@ -720,7 +720,7 @@
    ======================================== */
 
 /* Mobile-first responsive design for tablets and phones */
-@media (max-width: 768px) {
+@media (max-width: 720px) {
   .my-meals-page {
     padding: 12px;
   }

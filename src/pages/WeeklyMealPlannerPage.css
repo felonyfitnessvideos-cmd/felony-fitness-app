@@ -544,7 +544,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 720px) {
   .weekly-meal-planner {
     padding: 12px;
   }

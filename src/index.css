@@ -87,7 +87,7 @@ body {
 }
 
 /* Responsive breakpoints for larger screens */
-@media (min-width: 768px) {
+@media (min-width: 720px) {
   #root {
     max-width: 768px; /* Tablet: Wider layout */
     border-left: 1px solid var(--border-color);
