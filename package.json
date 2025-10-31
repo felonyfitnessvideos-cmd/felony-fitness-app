@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --cache",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
@@ -44,6 +45,7 @@
     "jsdom": "^27.0.1",
     "rollup-plugin-visualizer": "^5.14.0",
     "supabase": "^2.51.0",
+    "typescript": "^5.9.3",
     "vite": "^7.1.7",
     "vite-plugin-pwa": "^1.0.3",
     "vitest": "^4.0.1"
