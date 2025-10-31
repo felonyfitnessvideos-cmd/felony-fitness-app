@@ -14,7 +14,7 @@ import React, { useState, useEffect } from 'react';
  */
 const BREAKPOINTS = {
   mobile: 0,
-  tablet: 768,
+  tablet: 720,
   desktop: 1024,
   wide: 1440
 };
