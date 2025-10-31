@@ -1,15 +1,17 @@
 /**
  * @file TrainerDashboard.jsx
- * @description Trainer dashboard for managing and tracking client progress
+ * @description Advanced training tools dashboard for managing and tracking progress
  * @project Felony Fitness
  * 
- * This component provides trainers with tools to:
- * - View and manage client list
- * - Track client progress across nutrition and workout metrics
- * - Access client meal plans and workout routines
- * - Monitor client adherence and provide feedback
+ * This component provides users with advanced training tools including:
+ * - Client management and progress tracking
+ * - Workout program creation and management  
+ * - Nutrition planning and monitoring
+ * - Communication and scheduling tools
  * 
- * @note Only accessible on tablet-sized screens and larger
+ * Available to all users as part of Felony Fitness's mission to provide
+ * accessible fitness resources. Only accessible on tablet-sized screens 
+ * and larger due to interface complexity.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -75,11 +77,10 @@ const TrainerDashboard = () => {
    * @async
    * @returns {Promise<void>}
    */
-  // Check if user has trainer role
-  const isTrainer = user?.role === 'trainer' || user?.roles?.includes('trainer');
+  // Trainer dashboard is available to all users on desktop/tablet devices
 
   const initializeDashboard = useCallback(async () => {
-    if (!user || !isTrainer) return;
+    if (!user) return;
     
     try {
       setIsLoading(true);
@@ -92,7 +93,7 @@ const TrainerDashboard = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isTrainer]);
+  }, [user]);
 
   /**
    * Return to main dashboard
@@ -108,14 +109,12 @@ const TrainerDashboard = () => {
     }
   }, [user, initializeDashboard]);
 
-  // Redirect if not authorized or not on tablet or larger screen
+  // Redirect if not on tablet or larger screen (mobile users get standard dashboard)
   useEffect(() => {
     if (!isTabletOrLarger) {
       navigate('/dashboard');
-    } else if (user && !isTrainer) {
-      navigate('/dashboard'); // Redirect non-trainers
     }
-  }, [navigate, isTabletOrLarger, user, isTrainer]);
+  }, [navigate, isTabletOrLarger]);
 
   // Override root container styles for full-screen dashboard
   useEffect(() => {

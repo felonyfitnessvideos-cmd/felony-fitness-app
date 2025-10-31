@@ -38,10 +38,10 @@ const baseNavItems = [
   { to: "/profile", icon: User, label: "Profile" }
 ];
 
-// Trainer dashboard only available on larger screens
+// Advanced tools dashboard only available on larger screens
 const desktopNavItems = [
   ...baseNavItems.slice(0, 4), // Dashboard through Progress
-  { to: "/trainer-dashboard", icon: UserCog, label: "Trainer" },
+  { to: "/trainer-dashboard", icon: UserCog, label: "Pro Tools" },
   baseNavItems[4] // Profile
 ];
 
