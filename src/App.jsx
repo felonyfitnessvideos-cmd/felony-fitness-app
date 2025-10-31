@@ -23,30 +23,82 @@
  */
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Home, Dumbbell, Apple, TrendingUp, User } from 'lucide-react';
+import { Home, Dumbbell, Apple, TrendingUp, User, UserCog } from 'lucide-react';
+import { useResponsive } from './hooks/useResponsive';
 import './App.css';
+
+/**
+ * Navigation items configuration
+ */
+const baseNavItems = [
+  { to: "/dashboard", icon: Home, label: "Dashboard" },
+  { to: "/workouts", icon: Dumbbell, label: "Workouts" },
+  { to: "/nutrition", icon: Apple, label: "Nutrition" },
+  { to: "/progress", icon: TrendingUp, label: "Progress" },
+  { to: "/profile", icon: User, label: "Profile" }
+];
+
+// Trainer dashboard only available on larger screens
+const desktopNavItems = [
+  ...baseNavItems.slice(0, 4), // Dashboard through Progress
+  { to: "/trainer-dashboard", icon: UserCog, label: "Trainer" },
+  baseNavItems[4] // Profile
+];
+
+/**
+ * Sidebar Navigation Component (for desktop/tablet)
+ */
+const SidebarNav = ({ navItems }) => (
+  <nav className="sidebar-nav">
+    <div className="sidebar-header">
+      <h2>Felony Fitness</h2>
+    </div>
+    <div className="sidebar-links">
+      {navItems.map(({ to, icon: Icon, label }) => (
+        <NavLink key={to} to={to} className="sidebar-link">
+          <Icon size={20} />
+          <span>{label}</span>
+        </NavLink>
+      ))}
+    </div>
+  </nav>
+);
+
+/**
+ * Bottom Navigation Component (for mobile)
+ */
+const BottomNav = ({ navItems }) => (
+  <nav className="bottom-nav">
+    {navItems.map(({ to, icon: Icon, label }) => (
+      <NavLink key={to} to={to} className="nav-link">
+        <Icon />
+        <span>{label}</span>
+      </NavLink>
+    ))}
+  </nav>
+);
 
 /**
  * The main application layout component.
  * It renders the primary navigation and the content area for all child routes.
+ * Uses responsive design to show sidebar on larger screens and bottom nav on mobile.
  * @returns {JSX.Element} The main app structure.
  */
 function App() {
+  const { isTabletOrLarger } = useResponsive();
+
   return (
-    <div className="app-container">
+    <div className={`app-container ${isTabletOrLarger ? 'desktop-layout' : 'mobile-layout'}`}>
+      {/* Sidebar navigation for tablet and desktop */}
+      {isTabletOrLarger && <SidebarNav navItems={desktopNavItems} />}
+      
       <main className="main-content">
         {/* The Outlet component renders the matched child route's component. */}
         <Outlet />
       </main>
       
-      {/* The main navigation bar, fixed to the bottom of the screen. */}
-      <nav className="bottom-nav">
-        <NavLink to="/dashboard" className="nav-link"><Home /><span>Dashboard</span></NavLink>
-        <NavLink to="/workouts" className="nav-link"><Dumbbell /><span>Workouts</span></NavLink>
-        <NavLink to="/nutrition" className="nav-link"><Apple /><span>Nutrition</span></NavLink>
-        <NavLink to="/progress" className="nav-link"><TrendingUp /><span>Progress</span></NavLink>
-        <NavLink to="/profile" className="nav-link"><User /><span>Profile</span></NavLink>
-      </nav>
+      {/* Bottom navigation for mobile */}
+      {!isTabletOrLarger && <BottomNav navItems={baseNavItems} />}
     </div>
   );
 }

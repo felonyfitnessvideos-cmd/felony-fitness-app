@@ -21,8 +21,6 @@ export default defineConfig([
       ecmaVersion: 2024,
       globals: {
         ...globals.browser,
-        // Allow import.meta for Vite environment
-        'import': 'readonly',
       },
       parserOptions: {
         ecmaVersion: 2024,

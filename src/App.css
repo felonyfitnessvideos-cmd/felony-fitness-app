@@ -19,10 +19,19 @@
  */
 .app-container {
   display: flex;
-  flex-direction: column; /* Stacks children vertically (main content on top, nav on bottom) */
   height: 100%; /* Ensures the app fills the full viewport height */
   width: 100%;
   background-color: var(--background-color);
+}
+
+/* Mobile layout: vertical stack with bottom navigation */
+.app-container.mobile-layout {
+  flex-direction: column; /* Stacks children vertically (main content on top, nav on bottom) */
+}
+
+/* Desktop layout: horizontal with sidebar */
+.app-container.desktop-layout {
+  flex-direction: row; /* Side-by-side layout */
 }
 
 /**
@@ -87,4 +96,66 @@
  */
 .nav-link.active {
   color: var(--accent-color);
+}
+
+/**
+ * Sidebar Navigation (Desktop/Tablet)
+ */
+.sidebar-nav {
+  width: 280px;
+  min-width: 280px;
+  background-color: var(--card-color);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sidebar-header {
+  padding: 2rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header h2 {
+  color: var(--accent-color);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.sidebar-links {
+  flex: 1;
+  padding: 1.5rem 0;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.5rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border-right: 3px solid transparent;
+}
+
+.sidebar-link:hover {
+  background-color: var(--hover-color);
+  color: var(--text-primary);
+}
+
+.sidebar-link.active {
+  background-color: rgba(249, 115, 22, 0.1);
+  color: var(--accent-color);
+  border-right-color: var(--accent-color);
+}
+
+.sidebar-link span {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+/* Responsive adjustments for desktop layout */
+.app-container.desktop-layout .main-content {
+  padding-bottom: 1rem; /* Remove extra bottom padding since no bottom nav */
 }

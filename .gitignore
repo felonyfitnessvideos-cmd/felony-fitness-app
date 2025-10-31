@@ -45,3 +45,10 @@ playwright-report/
 
 # Vercel
 .vercel
+
+# Temporary files
+temp-*
+remaining-nulls.json
+
+# HTTP request files with credentials
+*.http

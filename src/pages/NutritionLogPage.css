@@ -191,10 +191,38 @@
   font-size: 0.8rem;
   color: #a0aec0;
 }
+.food-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .food-item-calories {
   font-size: 1rem;
   font-weight: bold;
   color: #fde68a;
+}
+
+.delete-food-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-food-btn:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+
+.delete-food-btn:active {
+  transform: scale(0.95);
 }
 
 .calorie-info {

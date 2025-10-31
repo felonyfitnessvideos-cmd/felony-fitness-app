@@ -58,6 +58,8 @@ const MesocycleLogPage = React.lazy(() => import('./pages/MesocycleLogPage.jsx')
 // Meal Planner pages
 const WeeklyMealPlannerPage = React.lazy(() => import('./pages/WeeklyMealPlannerPage.jsx'));
 const MyMealsPage = React.lazy(() => import('./pages/MyMealsPage.jsx'));
+// Trainer Dashboard
+const TrainerDashboard = React.lazy(() => import('./pages/TrainerDashboard.jsx'));
 
 // Binds the modal to the app's root element for accessibility (e.g., screen readers).
 Modal.setAppElement('#root'); 
@@ -69,7 +71,12 @@ initPerformanceOptimizations();
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeProvider>
-      <BrowserRouter>
+      <BrowserRouter 
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true
+        }}
+      >
         {/* The AuthProvider makes user session data available to all components. */}
         <AuthProvider>
           <ErrorBoundary>
@@ -82,7 +89,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             {/* Route 1: The public login page. It does not use the main App layout. */}
             <Route path="/" element={<AuthPage />} />
 
-            {/* Route 2: A layout route. All child routes will render inside the <App /> component. */}
+            {/* Route 2: Standalone Trainer Dashboard - separate from main app layout */}
+            <Route path="/trainer-dashboard/*" element={<TrainerDashboard />} />
+
+            {/* Route 3: A layout route. All child routes will render inside the <App /> component. */}
             {/* This is how the bottom navbar appears on all the main pages. */}
             <Route element={<App />}>
               <Route path="/dashboard" element={<DashboardPage />} />

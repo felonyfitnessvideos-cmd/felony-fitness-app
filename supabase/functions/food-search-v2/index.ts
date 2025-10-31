@@ -205,14 +205,19 @@ Format as valid JSON:
  * Fuzzy matching to prevent duplicates
  */
 async function findSimilarFoods(supabase: any, foodName: string) {
-  // Use PostgreSQL similarity functions if available, otherwise basic matching
+  // Only check for very close matches (exact or near-exact)
   const { data } = await supabase
     .from('foods')
     .select('id, name, category')
-    .ilike('name', `%${foodName.substring(0, 10)}%`)
-    .limit(5);
+    .or(`name.ilike.${foodName},name.ilike.${foodName.replace(/\s+/g, '%')}`)
+    .limit(3);
     
-  return data || [];
+  // Only return if we find an exact match (case insensitive)
+  const exactMatches = (data || []).filter(food => 
+    food.name.toLowerCase() === foodName.toLowerCase()
+  );
+    
+  return exactMatches;
 }
 
 /**

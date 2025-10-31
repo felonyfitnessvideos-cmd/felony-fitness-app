@@ -5,6 +5,20 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+// Mock Supabase client BEFORE importing the module
+vi.mock('../src/supabaseClient', () => ({
+  supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      insert: vi.fn().mockReturnThis(),
+      upsert: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: null })
+    }))
+  }
+}));
+
 import { nutritionPipeline, enhancedNutritionAPI } from '../src/utils/nutritionPipeline';
 
 // Mock Supabase client
@@ -113,10 +127,7 @@ describe('Multi-API Nutrition Pipeline', () => {
       })
     });
 
-    // Mock supabase in the pipeline
-    vi.doMock('../src/supabaseClient', () => ({
-      supabase: mockSupabase
-    }));
+    // Supabase is now mocked at module level
   });
 
   afterEach(() => {

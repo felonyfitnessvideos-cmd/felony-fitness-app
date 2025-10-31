@@ -6,8 +6,12 @@
 async function testNutritionPipeline() {
   console.log('🧪 Testing Multi-API Nutrition Pipeline...\n');
 
-  const baseUrl = 'https://wkmrdelhoeqhsdifrarn.supabase.co/functions/v1';
-  const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrfnJkZWxob2VxaHNkaWZyYXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjk5NDI0NDMsImV4cCI6MjA0NTUxODQ0M30.VKtT33Pk_hh3gJzYQlJ9_P1xJcftR8OAIqaO4PajIQw';
+  const baseUrl = process.env.SUPABASE_FUNCTIONS_URL;
+  const testToken = process.env.TEST_TOKEN;
+  
+  if (!baseUrl || !testToken) {
+    throw new Error('Missing required environment variables: SUPABASE_FUNCTIONS_URL and TEST_TOKEN must be set');
+  }
 
   // Test 1: Multi-API Aggregator
   console.log('1️⃣ Testing Multi-API Aggregator...');

@@ -76,14 +76,15 @@ const TrainerDashboard = () => {
    * @async
    * @returns {Promise<void>}
    */
+  // Check if user has trainer role
+  const isTrainer = user?.role === 'trainer' || user?.roles?.includes('trainer');
+
   const initializeDashboard = useCallback(async () => {
-    if (!user) return;
+    if (!user || !isTrainer) return;
     
     try {
       setIsLoading(true);
       // Initialize any dashboard-wide data here
-      // Simulate loading time
-      await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error) {
       // Only log in development
       if (import.meta.env?.DEV) {
@@ -92,7 +93,7 @@ const TrainerDashboard = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, isTrainer]);
 
   /**
    * Return to main dashboard
@@ -108,12 +109,14 @@ const TrainerDashboard = () => {
     }
   }, [user, initializeDashboard]);
 
-  // Redirect if not on tablet or larger screen
+  // Redirect if not authorized or not on tablet or larger screen
   useEffect(() => {
     if (!isTabletOrLarger) {
       navigate('/dashboard');
+    } else if (user && !isTrainer) {
+      navigate('/dashboard'); // Redirect non-trainers
     }
-  }, [navigate, isTabletOrLarger]);
+  }, [navigate, isTabletOrLarger, user, isTrainer]);
 
   // Override root container styles for full-screen dashboard
   useEffect(() => {
@@ -299,41 +302,51 @@ const TrainerDashboard = () => {
           <div className="dashboard-top-section">
             {/* Left Sidebar - Quick Access Tools */}
             <aside className="quick-tools-sidebar">
-              <div 
+              <button 
+                type="button"
                 className={`tool-item ${location.pathname === '/trainer-dashboard/calendar' ? 'active' : ''}`}
                 onClick={navigateToCalendar}
+                aria-label="Open Calendar"
               >
                 <Calendar size={20} />
                 <span>Calendar</span>
-              </div>
-              <div 
+              </button>
+              <button 
+                type="button"
                 className={`tool-item ${location.pathname === '/trainer-dashboard/programs' ? 'active' : ''}`}
                 onClick={navigateToPrograms}
+                aria-label="Open Programs"
               >
                 <BarChart3 size={20} />
                 <span>Programs</span>
-              </div>
-              <div 
+              </button>
+              <button 
+                type="button"
                 className={`tool-item ${location.pathname === '/trainer-dashboard/clients' ? 'active' : ''}`}
                 onClick={navigateToClients}
+                aria-label="Open Clients"
               >
                 <Users size={20} />
                 <span>Clients</span>
-              </div>
-              <div 
+              </button>
+              <button 
+                type="button"
                 className={`tool-item ${location.pathname === '/trainer-dashboard/messages' ? 'active' : ''}`}
                 onClick={navigateToMessages}
+                aria-label="Open Messages"
               >
                 <MessageSquare size={20} />
                 <span>Messages</span>
-              </div>
-              <div 
+              </button>
+              <button 
+                type="button"
                 className={`tool-item onboarding-btn ${location.pathname === '/trainer-dashboard/onboarding' ? 'active' : ''}`}
                 onClick={navigateToOnboarding}
+                aria-label="Add New Client"
               >
                 <UserPlus size={20} />
                 <span>New Client</span>
-              </div>
+              </button>
             </aside>
 
             {/* Right Content Container */}

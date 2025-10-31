@@ -20,7 +20,7 @@ import SubPageHeader from '../components/SubPageHeader.jsx';
  * - uses text + inputMode for numeric fields to avoid mobile quirks and
  *   sanitizes values before persisting.
  */
-import { Apple, Search, Camera, X, Droplets, Loader2 } from 'lucide-react';
+import { Apple, Search, Camera, X, Droplets, Loader2, Trash2 } from 'lucide-react';
 import Modal from 'react-modal';
 import { useAuth } from '../AuthContext.jsx';
 import './NutritionLogPage.css';
@@ -232,7 +232,18 @@ function NutritionLogPage() {
         } else if (result.source === 'duplicate_check') {
             // Show similar foods as suggestions instead of empty results
             console.info('💡 Similar foods found:', result.similar_foods);
-            standardizedResults = []; // Don't show duplicates in results
+            // Similar foods from backend don't include servings, so we need to fetch them
+            // For now, show them with a generic serving until we can fetch the actual servings
+            standardizedResults = (result.similar_foods || []).map(food => ({
+                is_external: false,
+                food_id: food.id,
+                name: food.name,
+                serving_id: null, // Will need to fetch actual servings
+                serving_description: 'Select to see available servings',
+                calories: '?',
+                protein_g: '?',
+                needs_serving_fetch: true // Flag to indicate we need to fetch servings
+            }));
         }
         setSearchResults(standardizedResults);
 
@@ -249,8 +260,45 @@ function NutritionLogPage() {
     }, 300);
   }, []);
   
-  const openLogModal = (food) => {
-    setSelectedFood(food);
+  const openLogModal = async (food) => {
+    if (food.needs_serving_fetch) {
+      // Fetch servings for this food
+      try {
+        const { data: servings, error } = await supabase
+          .from('food_servings')
+          .select('*')
+          .eq('food_id', food.food_id);
+        
+        if (error) {
+          console.error('Error fetching servings:', error);
+          return;
+        }
+        
+        if (servings && servings.length > 0) {
+          // Use the first serving as default, or show a selection if multiple
+          const defaultServing = servings[0];
+          const updatedFood = {
+            ...food,
+            serving_id: defaultServing.id,
+            serving_description: defaultServing.serving_description,
+            calories: defaultServing.calories,
+            protein_g: defaultServing.protein_g,
+            carbs_g: defaultServing.carbs_g,
+            fat_g: defaultServing.fat_g,
+            needs_serving_fetch: false
+          };
+          setSelectedFood(updatedFood);
+        } else {
+          console.error('No servings found for food:', food.name);
+          return;
+        }
+      } catch (error) {
+        console.error('Error fetching food servings:', error);
+        return;
+      }
+    } else {
+      setSelectedFood(food);
+    }
     setIsLogModalOpen(true);
   };
 
@@ -320,6 +368,27 @@ function NutritionLogPage() {
       alert(`Error logging water: ${error.message}`);
     } else {
       await fetchLogData(user.id);
+    }
+  };
+
+  const handleDeleteFoodLog = async (logId) => {
+    if (!user || !logId) return;
+    
+    if (!confirm('Are you sure you want to delete this food entry?')) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from('nutrition_logs')
+      .delete()
+      .eq('id', logId)
+      .eq('user_id', user.id); // Extra security check
+
+    if (error) {
+      console.error('Error deleting food log:', error);
+      alert(`Error deleting food entry: ${error.message}`);
+    } else {
+      await fetchLogData(user.id); // Refresh the data
     }
   };
   
@@ -404,9 +473,18 @@ function NutritionLogPage() {
                 <h4>{log.food_servings.foods.name}</h4>
                 <span>{log.quantity_consumed} x {log.food_servings.serving_description}</span>
               </div>
-              <span className="food-item-calories">
-                {Math.round((log.food_servings.calories || 0) * log.quantity_consumed)} cal
-              </span>
+              <div className="food-item-actions">
+                <span className="food-item-calories">
+                  {Math.round((log.food_servings.calories || 0) * log.quantity_consumed)} cal
+                </span>
+                <button 
+                  className="delete-food-btn"
+                  onClick={() => handleDeleteFoodLog(log.id)}
+                  title="Delete this food entry"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
           ) : null
         ))}
