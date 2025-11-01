@@ -106,7 +106,8 @@ export const monitorPerformance = () => {
 export const initPerformanceOptimizations = () => {
   // Run after initial render
   setTimeout(() => {
-    prefetchCriticalRoutes();
+    // Temporarily disable prefetching to fix 404 errors
+    // prefetchCriticalRoutes();
     lazyLoadImages();
     registerSW();
     

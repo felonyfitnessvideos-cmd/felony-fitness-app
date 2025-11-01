@@ -18,10 +18,11 @@ const DebugOverlay = () => {
     breakpoints 
   } = useResponsive();
 
-  // Only show in development
-  if (!import.meta.env?.DEV) {
-    return null;
-  }
+  // Temporarily show in production for tablet debugging
+  // TODO: Remove this after tablet issue is resolved
+  // if (!import.meta.env?.DEV) {
+  //   return null;
+  // }
 
   return (
     <div style={{
