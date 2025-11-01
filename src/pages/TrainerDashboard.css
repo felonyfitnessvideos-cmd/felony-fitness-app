@@ -213,9 +213,9 @@
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  height: 45vh; /* Further increased to show all cards */
-  min-height: 400px; /* Increased minimum height for 2x2 grid */
-  max-height: 600px; /* Increased maximum height */
+  height: 25vh; /* Reduced to fit better on screen */
+  min-height: 200px; /* Much smaller minimum */
+  max-height: 300px; /* Reasonable maximum */
   width: 100%;
   flex-shrink: 0;
   box-sizing: border-box;
@@ -510,7 +510,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr; /* Ensure 2 equal rows */
-  gap: 0.75rem; /* Slightly increased gap */
+  gap: 0.4rem; /* Compact gap */
   flex: 1;
   overflow: visible; /* Allow content to be visible */
   min-height: 0;
@@ -520,12 +520,12 @@
   background: linear-gradient(135deg, var(--card-color) 0%, rgba(249, 115, 22, 0.05) 100%);
   border: 1px solid rgba(249, 115, 22, 0.1);
   border-radius: 12px;
-  padding: 0.75rem;
+  padding: 0.5rem; /* More compact padding */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 120px; /* Ensure minimum card height */
-  max-height: 160px; /* Prevent cards from getting too tall */
+  min-height: 70px; /* Much smaller minimum height */
+  max-height: 90px; /* Compact maximum height */
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: relative;
