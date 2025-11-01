@@ -31,6 +31,7 @@ import {
   ChefHat
 } from 'lucide-react';
 import { useAuth } from '../AuthContext';
+import DebugOverlay from '../components/DebugOverlay';
 import useResponsive from '../hooks/useResponsive.jsx';
 import TrainerCalendar from './trainer/TrainerCalendar.jsx';
 import TrainerPrograms from './trainer/TrainerPrograms.jsx';
@@ -286,6 +287,7 @@ const TrainerDashboard = () => {
 
   return (
     <div className="trainer-dashboard-container trainer-dashboard-page">
+      <DebugOverlay />
       <header className="trainer-header">
         <button onClick={handleBackToDashboard} className="back-button">
           <ArrowLeft size={20} />

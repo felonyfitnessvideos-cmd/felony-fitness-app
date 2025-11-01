@@ -96,9 +96,22 @@ export const useResponsive = () => {
 
       // Set new timeout for debounced update
       timeoutId = setTimeout(() => {
+        const newWidth = window.innerWidth;
+        const newHeight = window.innerHeight;
+        
+        // Debug logging for tablet detection issues
+        if (import.meta.env?.DEV) {
+          console.log('Screen resize detected:', {
+            width: newWidth,
+            height: newHeight,
+            userAgent: navigator.userAgent,
+            devicePixelRatio: window.devicePixelRatio
+          });
+        }
+        
         setScreenSize({
-          width: window.innerWidth,
-          height: window.innerHeight
+          width: newWidth,
+          height: newHeight
         });
       }, 150); // 150ms debounce delay
     };
@@ -127,6 +140,19 @@ export const useResponsive = () => {
   // Utility breakpoints
   const isTabletOrLarger = width >= BREAKPOINTS.tablet;
   const isDesktopOrLarger = width >= BREAKPOINTS.desktop;
+
+  // Debug logging for tablet detection
+  if (import.meta.env?.DEV && width > 700 && width < 900) {
+    console.log('Tablet detection debug:', {
+      width,
+      height,
+      isMobile,
+      isTablet,
+      isTabletOrLarger,
+      breakpointTablet: BREAKPOINTS.tablet,
+      userAgent: navigator.userAgent.substring(0, 50) + '...'
+    });
+  }
   
   // Orientation detection
   const orientation = height > width ? 'portrait' : 'landscape';
