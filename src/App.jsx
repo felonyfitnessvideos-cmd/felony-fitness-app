@@ -79,30 +79,7 @@ const BottomNav = ({ navItems }) => (
   </nav>
 );
 
-/**
- * Debug Overlay Component (temporary for layout debugging)
- */
-const DebugOverlay = ({ responsive }) => (
-  <div style={{
-    position: 'fixed',
-    top: '10px',
-    right: '10px',
-    background: 'rgba(0, 0, 0, 0.8)',
-    color: 'white',
-    padding: '10px',
-    borderRadius: '5px',
-    fontSize: '12px',
-    zIndex: 9999,
-    fontFamily: 'monospace'
-  }}>
-    <div>Width: {responsive.width}px</div>
-    <div>Device: {responsive.deviceType}</div>
-    <div>isTabletOrLarger: {responsive.isTabletOrLarger ? 'true' : 'false'}</div>
-    <div>Layout: {responsive.isTabletOrLarger ? 'desktop-layout' : 'mobile-layout'}</div>
-    <div>Sidebar: {responsive.isTabletOrLarger ? 'showing' : 'hidden'}</div>
-    <div>BottomNav: {!responsive.isTabletOrLarger ? 'showing' : 'hidden'}</div>
-  </div>
-);
+
 
 /**
  * The main application layout component.
@@ -121,9 +98,6 @@ function App() {
 
   return (
     <div className={`app-container ${isTabletOrLarger ? 'desktop-layout' : 'mobile-layout'}`}>
-      {/* Temporary debug overlay */}
-      <DebugOverlay responsive={responsive} />
-      
       {/* Sidebar navigation for tablet and desktop */}
       {isTabletOrLarger && <SidebarNav navItems={desktopNavItems} />}
       

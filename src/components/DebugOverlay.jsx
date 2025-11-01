@@ -44,8 +44,9 @@ const DebugOverlay = () => {
       <div>Device: {deviceType}</div>
       <div>Mobile: {isMobile ? 'Yes' : 'No'}</div>
       <div>Tablet: {isTablet ? 'Yes' : 'No'}</div>
-      <div>Tablet+: {isTabletOrLarger ? 'Yes' : 'No'}</div>
-      <div>Breakpoint: {breakpoints?.tablet || 720}px</div>
+      <div>Tablet+: <span style={{color: isTabletOrLarger ? 'lime' : 'red'}}>{isTabletOrLarger ? 'Yes' : 'No'}</span></div>
+      <div>Layout: <span style={{color: isTabletOrLarger ? 'lime' : 'red'}}>{isTabletOrLarger ? 'desktop-layout' : 'mobile-layout'}</span></div>
+      <div>Breakpoint: 699px</div>
       <div>DPR: {window.devicePixelRatio}</div>
       <div style={{ fontSize: '10px', marginTop: '5px' }}>
         UA: {navigator.userAgent.substring(0, 30)}...

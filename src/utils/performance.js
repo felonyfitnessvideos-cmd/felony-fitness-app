@@ -74,7 +74,7 @@ export const registerSW = async () => {
         updateViaCache: 'none'
       });
     } catch (error) {
-      console.warn('SW registration failed:', error);
+      // Service worker registration failed - handled silently
     }
   }
 };
@@ -89,7 +89,7 @@ export const monitorPerformance = () => {
     const observer = new PerformanceObserver((list) => {
       list.getEntries().forEach((entry) => {
         if (entry.loadTime > 1000) {
-          console.warn(`Slow resource: ${entry.name} (${entry.loadTime}ms)`);
+          // Slow resource detected - monitoring silently
         }
       });
     });

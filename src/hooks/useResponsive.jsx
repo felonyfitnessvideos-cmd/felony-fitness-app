@@ -15,7 +15,7 @@ import React, { useState, useEffect } from 'react';
  */
 const BREAKPOINTS = {
   mobile: 0,
-  tablet: 700, // Adjusted for Android Chrome: 800px tablet → 711px actual viewport
+  tablet: 699, // Set to 699px to ensure 700px width triggers tablet mode
   desktop: 1024,
   wide: 1440
 };
@@ -100,15 +100,7 @@ export const useResponsive = () => {
         const newWidth = window.innerWidth;
         const newHeight = window.innerHeight;
         
-        // Debug logging for tablet detection issues
-        if (import.meta.env?.DEV) {
-          console.log('Screen resize detected:', {
-            width: newWidth,
-            height: newHeight,
-            userAgent: navigator.userAgent,
-            devicePixelRatio: window.devicePixelRatio
-          });
-        }
+        // Screen resize detected - responsive update
         
         setScreenSize({
           width: newWidth,
@@ -142,21 +134,9 @@ export const useResponsive = () => {
   const isTabletOrLarger = width >= BREAKPOINTS.tablet;
   const isDesktopOrLarger = width >= BREAKPOINTS.desktop;
 
-  // Debug logging for tablet detection (throttled to avoid spam)
-  useEffect(() => {
-    if (import.meta.env?.DEV && width > 700 && width < 900) {
-      const debugData = {
-        width,
-        height,
-        isMobile,
-        isTablet,
-        isTabletOrLarger,
-        breakpointTablet: BREAKPOINTS.tablet,
-        userAgent: navigator.userAgent.substring(0, 50) + '...'
-      };
-      console.log('Tablet detection debug:', debugData);
-    }
-  }, [width, height, isTabletOrLarger]); // Only log when these change
+  // Tablet breakpoint detection logic
+
+  // Tablet detection monitoring for responsive behavior
   
   // Orientation detection
   const orientation = height > width ? 'portrait' : 'landscape';

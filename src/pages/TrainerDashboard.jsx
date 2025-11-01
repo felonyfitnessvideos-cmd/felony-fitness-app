@@ -37,6 +37,7 @@ import TrainerPrograms from './trainer/TrainerPrograms.jsx';
 import TrainerClients from './trainer/TrainerClients.jsx';
 import TrainerMessages from './trainer/TrainerMessages.jsx';
 import ClientOnboarding from './trainer/ClientOnboarding.jsx';
+import SmartScheduling from '../components/SmartScheduling.jsx';
 import './TrainerDashboard.css';
 
 /**
@@ -62,7 +63,7 @@ const TrainerDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   /** @type {[string|null, Function]} Currently active workspace tool */
-  const [activeWorkspaceTool, setActiveWorkspaceTool] = useState(null);
+  const [activeWorkspaceTool, setActiveWorkspaceTool] = useState('scheduling');
 
   // Navigation functions for trainer sections
   const navigateToCalendar = () => navigate('/trainer-dashboard/calendar');
@@ -91,10 +92,7 @@ const TrainerDashboard = () => {
       // Add a small delay to prevent flash
       await new Promise(resolve => setTimeout(resolve, 100));
     } catch (error) {
-      // Only log in development
-      if (import.meta.env?.DEV) {
-        console.warn('TrainerDashboard - Error initializing:', error);
-      }
+      // Error initializing dashboard - handled silently
     } finally {
       setIsLoading(false);
     }
@@ -145,122 +143,49 @@ const TrainerDashboard = () => {
       );
     }
 
+    // Common card structure for all tools to maintain consistent layout
+    const renderToolCards = (toolName) => (
+      <div className="workspace-content-uniform">
+        <div className="tool-cards-grid">
+          <div className="tool-card">
+            <h5>Quick Actions</h5>
+            <p>Commonly used {toolName.toLowerCase()} functions</p>
+            <button className="card-action-btn">View All</button>
+          </div>
+          <div className="tool-card">
+            <h5>Templates</h5>
+            <p>Pre-built templates for faster workflow</p>
+            <button className="card-action-btn">Browse</button>
+          </div>
+          <div className="tool-card">
+            <h5>Recent Items</h5>
+            <p>Your recently accessed {toolName.toLowerCase()} items</p>
+            <button className="card-action-btn">View Recent</button>
+          </div>
+          <div className="tool-card">
+            <h5>Analytics</h5>
+            <p>{toolName} performance and insights</p>
+            <button className="card-action-btn">View Stats</button>
+          </div>
+        </div>
+      </div>
+    );
+
     switch (activeWorkspaceTool) {
       case 'scheduling':
-        return (
-          <div className="scheduling-workspace">
-            <div className="workspace-header">
-              <Clock size={20} />
-              <h4>Smart Scheduling Workspace</h4>
-            </div>
-            <div className="scheduling-tools">
-              <div className="quick-appointments">
-                <h5>Quick Appointments</h5>
-                <div className="appointment-templates">
-                  <div className="appointment-template" draggable>Personal Training - 60min</div>
-                  <div className="appointment-template" draggable>Consultation - 30min</div>
-                  <div className="appointment-template" draggable>Group Class - 45min</div>
-                </div>
-              </div>
-              <div className="drag-zone">
-                <p>Drag appointments onto calendar above or create new ones here</p>
-                <button className="create-appointment-btn">+ New Appointment</button>
-              </div>
-            </div>
-          </div>
-        );
+        return <SmartScheduling />;
 
       case 'progress':
-        return (
-          <div className="progress-workspace">
-            <div className="workspace-header">
-              <TrendingUp size={20} />
-              <h4>Progress Tracking Workspace</h4>
-            </div>
-            <div className="progress-tools">
-              <div className="metrics-panel">
-                <h5>Client Metrics</h5>
-                <div className="metric-cards">
-                  <div className="metric-card">Weight Progress</div>
-                  <div className="metric-card">Workout Consistency</div>
-                  <div className="metric-card">Nutrition Adherence</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+        return renderToolCards('Progress Tracking');
 
       case 'workout':
-        return (
-          <div className="workout-workspace">
-            <div className="workspace-header">
-              <Dumbbell size={20} />
-              <h4>Workout Builder Workspace</h4>
-            </div>
-            <div className="workout-tools">
-              <div className="exercise-library">
-                <h5>Exercise Library</h5>
-                <div className="exercise-templates">
-                  <div className="exercise-template" draggable>Push-up - 3x12</div>
-                  <div className="exercise-template" draggable>Squat - 3x15</div>
-                  <div className="exercise-template" draggable>Plank - 60s</div>
-                </div>
-              </div>
-              <div className="program-builder">
-                <h5>Drag & Drop to Client Programs</h5>
-                <div className="drop-zone">Drop exercises here to build routines</div>
-              </div>
-            </div>
-          </div>
-        );
+        return renderToolCards('Workout Builder');
 
       case 'messaging':
-        return (
-          <div className="messaging-workspace">
-            <div className="workspace-header">
-              <MessageSquare size={20} />
-              <h4>Group Messaging Hub</h4>
-            </div>
-            <div className="messaging-tools">
-              <div className="message-templates">
-                <h5>Class Announcements</h5>
-                <div className="template-buttons">
-                  <button className="template-btn">Class Reminder</button>
-                  <button className="template-btn">Schedule Change</button>
-                  <button className="template-btn">New Class Available</button>
-                </div>
-              </div>
-              <div className="send-panel">
-                <textarea placeholder="Compose group message..."></textarea>
-                <button className="send-btn"><Send size={16} /> Send to All</button>
-              </div>
-            </div>
-          </div>
-        );
+        return renderToolCards('Messaging Hub');
 
       case 'nutrition':
-        return (
-          <div className="nutrition-workspace">
-            <div className="workspace-header">
-              <ChefHat size={20} />
-              <h4>Nutrition Planner Workspace</h4>
-            </div>
-            <div className="nutrition-tools">
-              <div className="meal-templates">
-                <h5>Meal Plan Templates</h5>
-                <div className="meal-cards">
-                  <div className="meal-card" draggable>High Protein Breakfast</div>
-                  <div className="meal-card" draggable>Pre-Workout Snack</div>
-                  <div className="meal-card" draggable>Post-Workout Meal</div>
-                </div>
-              </div>
-              <div className="nutrition-assignment">
-                <h5>Assign to Clients</h5>
-                <div className="client-nutrition-zone">Drag meal plans to client profiles</div>
-              </div>
-            </div>
-          </div>
-        );
+        return renderToolCards('Nutrition Planner');
 
       default:
         return null;

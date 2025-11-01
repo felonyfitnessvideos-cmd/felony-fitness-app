@@ -1,26 +1,24 @@
 /* ===== TRAINER DASHBOARD - SIMPLIFIED RESPONSIVE LAYOUT ===== */
 
-/* Global overrides for trainer dashboard page */
+/* Global overrides for trainer dashboard page - work within App layout */
 .trainer-dashboard-page {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-.trainer-dashboard-page #root {
-  max-width: none !important;
-  width: 100vw !important;
-  border: none !important;
-}
+/* Don't override the root container - work within existing layout */
+/* Removed: .trainer-dashboard-page #root overrides */
 
-/* Main container for trainer dashboard */
+/* Main container for trainer dashboard - fit within main-content area */
 .trainer-dashboard-container {
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   background-color: var(--background-color);
   color: var(--text-color);
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 /* ===== HEADER SECTION ===== */
@@ -82,29 +80,29 @@
   gap: 1rem;
   padding: 1rem;
   min-height: 0;
-  max-width: 100vw;
-  height: calc(100vh - 120px); /* Ensure it fits within viewport */
+  width: 100%;
+  height: calc(100% - 80px); /* Fit within main-content area */
   box-sizing: border-box;
 }
 
 /* ===== TOP SECTION (SIDEBAR + CONTENT) ===== */
 .dashboard-top-section {
   display: flex;
-  flex-direction: row;
+  flex-direction: row; /* Default to row layout */
   gap: 1rem;
   flex: 1;
   min-height: 0;
-  max-height: 70vh; /* Limit top section to leave room for tools */
+  max-height: 75%; /* Give more space to main content */
   align-items: stretch;
 }
 
 /* ===== LEFT SIDEBAR ===== */
 .quick-tools-sidebar {
   display: flex;
-  flex-direction: column;
-  width: 15vw;
-  max-width: 200px;
-  min-width: 150px;
+  flex-direction: column; /* Default to vertical layout */
+  width: 180px;
+  max-width: 180px;
+  min-width: 160px;
   flex-shrink: 0;
   background-color: var(--card-background);
   border-radius: 12px;
@@ -112,7 +110,6 @@
   padding: 1rem;
   gap: 0.5rem;
   box-sizing: border-box;
-  /* No scrolling on desktop - fit content within available space */
   overflow: visible;
 }
 
@@ -121,31 +118,71 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s;
-  color: var(--text-color);
+  transition: all 0.3s ease;
+  color: var(--text-secondary);
   font-weight: 500;
+  justify-content: flex-start;
+  position: relative;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, var(--card-color) 0%, rgba(249, 115, 22, 0.05) 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.tool-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-color), #ea580c);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .tool-item:hover {
-  background-color: var(--hover-color);
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(249, 115, 22, 0.15) 100%);
+  color: var(--text-primary);
+  border-color: rgba(249, 115, 22, 0.3);
+  transform: translateX(4px) translateY(-2px);
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.15);
+}
+
+.tool-item:hover::before {
+  opacity: 1;
 }
 
 .tool-item.active {
-  background-color: var(--primary-color);
+  background: linear-gradient(135deg, var(--accent-color), #ea580c);
   color: white;
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.3);
+  transform: translateX(4px);
+  border-color: var(--accent-color);
+}
+
+.tool-item.active::before {
+  opacity: 1;
 }
 
 .tool-item.onboarding-btn {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
+  background: linear-gradient(135deg, var(--accent-color), #ea580c);
   color: white;
   font-weight: 600;
   margin-top: 1rem;
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
 }
 
 .tool-item.onboarding-btn:hover {
-  background: linear-gradient(135deg, #16a34a, #15803d);
+  background: linear-gradient(135deg, #ea580c, #dc2626);
+  transform: translateX(4px) translateY(-2px);
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
+}
+
+.tool-item.onboarding-btn::before {
+  background: linear-gradient(90deg, #ea580c, #dc2626);
 }
 
 /* ===== RIGHT CONTENT CONTAINER ===== */
@@ -154,7 +191,7 @@
   flex-direction: column;
   flex: 1;
   min-width: 0;
-  max-width: 85vw;
+  max-width: calc(100% - 200px); /* Default to account for sidebar */
 }
 
 /* ===== MAIN CONTENT AREA ===== */
@@ -176,13 +213,13 @@
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  height: 25vh;
-  min-height: 180px;
-  max-height: 400px;
+  height: 20vh; /* Reduced from 25vh */
+  min-height: 150px; /* Reduced from 180px */
+  max-height: 300px; /* Reduced from 400px */
   width: 100%;
   flex-shrink: 0;
   box-sizing: border-box;
-  overflow: visible;
+  overflow: visible; /* Ensure no scrolling on the workspace itself */
 }
 
 .tools-selector {
@@ -200,31 +237,65 @@
   gap: 0.5rem;
   padding: 0.75rem 1rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  border-bottom: 2px solid transparent;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
   flex: 1;
   justify-content: center;
   text-align: center;
+  position: relative;
+  border-radius: 12px 12px 0 0;
+}
+
+.workspace-tool::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  right: 50%;
+  height: 100%;
+  background: rgba(249, 115, 22, 0.05);
+  transition: all 0.3s ease;
+  border-radius: 12px 12px 0 0;
+  z-index: -1;
 }
 
 .workspace-tool:hover {
-  background-color: var(--hover-color);
-  color: var(--text-color);
+  color: var(--text-primary);
+  background: rgba(249, 115, 22, 0.1);
+}
+
+.workspace-tool:hover::before {
+  left: 0;
+  right: 0;
 }
 
 .workspace-tool.active {
-  background-color: var(--primary-color-light);
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
+  background: linear-gradient(180deg, rgba(249, 115, 22, 0.15) 0%, rgba(249, 115, 22, 0.05) 100%);
+  color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
+  font-weight: 600;
+  box-shadow: inset 0 -3px 0 var(--accent-color);
+}
+
+.workspace-tool.active::before {
+  left: 0;
+  right: 0;
+  background: rgba(249, 115, 22, 0.1);
 }
 
 .workspace-content {
   flex: 1;
   padding: 1rem;
-  overflow-y: auto;
+  overflow: hidden; /* Prevent content from expanding beyond container */
   color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* Start from top instead of center */
+  height: 100%; /* Take full height of parent */
+  box-sizing: border-box;
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
@@ -300,66 +371,64 @@
   }
 }
 
-/* Portrait Tablet - Horizontal sidebar */
-@media screen and (orientation: portrait) and (max-width: 700px) {
+/* Tablet Layout - Use horizontal navigation up to 1200px when in App sidebar layout */
+@media screen and (max-width: 1200px) {
   .dashboard-layout {
     flex-direction: column;
-    gap: 0.5rem;
-    height: calc(100vh - 120px); /* Account for header */
+    gap: 0.75rem;
+    height: calc(100% - 80px);
+    padding: 0.75rem;
   }
   
   .dashboard-top-section {
-    flex-direction: column;
-    gap: 0.5rem;
-    flex: 1;
+    flex-direction: row !important; /* Keep sidebar and content side-by-side */
+    gap: 0.75rem;
+    flex: 2; /* Take 2/3 of available space */
     min-height: 0;
-    overflow: hidden;
+    overflow: hidden; /* Prevent content from expanding beyond bounds */
   }
   
   .quick-tools-sidebar {
-    width: 100%;
-    max-width: none;
-    flex-direction: row;
-    padding: 0.5rem;
-    height: auto;
-    min-height: 60px;
+    width: 25% !important; /* 25% width as shown in diagram */
+    max-width: 25% !important;
+    min-width: 150px !important;
+    flex-direction: column !important; /* Vertical sidebar */
+    padding: 0.75rem !important;
+    height: auto !important;
     flex-shrink: 0;
   }
   
   .content-container {
-    max-width: 100%;
+    width: 75% !important; /* 75% width as shown in diagram */
+    max-width: 75% !important;
     flex: 1;
-    min-height: 0;
-    overflow: hidden;
+    min-width: 0;
   }
   
   .router-content-area {
-    height: auto;
-    max-height: none;
     flex: 1;
-    min-height: 200px;
+    min-height: 300px; /* Increased minimum height */
   }
   
   .tool-item {
-    flex: 1;
-    justify-content: center;
-    padding: 0.5rem 0.25rem;
+    justify-content: flex-start !important;
+    padding: 0.6rem 0.75rem !important;
+    gap: 0.5rem !important;
+    width: 100%;
   }
   
   .tool-item span {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
   }
   
+  /* Core tools workspace - flexible height using flexbox */
   .core-tools-workspace {
-    height: 25vh;
-    min-height: 150px;
-    max-height: 200px;
+    flex: 1 !important; /* Take 1/3 of available space */
+    min-height: 180px !important; /* Minimum height for usability */
+    max-height: none !important; /* Allow flex to control height */
     flex-shrink: 0;
-  }
-  
-  .workspace-tool {
-    padding: 0.4rem 0.5rem;
-    font-size: 0.75rem;
+    overflow: hidden !important; /* Ensure content stays within bounds */
+    position: relative !important; /* Establish positioning context */
   }
 }
 
@@ -423,6 +492,105 @@
     height: 20vh;
     min-height: 120px;
   }
+}
+
+/* Uniform workspace content containers */
+.workspace-placeholder,
+.workspace-content-uniform {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 0.5rem; /* Add padding around the grid */
+}
+
+/* Uniform tool cards grid - more compact */
+.tool-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem; /* Reduced gap */
+  flex: 1;
+  overflow: hidden;
+}
+
+.tool-card {
+  background: linear-gradient(135deg, var(--card-color) 0%, rgba(249, 115, 22, 0.05) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.1);
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 0;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.tool-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-color), #ea580c);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.tool-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.3);
+  cursor: pointer;
+}
+
+.tool-card:hover::before {
+  opacity: 1;
+}
+
+.tool-card h5 {
+  margin: 0 0 0.4rem 0;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-color), #ea580c);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.tool-card p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  flex: 1;
+  line-height: 1.4;
+}
+
+.card-action-btn {
+  background: linear-gradient(135deg, var(--accent-color), #ea580c);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+  background: linear-gradient(135deg, #ea580c, var(--accent-color));
 }
 
 /* Loading state */
