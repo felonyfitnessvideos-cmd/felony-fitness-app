@@ -26,6 +26,7 @@ import { Outlet, NavLink } from 'react-router-dom';
 import { Home, Dumbbell, Apple, TrendingUp, User, UserCog } from 'lucide-react';
 import { useResponsive } from './hooks/useResponsive';
 import { initPerformanceOptimizations } from './utils/performance.js';
+import DebugOverlay from './components/DebugOverlay';
 import './App.css';
 
 /**
@@ -95,6 +96,7 @@ function App() {
 
   return (
     <div className={`app-container ${isTabletOrLarger ? 'desktop-layout' : 'mobile-layout'}`}>
+      <DebugOverlay />
       {/* Sidebar navigation for tablet and desktop */}
       {isTabletOrLarger && <SidebarNav navItems={desktopNavItems} />}
       

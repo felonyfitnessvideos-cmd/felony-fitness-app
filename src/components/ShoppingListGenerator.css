@@ -330,7 +330,7 @@
 }
 
 /* Responsive Design */
-@media (max-width: 720px) {
+@media (max-width: 680px) {
   .shopping-list-overlay {
     padding: 10px;
   }

@@ -426,7 +426,7 @@
 }
 
 /* Responsive Design */
-@media (max-width: 720px) {
+@media (max-width: 680px) {
   .nutrition-pipeline-monitor {
     padding: 16px;
   }

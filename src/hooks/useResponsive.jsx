@@ -11,10 +11,11 @@ import React, { useState, useEffect } from 'react';
 
 /**
  * Responsive breakpoints following common device standards
+ * TEMPORARILY lowered tablet breakpoint for Android testing
  */
 const BREAKPOINTS = {
   mobile: 0,
-  tablet: 720,
+  tablet: 680, // Temporarily lowered from 720 for Android tablet testing
   desktop: 1024,
   wide: 1440
 };
