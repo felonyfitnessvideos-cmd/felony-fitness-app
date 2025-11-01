@@ -213,9 +213,9 @@
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  height: 20vh; /* Reduced from 25vh */
-  min-height: 150px; /* Reduced from 180px */
-  max-height: 300px; /* Reduced from 400px */
+  height: 35vh; /* Increased for better visibility */
+  min-height: 300px; /* Increased minimum height */
+  max-height: 500px; /* Increased maximum height */
   width: 100%;
   flex-shrink: 0;
   box-sizing: border-box;

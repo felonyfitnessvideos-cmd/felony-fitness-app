@@ -173,7 +173,7 @@ const TrainerDashboard = () => {
 
     switch (activeWorkspaceTool) {
       case 'scheduling':
-        return <SmartScheduling />;
+        return renderToolCards('Smart Scheduling');
 
       case 'progress':
         return renderToolCards('Progress Tracking');

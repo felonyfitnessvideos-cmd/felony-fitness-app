@@ -71,7 +71,7 @@ const SmartScheduling = () => {
       id: 1,
       clientName: 'Sarah Johnson',
       type: 'Personal Training',
-      date: new Date(2024, 10, 4, 9, 0),
+      date: new Date(2025, 10, 4, 9, 0), // Updated to 2025
       duration: 60,
       location: 'Gym Studio A',
       status: 'confirmed',
@@ -82,7 +82,7 @@ const SmartScheduling = () => {
       id: 2,
       clientName: 'Mike Chen',
       type: 'Nutrition Consultation',
-      date: new Date(2024, 10, 4, 14, 30),
+      date: new Date(2025, 10, 4, 14, 30), // Updated to 2025
       duration: 45,
       location: 'Virtual',
       status: 'pending',
@@ -93,7 +93,7 @@ const SmartScheduling = () => {
       id: 3,
       clientName: 'Emma Davis',
       type: 'Form Check',
-      date: new Date(2024, 10, 5, 11, 0),
+      date: new Date(2025, 10, 5, 11, 0), // Updated to 2025
       duration: 30,
       location: 'Gym Floor',
       status: 'confirmed',
