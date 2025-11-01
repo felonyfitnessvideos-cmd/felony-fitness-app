@@ -31,7 +31,7 @@ export const DEMO_CONFIG = {
   // For development/demo purposes only
   // Replace with actual credentials from Google Cloud Console
   API_KEY: 'your-google-api-key-here',
-  CLIENT_ID: 'your-google-client-id-here.apps.googleusercontent.com'
+  CLIENT_ID: '1060853999451-7it8g7m6j98plp3qbsdd5tgpnjr9ebju.apps.googleusercontent.com'
 };
 
 /**
@@ -61,5 +61,6 @@ export function isGoogleCalendarConfigured() {
   const config = getGoogleCalendarConfig();
   return !!(config.apiKey && config.clientId && 
            config.apiKey !== 'your-google-api-key-here' &&
-           config.clientId !== 'your-google-client-id-here.apps.googleusercontent.com');
+           config.apiKey !== 'your-actual-api-key-here' &&
+           config.clientId && config.clientId.includes('apps.googleusercontent.com'));
 }
