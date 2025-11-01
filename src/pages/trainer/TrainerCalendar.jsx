@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, Clock, User, MapPin, Sync, AlertCircle, CheckCircle } from 'lucide-react';
+import { Calendar, Plus, Clock, User, MapPin, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import useGoogleCalendar from '../../hooks/useGoogleCalendar.jsx';
 import './TrainerCalendar.css';
 
@@ -184,7 +184,7 @@ const TrainerCalendar = () => {
                   className="sync-button"
                   disabled={isLoading}
                 >
-                  <Sync size={18} className={isLoading ? 'spinning' : ''} />
+                  <RefreshCw size={18} className={isLoading ? 'spinning' : ''} />
                   {isLoading ? 'Connecting...' : 'Connect Google Calendar'}
                 </button>
               ) : (
@@ -194,7 +194,7 @@ const TrainerCalendar = () => {
                     className="sync-button"
                     disabled={isLoading}
                   >
-                    <Sync size={18} className={isLoading ? 'spinning' : ''} />
+                    <RefreshCw size={18} className={isLoading ? 'spinning' : ''} />
                     {isLoading ? 'Syncing...' : 'Sync Calendar'}
                   </button>
                   <button onClick={handleSignOut} className="signout-button">
