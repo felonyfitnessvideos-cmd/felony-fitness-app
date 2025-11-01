@@ -26,7 +26,6 @@ import { Outlet, NavLink } from 'react-router-dom';
 import { Home, Dumbbell, Apple, TrendingUp, User, UserCog } from 'lucide-react';
 import { useResponsive } from './hooks/useResponsive';
 import { initPerformanceOptimizations } from './utils/performance.js';
-import DebugOverlay from './components/DebugOverlay';
 import './App.css';
 
 /**
@@ -81,13 +80,39 @@ const BottomNav = ({ navItems }) => (
 );
 
 /**
+ * Debug Overlay Component (temporary for layout debugging)
+ */
+const DebugOverlay = ({ responsive }) => (
+  <div style={{
+    position: 'fixed',
+    top: '10px',
+    right: '10px',
+    background: 'rgba(0, 0, 0, 0.8)',
+    color: 'white',
+    padding: '10px',
+    borderRadius: '5px',
+    fontSize: '12px',
+    zIndex: 9999,
+    fontFamily: 'monospace'
+  }}>
+    <div>Width: {responsive.width}px</div>
+    <div>Device: {responsive.deviceType}</div>
+    <div>isTabletOrLarger: {responsive.isTabletOrLarger ? 'true' : 'false'}</div>
+    <div>Layout: {responsive.isTabletOrLarger ? 'desktop-layout' : 'mobile-layout'}</div>
+    <div>Sidebar: {responsive.isTabletOrLarger ? 'showing' : 'hidden'}</div>
+    <div>BottomNav: {!responsive.isTabletOrLarger ? 'showing' : 'hidden'}</div>
+  </div>
+);
+
+/**
  * The main application layout component.
  * It renders the primary navigation and the content area for all child routes.
  * Uses responsive design to show sidebar on larger screens and bottom nav on mobile.
  * @returns {JSX.Element} The main app structure.
  */
 function App() {
-  const { isTabletOrLarger } = useResponsive();
+  const responsive = useResponsive();
+  const { isTabletOrLarger } = responsive;
 
   // Initialize performance optimizations after app mounts
   useEffect(() => {
@@ -96,7 +121,9 @@ function App() {
 
   return (
     <div className={`app-container ${isTabletOrLarger ? 'desktop-layout' : 'mobile-layout'}`}>
-      <DebugOverlay />
+      {/* Temporary debug overlay */}
+      <DebugOverlay responsive={responsive} />
+      
       {/* Sidebar navigation for tablet and desktop */}
       {isTabletOrLarger && <SidebarNav navItems={desktopNavItems} />}
       

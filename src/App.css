@@ -27,11 +27,15 @@
 /* Mobile layout: vertical stack with bottom navigation */
 .app-container.mobile-layout {
   flex-direction: column; /* Stacks children vertically (main content on top, nav on bottom) */
+  /* Temporary debug border to visualize layout */
+  border: 3px solid red !important;
 }
 
 /* Desktop layout: horizontal with sidebar */
 .app-container.desktop-layout {
   flex-direction: row; /* Side-by-side layout */
+  /* Temporary debug border to visualize layout */
+  border: 3px solid green !important;
 }
 
 /**
