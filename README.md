@@ -1,6 +1,10 @@
-# React + Vite
+# Felony Fitness App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite fitness application with trainer dashboard and client management.
+
+## 📋 Critical Documentation
+
+- **[Trainer Dashboard Layout](TRAINER_DASHBOARD_LAYOUT.md)** - 🚨 READ BEFORE modifying trainer dashboard layout/CSS
 
 Currently, two official plugins are available:
 

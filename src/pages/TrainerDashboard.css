@@ -22,11 +22,13 @@
 }
 
 /* ===== MAIN CONTENT AREA ===== */
+/* 🚨 CRITICAL: This class enables the 70/30 flexbox split */
+/* DO NOT MODIFY without reading TRAINER_DASHBOARD_LAYOUT.md */
 .trainer-main-content {
-  flex: 1;
+  flex: 1;                    /* Takes all space after header - CRITICAL */
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  min-height: 0;             /* Allows flexbox shrinking - REQUIRED */
   overflow: hidden;
 }
 
@@ -82,24 +84,28 @@
 }
 
 /* ===== MAIN DASHBOARD LAYOUT ===== */
+/* 🚨 CRITICAL FLEXBOX LAYOUT - 70/30 SPLIT CONTAINER */
+/* See TRAINER_DASHBOARD_LAYOUT.md before making changes */
 .dashboard-layout {
   display: flex;
   flex-direction: column;
   flex: 1;
   gap: 1rem;
   padding: 1rem;
-  min-height: 0;
+  min-height: 0;             /* REQUIRED for flexbox children */
   width: 100%;
   height: calc(100% - 80px); /* Fit within main-content area */
   box-sizing: border-box;
 }
 
 /* ===== TOP SECTION (SIDEBAR + CONTENT) ===== */
+/* 🚨 CRITICAL: 70% allocation for main content area */
+/* flex: 0 0 70% - DO NOT CHANGE without extensive testing */
 .dashboard-top-section {
   display: flex;
   flex-direction: row; /* Default to row layout */
   gap: 1rem;
-  flex: 0 0 70%; /* Take exactly 70% of available space */
+  flex: 0 0 70%; /* CRITICAL: Exactly 70% - maintains proportion */
   min-height: 0;
   align-items: stretch;
 }
@@ -215,14 +221,17 @@
 }
 
 /* ===== BOTTOM TOOLS WORKSPACE ===== */
+/* 🚨 CRITICAL: 30% allocation for tools workspace */
+/* flex: 0 0 30% - DO NOT CHANGE without extensive testing */
+/* This ensures 2x2 tool cards are always visible */
 .core-tools-workspace {
   background-color: var(--card-background);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  flex: 0 0 30%; /* Take exactly 30% of available space */
-  min-height: 200px; /* Minimum for functionality */
+  flex: 0 0 30%; /* CRITICAL: Exactly 30% - maintains proportion */
+  min-height: 200px; /* Minimum for 2x2 card grid functionality */
   width: 100%;
   box-sizing: border-box;
   overflow: visible;

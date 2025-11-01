@@ -43,12 +43,28 @@ import './TrainerDashboard.css';
 /**
  * TrainerDashboard component for managing client progress and data
  * 
- * Provides comprehensive client management tools including progress tracking,
- * meal plan oversight, workout monitoring, and communication features.
- * Optimized for tablet and desktop viewing experiences.
+ * 🚨 CRITICAL LAYOUT ARCHITECTURE - DO NOT MODIFY WITHOUT GOOD REASON
+ * 
+ * This component uses a carefully designed 70/30 flexbox split that works across
+ * all tablet and desktop screen sizes. The layout has been extensively tested
+ * and optimized for Android Chrome viewport reduction and various screen sizes.
+ * 
+ * LAYOUT STRUCTURE:
+ * - trainer-main-content (flex: 1)
+ *   - dashboard-layout (flex column with gap)
+ *     - dashboard-top-section (flex: 0 0 70%) ← Main content area
+ *     - core-tools-workspace (flex: 0 0 30%) ← Tools workspace
+ * 
+ * KEY PRINCIPLES:
+ * - Uses flex-basis percentages, NOT viewport heights
+ * - 70% for main content, 30% for tools workspace
+ * - Dynamic sizing that scales with screen size
+ * - Uniform tool card system prevents layout shifts
+ * 
+ * See TRAINER_DASHBOARD_LAYOUT.md for complete documentation
  * 
  * @component
- * @returns {JSX.Element} Complete trainer dashboard interface
+ * @returns {JSX.Element} Complete trainer dashboard interface with 70/30 layout
  * 
  * @example
  * <TrainerDashboard />
@@ -131,6 +147,19 @@ const TrainerDashboard = () => {
 
   /**
    * Render workspace content based on active tool
+   * 
+   * 🚨 LAYOUT CRITICAL: Uses uniform card system to prevent layout shifts
+   * 
+   * All tools use the same renderToolCards() function to ensure:
+   * - Consistent 2x2 grid layout (tool-cards-grid)
+   * - Uniform card heights (70-90px each)
+   * - Same content structure prevents workspace repositioning
+   * - Maintains 30% workspace height allocation
+   * 
+   * DO NOT change to variable content without extensive testing.
+   * Variable content heights cause the workspace to jump/shift.
+   * 
+   * @returns {JSX.Element} Uniform workspace content for selected tool
    */
   const renderWorkspaceContent = () => {
     if (!activeWorkspaceTool) {
