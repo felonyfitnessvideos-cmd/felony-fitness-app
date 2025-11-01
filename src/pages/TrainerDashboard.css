@@ -301,7 +301,7 @@
 }
 
 /* Portrait Tablet - Horizontal sidebar */
-@media screen and (orientation: portrait) and (max-width: 720px) {
+@media screen and (orientation: portrait) and (max-width: 700px) {
   .dashboard-layout {
     flex-direction: column;
     gap: 0.5rem;

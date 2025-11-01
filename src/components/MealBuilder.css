@@ -493,7 +493,7 @@
    ======================================== */
 
 /* Mobile-first responsive design for tablets and phones */
-@media (max-width: 680px) {
+@media (max-width: 700px) {
   .meal-builder-overlay {
     padding: 10px;
   }

@@ -262,7 +262,7 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 720px) {
+@media (max-width: 700px) {
   .form-row {
     grid-template-columns: 1fr;
   }

@@ -10,12 +10,12 @@
 import React, { useState, useEffect } from 'react';
 
 /**
- * Responsive breakpoints following common device standards
- * TEMPORARILY lowered tablet breakpoint for Android testing
+ * Responsive breakpoints adjusted for real-world Android Chrome viewport
+ * Android tablets lose ~89px width due to browser UI elements
  */
 const BREAKPOINTS = {
   mobile: 0,
-  tablet: 680, // Temporarily lowered from 720 for Android tablet testing
+  tablet: 700, // Adjusted for Android Chrome: 800px tablet → 711px actual viewport
   desktop: 1024,
   wide: 1440
 };
