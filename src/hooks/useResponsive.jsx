@@ -141,18 +141,21 @@ export const useResponsive = () => {
   const isTabletOrLarger = width >= BREAKPOINTS.tablet;
   const isDesktopOrLarger = width >= BREAKPOINTS.desktop;
 
-  // Debug logging for tablet detection
-  if (import.meta.env?.DEV && width > 700 && width < 900) {
-    console.log('Tablet detection debug:', {
-      width,
-      height,
-      isMobile,
-      isTablet,
-      isTabletOrLarger,
-      breakpointTablet: BREAKPOINTS.tablet,
-      userAgent: navigator.userAgent.substring(0, 50) + '...'
-    });
-  }
+  // Debug logging for tablet detection (throttled to avoid spam)
+  useEffect(() => {
+    if (import.meta.env?.DEV && width > 700 && width < 900) {
+      const debugData = {
+        width,
+        height,
+        isMobile,
+        isTablet,
+        isTabletOrLarger,
+        breakpointTablet: BREAKPOINTS.tablet,
+        userAgent: navigator.userAgent.substring(0, 50) + '...'
+      };
+      console.log('Tablet detection debug:', debugData);
+    }
+  }, [width, height, isTabletOrLarger]); // Only log when these change
   
   // Orientation detection
   const orientation = height > width ? 'portrait' : 'landscape';

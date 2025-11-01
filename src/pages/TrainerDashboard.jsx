@@ -118,6 +118,9 @@ const TrainerDashboard = () => {
   useEffect(() => {
     if (!isTabletOrLarger) {
       navigate('/dashboard');
+    } else {
+      // Force tablet/desktop styles when detected
+      document.body.setAttribute('data-device-type', 'tablet-or-larger');
     }
   }, [navigate, isTabletOrLarger]);
 

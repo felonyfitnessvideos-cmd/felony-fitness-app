@@ -44,7 +44,7 @@ const DebugOverlay = () => {
       <div>Mobile: {isMobile ? 'Yes' : 'No'}</div>
       <div>Tablet: {isTablet ? 'Yes' : 'No'}</div>
       <div>Tablet+: {isTabletOrLarger ? 'Yes' : 'No'}</div>
-      <div>Breakpoint: {breakpoints.BREAKPOINTS?.tablet || breakpoints.tablet}px</div>
+      <div>Breakpoint: {breakpoints?.tablet || 720}px</div>
       <div>DPR: {window.devicePixelRatio}</div>
       <div style={{ fontSize: '10px', marginTop: '5px' }}>
         UA: {navigator.userAgent.substring(0, 30)}...

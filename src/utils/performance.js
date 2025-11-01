@@ -19,10 +19,12 @@ const criticalRoutes = ['/dashboard', '/workouts', '/nutrition'];
 /**
  * Prefetches critical routes after main app loads to improve navigation performance
  * Uses requestIdleCallback to avoid blocking the main thread
+ * Only prefetches in production to avoid development issues
  * @returns {void}
  */
 export const prefetchCriticalRoutes = () => {
-  if ('requestIdleCallback' in window) {
+  // Only prefetch in production builds
+  if ('requestIdleCallback' in window && import.meta.env.PROD) {
     requestIdleCallback(() => {
       criticalRoutes.forEach(route => {
         const link = document.createElement('link');
