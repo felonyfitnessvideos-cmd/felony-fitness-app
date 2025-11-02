@@ -1,17 +1,56 @@
 /**
  * @file TrainerMessages.jsx
  * @description Client communication hub with SMS and email integration
+ * @author Felony Fitness Development Team
+ * @version 1.0.0
  * @project Felony Fitness
+ * 
+ * This component provides a comprehensive messaging interface for trainers to communicate
+ * with clients through multiple channels including SMS and email. Features include:
+ * 
+ * - Real-time conversation management
+ * - Multi-channel communication (SMS/Email)
+ * - Conversation history and search
+ * - Message templates and quick responses
+ * - Integration with communication APIs
+ * 
+ * @requires react
+ * @requires lucide-react
  */
 
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Send, Phone, Mail, Plus, Search } from 'lucide-react';
 
+/**
+ * TrainerMessages Component
+ * 
+ * Provides a comprehensive messaging interface for trainer-client communication.
+ * Supports both SMS and email channels with conversation history and real-time updates.
+ * 
+ * @component
+ * @returns {JSX.Element} The complete messaging interface
+ * 
+ * @example
+ * <TrainerMessages />
+ * 
+ * State Management:
+ * @state {Array} conversations - List of client conversations with message history
+ * @state {Object|null} selectedConversation - Currently active conversation
+ * @state {string} newMessage - Message being composed
+ * @state {string} messageType - Communication channel ('sms' or 'email')
+ */
 const TrainerMessages = () => {
+  /** @type {[Array, Function]} Array of conversation objects with client messaging history */
   const [conversations, setConversations] = useState([]);
+  
+  /** @type {[Object|null, Function]} Currently selected conversation for viewing/messaging */
   const [selectedConversation, setSelectedConversation] = useState(null);
+  
+  /** @type {[string, Function]} Message content being composed */
   const [newMessage, setNewMessage] = useState('');
-  const [messageType, setMessageType] = useState('sms'); // 'sms' or 'email'
+  
+  /** @type {[string, Function]} Communication channel type ('sms' or 'email') */
+  const [messageType, setMessageType] = useState('sms');
 
   useEffect(() => {
     // Mock conversation data
