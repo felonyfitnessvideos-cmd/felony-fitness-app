@@ -1,4 +1,5 @@
 {
+  "_comment": "CSP fix for Google Calendar API - force redeploy 2025-11-02",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm install",
