@@ -252,7 +252,11 @@ const TrainerDashboard = () => {
           <h1>Trainer Dashboard</h1>
           <p>Manage and track your clients' progress</p>
         </div>
-        <div className="header-spacer"></div>
+        <div className="header-logo">
+          <button onClick={handleBackToDashboard} className="logo-button" aria-label="Go to main dashboard">
+            <img src="/logo.png" alt="Felony Fitness" className="header-logo-img" />
+          </button>
+        </div>
       </header>
 
       <div className="trainer-main-content">
@@ -263,7 +267,7 @@ const TrainerDashboard = () => {
             <aside className="quick-tools-sidebar">
               <button 
                 type="button"
-                className={`tool-item ${location.pathname === '/trainer-dashboard/calendar' ? 'active' : ''}`}
+                className={`tool-item ${(location.pathname === '/trainer-dashboard/calendar' || location.pathname === '/trainer-dashboard') ? 'active' : ''}`}
                 onClick={navigateToCalendar}
                 aria-label="Open Calendar"
               >

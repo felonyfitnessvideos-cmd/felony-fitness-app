@@ -79,8 +79,28 @@
   font-size: 0.9rem;
 }
 
-.header-spacer {
-  flex-basis: 120px;
+.header-logo {
+  display: flex;
+  align-items: center;
+}
+
+.logo-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.logo-button:hover {
+  background-color: var(--hover-color);
+}
+
+.header-logo-img {
+  height: 40px;
+  width: auto;
+  max-width: 120px;
 }
 
 /* ===== MAIN DASHBOARD LAYOUT ===== */
