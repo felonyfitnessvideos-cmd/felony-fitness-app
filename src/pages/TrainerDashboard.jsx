@@ -254,7 +254,11 @@ const TrainerDashboard = () => {
         </div>
         <div className="header-logo">
           <button onClick={handleBackToDashboard} className="logo-button" aria-label="Go to main dashboard">
-            <img src="/logo.png" alt="Felony Fitness" className="header-logo-img" />
+            <img 
+              src="https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/sign/logo_banner/Felony%20Fitness%20Logo.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81M2NhYTc4NC1hZjEzLTQxZTAtYjljYS02Njk3NjRiZWVkODEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsb2dvX2Jhbm5lci9GZWxvbnkgRml0bmVzcyBMb2dvLnBuZyIsImlhdCI6MTc1ODgxNDU4MCwiZXhwIjoxOTE2NDk0NTgwfQ.TUTMDUtZpccUdwSp8NFTltJR1GHnEc6zO6j7iigwF1g" 
+              alt="Felony Fitness" 
+              className="header-logo-img" 
+            />
           </button>
         </div>
       </header>
