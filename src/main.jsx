@@ -1,22 +1,53 @@
  
 /**
- * @file main.jsx
- * @description The main entry point for the React application.
- * @project Felony Fitness
- *
- * @workflow
- * 1. This file targets the root DOM element (`<div id="root">`).
- * 2. It sets up global context providers that wrap the entire application:
- * - `ThemeProvider`: Manages the application's theme (e.g., dark/light mode).
- * - `BrowserRouter`: Enables client-side routing using React Router.
- * - `AuthProvider`: Manages user authentication state (e.g., who is logged in).
- * 3. It defines the application's URL structure using `<Routes>` and `<Route>`.
- * 4. It establishes a nested routing structure:
- * - A public route for the login page (`/`).
- * - A group of protected routes that render inside the main `<App />` layout,
- * which includes the persistent bottom navigation bar.
- * 5. It initializes the `react-modal` library by setting the app element, which is
- * important for accessibility.
+ * @fileoverview Main application entry point with global provider setup
+ * @description Primary React application bootstrap file managing global context
+ * providers, routing configuration, and accessibility setup. Establishes the
+ * application's foundation with theme management, authentication, and navigation.
+ * 
+ * @author Felony Fitness Development Team
+ * @version 2.0.0
+ * @since 2025-11-02
+ * 
+ * @requires React
+ * @requires react-dom/client
+ * @requires react-router-dom
+ * @requires react-modal
+ * @requires ThemeProvider
+ * @requires AuthProvider
+ * @requires App
+ * 
+ * Application Bootstrap Workflow:
+ * 1. **DOM Targeting**: Mounts React app to root DOM element
+ * 2. **Global Providers**: Establishes context provider hierarchy
+ *    - ThemeProvider: Application-wide theme management
+ *    - BrowserRouter: Client-side routing capabilities
+ *    - AuthProvider: Authentication state management
+ * 3. **Route Structure**: Defines URL-based navigation patterns
+ *    - Public routes: Authentication and landing pages
+ *    - Protected routes: User-specific application features
+ * 4. **Accessibility**: Configures react-modal for screen readers
+ * 
+ * Provider Hierarchy:
+ * ```
+ * ThemeProvider
+ *   └── BrowserRouter
+ *       └── AuthProvider
+ *           └── Routes
+ * ```
+ * 
+ * @example
+ * // Application structure created by this file
+ * <ThemeProvider>
+ *   <BrowserRouter>
+ *     <AuthProvider>
+ *       <Routes>
+ *         <Route path="/" element={<AuthPage />} />
+ *         <Route path="/*" element={<App />} />
+ *       </Routes>
+ *     </AuthProvider>
+ *   </BrowserRouter>
+ * </ThemeProvider>
  */
 
 import React from 'react';
@@ -60,6 +91,9 @@ const WeeklyMealPlannerPage = React.lazy(() => import('./pages/WeeklyMealPlanner
 const MyMealsPage = React.lazy(() => import('./pages/MyMealsPage.jsx'));
 // Trainer Dashboard
 const TrainerDashboard = React.lazy(() => import('./pages/TrainerDashboard.jsx'));
+// Temporary messaging test component
+const MessagingFlowTest = React.lazy(() => import('./components/MessagingFlowTest.jsx'));
+const RelationshipCleanup = React.lazy(() => import('./components/RelationshipCleanup.jsx'));
 
 // Binds the modal to the app's root element for accessibility (e.g., screen readers).
 Modal.setAppElement('#root'); 
@@ -124,6 +158,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
               {/* --- Profile route --- */}
               <Route path="/profile" element={<ProfilePage />} />
+              
+              {/* --- Temporary messaging test routes --- */}
+              <Route path="/test-messaging" element={<MessagingFlowTest />} />
+              <Route path="/cleanup-relationships" element={<RelationshipCleanup />} />
 
               {/* --- Mesocycles (training cycles) --- */}
               <Route path="/mesocycles" element={<MesocyclesPage />} />

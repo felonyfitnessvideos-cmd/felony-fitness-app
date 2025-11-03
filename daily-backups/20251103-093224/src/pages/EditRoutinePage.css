@@ -1,0 +1,324 @@
+/**
+ * @file EditRoutinePage.css
+ * @description Styles for the page where users create or edit a workout routine.
+ * @project Felony Fitness
+ *
+ * @layout_pattern Fixed Footer & Vertical List
+ * This stylesheet uses a fixed footer (`.action-footer`) for the main save/cancel actions,
+ * ensuring they are always accessible. The main content area scrolls vertically,
+ * containing form inputs and a list of exercise cards.
+ */
+
+/**
+ * Main container for the Edit Routine Page.
+ * `padding-bottom` is crucial to create space at the bottom, preventing the
+ * fixed footer and the main app navbar from hiding the last items in the exercise list.
+ */
+.edit-routine-page-container {
+  padding: 1rem;
+  /* (Footer Height + Navbar Height + Buffer) -> ~80px + 60px + 40px = 180px */
+  padding-bottom: 180px; 
+}
+
+/**
+ * Shared styles for form groups and the main exercise search section.
+ */
+.form-group, .add-exercise-section {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label, .add-exercise-section h3, h3 {
+  display: block;
+  margin-bottom: .5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #a0aec0;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select,
+.add-exercise-section input {
+  width: 100%;
+  background-color: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 8px;
+  padding: 0.8rem;
+  color: white;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+/**
+ * The exercise search section.
+ * `position: relative` is necessary for the absolutely positioned search results dropdown.
+ */
+.add-exercise-section {
+  position: relative;
+}
+
+/**
+ * The search results dropdown that appears below the search input.
+ * `position: absolute` removes it from the normal document flow.
+ * `z-index: 10` ensures it appears on top of other content.
+ */
+.search-results {
+  position: absolute;
+  background-color: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 8px;
+  width: 100%;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 10;
+  margin-top: 0.5rem;
+}
+
+.search-result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem;
+  border-bottom: 1px solid #4a5568;
+}
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.exercise-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.exercise-name {
+  font-weight: 600;
+}
+
+.muscle-group {
+  font-size: 0.8rem;
+  color: #a0aec0;
+}
+
+.add-exercise-btn {
+  background-color: #10b981; /* Green for "add" action */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-exercise-btn:hover {
+  background-color: #059669;
+}
+
+.custom-exercise-prompt button {
+    background: none;
+    border: none;
+    color: #f97316;
+    padding: 1rem;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+/**
+ * The list of exercises currently in the routine.
+ * Uses a flexbox column to stack the exercise cards vertically.
+ */
+.exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/**
+ * An individual exercise card within the routine list.
+ */
+.exercise-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: #2d3748;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.exercise-thumbnail {
+  width: 50px;
+  height: 50px;
+  background-color: #4a5568;
+  border-radius: 6px;
+  flex-shrink: 0; /* Prevents the image from shrinking */
+}
+
+.exercise-details {
+  flex-grow: 1; /* Allows this section to take up all available space */
+  min-width: 0; /* Prevents text overflow issues in flexbox */
+}
+
+.exercise-details h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  white-space: nowrap; /* Prevents the title from wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis; /* Adds "..." if the title is too long */
+}
+
+.exercise-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap; /* Allows inputs to wrap on smaller screens if needed */
+}
+
+.exercise-inputs input {
+  width: 50px;
+  text-align: center;
+  background-color: #1a202c;
+  border: 1px solid #4a5568;
+  color: white;
+  border-radius: 6px;
+  padding: 0.4rem;
+}
+
+.exercise-inputs span {
+  font-size: 0.8rem;
+  color: #a0aec0;
+}
+
+.remove-exercise-button {
+  background: none;
+  border: none;
+  color: #e53e3e; /* Red for destructive action */
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/**
+ * The fixed footer containing the "Save" and "Cancel" buttons.
+ */
+.action-footer {
+  position: fixed;
+  bottom: 60px; /* Sits directly on top of the main 60px navbar */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 450px;
+  background-color: var(--background-color);
+  padding: 1rem;
+  border-top: 1px solid var(--border-color);
+  z-index: 10;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  align-items: center;
+}
+
+.action-footer button {
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 0; /* Removes any default browser margins */
+}
+
+/**
+ * Shared button styles for the modal footer.
+ */
+.modal-action-footer button {
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel-button {
+  background-color: #4a5568;
+  color: white;
+}
+
+.save-button {
+  background-color: #f97316;
+  color: white;
+}
+
+.modal-action-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+/**
+ * Controls for reordering exercises in the list (up/down arrows).
+ */
+.reorder-controls {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0 0.5rem;
+}
+
+.reorder-controls button {
+  background: none;
+  border: none;
+  color: #718096;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.reorder-controls button:hover {
+  color: #f97316;
+}
+
+.reorder-controls button:disabled {
+  color: #4a5568;
+  cursor: not-allowed;
+}
+
+/* Modal overlay and content styles for react-modal (CSS-driven instead of inline styles) */
+.custom-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.custom-modal-content {
+  background: #2d3748;
+  color: #f7fafc;
+  border: 1px solid #4a5568;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+/* Focus ring for modal interactive elements */
+.custom-modal-content :is(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(249,115,22,0.8);
+  outline-offset: 2px;
+}
+
+/* Prevent background scrolling when modal open (react-modal adds body class but ensure fallback) */
+body.ReactModal__Body--open {
+  overflow: hidden;
+}

@@ -1,0 +1,233 @@
+/**
+ * @file WorkoutGoalsPage.css 
+ * @description Styles for the user's goal management page.
+ * @project Felony Fitness
+ *
+ * @layout_pattern Vertical Card List
+ * This stylesheet defines the layout for a page that displays a list of goals.
+ * Each goal is presented in a detailed "card" component, and the list is arranged
+ * in a single vertical column for easy scrolling on mobile devices.
+ */
+
+/**
+ * Main container for the Goals Page.
+ * Provides basic padding and reserves space at the bottom for the main app navigation.
+ */
+.goals-container {
+  padding: 1rem;
+  padding-bottom: 80px;
+}
+
+/**
+ * Header section containing the page title and description.
+ */
+.goals-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.goals-header p {
+  color: var(--text-secondary);
+  margin: 0 0 1rem 0;
+}
+
+/**
+ * The primary "Add Goal" button, styled as a prominent call-to-action.
+ */
+.add-goal-button {
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto; /* Centers the button horizontally */
+  display: block;
+  padding: 0.8rem;
+  background-color: var(--accent-color);
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.add-goal-button:hover {
+  background-color: var(--accent-color-hover);
+}
+
+/**
+ * The main container for the list of goal cards.
+ * Uses a flexbox column to stack the cards vertically with consistent spacing.
+ */
+.goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+/**
+ * Styling for an individual goal card.
+ * This is the main component for displaying goal information.
+ */
+.goal-card {
+  background-color: var(--card-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; /* Creates space between the header, description, and progress sections */
+}
+
+/**
+ * The header section within a goal card.
+ * Uses flexbox to position the title on the left and the target date on the right.
+ */
+.goal-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start; /* Aligns items to the top */
+}
+.goal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.goal-titles h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+.goal-titles span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.goal-target-date {
+  text-align: right;
+}
+.goal-target-date .label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.goal-target-date span {
+  font-weight: 600;
+}
+
+/**
+ * The main description text for the goal.
+ */
+.goal-description {
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6; /* Improves readability */
+}
+
+/**
+ * The container for the goal's progress bar and associated text.
+ */
+.goal-progress {
+  position: relative;
+}
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+.progress-bar-wrapper {
+  background-color: var(--background-color);
+  border-radius: 5px;
+  height: 8px;
+  overflow: hidden; /* Ensures the inner bar's rounded corners are visible */
+}
+.progress-bar {
+  background-color: #10b981;
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.3s; /* Smooth animation when progress updates */
+}
+.progress-percent {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+/**
+ * Container for the action buttons (e.g., Edit, Delete) on a goal card.
+ * `justify-content: flex-end` aligns the buttons to the right.
+ */
+.goal-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: -0.5rem; /* Negative margin pulls it closer to the progress bar */
+}
+.action-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+.action-btn:hover {
+  color: #63b3ed; /* Blue for standard actions */
+}
+.action-btn.danger:hover {
+  color: #e53e3e; /* Red for destructive actions like delete */
+}
+
+/**
+ * Message displayed when no goals are found.
+ */
+.no-goals-message {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+}
+
+/**
+ * Generic form styles, likely used within a modal for adding/editing goals.
+ */
+.form-group, .form-row, .action-footer {
+  margin-bottom: 1rem;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+.form-group input {
+  width: 100%;
+  padding: 0.8rem;
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+}
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+.action-footer {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+.cancel-button, .save-button {
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cancel-button {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+.save-button {
+  background-color: var(--accent-color);
+  color: white;
+}

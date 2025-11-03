@@ -1,0 +1,541 @@
+/**
+ * @file UserRoleManager.css
+ * @description Styles for the User Role Manager component
+ * @author Felony Fitness Development Team
+ */
+
+.user-role-manager {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: var(--background-primary, #1a1a1a);
+    color: var(--text-primary, #ffffff);
+    min-height: 100vh;
+}
+
+.user-role-manager.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary, #888);
+}
+
+/* Header */
+.role-manager-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.role-manager-header h2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+    color: var(--primary-color, #ff6b35);
+}
+
+.role-manager-header p {
+    color: var(--text-secondary, #888);
+    margin: 0;
+}
+
+/* Message Display */
+.message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+
+.message.info {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+}
+
+.message.success {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: #4ade80;
+}
+
+.message.error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    background: var(--background-secondary, #2a2a2a);
+    border-radius: 12px;
+    padding: 0.25rem;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+}
+
+.tab-navigation button {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary, #888);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-width: fit-content;
+}
+
+.tab-navigation button:hover {
+    color: var(--text-primary, #ffffff);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-navigation button.active {
+    background: var(--primary-color, #ff6b35);
+    color: white;
+}
+
+/* Tab Content */
+.tab-content {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Overview Tab */
+.overview-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.role-summary h3,
+.quick-actions h3 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary, #ffffff);
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.summary-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: var(--background-secondary, #2a2a2a);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.summary-card svg {
+    color: var(--primary-color, #ff6b35);
+    flex-shrink: 0;
+}
+
+.summary-card .count {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--text-primary, #ffffff);
+}
+
+.summary-card .label {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-secondary, #888);
+}
+
+/* Quick Actions */
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.action-btn.trainer {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.action-btn.trainer:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.action-btn.add-client {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+}
+
+.action-btn.add-client:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Roles Tab */
+.roles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.role-card {
+    padding: 1.5rem;
+    background: var(--background-secondary, #2a2a2a);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+}
+
+.role-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-color, #ff6b35);
+}
+
+.role-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.role-header h4 {
+    margin: 0;
+    font-size: 1.125rem;
+    color: var(--text-primary, #ffffff);
+}
+
+.role-icon {
+    flex-shrink: 0;
+}
+
+.role-icon.admin { color: #dc2626; }
+.role-icon.trainer { color: #10b981; }
+.role-icon.client { color: #f59e0b; }
+.role-icon.premium { color: #8b5cf6; }
+.role-icon.default { color: var(--primary-color, #ff6b35); }
+
+.role-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+}
+
+.role-type {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    text-transform: capitalize;
+}
+
+.assigned-date {
+    color: var(--text-secondary, #888);
+}
+
+/* Clients/Trainers Tabs */
+.tab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.tab-header h3 {
+    margin: 0;
+}
+
+.add-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--primary-color, #ff6b35);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.add-btn:hover {
+    background: var(--primary-color-dark, #e5552e);
+    transform: translateY(-1px);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-secondary, #888);
+}
+
+.empty-state svg {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    font-size: 1.125rem;
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary, #ffffff);
+}
+
+.empty-state span {
+    font-size: 0.875rem;
+}
+
+/* Lists */
+.clients-list,
+.trainers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.client-card,
+.trainer-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: var(--background-secondary, #2a2a2a);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.client-card:hover,
+.trainer-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--primary-color, #ff6b35);
+}
+
+.client-info,
+.trainer-info {
+    flex: 1;
+}
+
+.client-name,
+.trainer-name {
+    font-weight: 500;
+    color: var(--text-primary, #ffffff);
+    margin-bottom: 0.25rem;
+}
+
+.client-meta,
+.trainer-meta {
+    font-size: 0.875rem;
+    color: var(--text-secondary, #888);
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal {
+    background: var(--background-primary, #1a1a1a);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 400px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 1.5rem 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--text-primary, #ffffff);
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary, #888);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+    color: var(--text-primary, #ffffff);
+}
+
+/* Form */
+.modal form {
+    padding: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-primary, #ffffff);
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--background-secondary, #2a2a2a);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: var(--text-primary, #ffffff);
+    font-size: 1rem;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color, #ff6b35);
+    box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2);
+}
+
+.form-group small {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary, #888);
+}
+
+/* Modal Actions */
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+.cancel-btn,
+.submit-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.cancel-btn {
+    background: var(--background-secondary, #2a2a2a);
+    color: var(--text-primary, #ffffff);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.submit-btn {
+    background: var(--primary-color, #ff6b35);
+    color: white;
+}
+
+.submit-btn:hover {
+    background: var(--primary-color-dark, #e5552e);
+    transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .user-role-manager {
+        padding: 1rem;
+    }
+    
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-btn {
+        justify-content: center;
+    }
+    
+    .tab-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .modal {
+        margin: 1rem;
+        max-width: calc(100vw - 2rem);
+    }
+}
+
+@media (max-width: 480px) {
+    .role-manager-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .tab-navigation {
+        padding: 0.125rem;
+    }
+    
+    .tab-navigation button {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .roles-grid {
+        grid-template-columns: 1fr;
+    }
+}

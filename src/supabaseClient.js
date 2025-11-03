@@ -1,11 +1,31 @@
 /**
- * @file supabaseClient.js
- * @description Supabase client singleton for browser app authentication and database operations
- * @project Felony Fitness
+ * @fileoverview Supabase client configuration and initialization
+ * @description Supabase client singleton for browser app authentication and database operations.
+ * Creates a shared Supabase client for the browser app and centralizes handling of token refresh
+ * failures by clearing persisted tokens and forcing sign out when necessary.
  * 
- * Creates a shared Supabase client for the browser app and centralizes
- * handling of token refresh failures by clearing persisted tokens and
- * forcing sign out when necessary.
+ * @author Felony Fitness Development Team
+ * @version 1.0.0
+ * @since 2025-11-02
+ * 
+ * @requires @supabase/supabase-js
+ * 
+ * @example
+ * // Import and use the configured client
+ * import { supabase } from './supabaseClient';
+ * 
+ * // Authenticate user
+ * const { data, error } = await supabase.auth.signInWithPassword({
+ *   email: 'user@example.com',
+ *   password: 'password'
+ * });
+ * 
+ * @example
+ * // Database operations
+ * const { data: workouts } = await supabase
+ *   .from('workouts')
+ *   .select('*')
+ *   .eq('user_id', userId);
  */
 import { createClient } from '@supabase/supabase-js'
 
@@ -18,10 +38,23 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Supabase environment is not configured');
 }
 
-// Create the Supabase client. We disable detectSessionInUrl to avoid
-// accidental session parsing when the app is mounted at a non-root URL
-// (useful for some deploys). We'll also register a small handler to
-// clear persisted tokens and sign out when the refresh token is invalid.
+/**
+ * Configured Supabase client instance
+ * 
+ * @constant {SupabaseClient} supabase
+ * @description Shared Supabase client configured for the Felony Fitness application.
+ * Disables detectSessionInUrl to avoid accidental session parsing when the app
+ * is mounted at non-root URLs. Includes auth state change handling for graceful
+ * token refresh failure recovery.
+ * 
+ * @example
+ * // Use for authentication
+ * const { user } = await supabase.auth.getUser();
+ * 
+ * @example
+ * // Use for database queries
+ * const { data } = await supabase.from('meals').select('*');
+ */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 	auth: {
 		detectSessionInUrl: false,

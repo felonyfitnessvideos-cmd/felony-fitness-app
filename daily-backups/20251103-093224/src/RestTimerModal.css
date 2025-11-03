@@ -1,0 +1,132 @@
+/*
+ * @file RestTimerModal.css
+ * @description This file contains the styles for the RestTimerModal.jsx component.
+ * It styles the modal container, the circular timer display, and the control buttons.
+ * @author [Your Name/Team Name]
+ * @date 10/17/2025
+ */
+
+/* Main container for the modal content. */
+.rest-timer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Horizontally centers all flex items. */
+  text-align: center;
+}
+
+/* Header section containing the title and close button. */
+.timer-header {
+  width: 100%;
+  display: flex;
+  justify-content: center; /* Centers the title. */
+  align-items: center;
+  position: relative; /* Establishes a positioning context for the absolute-positioned close button. */
+  margin-bottom: 1.5rem;
+}
+
+/* Title text (e.g., "REST" or "WORKOUT COMPLETE"). */
+.timer-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #a0aec0; /* Light gray for secondary text. */
+  letter-spacing: 2px; /* Adds space between letters for a stylistic effect. */
+  text-transform: uppercase;
+}
+
+/* The 'X' button to close the modal. */
+.close-btn {
+  position: absolute;
+  top: -15px; /* Positions the button slightly outside the modal padding area. */
+  right: -15px;
+  background: none;
+  border: none;
+  color: #a0aec0;
+  cursor: pointer;
+}
+
+/* Styles for the circular timer display. */
+.timer-circle {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%; /* Creates the circle shape. */
+  background-color: #1a202c; /* Dark inner circle color. */
+  display: flex;
+  justify-content: center; /* Centers the time text horizontally. */
+  align-items: center; /* Centers the time text vertically. */
+  margin-bottom: 2rem;
+  border: 4px solid #4a5568; /* Creates the outer ring. */
+  box-shadow: 0 0 15px rgba(0,0,0,0.5); /* Adds a subtle glow/depth effect. */
+}
+
+/* The time text (MM:SS) inside the circle. */
+.timer-display {
+  font-size: 3.5rem;
+  font-weight: bold;
+  font-family: 'monospace', sans-serif; /* Monospaced font for a digital clock look. */
+  color: #fde68a; /* A soft yellow color. */
+}
+
+/* Container for the timer control buttons. */
+.timer-controls {
+  display: flex;
+  justify-content: space-between; /* Distributes buttons evenly with space in between. */
+  align-items: center;
+  width: 100%;
+}
+
+/* General styling for all buttons in the controls area. */
+.timer-controls button {
+  background: none;
+  border: 1px solid #4a5568;
+  color: #a0aec0;
+  border-radius: 20px; /* Creates a pill shape. */
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem; /* Space between icon and text. */
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s; /* Smooth transition for hover effects. */
+}
+
+/* General hover effect for control buttons. */
+.timer-controls button:hover {
+    border-color: #63b3ed; /* Changes border to a light blue on hover. */
+    color: #63b3ed; /* Changes text color to match. */
+}
+
+/* Specific styling for the primary "Skip" button. */
+.skip-btn {
+  background-color: #f97316; /* Primary brand orange. */
+  color: white;
+  border: none; /* Removes the border as it has a solid background. */
+}
+
+/* Hover effect for the "Skip" button. */
+.skip-btn:hover {
+    background-color: #ea580c; /* A slightly darker orange for hover. */
+    color: white; /* Ensures text color remains white. */
+}
+
+/* Modal overlay/content classes for the rest timer modal */
+.rest-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.rest-modal-content {
+  width: 320px;
+  background: #2d3748;
+  color: #f7fafc;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}

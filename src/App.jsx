@@ -1,25 +1,41 @@
- 
 /**
- * @file App.jsx
- * @description The root component of the application.
- * @project Felony Fitness
- *
- * @workflow
- * This component sets up the main layout structure for the entire application.
- * It consists of:
- * 1. A `main-content` area where the content of the current page/route is rendered.
- * This is handled by the `<Outlet />` component from React Router.
- * 2. A persistent `bottom-nav` bar that is visible on all main pages of the app.
- * This navigation bar uses `<NavLink />` components to link to the different sections
- * and to visually indicate the user's current location with an "active" class.
- */
-
-/**
- * App.jsx
- *
- * Application shell: routes, bottom navigation and high-level layout. Keep
- * this file minimal; route-level components implement their own behavior
- * and data fetching.
+ * @fileoverview Main application shell component with routing and navigation
+ * @description Root application component providing layout structure, routing
+ * configuration, and persistent navigation. Serves as the foundation for all
+ * authenticated user interactions with optimized layout and accessibility.
+ * 
+ * @author Felony Fitness Development Team
+ * @version 2.0.0
+ * @since 2025-11-02
+ * 
+ * @requires React
+ * @requires react-router-dom
+ * @requires lucide-react
+ * @requires useResponsive
+ * @requires performance
+ * 
+ * Application Architecture:
+ * - **Layout Structure**: Main content area with persistent bottom navigation
+ * - **Route Management**: Protected route configuration for authenticated users
+ * - **Navigation**: Icon-based bottom navigation with active state indicators
+ * - **Performance**: Lazy loading and code splitting for optimal bundle size
+ * - **Accessibility**: Semantic navigation with ARIA labels and focus management
+ * 
+ * Layout Components:
+ * 1. **Main Content Area**: Dynamic route content via React Router Outlet
+ * 2. **Bottom Navigation**: Persistent navigation bar across all main pages
+ * 3. **Performance Optimization**: Automatic initialization of performance features
+ * 
+ * @example
+ * // App structure rendered by this component
+ * <div className="app">
+ *   <main className="main-content">
+ *     <Outlet /> // Route-specific content
+ *   </main>
+ *   <nav className="bottom-nav">
+ *     // Navigation links with active states
+ *   </nav>
+ * </div>
  */
 import React, { useEffect } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';

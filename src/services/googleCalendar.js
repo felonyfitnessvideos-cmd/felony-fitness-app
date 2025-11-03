@@ -174,7 +174,7 @@ class GoogleCalendarService {
         new Promise((resolve) => {
           this.gapi.load('client', resolve);
         }),
-        10000,
+        30000, // Increased from 10s to 30s
         'GAPI client load timeout'
       );
       console.log('✅ GAPI client loaded');
@@ -185,7 +185,7 @@ class GoogleCalendarService {
           discoveryDocs: [DISCOVERY_DOC]
           // Note: No API key here - we'll rely on OAuth token for authenticated requests
         }),
-        15000,
+        30000, // Increased from 15s to 30s
         'GAPI client initialization timeout'
       );
       console.log('✅ GAPI client initialized');
@@ -212,7 +212,10 @@ class GoogleCalendarService {
       return true;
     } catch (error) {
       console.error('❌ Failed to initialize Google Calendar API:', error);
+      console.log('🔄 This may be due to network issues or slow Google API loading. The calendar will work once the connection improves.');
       this.isInitialized = false;
+      
+      // Don't throw error, allow graceful degradation
       return false;
     }
   }

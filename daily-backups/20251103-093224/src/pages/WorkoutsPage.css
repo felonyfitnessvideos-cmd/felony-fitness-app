@@ -1,0 +1,51 @@
+/**
+ * @file WorkoutsPage.css
+ * @description Styles for the main "Workouts" landing page, which acts as a navigation hub.
+ * @project Felony Fitness
+ *
+ * @layout_pattern Vertical Card Menu
+ * This stylesheet defines a simple single-column layout for a list of navigation
+ * links that are styled to look like large, tappable cards.
+ */
+
+/**
+ * Main container for the Workouts Page.
+ * Provides basic padding and reserves space at the bottom for the main app navigation.
+ */
+.workouts-container {
+  padding: 1rem;
+  padding-bottom: 80px;
+}
+
+/**
+ * The container for the menu of navigation cards.
+ * Uses a flexbox column to stack the cards vertically with consistent spacing.
+ */
+.card-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/**
+ * Styling for the individual navigation links, making them appear as cards.
+ * These are links (`<a>` tags) styled to look like buttons.
+ */
+.menu-card {
+  background-color: #2d3748;
+  color: white;
+  text-decoration: none;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #4a5568;
+  transition: background-color 0.2s, transform 0.2s; /* Smooth visual feedback on hover */
+}
+
+.menu-card:hover {
+  background-color: #4a5568;
+  transform: translateY(-2px); /* Slight lift effect on hover */
+}

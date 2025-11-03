@@ -1,10 +1,36 @@
 /**
- * @file useResponsive.js
- * @description Custom hook for responsive design and screen size detection
- * @project Felony Fitness
+ * @fileoverview Advanced responsive design hook for real-time screen size detection
+ * @description Comprehensive React hook providing responsive breakpoints, device type
+ * detection, and screen dimension tracking with performance-optimized debouncing.
+ * Handles Android Chrome viewport quirks and provides extensive utility functions.
  * 
- * This hook provides real-time screen size detection and responsive breakpoints
- * to help components adapt their layout and functionality based on device type.
+ * @author Felony Fitness Development Team
+ * @version 2.0.0
+ * @since 2025-11-02
+ * 
+ * @requires React
+ * 
+ * Core Features:
+ * - Real-time screen dimension tracking with automatic updates
+ * - Device type categorization (mobile/tablet/desktop/wide)
+ * - Performance-optimized resize handling with 150ms debouncing
+ * - Android Chrome viewport compensation (89px UI element adjustment)
+ * - Orientation detection (portrait/landscape)
+ * - Custom breakpoint checking utilities
+ * - Higher-order component wrapper for automatic responsive props
+ * 
+ * @example
+ * // Basic responsive layout switching
+ * function MyComponent() {
+ *   const { deviceType, isTabletOrLarger } = useResponsive();
+ *   
+ *   return (
+ *     <div>
+ *       {deviceType === 'mobile' ? <MobileNav /> : <DesktopNav />}
+ *       {isTabletOrLarger && <SidebarFeatures />}
+ *     </div>
+ *   );
+ * }
  */
 
 import React, { useState, useEffect } from 'react';

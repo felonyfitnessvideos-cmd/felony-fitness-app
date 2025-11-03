@@ -1,0 +1,290 @@
+/**
+ * @file AuthPage.css
+ * @description Styles for the main user authentication (Sign In / Sign Up) page.
+ * @project Felony Fitness
+ *
+ * @layout_pattern Centered Flexbox Layout
+ * This stylesheet uses a flexbox container (`.auth-page-wrapper`) to center the
+ * main authentication form (`.auth-container`) both vertically and horizontally
+ * in the middle of the viewport. This is a common pattern for login screens.
+ */
+
+/**
+ * The main wrapper that covers the entire screen.
+ * It's a flex container used to center the auth form.
+ */
+.auth-page-wrapper {
+  min-height: 100vh; /* Ensures the wrapper is at least as tall as the screen */
+  overflow-y: hidden; /* Prevents scrolling on the page itself */
+  display: flex;
+  justify-content: center; /* Horizontally centers the content */
+  align-items: center; /* Vertically centers the content */
+  padding: 8px 0; 
+}
+
+/**
+ * The main container for all authentication content (logo, forms, links).
+ */
+.auth-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 1rem 1.5rem 1rem; 
+  max-width: 400px;
+  margin: 0 auto;
+  color: white;
+  justify-content: center; 
+  box-sizing: border-box;
+}
+
+/**
+ * Header section containing the logo and titles.
+ */
+.auth-header {
+  text-align: center;
+  margin-bottom: 0.25rem; 
+}
+
+.auth-logo {
+  width: 80px; 
+  height: 80px;
+  border-radius: 50%;
+  margin-bottom: 0.1rem; 
+}
+
+.auth-header h1 {
+  font-size: 1.3rem; 
+  margin: 0.1rem 0;
+  font-weight: 800;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: #a0aec0;
+  margin-top: 0;
+}
+
+/**
+ * Container for the social login buttons (Google, Microsoft, etc.).
+ */
+.social-auth-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem; 
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.social-auth-options button {
+  background-color: #2d3748;
+  border: 1px solid #4a5568;
+  color: white;
+  padding: 0.6rem 1rem; 
+  border-radius: 8px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.social-auth-options button:hover:not(:disabled) {
+  background-color: #3b475c;
+  border-color: #636b7b;
+}
+
+.social-auth-options button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/**
+ * The "OR" divider line.
+ * This is a classic CSS trick where a line is created with a border, and the text
+ * is given a background color to "cut out" a section of the line.
+ */
+.divider {
+  width: 100%;
+  text-align: center;
+  border-bottom: 1px solid #4a5568;
+  line-height: 0.1em;
+  margin: .6rem 0; 
+  color: #a0aec0;
+}
+
+.divider span {
+  background: #1a202c; /* Must match the page's background color */
+  padding: 0 10px;
+}
+
+/**
+ * The main form for email and password authentication.
+ */
+.email-auth-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem; 
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.1rem; 
+  font-size: 0.9rem;
+  color: #a0aec0;
+}
+
+/**
+ * A container for an input field that has an icon inside it.
+ * `position: relative` is crucial for positioning the icon.
+ */
+.input-with-icon {
+  position: relative; 
+  display: flex;
+  align-items: center;
+}
+
+.input-with-icon input {
+  width: 100%;
+  background-color: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 8px;
+  padding: 0.6rem 1rem; 
+  color: white;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.input-with-icon svg {
+  position: absolute;
+  left: 1rem;
+  color: #a0aec0;
+}
+
+.password-input-wrapper input {
+  padding-right: 2.8rem; /* Make space for the show/hide password button */
+}
+
+.toggle-password-visibility {
+  position: absolute;
+  right: 0.5rem; 
+  background: none;
+  border: none;
+  color: #a0aec0;
+  cursor: pointer;
+  width: 1.8rem;
+  height: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10; 
+}
+
+/**
+ * The primary submit button for the email form.
+ */
+.sign-in-button {
+  width: 100%;
+  background-color: #f97316;
+  color: white;
+  padding: 0.75rem; 
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.sign-in-button:hover:not(:disabled) {
+  background-color: #ea580c;
+}
+
+.sign-in-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/**
+ * A message area for displaying success or error feedback to the user.
+ */
+.auth-message {
+  color: #a0aec0;
+  text-align: center;
+  margin-top: -0.5rem; 
+  font-size: 0.9rem;
+}
+
+/**
+ * The footer section for secondary links like "Forgot password?".
+ */
+.auth-footer-links {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 0.4rem; 
+  font-size: 0.9rem;
+}
+
+.auth-footer-links button {
+  background: none;
+  border: none;
+  color: #a0aec0;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: color 0.2s;
+}
+
+.auth-footer-links button:hover:not(:disabled) {
+  color: white;
+}
+
+/**
+ * Media query for smaller screen heights.
+ * This adjusts padding, margins, and font sizes to prevent the form
+ * from overflowing on shorter devices.
+ */
+@media (max-height: 650px) {
+    .auth-container {
+        padding: 0.8rem 1rem 1.2rem 1rem;
+    }
+    
+    .auth-logo {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 0;
+    }
+
+    .auth-header h1 {
+        font-size: 1.4rem;
+        margin: 0.05rem 0;
+    }
+    
+    .subtitle {
+        margin-bottom: 0.5rem;
+    }
+
+    .social-auth-options button {
+        padding: 0.6rem 1rem;
+    }
+
+    .input-with-icon input {
+        padding: 0.4rem 1rem; 
+    }
+    
+    .form-group label {
+        margin-bottom: 0.1rem;
+    }
+    
+    .email-auth-form {
+        gap: 0.3rem; 
+    }
+    
+    .auth-footer-links {
+        margin-top: 0.3rem;
+    }
+}

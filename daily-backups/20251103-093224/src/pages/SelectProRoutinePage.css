@@ -1,0 +1,103 @@
+/**
+ * @file SelectProRoutinePage.css
+ * @description Styles for the Pro Routine category selection page.
+ * @project Felony Fitness
+ */
+
+/**
+ * Main container for the entire page.
+ * Provides basic padding and ensures there is space at the bottom
+ * so content isn't hidden by the main navigation bar.
+ */
+.select-pro-container {
+  padding: 1rem;
+  padding-bottom: 80px; /* Space for the bottom nav bar */
+}
+
+/**
+ * The introductory paragraph that explains the purpose of the page.
+ * It is centered and has a max-width for readability on wider screens.
+ */
+.page-intro {
+  text-align: center;
+  color: var(--text-secondary);
+  margin: 1.5rem auto 2.5rem;
+  max-width: 350px;
+  line-height: 1.6;
+}
+
+/**
+ * Defines the layout for the category cards using Flexbox.
+ * `flex-wrap: wrap` allows items to wrap onto the next line.
+ * `justify-content: center` ensures that all items, including those
+ * on the last row, are centered horizontally.
+ */
+.category-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/**
+ * Base styling for each category card (e.g., "Strength", "Endurance").
+ * `flex-basis` calculates the width for a two-column layout, accounting for the gap.
+ * `box-sizing: border-box` is the fix: it includes padding and border in the width calculation.
+ * `aspect-ratio: 1 / 1` creates a perfect square.
+ * `transition` provides a smooth animation for the hover effect.
+ */
+.category-card {
+  flex-basis: calc(50% - 0.5rem); /* 50% width minus half the gap */
+  max-width: calc(50% - 0.5rem); /* Prevents flex items from growing */
+  box-sizing: border-box; /* Ensures padding and border are included in the width */
+  background-color: var(--card-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  aspect-ratio: 1 / 1; /* Makes the cards square */
+}
+
+/* Provides visual feedback when the user hovers over a card. */
+.category-card:hover {
+  transform: translateY(-5px); /* Lifts the card slightly */
+  border-color: var(--accent-color);
+}
+
+/* Keyboard focus visible ring for accessibility */
+.category-card:focus-visible {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 3px;
+}
+
+/* Respect users who prefer reduced motion: disable transform/transition */
+@media (prefers-reduced-motion: reduce) {
+  .category-card,
+  .category-card:hover {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/**
+ * Styles the icon inside each category card.
+ */
+.card-icon {
+  margin-bottom: 1rem;
+  color: var(--accent-color);
+}
+
+/**
+ * Styles the name text inside each category card.
+ */
+.card-name {
+  font-weight: 600;
+  text-align: center;
+}
+

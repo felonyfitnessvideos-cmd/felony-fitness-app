@@ -1,0 +1,75 @@
+/*
+ * @file NutritionPage.css
+ * @description This file contains the styles for the NutritionPage.jsx component.
+ * It styles the main container, navigation cards, and the daily tip card.
+ * @author [Your Name/Team Name]
+ * @date 10/17/2025
+ */
+
+/* Main container for the nutrition page. */
+.nutrition-container {
+  padding: 1rem;
+  /* Adds extra padding at the bottom to prevent content from being hidden by a fixed navigation bar. */
+  padding-bottom: 80px;
+}
+
+/* Container for the menu cards and tip card. */
+.card-menu {
+  display: flex;
+  flex-direction: column; /* Stacks the cards vertically. */
+  gap: 1rem; /* Adds space between the cards. */
+  margin-top: 1rem;
+}
+
+/* Styles for the individual navigation links (Goals, Log, etc.). */
+.menu-card {
+  background-color: #2d3748; /* Dark gray background. */
+  color: white;
+  text-decoration: none; /* Removes underline from links. */
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #4a5568; /* Slightly lighter border for definition. */
+  /* Smooth transition for hover effects. */
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+/* Hover effect for the navigation cards. */
+.menu-card:hover {
+  background-color: #4a5568; /* Lightens the background on hover. */
+  transform: translateY(-2px); /* Lifts the card slightly for a 3D effect. */
+}
+
+/* Styles for the daily tip card container. */
+.tip-card {
+  background-color: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1rem; /* Adds some space above the tip card if it's the first element. */
+}
+
+/* Header section of the tip card, containing the icon and title. */
+.tip-card-header {
+  display: flex;
+  align-items: center; /* Vertically aligns the icon and text. */
+  gap: 0.75rem; /* Space between the icon and title. */
+  margin-bottom: 1rem;
+}
+
+/* Styles for the 'Daily Tip' title. */
+.tip-card-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #a0aec0; /* Lighter gray color for the title. */
+}
+
+/* Styles for the paragraph text of the daily tip. */
+.tip-card p {
+  margin: 0;
+  color: white;
+  line-height: 1.6; /* Improves readability of the tip text. */
+}
