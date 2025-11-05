@@ -1,54 +1,181 @@
 /**
  * @file TrainerClients.css
- * @description Styles for comprehensive trainer client management
+ * @description Simplified styles for trainer client management
  * @project Felony Fitness
  */
 
-.trainer-clients-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px;
-  background: #f8fafc;
-  min-height: 100vh;
+.trainer-clients {
+  padding: 1rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--background-color);
+  color: var(--text-color);
 }
 
 /* Search Section */
-.clients-search-section {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 25px;
-  padding: 20px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+.search-section {
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
 }
 
-.search-box {
+.search-container {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: #f7fafc;
-  padding: 12px 18px;
+  background: var(--card-background, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   border-radius: 12px;
-  border: 2px solid #e2e8f0;
-  transition: all 0.3s ease;
-  width: 100%;
-  max-width: 500px;
+  padding: 0.75rem 1rem;
+  transition: all 0.2s ease;
 }
 
-.search-box:focus-within {
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+.search-container:focus-within {
+  border-color: var(--accent-color, #f97316);
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
 }
 
-.search-box input {
-  border: none;
+.search-icon {
+  color: var(--text-secondary);
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.search-input {
   background: transparent;
+  border: none;
   outline: none;
   flex: 1;
-  font-size: 16px;
-  color: #2d3748;
+  color: var(--text-color);
+  font-size: 1rem;
+}
+
+.search-input::placeholder {
+  color: var(--text-secondary);
+}
+
+/* Clients Grid */
+.clients-grid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+/* Client Cards */
+.client-card {
+  background: var(--card-background, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.client-card:hover {
+  border-color: var(--accent-color, #f97316);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.1);
+  transform: translateY(-2px);
+}
+
+.client-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.client-header h3 {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.message-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--accent-color, #f97316);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.message-btn:hover {
+  background: var(--accent-color-hover, #ea580c);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(249, 115, 22, 0.3);
+}
+
+.client-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.info-row svg {
+  color: var(--accent-color, #f97316);
+  flex-shrink: 0;
+}
+
+/* No clients state */
+.no-clients {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.no-clients p {
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+/* Loading and error states */
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.error-container button {
+  background: var(--accent-color, #f97316);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  margin-top: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.error-container button:hover {
+  background: var(--accent-color-hover, #ea580c);
+}
 }
 
 .search-box input::placeholder {

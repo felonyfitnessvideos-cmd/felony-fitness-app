@@ -326,3 +326,29 @@ body.ReactModal__Body--open { overflow: hidden; }
   cursor: pointer;
   margin-top: 1rem;
 }
+
+/* Height input container for feet and inches */
+.height-inputs {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.height-inputs .input-with-icon {
+  flex: 1;
+  position: relative;
+}
+
+.height-inputs .input-with-icon input {
+  padding-right: 2rem; /* Make room for unit label */
+}
+
+.unit-label {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a0aec0;
+  font-size: 0.875rem;
+  pointer-events: none;
+}

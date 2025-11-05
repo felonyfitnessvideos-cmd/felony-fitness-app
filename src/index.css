@@ -32,9 +32,17 @@
 [data-theme="light"] {
   --background-color: #f7fafc;
   --card-color: #ffffff;
+  --card-background: #ffffff;
   --border-color: #e2e8f0;
   --text-primary: #1a202c;
   --text-secondary: #4a5568;
+  --text-color: #1a202c;
+  --accent-color: #f97316;
+  --accent-color-hover: #ea580c;
+  --color-success: #10b981;
+  --color-accent-dark: #8d5a21;
+  --color-white: #ffffff;
+  --error-color: #e53e3e;
   
   /* Additional variables for meal planner components */
   --primary-color: #f97316; /* Keep accent color consistent */

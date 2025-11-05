@@ -18,12 +18,12 @@
  * local data or a cached endpoint.
  */
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../supabaseClient.js';
-import SubPageHeader from '../components/SubPageHeader.jsx';
-import Modal from 'react-modal';
 import { Dumbbell, Info, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import Modal from 'react-modal';
+import { useNavigate, useParams } from 'react-router-dom';
+import SubPageHeader from '../components/SubPageHeader.jsx';
+import { supabase } from '../supabaseClient.js';
 import './ProRoutineCategoryPage.css';
 
 // Modal styling is handled in CSS to respect theme variables and prefers-reduced-motion
@@ -120,11 +120,31 @@ function ProRoutineCategoryPage() {
     if (!selectedRoutine) return;
     setIsAdding(true);
     try {
-      const { error } = await supabase.rpc('copy_pro_routine_to_user', {
-        p_pro_routine_id: selectedRoutine.id,
-      });
-      if (error) throw error;
-      navigate('/workouts/routines');
+      // Use Supabase client to get session and access token
+      const session = supabase.auth.session ? supabase.auth.session() : (await supabase.auth.getSession()).data.session;
+      const userId = session?.user?.id || 'YOUR_USER_ID';
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        alert('You must be logged in to copy a routine.');
+        return;
+      }
+      const response = await fetch(
+        'https://ytpblkbwgdbiserhrlqm.supabase.co/functions/v1/copy_pro_routine_to_user',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ pro_routine_id: selectedRoutine.id, user_id: userId }),
+        }
+      );
+      const result = await response.json();
+      if (response.ok) {
+        navigate('/workouts/routines');
+      } else {
+        alert('Error adding routine: ' + (result.error || 'Unknown error'));
+      }
     } catch (error) {
       alert(`Error adding routine: ${error.message}`);
     } finally {

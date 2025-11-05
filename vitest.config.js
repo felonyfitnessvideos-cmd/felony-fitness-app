@@ -1,26 +1,91 @@
-/// <reference types="vitest" />
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+/**
+ * @fileoverview Vitest configuration for MyPlanPage and other component tests
+ * @description Configuration file for running tests with proper environment setup,
+ * mocks, and coverage reporting for the Felony Fitness application.
+ * 
+ * @author Felony Fitness Development Team
+ * @version 1.0.0
+ * @since 2025-11-04
+ */
+
+import react from '@vitejs/plugin-react';
+import path from 'path';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
   test: {
-    globals: true,
+    // Test environment configuration
     environment: 'jsdom',
-    setupFiles: './src/test/setup.js',
-    css: true,
+    
+    // Global test setup files
+    setupFiles: ['./tests/setup.js'],
+    
+    // File patterns for test discovery
+    include: [
+      'tests/**/*.{test,spec}.{js,jsx,ts,tsx}'
+    ],
+    
+    // File patterns to exclude from testing
+    exclude: [
+      'node_modules',
+      'dist',
+      'build',
+      'OldFiles'
+    ],
+    
+    // Global variables available in tests
+    globals: true,
+    
+    // Coverage configuration
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html', 'lcov'],
+      reporter: ['text', 'json', 'html'],
+      reportsDirectory: './tests/coverage',
+      include: [
+        'src/**/*.{js,jsx,ts,tsx}'
+      ],
       exclude: [
-        'node_modules/',
-        'src/test/',
-        '**/*.d.ts',
-        'dist/',
-        'coverage/',
-        '**/*.config.js',
-        '**/*.config.ts'
-      ]
+        'src/main.jsx',
+        'src/**/*.test.{js,jsx,ts,tsx}',
+        'src/**/*.spec.{js,jsx,ts,tsx}',
+        'src/supabaseClient.js',
+        'src/**/*.d.ts'
+      ],
+      thresholds: {
+        global: {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80
+        }
+      }
+    },
+    
+    // Test timeout configuration
+    testTimeout: 10000,
+    hookTimeout: 10000,
+    
+    // Reporters for test output
+    reporter: ['verbose', 'json', 'html'],
+    
+    // Output directory for test reports
+    outputFile: {
+      json: './tests/reports/test-results.json',
+      html: './tests/reports/test-results.html'
     }
+  },
+  
+  // Resolve configuration for imports
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@tests': path.resolve(__dirname, './tests')
+    }
+  },
+  
+  // Define configuration for different environments
+  define: {
+    'process.env.NODE_ENV': '"test"'
   }
-})
+});

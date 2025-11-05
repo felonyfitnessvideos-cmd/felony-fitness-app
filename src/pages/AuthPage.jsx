@@ -37,10 +37,10 @@
  * }
  */
 
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient.js';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { supabase } from '../supabaseClient.js';
 import './AuthPage.css';
 
 /**
@@ -111,6 +111,8 @@ function AuthPage() {
     });
   }, [navigate]);
 
+  // No manual user profile creation needed - database trigger handles this automatically
+
   /**
    * Handles user authentication via email and password.
    * It performs either a sign-up or sign-in based on the `isSignUp` state.
@@ -123,10 +125,13 @@ function AuthPage() {
     setMessage('');
     try {
       if (isSignUp) {
-        // Sign up a new user.
+        // Sign up a new user - database trigger will automatically create user_profiles entry
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        setMessage("Check your email for a confirmation link!");
+        
+        setMessage("Account created successfully! You can now sign in.");
+        // Switch to sign-in mode  
+        setIsSignUp(false);
       } else {
         // Sign in an existing user.
         const { error } = await supabase.auth.signInWithPassword({ email, password });

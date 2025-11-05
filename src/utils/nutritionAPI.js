@@ -148,23 +148,25 @@ export class NutritionAPI {
    */
   async logFood(foodData, userId) {
     try {
-      const { data, error } = await supabase.rpc('log_food_item', {
-        p_external_food: foodData.source === 'external' ? foodData : null,
-        p_food_serving_id: foodData.source === 'local' ? foodData.serving_id : null,
-        p_meal_type: foodData.meal_type || 'Snack',
-        p_quantity_consumed: foodData.quantity || 1.0,
-        p_user_id: userId,
-        p_log_date: foodData.log_date || new Date().toISOString().split('T')[0]
+      const { data, error } = await supabase.functions.invoke('log-food-item', {
+        body: {
+          p_external_food: foodData.source === 'external' ? foodData : null,
+          p_food_serving_id: foodData.source === 'local' ? foodData.serving_id : null,
+          p_meal_type: foodData.meal_type || 'Snack',
+          p_quantity_consumed: foodData.quantity || 1.0,
+          p_user_id: userId,
+          p_log_date: foodData.log_date || new Date().toISOString().split('T')[0]
+        }
       });
 
       if (error) throw error;
 
       // Handle response
-      if (data.error) {
+      if (data?.error) {
         throw new Error(data.error);
       }
 
-      if (data.warning) {
+      if (data?.warning) {
         return {
           ...data,
           needsReview: true,
@@ -175,7 +177,7 @@ export class NutritionAPI {
       return {
         ...data,
         message: '✅ Food logged successfully',
-        quality: data.quality_score
+        quality: data?.quality_score
       };
 
     } catch (error) {
@@ -245,14 +247,16 @@ export class NutritionAPI {
    */
   async checkDuplicates(foodName) {
     try {
-      const { data, error } = await supabase.rpc('find_duplicate_foods', {
-        search_name: foodName,
-        similarity_threshold: 0.7
+      const { data, error } = await supabase.functions.invoke('find-duplicate-foods', {
+        body: {
+          search_name: foodName,
+          similarity_threshold: 0.7
+        }
       });
 
       if (error) throw error;
 
-      return data.length > 0 ? {
+      return data && data.length > 0 ? {
         hasDuplicates: true,
         suggestions: data,
         message: `Found ${data.length} similar foods`

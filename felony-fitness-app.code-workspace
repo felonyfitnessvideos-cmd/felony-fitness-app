@@ -1,0 +1,112 @@
+{
+    "folders": [
+        {
+            "name": "🏋️ Felony Fitness App",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "workbench.colorTheme": "Default Dark Modern",
+        "workbench.iconTheme": "vs-seti",
+        "editor.minimap.enabled": true,
+        "editor.bracketPairColorization.enabled": true,
+        "editor.guides.bracketPairs": true,
+        "workbench.editor.enablePreview": false,
+        "explorer.confirmDelete": false,
+        "explorer.confirmDragAndDrop": false,
+        "files.autoSave": "afterDelay",
+        "files.autoSaveDelay": 1000,
+        "search.exclude": {
+            "**/node_modules": true,
+            "**/dist": true,
+            "**/build": true,
+            "**/.git": true,
+            "**/backups": true
+        },
+        "files.exclude": {
+            "**/node_modules": true,
+            "**/.git": true
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "supabase.supabase",
+            "mtxr.sqltools",
+            "GitHub.copilot",
+            "esbenp.prettier-vscode",
+            "bradlc.vscode-tailwindcss"
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "🚀 Start Development Environment",
+                "type": "shell",
+                "command": "powershell",
+                "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/start-dev.ps1"],
+                "group": {
+                    "kind": "build",
+                    "isDefault": true
+                },
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "new"
+                },
+                "problemMatcher": []
+            },
+            {
+                "label": "🔍 Check System Status",
+                "type": "shell",
+                "command": "powershell",
+                "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/check-status.ps1"],
+                "group": "test",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "new"
+                }
+            },
+            {
+                "label": "🛠️ Project Dashboard",
+                "type": "shell",
+                "command": "powershell",
+                "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/project-dashboard.ps1"],
+                "group": "build",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": true,
+                    "panel": "new"
+                }
+            },
+            {
+                "label": "⚡ Dev Server Only",
+                "type": "shell",
+                "command": "npm",
+                "args": ["run", "dev"],
+                "group": "build",
+                "isBackground": true,
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "focus": false,
+                    "panel": "new"
+                },
+                "problemMatcher": {
+                    "pattern": {
+                        "regexp": "."
+                    },
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".",
+                        "endsPattern": "Local:.*http://localhost:\\d+"
+                    }
+                }
+            }
+        ]
+    }
+}

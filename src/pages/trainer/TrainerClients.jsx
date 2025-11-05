@@ -21,7 +21,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Search, Phone, Mail, Calendar, DollarSign, Activity } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Phone, Mail, Calendar, Activity } from 'lucide-react';
 import { supabase } from '../../supabaseClient.js';
 import { useAuth } from '../../AuthContext.jsx';
 import { getTrainerClients } from '../../utils/userRoleUtils.js';
@@ -48,12 +49,11 @@ import './TrainerClients.css';
  */
 const TrainerClients = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   // State management for client data and UI
   const [clients, setClients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedClient, setSelectedClient] = useState(null);
-  const [showClientModal, setShowClientModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -76,28 +76,30 @@ const TrainerClients = () => {
         setError(null);
         
         const clientData = await getTrainerClients(user.id);
+        console.log('🔍 Raw client data from database:', clientData);
         
         // Transform database records into display format
-        const formattedClients = clientData.map(relationship => ({
-          id: relationship.client_id,
-          name: relationship.clients?.first_name && relationship.clients?.last_name 
-            ? `${relationship.clients.first_name} ${relationship.clients.last_name}`
-            : relationship.clients?.email || 'Unknown Client',
-          email: relationship.clients?.email || '',
-          phone: '(555) 000-0000', // Placeholder
-          joinDate: relationship.created_at.split('T')[0],
-          status: relationship.relationship_status,
-          nextAppointment: null,
-          monthlyRate: 0,
-          lastPayment: null,
-          paymentStatus: 'current',
-          totalSessions: 0,
-          completedSessions: 0,
-          currentProgram: null,
-          goals: [],
-          emergencyContact: '',
-          medicalNotes: ''
-        }));
+        const formattedClients = clientData.map(relationship => {
+          const profile = relationship.client?.user_profiles || relationship.client;
+          return {
+            id: relationship.client_id,
+            name: profile?.first_name && profile?.last_name 
+              ? `${profile.first_name} ${profile.last_name}`
+              : profile?.full_name || relationship.client?.email?.split('@')[0] || 'Unknown Client',
+            email: relationship.client?.email || profile?.email || '',
+            phone: profile?.phone || '(555) 000-0000',
+            joinDate: relationship.created_at ? relationship.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+            status: relationship.status || 'active',
+            dateOfBirth: profile?.date_of_birth || null,
+            fitnessGoals: profile?.fitness_goals || '',
+            medicalConditions: profile?.medical_conditions || '',
+            emergencyContact: profile?.emergency_contact_name || '',
+            emergencyPhone: profile?.emergency_contact_phone || '',
+            lastMessageAt: relationship.last_message_at
+          };
+        });
+        
+        console.log('✅ Formatted clients:', formattedClients);
         
         setClients(formattedClients);
       } catch (err) {
@@ -150,84 +152,12 @@ const TrainerClients = () => {
     return matchesSearch;
   });
 
-  /**
-   * Handle client selection for detailed view
-   * 
-   * Opens the client detail modal with complete client information including
-   * contact details, program status, payment history, and medical notes.
-   * 
-   * @param {Object} client - Client object containing all client information
-   * @returns {void}
-   */
-  const handleClientClick = (client) => {
-    setSelectedClient(client);
-    setShowClientModal(true);
-  };
 
-  /**
-   * Close client detail modal
-   * 
-   * Resets selected client state and hides the detailed view modal.
-   * 
-   * @returns {void}
-   */
-  const closeModal = () => {
-    setSelectedClient(null);
-    setShowClientModal(false);
-  };
-
-  /**
-   * Get status indicator color based on client status
-   * 
-   * Returns appropriate CSS class for client status visualization.
-   * 
-   * @param {string} status - Client status ('active', 'inactive', 'pending')
-   * @returns {string} CSS class name for status styling
-   * 
-   * @example
-   * getStatusColor('active') // returns 'status-active'
-   * getStatusColor('inactive') // returns 'status-inactive'
-   */
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return 'status-active';
-      case 'inactive': return 'status-inactive';
-      case 'pending': return 'status-pending';
-      default: return 'status-unknown';
-    }
-  };
-
-  /**
-   * Get payment status indicator color
-   * 
-   * Returns appropriate CSS class for payment status visualization.
-   * 
-   * @param {string} status - Payment status ('current', 'overdue', 'suspended')
-   * @returns {string} CSS class name for payment status styling
-   * 
-   * @example
-   * getPaymentStatusColor('current') // returns 'payment-current'
-   * getPaymentStatusColor('overdue') // returns 'payment-overdue'
-   */
-  const getPaymentStatusColor = (status) => {
-    switch (status) {
-      case 'current': return 'payment-current';
-      case 'overdue': return 'payment-overdue';
-      case 'suspended': return 'payment-suspended';
-      default: return 'payment-unknown';
-    }
-  };
 
   // Main component render
   return (
     <div className="trainer-clients">
-      {/* Header Section */}
-      <div className="clients-header">
-        <h1>My Clients</h1>
-        <p>Manage your client relationships, track progress, and schedule sessions</p>
-      </div>
-
-      {/* Search Bar */}
+      {/* Search Bar Only */}
       <div className="search-section">
         <div className="search-container">
           <Search className="search-icon" size={20} />
@@ -238,22 +168,6 @@ const TrainerClients = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
           />
-        </div>
-      </div>
-
-      {/* Client Statistics */}
-      <div className="client-stats">
-        <div className="stat-card">
-          <h3>{clients.filter(c => c.status === 'active').length}</h3>
-          <p>Active Clients</p>
-        </div>
-        <div className="stat-card">
-          <h3>{clients.length}</h3>
-          <p>Total Clients</p>
-        </div>
-        <div className="stat-card">
-          <h3>{clients.filter(c => c.status === 'pending').length}</h3>
-          <p>Pending</p>
         </div>
       </div>
 
@@ -271,13 +185,20 @@ const TrainerClients = () => {
             <div 
               key={client.id} 
               className="client-card"
-              onClick={() => handleClientClick(client)}
             >
               <div className="client-header">
                 <h3>{client.name}</h3>
-                <span className={`status-badge ${getStatusColor(client.status)}`}>
-                  {client.status}
-                </span>
+                <button 
+                  className="message-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Navigate to messages with this client
+                    navigate(`/trainer-dashboard/messages?client=${client.id}`);
+                  }}
+                >
+                  <Mail size={16} />
+                  Message
+                </button>
               </div>
               
               <div className="client-info">
@@ -293,26 +214,15 @@ const TrainerClients = () => {
                   <Calendar size={16} />
                   <span>Joined: {client.joinDate}</span>
                 </div>
-              </div>
-
-              {client.currentProgram && (
-                <div className="current-program">
-                  <Activity size={16} />
-                  <span>{client.currentProgram}</span>
-                </div>
-              )}
-
-              <div className="client-footer">
-                <div className="payment-status">
-                  <DollarSign size={16} />
-                  <span className={getPaymentStatusColor(client.paymentStatus)}>
-                    {client.paymentStatus}
-                  </span>
-                </div>
-                {client.nextAppointment && (
-                  <div className="next-appointment">
-                    <Calendar size={16} />
-                    <span>{client.nextAppointment}</span>
+                {client.fitnessGoals && (
+                  <div className="info-row">
+                    <Activity size={16} />
+                    <span>Goals: {client.fitnessGoals}</span>
+                  </div>
+                )}
+                {client.emergencyContact && (
+                  <div className="info-row">
+                    <span>Emergency: {client.emergencyContact} ({client.emergencyPhone})</span>
                   </div>
                 )}
               </div>
@@ -321,55 +231,7 @@ const TrainerClients = () => {
         )}
       </div>
 
-      {/* Client Detail Modal */}
-      {showClientModal && selectedClient && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="client-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{selectedClient.name}</h2>
-              <button className="close-btn" onClick={closeModal}>×</button>
-            </div>
-            
-            <div className="modal-content">
-              <div className="modal-section">
-                <h3>Contact Information</h3>
-                <p><strong>Email:</strong> {selectedClient.email}</p>
-                <p><strong>Phone:</strong> {selectedClient.phone}</p>
-                <p><strong>Emergency Contact:</strong> {selectedClient.emergencyContact || 'Not provided'}</p>
-              </div>
 
-              <div className="modal-section">
-                <h3>Membership Details</h3>
-                <p><strong>Status:</strong> <span className={getStatusColor(selectedClient.status)}>{selectedClient.status}</span></p>
-                <p><strong>Join Date:</strong> {selectedClient.joinDate}</p>
-                <p><strong>Monthly Rate:</strong> ${selectedClient.monthlyRate}</p>
-                <p><strong>Payment Status:</strong> <span className={getPaymentStatusColor(selectedClient.paymentStatus)}>{selectedClient.paymentStatus}</span></p>
-              </div>
-
-              <div className="modal-section">
-                <h3>Training Progress</h3>
-                <p><strong>Current Program:</strong> {selectedClient.currentProgram || 'No program assigned'}</p>
-                <p><strong>Total Sessions:</strong> {selectedClient.totalSessions}</p>
-                <p><strong>Completed Sessions:</strong> {selectedClient.completedSessions}</p>
-                <p><strong>Goals:</strong> {selectedClient.goals.join(', ') || 'No goals set'}</p>
-              </div>
-
-              {selectedClient.medicalNotes && (
-                <div className="modal-section">
-                  <h3>Medical Notes</h3>
-                  <p>{selectedClient.medicalNotes}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="modal-actions">
-              <button className="modal-btn">Send Message</button>
-              <button className="modal-btn">Schedule Session</button>
-              <button className="modal-btn">View History</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,0 +1,206 @@
+name,brand,category,data_sources,quality_score
+"Milk, Whole","Generic","Dairy","USDA",5
+"Cheddar Cheese, Sharp","Generic","Dairy","USDA",5
+"Greek Yogurt, Plain","Generic","Dairy","USDA",5
+"Mozzarella Cheese","Generic","Dairy","USDA",5
+"Cottage Cheese, Low Fat","Generic","Dairy","USDA",5
+"Cream Cheese","Generic","Dairy","USDA",5
+"Butter, Unsalted","Generic","Dairy","USDA",5
+"Swiss Cheese","Generic","Dairy","USDA",5
+"Parmesan Cheese, Grated","Generic","Dairy","USDA",5
+"Ricotta Cheese, Part Skim","Generic","Dairy","USDA",5
+"Goat Cheese, Soft","Generic","Dairy","USDA",5
+"Feta Cheese","Generic","Dairy","USDA",5
+"Blue Cheese","Generic","Dairy","USDA",5
+"Brie Cheese","Generic","Dairy","USDA",5
+"Provolone Cheese","Generic","Dairy","USDA",5
+"Monterey Jack Cheese","Generic","Dairy","USDA",5
+"American Cheese, Processed","Generic","Dairy","USDA",4
+"Yogurt, Vanilla","Generic","Dairy","USDA",4
+"Sour Cream","Generic","Dairy","USDA",5
+"Heavy Cream","Generic","Dairy","USDA",5
+"Half and Half","Generic","Dairy","USDA",5
+"Buttermilk","Generic","Dairy","USDA",5
+"Cream Cheese, Low Fat","Generic","Dairy","USDA",4
+"String Cheese, Mozzarella","Generic","Dairy","USDA",4
+"Yogurt, Greek Strawberry","Generic","Dairy","USDA",4
+"Kefir, Plain","Generic","Dairy","USDA",5
+"Mascarpone Cheese","Generic","Dairy","USDA",5
+"Gouda Cheese","Generic","Dairy","USDA",5
+"Colby Jack Cheese","Generic","Dairy","USDA",5
+"Camembert Cheese","Generic","Dairy","USDA",5
+"Romano Cheese, Grated","Generic","Dairy","USDA",5
+"Pepper Jack Cheese","Generic","Dairy","USDA",5
+"Asiago Cheese","Generic","Dairy","USDA",5
+"Havarti Cheese","Generic","Dairy","USDA",5
+"Muenster Cheese","Generic","Dairy","USDA",5
+"Neufchatel Cheese","Generic","Dairy","USDA",5
+"Cottage Cheese, Full Fat","Generic","Dairy","USDA",5
+"Yogurt, Greek Honey","Generic","Dairy","USDA",4
+"Whipped Cream","Generic","Dairy","USDA",4
+"Ice Cream, Vanilla","Generic","Dairy","USDA",3
+"Frozen Yogurt, Vanilla","Generic","Dairy","USDA",3
+"Milk, Chocolate","Generic","Dairy","USDA",3
+"Pudding, Chocolate","Generic","Dairy","USDA",3
+"Custard, Vanilla","Generic","Dairy","USDA",3
+"Cheese Sauce","Generic","Dairy","USDA",3
+"Queso Fresco","Generic","Dairy","USDA",5
+"Paneer Cheese","Generic","Dairy","USDA",5
+"Labneh","Greek Gods","Dairy","USDA",5
+"Burrata Cheese","Generic","Dairy","USDA",5
+"Limburger Cheese","Generic","Dairy","USDA",5
+"Salmon, Atlantic","Generic","Seafood","USDA",5
+"Tuna, Yellowfin","Generic","Seafood","USDA",5
+"Shrimp, Large","Generic","Seafood","USDA",5
+"Cod, Atlantic","Generic","Seafood","USDA",5
+"Tilapia, Fillet","Generic","Seafood","USDA",5
+"Halibut, Pacific","Generic","Seafood","USDA",5
+"Mahi Mahi","Generic","Seafood","USDA",5
+"Crab, Dungeness","Generic","Seafood","USDA",5
+"Lobster, American","Generic","Seafood","USDA",5
+"Scallops, Sea","Generic","Seafood","USDA",5
+"Mussels, Blue","Generic","Seafood","USDA",5
+"Oysters, Eastern","Generic","Seafood","USDA",5
+"Sardines, Canned in Oil","Generic","Seafood","USDA",5
+"Mackerel, Atlantic","Generic","Seafood","USDA",5
+"Trout, Rainbow","Generic","Seafood","USDA",5
+"Bass, Striped","Generic","Seafood","USDA",5
+"Flounder, Atlantic","Generic","Seafood","USDA",5
+"Sole, Dover","Generic","Seafood","USDA",5
+"Snapper, Red","Generic","Seafood","USDA",5
+"Grouper, Black","Generic","Seafood","USDA",5
+"Tuna, Canned in Water","Generic","Seafood","USDA",5
+"Salmon, Canned","Generic","Seafood","USDA",5
+"Anchovies, Canned","Generic","Seafood","USDA",5
+"Clams, Littleneck","Generic","Seafood","USDA",5
+"Squid, Fresh","Generic","Seafood","USDA",5
+"Octopus, Fresh","Generic","Seafood","USDA",5
+"Swordfish, Steak","Generic","Seafood","USDA",5
+"Monkfish, Tail","Generic","Seafood","USDA",5
+"Sea Bass, Chilean","Generic","Seafood","USDA",5
+"Pollock, Alaska","Generic","Seafood","USDA",5
+"Haddock, Atlantic","Generic","Seafood","USDA",5
+"Catfish, Channel","Generic","Seafood","USDA",5
+"Perch, Yellow","Generic","Seafood","USDA",5
+"Pike, Northern","Generic","Seafood","USDA",5
+"Whiting, Silver","Generic","Seafood","USDA",5
+"Rockfish, Pacific","Generic","Seafood","USDA",5
+"Pompano, Florida","Generic","Seafood","USDA",5
+"Bluefish, Atlantic","Generic","Seafood","USDA",5
+"Wahoo, Pacific","Generic","Seafood","USDA",5
+"Barramundi, Asian","Generic","Seafood","USDA",5
+"Eel, American","Generic","Seafood","USDA",5
+"Herring, Atlantic","Generic","Seafood","USDA",5
+"Smelt, Rainbow","Generic","Seafood","USDA",5
+"Crayfish, Freshwater","Generic","Seafood","USDA",5
+"Abalone, Red","Generic","Seafood","USDA",5
+"Conch, Queen","Generic","Seafood","USDA",5
+"Sea Urchin","Generic","Seafood","USDA",5
+"Caviar, Black","Generic","Seafood","USDA",5
+"Salmon Roe","Generic","Seafood","USDA",5
+"Crab Cakes, Frozen","Generic","Seafood","USDA",4
+"Fish Sticks, Frozen","Generic","Seafood","USDA",3
+"Shrimp, Breaded","Generic","Seafood","USDA",3
+"Bread, White Sliced","Generic","Grains","USDA",4
+"Bread, Whole Wheat","Generic","Grains","USDA",5
+"Rice, Brown Long Grain","Generic","Grains","USDA",5
+"Rice, White Long Grain","Generic","Grains","USDA",4
+"Oats, Rolled","Generic","Grains","USDA",5
+"Quinoa, Cooked","Generic","Grains","USDA",5
+"Pasta, Whole Wheat","Generic","Grains","USDA",5
+"Pasta, Regular","Generic","Grains","USDA",4
+"Barley, Pearl","Generic","Grains","USDA",5
+"Bulgur Wheat","Generic","Grains","USDA",5
+"Millet, Cooked","Generic","Grains","USDA",5
+"Buckwheat, Cooked","Generic","Grains","USDA",5
+"Amaranth, Cooked","Generic","Grains","USDA",5
+"Teff, Cooked","Generic","Grains","USDA",5
+"Farro, Cooked","Generic","Grains","USDA",5
+"Spelt, Cooked","Generic","Grains","USDA",5
+"Wild Rice, Cooked","Generic","Grains","USDA",5
+"Jasmine Rice, Cooked","Generic","Grains","USDA",4
+"Basmati Rice, Cooked","Generic","Grains","USDA",4
+"Arborio Rice, Cooked","Generic","Grains","USDA",4
+"Black Rice, Cooked","Generic","Grains","USDA",5
+"Red Rice, Cooked","Generic","Grains","USDA",5
+"Wheat Berries, Cooked","Generic","Grains","USDA",5
+"Rye Berries, Cooked","Generic","Grains","USDA",5
+"Kamut, Cooked","Generic","Grains","USDA",5
+"Freekeh, Cooked","Generic","Grains","USDA",5
+"Sorghum, Cooked","Generic","Grains","USDA",5
+"Cornmeal, Yellow","Generic","Grains","USDA",5
+"Polenta, Cooked","Generic","Grains","USDA",4
+"Grits, Cooked","Generic","Grains","USDA",4
+"Couscous, Cooked","Generic","Grains","USDA",4
+"Orzo, Cooked","Generic","Grains","USDA",4
+"Bread, Sourdough","Generic","Grains","USDA",4
+"Bread, Rye","Generic","Grains","USDA",5
+"Bread, Pumpernickel","Generic","Grains","USDA",5
+"Bagel, Plain","Generic","Grains","USDA",4
+"English Muffin, Whole Wheat","Generic","Grains","USDA",4
+"Pita Bread, Whole Wheat","Generic","Grains","USDA",4
+"Tortilla, Corn","Generic","Grains","USDA",4
+"Tortilla, Flour","Generic","Grains","USDA",4
+"Crackers, Whole Wheat","Generic","Grains","USDA",4
+"Rice Cakes, Brown Rice","Generic","Grains","USDA",4
+"Cereal, Oatmeal","Generic","Grains","USDA",5
+"Cereal, Bran Flakes","Generic","Grains","USDA",4
+"Cereal, Granola","Generic","Grains","USDA",3
+"Muesli, Natural","Generic","Grains","USDA",4
+"Pancake Mix, Whole Grain","Generic","Grains","USDA",3
+"Waffle Mix, Whole Grain","Generic","Grains","USDA",3
+"Flour, All Purpose","Generic","Grains","USDA",4
+"Flour, Whole Wheat","Generic","Grains","USDA",5
+"Flour, Almond","Generic","Grains","USDA",5
+"Flour, Coconut","Generic","Grains","USDA",5
+"Protein Powder, Whey","Generic","Supplements","Clinical",5
+"Protein Powder, Casein","Generic","Supplements","Clinical",5
+"Protein Powder, Plant","Generic","Supplements","Clinical",5
+"Creatine Monohydrate","Generic","Supplements","Clinical",5
+"BCAA Powder","Generic","Supplements","Clinical",5
+"Glutamine Powder","Generic","Supplements","Clinical",5
+"Fish Oil Capsules","Generic","Supplements","Clinical",5
+"Vitamin D3","Generic","Supplements","Clinical",5
+"Vitamin B12","Generic","Supplements","Clinical",5
+"Vitamin C","Generic","Supplements","Clinical",5
+"Magnesium","Generic","Supplements","Clinical",5
+"Zinc","Generic","Supplements","Clinical",5
+"Iron","Generic","Supplements","Clinical",5
+"Calcium","Generic","Supplements","Clinical",5
+"Multivitamin","Generic","Supplements","Clinical",5
+"Omega-3","Generic","Supplements","Clinical",5
+"Probiotics","Generic","Supplements","Clinical",5
+"Collagen Powder","Generic","Supplements","Clinical",5
+"Beta-Alanine","Generic","Supplements","Clinical",5
+"Citrulline Malate","Generic","Supplements","Clinical",5
+"Arginine","Generic","Supplements","Clinical",5
+"Caffeine Pills","Generic","Supplements","Clinical",4
+"Green Tea Extract","Generic","Supplements","Clinical",5
+"Turmeric","Generic","Supplements","Clinical",5
+"Ashwagandha","Generic","Supplements","Clinical",5
+"Rhodiola Rosea","Generic","Supplements","Clinical",5
+"Ginseng","Generic","Supplements","Clinical",5
+"Melatonin","Generic","Supplements","Clinical",5
+"CoQ10","Generic","Supplements","Clinical",5
+"Alpha-Lipoic Acid","Generic","Supplements","Clinical",5
+"NAC (N-Acetyl Cysteine)","Generic","Supplements","Clinical",5
+"Spirulina","Generic","Supplements","Clinical",5
+"Chlorella","Generic","Supplements","Clinical",5
+"Biotin","Generic","Supplements","Clinical",5
+"Folate","Generic","Supplements","Clinical",5
+"Vitamin E","Generic","Supplements","Clinical",5
+"Vitamin K2","Generic","Supplements","Clinical",5
+"Selenium","Generic","Supplements","Clinical",5
+"Chromium","Generic","Supplements","Clinical",5
+"Copper","Generic","Supplements","Clinical",5
+"Manganese","Generic","Supplements","Clinical",5
+"Iodine","Generic","Supplements","Clinical",5
+"Boron","Generic","Supplements","Clinical",5
+"Silica","Generic","Supplements","Clinical",5
+"MSM","Generic","Supplements","Clinical",5
+"Glucosamine","Generic","Supplements","Clinical",5
+"Chondroitin","Generic","Supplements","Clinical",5
+"Hyaluronic Acid","Generic","Supplements","Clinical",5
+"Resveratrol","Generic","Supplements","Clinical",5
+"Quercetin","Generic","Supplements","Clinical",5
+"Curcumin","Generic","Supplements","Clinical",5

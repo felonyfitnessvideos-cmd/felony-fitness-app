@@ -27,13 +27,13 @@
  * Edge-cases handled: missing columns during staged deploys, component
  * unmounts during async saves, and optimistic updates with reverts.
  */
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../supabaseClient.js';
-import SubPageHeader from '../components/SubPageHeader.jsx';
-import { Dumbbell, Trash2, ArrowUpCircle, ArrowDownCircle, Loader2 } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Dumbbell, Loader2, Trash2 } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Modal from 'react-modal';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
+import SubPageHeader from '../components/SubPageHeader.jsx';
+import { supabase } from '../supabaseClient.js';
 import './EditRoutinePage.css';
 
 // Modal styling moved to CSS (.custom-modal-overlay, .custom-modal-content)
@@ -89,11 +89,11 @@ function EditRoutinePage() {
       setAllMuscleGroups(muscleGroupsData || []);
 
       if (routineId !== 'new') {
-        const { data, error } = await supabase
-            .from('workout_routines')
-            .select(`*, routine_exercises(*, exercises(*, exercise_muscle_groups(*, muscle_groups(*))))`)
-            .eq('id', routineId)
-            .single();
+    const { data, error } = await supabase
+      .from('workout_routines')
+      .select(`*, routine_exercises(*, exercises(*))`)
+      .eq('id', routineId)
+      .single();
         if (error) throw error;
         
         if (data) {
@@ -276,16 +276,17 @@ function EditRoutinePage() {
         
         await supabase.from('routine_exercises').insert(exercisesToInsert.map(e => ({...e, routine_id: newRoutine.id})));
       } else {
-        // **SECURITY & DATA INTEGRITY FIX APPLIED HERE**
-        // Use the single, RLS-aware, transactional database function.
-        // This prevents data loss and fixes the unscoped delete vulnerability.
-        const { error: rpcError } = await supabase.rpc('replace_routine_exercises', {
-          p_routine_id: routineId,
-          p_name: routineName,
-          p_items: exercisesToInsert
+        // Call the new Edge Function to replace routine exercises
+        const { data, error: edgeError } = await supabase.functions.invoke('replace-routine-exercises', {
+          body: {
+            p_routine_id: routineId,
+            p_name: routineName,
+            p_items: exercisesToInsert
+          }
         });
-
-        if (rpcError) throw rpcError;
+        if (edgeError || (data && data.error)) {
+          throw new Error(edgeError?.message || data?.error || 'Unknown error');
+        }
       }
       navigate('/workouts/routines');
     } catch (error) {

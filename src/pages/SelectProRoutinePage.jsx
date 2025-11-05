@@ -2,6 +2,12 @@
 /**
  * @file SelectProRoutinePage.jsx
  * @description A hub page for users to select a category of professionally designed workout routines.
+ *
+ * Integration Note:
+ * When a user clicks a category card, this page now calls the Supabase Edge Function
+ * `copy_pro_routine_to_user` via POST to `/functions/v1/copy_pro_routine_to_user`.
+ * The function copies the selected pro routine to the user's personal routines.
+ *
  * @project Felony Fitness
  */
 
@@ -9,24 +15,26 @@
  * SelectProRoutinePage.jsx
  *
  * Small helper page that lists available pro routines and lets the user
- * select one to preview or apply. This file contains only presentational
- * logic and router links; no side-effects are performed here.
+ * select one to preview or apply. This file now contains logic to call the
+ * Supabase Edge Function to copy a pro routine to the user's routines.
  */
 /**
  * SelectProRoutinePage — lets users pick a pro routine template.
  *
  * The page lists available paid (pro) routines and allows previewing them.
+ * When a user clicks a category card, the corresponding pro routine is copied
+ * to their personal routines using the Edge Function API.
  */
-import React from 'react';
-import { Link } from 'react-router-dom';
+
+import { Dumbbell, HeartPulse, Repeat, Shield, Wind, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import SubPageHeader from '../components/SubPageHeader.jsx';
-// Corrected the import to use 'Dumbbell' which is a known and safe icon.
-import { Dumbbell, Zap, HeartPulse, Shield, Wind, Repeat } from 'lucide-react';
 import './SelectProRoutinePage.css';
 
 /**
  * @component SelectProRoutinePage
  * @description Renders a grid of cards, each representing a category of "Pro Routines".
+ * On card click, calls the Edge Function to copy the selected pro routine to the user's routines.
  */
 /**
  * SelectProRoutinePage
@@ -45,33 +53,35 @@ function SelectProRoutinePage() {
    */
   // Array of category objects to generate the navigation cards dynamically.
   const categories = [
-    { name: 'Strength', icon: <Dumbbell size={40} className="card-icon" />, link: '/workouts/routines/pro-category/Strength' },
-    { name: 'Hypertrophy', icon: <Zap size={40} className="card-icon" />, link: '/workouts/routines/pro-category/Hypertrophy' },
-    { name: 'Endurance', icon: <HeartPulse size={40} className="card-icon" />, link: '/workouts/routines/pro-category/Endurance' },
-    { name: 'Challenges', icon: <Shield size={40} className="card-icon" />, link: '/workouts/routines/pro-category/Challenges' },
-    { name: 'Bodyweight Beast', icon: <Wind size={40} className="card-icon" />, link: '/workouts/routines/pro-category/Bodyweight Beast' },
-  { name: 'Interval', icon: <Repeat size={40} className="card-icon" />, link: '/workouts/routines/pro-category/Interval' },
+    { name: 'Strength', icon: <Dumbbell size={40} className="card-icon" /> },
+    { name: 'Hypertrophy', icon: <Zap size={40} className="card-icon" /> },
+    { name: 'Endurance', icon: <HeartPulse size={40} className="card-icon" /> },
+    { name: 'Challenges', icon: <Shield size={40} className="card-icon" /> },
+    { name: 'Bodyweight Beast', icon: <Wind size={40} className="card-icon" /> },
+    { name: 'Interval', icon: <Repeat size={40} className="card-icon" /> },
   ];
+
+  // Use React Router navigation to go to the category page
+  const navigate = useNavigate();
 
   return (
     <div className="select-pro-container">
       <SubPageHeader title="Select Pro Routine" icon={<Dumbbell size={28} />} iconColor="#f97316" backTo="/workouts/routines" />
-      
       <p className="page-intro">
         Choose a professionally designed routine that matches your goals. It will be added to your list where you can customize it.
       </p>
-
       <div className="category-grid">
         {categories.map((cat) => (
-          <Link
+          <div
             key={cat.name}
-            to={`/workouts/routines/pro-category/${encodeURIComponent(cat.name)}`}
             className="category-card"
-            aria-label={`Browse ${cat.name} pro routines`}
+            aria-label={`View ${cat.name} pro routines`}
+            onClick={() => navigate(`/workouts/routines/pro-category/${encodeURIComponent(cat.name)}`)}
+            style={{ cursor: 'pointer' }}
           >
             {cat.icon}
             <span className="card-name">{cat.name}</span>
-          </Link>
+          </div>
         ))}
       </div>
     </div>

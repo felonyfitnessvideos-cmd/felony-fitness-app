@@ -1,0 +1,23 @@
+{
+  "recommendations": [
+    "ms-vscode.vscode-typescript-next",
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-json",
+    "supabase.supabase",
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg",
+    "GitHub.copilot",
+    "GitHub.copilot-chat",
+    "ms-vscode.vscode-github-issue-notebooks",
+    "GitHub.vscode-pull-request-github",
+    "ms-vscode.powershell",
+    "ms-vscode.vscode-eslint",
+    "dbaeumer.vscode-eslint",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense",
+    "ms-vscode.vscode-css-peek",
+    "ms-vscode.vscode-html-css-support"
+  ],
+  "unwantedRecommendations": []
+}

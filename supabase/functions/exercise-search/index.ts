@@ -20,8 +20,8 @@
  * database, so they can be found locally in future searches.
  */
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { corsHeaders } from '../_shared/cors.ts';
 
 // Retrieve the OpenAI API key from environment variables.
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
@@ -34,13 +34,28 @@ const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 Deno.serve(async (req) => {
   // Standard handling for CORS preflight requests.
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
   try {
-    const { query } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+      console.log('Received request body:', body);
+    } catch (jsonErr) {
+      console.error('Error parsing JSON body:', jsonErr);
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const { query } = body || {};
     if (!query) {
-      throw new Error("Search query is required.");
+      console.error('Missing query in request body:', body);
+      return new Response(
+        JSON.stringify({ error: 'Search query is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Create an admin client to interact with the database using the service role key.
@@ -52,11 +67,12 @@ Deno.serve(async (req) => {
     // --- Step 1: Search the local database first for performance and cost-saving. ---
     const { data: localResults, error: localError } = await supabaseAdmin
       .from('exercises')
-      .select('*, exercise_muscle_groups(*, muscle_groups(*))') // Fetch relations for complete data
+      .select('*') // Only select from exercises table
       .ilike('name', `%${query}%`) // Case-insensitive search
       .limit(5);
 
     if (localError) {
+      console.error('Supabase exercises query error:', localError);
       throw localError;
     }
 
@@ -76,6 +92,7 @@ Deno.serve(async (req) => {
       .from('muscle_groups')
       .select('name');
     if (muscleError) {
+      console.error('Supabase muscle_groups query error:', muscleError);
       throw muscleError;
     }
     const muscleGroupList = muscleGroups.map(mg => mg.name);
@@ -119,9 +136,9 @@ Deno.serve(async (req) => {
 
   } catch (err) {
     // Generic error handler for any failures in the try block.
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error)?.message || 'Unknown error' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+        status: 500
     });
   }
 });

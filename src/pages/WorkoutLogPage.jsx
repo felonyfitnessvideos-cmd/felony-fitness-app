@@ -37,7 +37,7 @@ const formatSetCount = (num) => {
  * @property {string} id
  * @property {number} set_number
  * @property {number} reps_completed
- * @property {number} weight_lifted_lbs
+ * @property {number} weight_lbs - Weight in pounds
  * @property {string} exercise_id
  */
 
@@ -125,7 +125,7 @@ function WorkoutLogPage() {
     }
 
     if (lastSet) {
-      setCurrentSet({ weight: lastSet.weight_lifted_lbs, reps: lastSet.reps_completed });
+      setCurrentSet({ weight: lastSet.weight_lbs, reps: lastSet.reps_completed });
     } else {
       setCurrentSet({ weight: '', reps: '' });
     }
@@ -195,17 +195,17 @@ function WorkoutLogPage() {
         console.log("Fetching 'Last Time' data for routine:", routineId);
         const prevLogPromises = routineData.routine_exercises.map(item => {
           const params = {
-            p_user_id: userId,
-            p_exercise_id: item.exercises.id,
-            p_routine_id: routineId
+            user_id: userId,
+            exercise_id: item.exercises.id,
+            routine_id: routineId
           };
-          console.log(`Calling RPC 'get_entries_for_last_session' with params:`, params);
-          return supabase.rpc('get_entries_for_last_session', params);
+          console.log(`Calling Edge Function 'get-last-session-entries' with params:`, params);
+          return supabase.functions.invoke('get-last-session-entries', { body: params });
         });
 
         const prevLogResults = await Promise.all(prevLogPromises);
         
-        console.log("Results from RPC calls:", prevLogResults);
+        console.log("Results from Edge Function calls:", prevLogResults);
 
         const prevLogMap = {};
         prevLogResults.forEach((res, index) => {
@@ -213,7 +213,7 @@ function WorkoutLogPage() {
             console.error(`Error fetching last session for exercise ${routineData.routine_exercises[index].exercises.id}:`, res.error);
           }
           const exerciseId = routineData.routine_exercises[index].exercises.id;
-          prevLogMap[exerciseId] = res.data || [];
+          prevLogMap[exerciseId] = res.data?.entries || [];
         });
         setPreviousLog(prevLogMap);
       }
@@ -342,21 +342,25 @@ function WorkoutLogPage() {
   const fetchChartDataForExercise = useCallback(async (metric, exerciseId) => {
     if (!userId || !exerciseId) return;
     setChartLoading(true);
-    let functionName = '';
+    let metricType = '';
     switch (metric) {
-      case 'Weight Volume': functionName = 'calculate_exercise_weight_volume'; break;
-      case 'Set Volume': functionName = 'calculate_exercise_set_volume'; break;
-      case '1RM': default: functionName = 'calculate_exercise_1rm'; break;
+      case 'Weight Volume': metricType = 'weight_volume'; break;
+      case 'Set Volume': metricType = 'set_volume'; break;
+      case '1RM': default: metricType = '1rm'; break;
     }
 
     try {
-      const { data, error } = await supabase.rpc(functionName, { 
-        p_user_id: userId,
-        p_exercise_id: exerciseId 
+      const { data, error } = await supabase.functions.invoke('exercise-chart-data', {
+        body: {
+          metric: metricType,
+          user_id: userId,
+          exercise_id: exerciseId,
+          limit: 30
+        }
       });
       if (error) throw error;
       
-      const formattedData = data.map(item => ({
+      const formattedData = data.data.map(item => ({
         date: new Date(item.log_date).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit'}),
         value: item.value,
       }));
@@ -385,7 +389,7 @@ function WorkoutLogPage() {
       exercise_id: selectedExercise.id,
       set_number: (todaysLog[selectedExercise.id]?.length || 0) + 1,
       reps_completed: parseInt(currentSet.reps, 10),
-      weight_lifted_lbs: parseInt(currentSet.weight, 10),
+      weight_lbs: parseInt(currentSet.weight, 10), // Using weight_lbs (compatibility field) for pounds
     };
     const { data: newEntry, error } = await supabase.from('workout_log_entries').insert(newSetPayload).select().single();
     if (error) {
@@ -487,8 +491,10 @@ function WorkoutLogPage() {
     if (rpcLoading) return;
     setRpcLoading(true);
     try {
-      // SECURITY FIX: Call the secure RPC function.
-      const { error } = await supabase.rpc('delete_workout_set', { p_entry_id: entryId });
+      // SECURITY FIX: Call the secure Edge Function.
+      const { error } = await supabase.functions.invoke('delete-workout-set', { 
+        body: { entry_id: entryId }
+      });
       if (error) {
         console.error("Secure delete failed:", error);
         return alert("Could not delete set." + (error?.message ? ` (${error.message})` : ''));
@@ -503,7 +509,7 @@ function WorkoutLogPage() {
   /** Enters "edit mode" for a specific set. */
   const handleEditSetClick = (set) => {
     setEditingSet({ entryId: set.id });
-    setEditSetValue({ weight: set.weight_lifted_lbs, reps: set.reps_completed });
+    setEditSetValue({ weight: set.weight_lbs, reps: set.reps_completed });
   };
 
   /** Saves the updated values for a set being edited securely. */
@@ -512,11 +518,13 @@ function WorkoutLogPage() {
     if (rpcLoading) return;
     setRpcLoading(true);
     try {
-      // SECURITY FIX: Call the secure RPC function.
-      const { error } = await supabase.rpc('update_workout_set', {
-        p_entry_id: editingSet.entryId,
-        p_weight: parseInt(editSetValue.weight, 10),
-        p_reps: parseInt(editSetValue.reps, 10)
+      // SECURITY FIX: Call the secure Edge Function.
+      const { error } = await supabase.functions.invoke('update-workout-set', {
+        body: {
+          entry_id: editingSet.entryId,
+          weight_lbs: parseInt(editSetValue.weight, 10),
+          reps_completed: parseInt(editSetValue.reps, 10)
+        }
       });
 
       if (error) {
@@ -614,7 +622,7 @@ function WorkoutLogPage() {
                       </div>
                     ) : (
                       <>
-                        <span>{set.weight_lifted_lbs} lbs x {set.reps_completed}</span>
+                        <span>{set.weight_lbs} lbs x {set.reps_completed}</span>
                         <div className="set-actions">
                           <button onClick={() => handleEditSetClick(set)} disabled={rpcLoading}><Edit2 size={14}/></button>
                           <button onClick={() => handleDeleteSet(set.id)} disabled={rpcLoading}><Trash2 size={14}/></button>
@@ -629,7 +637,7 @@ function WorkoutLogPage() {
               <h3>Last Time</h3>
               <ul>
                 {(previousLog[selectedExercise?.id] || []).map((set, index) => (
-                  <li key={index}><span>{set.weight_lifted_lbs} lbs x {set.reps_completed}</span></li>
+                  <li key={index}><span>{set.weight_lbs} lbs x {set.reps_completed}</span></li>
                 ))}
               </ul>
             </div>

@@ -79,23 +79,19 @@ export async function getConversations() {
   try {
     console.log('📥 Fetching conversations...');
     
-    // First try the database function approach
-    const { data, error } = await supabase
-      .rpc('get_conversations');
+    // Call the Edge Function
+    const { data, error } = await supabase.functions.invoke('get-conversations', {
+      body: {}
+    });
     
     if (error) {
-      // If the function doesn't exist, check if it's a missing function error
-      if (error.code === 'PGRST202' && error.message.includes('get_conversations')) {
-        console.log('⚠️ Database functions not yet deployed. Using fallback approach...');
-        return await getConversationsFallback();
-      }
-      
-      console.error('Error fetching conversations:', error);
-      throw new Error(`Failed to fetch conversations: ${error.message}`);
+      // If Edge Function fails, use fallback
+      console.log('⚠️ Edge Function failed. Using fallback approach...');
+      return await getConversationsFallback();
     }
     
-    console.log('✅ Fetched', data?.length || 0, 'conversations');
-    return data || [];
+    console.log('✅ Fetched', data?.conversations?.length || 0, 'conversations');
+    return data?.conversations || [];
   } catch (error) {
     console.error('Error in getConversations:', error);
     throw error;
@@ -104,39 +100,54 @@ export async function getConversations() {
 
 /**
  * Fallback method to get conversations when database functions are not available
- * This creates a temporary conversation list using existing user data
+ * This creates conversation list using trainer-client relationships
  */
 async function getConversationsFallback() {
   try {
     console.log('📥 Using fallback conversation method...');
     
-    // For now, return an empty array until the migration is applied
-    // In a real scenario, we could query existing tables to build conversations
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.log('⚠️ No authenticated user for conversations fallback');
+      return [];
+    }
+
     const fallbackConversations = [];
     
-    // You could potentially query the profiles table to show potential contacts
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, full_name, email')
-      .neq('id', (await supabase.auth.getUser()).data.user?.id)
-      .limit(10);
+    // Get trainer-client relationships to show potential conversations
+    const { data: relationships, error: relationshipsError } = await supabase
+      .from('trainer_clients')
+      .select(`
+        client_id,
+        trainer_id,
+        client:user_profiles!trainer_clients_client_id_fkey(id, first_name, last_name, email),
+        trainer:user_profiles!trainer_clients_trainer_id_fkey(id, first_name, last_name, email)
+      `)
+      .or(`trainer_id.eq.${user.id},client_id.eq.${user.id}`)
+      .eq('status', 'active');
     
-    if (!profilesError && profiles) {
-      // Convert profiles to conversation format for display
-      profiles.forEach(profile => {
-        fallbackConversations.push({
-          user_id: profile.id,
-          user_full_name: profile.full_name || profile.email,
-          user_email: profile.email,
-          last_message_content: 'Start a conversation...',
-          last_message_at: new Date().toISOString(),
-          unread_count: 0,
-          is_last_message_from_me: false
-        });
+    if (!relationshipsError && relationships) {
+      // Convert relationships to conversation format for display
+      relationships.forEach(relationship => {
+        // Determine the other user based on current user's role
+        const otherUser = relationship.trainer_id === user.id ? relationship.client : relationship.trainer;
+        
+        if (otherUser) {
+          fallbackConversations.push({
+            user_id: otherUser.id,
+            user_full_name: `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || otherUser.email,
+            user_email: otherUser.email,
+            last_message_content: 'Start a conversation...',
+            last_message_at: new Date().toISOString(),
+            unread_count: 0,
+            is_last_message_from_me: false
+          });
+        }
       });
     }
     
-    console.log('✅ Fallback: showing', fallbackConversations.length, 'potential conversations');
+    console.log('✅ Fallback: showing', fallbackConversations.length, 'potential conversations from trainer-client relationships');
     return fallbackConversations;
   } catch (error) {
     console.error('Error in fallback conversations:', error);
@@ -167,22 +178,19 @@ export async function getConversationMessages(otherUserId) {
       throw new Error('Other user ID is required');
     }
     
-    const { data, error } = await supabase
-      .rpc('get_conversation_messages', { other_user_id: otherUserId });
+    // Call the Edge Function
+    const { data, error } = await supabase.functions.invoke('get-conversation-messages', {
+      body: { other_user_id: otherUserId }
+    });
     
     if (error) {
-      // If the function doesn't exist, use fallback
-      if (error.code === 'PGRST202' && error.message.includes('get_conversation_messages')) {
-        console.log('⚠️ Database functions not yet deployed. Using fallback approach...');
-        return await getConversationMessagesFallback(otherUserId);
-      }
-      
-      console.error('Error fetching conversation messages:', error);
-      throw new Error(`Failed to fetch messages: ${error.message}`);
+      // If Edge Function fails, use fallback
+      console.log('⚠️ Edge Function failed. Using fallback approach...');
+      return await getConversationMessagesFallback(otherUserId);
     }
     
-    console.log('✅ Fetched', data?.length || 0, 'messages');
-    return data || [];
+    console.log('✅ Fetched', data?.messages?.length || 0, 'messages');
+    return data?.messages || [];
   } catch (error) {
     console.error('Error in getConversationMessages:', error);
     throw error;
@@ -196,11 +204,47 @@ async function getConversationMessagesFallback(otherUserId) {
   try {
     console.log('📥 Using fallback messages method for user:', otherUserId);
     
-    // For now, return an empty array since we don't have the direct_messages table yet
-    // In the future, this would query the direct_messages table directly
-    const fallbackMessages = [];
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.log('⚠️ No authenticated user for messages fallback');
+      return [];
+    }
     
-    console.log('✅ Fallback: showing', fallbackMessages.length, 'messages (table not yet available)');
+    // Query the direct_messages table directly
+    const { data: messages, error: messagesError } = await supabase
+      .from('direct_messages')
+      .select(`
+        id,
+        sender_id,
+        recipient_id,
+        content,
+        created_at,
+        read_at,
+        sender:user_profiles!direct_messages_sender_id_fkey(first_name, last_name, email)
+      `)
+      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${user.id})`)
+      .order('created_at', { ascending: true });
+    
+    if (messagesError) {
+      console.error('Error in fallback messages query:', messagesError);
+      return [];
+    }
+    
+    // Transform messages to match expected format
+    const fallbackMessages = (messages || []).map(message => ({
+      id: message.id,
+      sender_id: message.sender_id,
+      recipient_id: message.recipient_id,
+      content: message.content,
+      created_at: message.created_at,
+      read_at: message.read_at,
+      sender_name: message.sender ? `${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim() || message.sender.email : 'Unknown User',
+      is_from_current_user: message.sender_id === user.id,
+      is_read: message.read_at !== null
+    }));
+    
+    console.log('✅ Fallback: showing', fallbackMessages.length, 'messages from direct query');
     return fallbackMessages;
   } catch (error) {
     console.error('Error in fallback messages:', error);
@@ -252,14 +296,11 @@ export async function sendMessage(recipientId, content) {
     }
     
     // Try to call the Edge Function first
-    const { data, error } = await supabase.functions.invoke('send-message', {
+    const { data, error } = await supabase.functions.invoke('send-direct-message', {
       body: {
         recipient_id: recipientId,
-        content: content.trim()
-      },
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
+        message_content: content.trim()
+      }
     });
     
     if (error) {
@@ -273,13 +314,13 @@ export async function sendMessage(recipientId, content) {
       throw new Error(`Failed to send message: ${error.message}`);
     }
     
-    if (!data.success) {
-      console.error('Edge Function returned error:', data.error);
-      throw new Error(data.message || 'Failed to send message');
+    if (!data?.success) {
+      console.error('Edge Function returned error:', data?.error);
+      throw new Error(data?.message || 'Failed to send message');
     }
     
-    console.log('✅ Message sent successfully:', data.data.message_id);
-    return data.data;
+    console.log('✅ Message sent successfully:', data.message_id);
+    return { message_id: data.message_id, success: true };
   } catch (error) {
     console.error('Error in sendMessage:', error);
     throw error;
@@ -288,41 +329,34 @@ export async function sendMessage(recipientId, content) {
 
 /**
  * Fallback method to send messages when Edge Function is not available
- * Inserts messages directly into the direct_messages table
+ * Uses the send_direct_message database function
  */
 async function sendMessageFallback(recipientId, content) {
   try {
-    console.log('📤 Using fallback send message method (direct database insert)...');
+    console.log('📤 Using fallback send message method (database function)...');
     
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Authentication required to send messages');
-    }
-    
-    // Insert message directly into database
-    const { data: messageData, error: messageError } = await supabase
-      .from('direct_messages')
-      .insert({
-        sender_id: user.id,
+    // Use the database function to send message
+    const { data: result, error: functionError } = await supabase
+      .rpc('send_direct_message', {
         recipient_id: recipientId,
-        content: content.trim(),
-        is_read: false
-      })
-      .select()
-      .single();
+        message_content: content.trim()
+      });
     
-    if (messageError) {
-      console.error('Database error in fallback:', messageError);
-      throw new Error(`Failed to send message: ${messageError.message}`);
+    if (functionError) {
+      console.error('Database function error in fallback:', functionError);
+      throw new Error(`Failed to send message: ${functionError.message}`);
     }
     
-    console.log('✅ Fallback: message sent successfully via database');
+    if (!result || !result.success) {
+      throw new Error('Message sending failed via database function');
+    }
+    
+    console.log('✅ Fallback: message sent successfully via database function');
     return {
-      message_id: messageData.id,
+      message_id: result.message_id,
       success: true,
-      created_at: messageData.created_at,
-      message: 'Message sent successfully (via fallback method)'
+      created_at: result.created_at,
+      message: result.message || 'Message sent successfully (via fallback method)'
     };
   } catch (error) {
     console.error('Error in fallback send message:', error);
@@ -357,21 +391,18 @@ export async function markMessagesAsRead(otherUserId) {
       throw new Error('Other user ID is required');
     }
     
-    const { data, error } = await supabase
-      .rpc('mark_messages_as_read', { other_user_id: otherUserId });
+    // Call the Edge Function
+    const { data, error } = await supabase.functions.invoke('mark-messages-as-read', {
+      body: { other_user_id: otherUserId }
+    });
     
     if (error) {
-      // If the function doesn't exist, use fallback
-      if (error.code === 'PGRST202' && error.message.includes('mark_messages_as_read')) {
-        console.log('⚠️ Database functions not yet deployed. Using fallback approach...');
-        return await markMessagesAsReadFallback(otherUserId);
-      }
-      
-      console.error('Error marking messages as read:', error);
-      throw new Error(`Failed to mark messages as read: ${error.message}`);
+      // If Edge Function fails, use fallback
+      console.log('⚠️ Edge Function failed. Using fallback approach...');
+      return await markMessagesAsReadFallback(otherUserId);
     }
     
-    const markedCount = data || 0;
+    const markedCount = data?.marked_count || 0;
     console.log('✅ Marked', markedCount, 'messages as read');
     return markedCount;
   } catch (error) {
@@ -387,10 +418,28 @@ async function markMessagesAsReadFallback(otherUserId) {
   try {
     console.log('📖 Using fallback mark as read method...');
     
-    // For now, just return 0 since we don't have the direct_messages table yet
-    const markedCount = 0;
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.log('⚠️ No authenticated user for mark as read fallback');
+      return 0;
+    }
     
-    console.log('✅ Fallback: would have marked messages as read (database not yet available)');
+    // Update messages directly
+    const { error: updateError, count } = await supabase
+      .from('direct_messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('sender_id', otherUserId)
+      .eq('recipient_id', user.id)
+      .is('read_at', null);
+    
+    if (updateError) {
+      console.error('Error in fallback mark as read:', updateError);
+      return 0;
+    }
+    
+    const markedCount = count || 0;
+    console.log('✅ Fallback: marked', markedCount, 'messages as read via direct update');
     return markedCount;
   } catch (error) {
     console.error('Error in fallback mark as read:', error);
@@ -418,15 +467,17 @@ export async function getUnreadMessageCount() {
   try {
     console.log('📊 Fetching unread message count...');
     
-    const { data, error } = await supabase
-      .rpc('get_unread_message_count');
+    // Call the Edge Function
+    const { data, error } = await supabase.functions.invoke('get-unread-message-count', {
+      body: {}
+    });
     
     if (error) {
       console.error('Error fetching unread count:', error);
       throw new Error(`Failed to fetch unread count: ${error.message}`);
     }
     
-    const count = data || 0;
+    const count = data?.count || 0;
     console.log('✅ Unread message count:', count);
     return count;
   } catch (error) {

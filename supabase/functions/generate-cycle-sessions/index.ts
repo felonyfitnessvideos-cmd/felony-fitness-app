@@ -1,3 +1,67 @@
+/**
+ * @file supabase/functions/generate-cycle-sessions/index.ts
+ * @description Edge Function to automatically generate training session schedules for mesocycles.
+ * 
+ * This function creates a complete schedule of workout sessions based on a mesocycle's
+ * weekly training plan. It calculates exact dates for each session, assigns routines,
+ * and handles progressive overload planning with volume/intensity multipliers.
+ * 
+ * @project Felony Fitness
+ * @author Felony Fitness Development Team
+ * @version 2.0.0
+ * @since 2025-11-02
+ * 
+ * @workflow
+ * 1. Receives mesocycle_id and start_date from client
+ * 2. Loads all week assignments from mesocycle_weeks table
+ * 3. Calculates precise session dates using week/day indexing
+ * 4. Creates cycle_sessions records with scheduling metadata
+ * 5. Returns generated session list or detailed error information
+ * 
+ * @security
+ * - Uses service role for database operations (no RLS)
+ * - Validates required parameters before processing
+ * - Handles user_id association from mesocycle ownership
+ * 
+ * @param {Object} body - Request body
+ * @param {string} body.mesocycle_id - UUID of the mesocycle to generate sessions for
+ * @param {string} body.start_date - Start date in ISO format (YYYY-MM-DD)
+ * 
+ * @returns {Response} JSON response with generated sessions or error
+ * @returns {Object} response.body - Response body
+ * @returns {Array} response.body.sessions - Generated session records
+ * @returns {string} response.body.error - Error message if generation failed
+ * 
+ * Date Calculation Logic:
+ * - Uses same algorithm as client-side cycleUtils.js
+ * - Week offset: (week_index - 1) * 7 days
+ * - Day offset: + day_index (0=Monday, 6=Sunday)
+ * - Timezone-safe date manipulation
+ * 
+ * @example
+ * // Request
+ * POST /functions/v1/generate-cycle-sessions
+ * Body: {
+ *   mesocycle_id: "abc-123",
+ *   start_date: "2025-01-06"
+ * }
+ * 
+ * // Success Response
+ * {
+ *   sessions: [
+ *     {
+ *       id: "...",
+ *       mesocycle_id: "abc-123",
+ *       week_index: 1,
+ *       day_index: 0,
+ *       scheduled_date: "2025-01-06",
+ *       routine_id: "push-routine-id"
+ *     },
+ *     ...
+ *   ]
+ * }
+ */
+
 // @ts-nocheck
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -10,7 +74,34 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
 
 const supabase = createClient(SUPABASE_URL ?? '', SUPABASE_SERVICE_ROLE ?? '');
 
-// Helper: generate session dates like the frontend helper
+/**
+ * Generate precise scheduled dates for mesocycle training sessions
+ * 
+ * @function generateSessionDates
+ * @param {string|Date} startDate - Start date as ISO string ('YYYY-MM-DD') or Date object
+ * @param {Array<Object>} [assignments=[]] - Array of workout assignments from mesocycle_weeks
+ * @param {number} assignments[].week_index - Week number in mesocycle (1-based indexing)
+ * @param {number} assignments[].day_index - Day of week (0=Monday, 6=Sunday)
+ * @param {string} assignments[].routine_id - Database ID of workout routine
+ * @returns {Array<Object>} Array of scheduled session objects with calculated dates
+ * 
+ * @description Calculates exact dates for workout sessions using the same algorithm
+ * as the client-side cycleUtils.js for consistency. Uses precise date arithmetic
+ * with timezone normalization to prevent date shift bugs.
+ * 
+ * Date Calculation:
+ * 1. Parse start date (handles ISO strings and Date objects)
+ * 2. Normalize to local midnight to prevent timezone shifts
+ * 3. Calculate offset: (week_index - 1) * 7 + day_index days
+ * 4. Generate ISO date string (YYYY-MM-DD)
+ * 
+ * @example
+ * const assignments = [
+ *   { week_index: 1, day_index: 0, routine_id: 'push-1' },
+ *   { week_index: 1, day_index: 2, routine_id: 'pull-1' }
+ * ];
+ * const sessions = generateSessionDates('2025-01-06', assignments);
+ */
 function generateSessionDates(startDate, assignments = []) {
   let start;
   if (!startDate) start = new Date();
@@ -36,8 +127,34 @@ function generateSessionDates(startDate, assignments = []) {
   });
 }
 
-// Edge function handler
+/**
+ * Main Edge Function handler for cycle session generation
+ * 
+ * @async
+ * @function serve
+ * @param {Request} req - HTTP request object
+ * @returns {Promise<Response>} JSON response with generated sessions or error
+ * 
+ * @description Handles POST requests to generate training session schedules.
+ * Validates input, queries mesocycle data, calculates session dates, and
+ * creates database records with proper error handling.
+ * 
+ * Request Flow:
+ * 1. Handle CORS preflight (OPTIONS)
+ * 2. Parse and validate request body
+ * 3. Load mesocycle week assignments
+ * 4. Generate session dates using helper function
+ * 5. Enrich with mesocycle metadata and multipliers
+ * 6. Insert sessions into cycle_sessions table
+ * 7. Return generated session list
+ * 
+ * Error Handling:
+ * - 400: Missing required parameters
+ * - 404: Mesocycle not found
+ * - 500: Database errors or session generation failures
+ */
 Deno.serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') return new Response('ok');
 
   try {

@@ -38,15 +38,14 @@
 
 /** Audited: 2025-10-25 — JSDoc batch 9 */
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
-import SubPageHeader from '../components/SubPageHeader.jsx';
-import CycleWeekEditor from '../components/CycleWeekEditor.jsx';
-import './MesocycleBuilder.css';
-import { supabase } from '../supabaseClient.js';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
+import CycleWeekEditor from '../components/CycleWeekEditor.jsx';
+import SubPageHeader from '../components/SubPageHeader.jsx';
 import SuccessModal from '../components/SuccessModal.jsx';
+import { supabase } from '../supabaseClient.js';
+import './MesocycleBuilder.css';
 
 function MesocycleBuilder() {
   const navigate = useNavigate();
@@ -110,6 +109,21 @@ function MesocycleBuilder() {
     return () => { mounted = false; };
   }, [editingMesocycleId]);
 
+  /**
+   * Save the current mesocycle and its week/day assignments to the database.
+   *
+   * Responsibilities:
+   * - Validates form input and user authentication.
+   * - Ensures user profile exists for FK constraints.
+   * - Creates or updates the mesocycle record.
+   * - Deletes existing week rows if editing, then inserts current assignments.
+   * - Handles conversion of assignment data to DB payload, including type checks for routine_id and day_index.
+   * - Displays success modal and error messages as needed.
+   *
+   * Side effects:
+   * - Interacts with Supabase for all DB operations.
+   * - Navigates to detail page on success.
+   */
   const handleSave = () => {
     (async () => {
       try {
@@ -164,19 +178,21 @@ function MesocycleBuilder() {
           }
           mesocycleId = created.id;
         }
-  setCreatedId(mesocycleId);
+        setCreatedId(mesocycleId);
+
 
         // Persist week/day assignments. If the CycleWeekEditor provided detailed
         // assignments we persist one row per day; otherwise create simple week rows
         // so the mesocycle has at least one entry per week.
-        const toInsert = [];
+        let toInsert = [];
         if (assignments && assignments.length > 0) {
           for (const a of assignments) {
+            let routineId = a.type === 'routine' ? a.routine_id : null;
             toInsert.push({
               mesocycle_id: mesocycleId,
               week_index: a.week_index,
               day_index: a.day_index,
-              routine_id: a.type === 'routine' ? a.routine_id : null,
+              routine_id: routineId,
               notes: a.type === 'rest' || a.type === 'deload' ? a.type : null,
             });
           }
@@ -185,6 +201,7 @@ function MesocycleBuilder() {
             toInsert.push({ mesocycle_id: mesocycleId, week_index: i });
           }
         }
+
 
         if (toInsert.length > 0) {
           // If editing, remove existing week rows and re-insert to reflect changes

@@ -34,7 +34,7 @@ import './NutritionLogPage.css';
  * @property {number} [water_oz_consumed]
  * @property {object} food_servings
  * @property {object} food_servings.foods
- * @property {string} food_servings.foods.name
+ * @property {string} food_servings.food_name
  * @property {string} food_servings.serving_description
  * @property {number} food_servings.calories
  * @property {number} food_servings.protein_g
@@ -62,7 +62,7 @@ function NutritionLogPage() {
   const [activeMeal, setActiveMeal] = useState('Breakfast');
   /** @type {[NutritionLog[], React.Dispatch<React.SetStateAction<NutritionLog[]>>]} */
   const [todaysLogs, setTodaysLogs] = useState([]);
-  const [goals, setGoals] = useState({ daily_calorie_goal: 2000, daily_protein_goal: 150, daily_water_goal_oz: 128 });
+  const [goals, setGoals] = useState({ daily_calorie_goal: 2000, daily_protein_goal_g: 150, daily_water_goal_oz: 128 });
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -108,13 +108,13 @@ function NutritionLogPage() {
       const [logsResponse, profileResponse] = await Promise.all([
         supabase
           .from('nutrition_logs')
-          .select('*, food_servings(*, foods(name))')
+          .select('*, food_servings(*)')
           .eq('user_id', userId)
           .gte('created_at', startOfToday.toISOString())
           .lt('created_at', startOfTomorrow.toISOString()),
         supabase
           .from('user_profiles')
-          .select('daily_calorie_goal, daily_protein_goal, daily_water_goal_oz')
+          .select('daily_calorie_goal, daily_protein_goal_g, daily_water_goal_oz')
           .eq('id', userId)
           .single()
       ]);
@@ -200,50 +200,33 @@ function NutritionLogPage() {
 
       setIsSearching(true);
       try {
-        const result = await nutritionAPI.searchFood(term);
+        // TEMPORARY FIX: Direct database search until functions are fixed
+        console.log('🔍 Searching for:', term);
+        
+        const { data: foodServings, error } = await supabase
+          .from('food_servings')
+          .select('*')
+          .ilike('food_name', `%${term}%`)
+          .limit(10);
 
-        if (controller.signal.aborted) return;
-
-        // Show quality message to user if there are issues
-        if (result.message && (result.quality === 'medium' || result.quality === 'duplicate_warning')) {
-          console.warn('🔍 Food Search:', result.message);
+        if (error) {
+          console.error('Search error:', error);
+          setSearchResults([]);
+          return;
         }
 
-        let standardizedResults = [];
-        if (result.source === 'local') {
-            standardizedResults = (result.results || []).flatMap(food => 
-              (food.food_servings || []).map(serving => ({
-                  is_external: false,
-                  food_id: food.id,
-                  name: food.name,
-                  serving_id: serving.id,
-                  serving_description: serving.serving_description,
-                  calories: serving.calories,
-                  protein_g: serving.protein_g,
-              }))
-            );
-        } else if (result.source === 'external') {
-            standardizedResults = (result.results || []).map(item => ({ 
-              ...item, 
-              is_external: true,
-              quality_score: item.quality_score || result.quality_score
-            }));
-        } else if (result.source === 'duplicate_check') {
-            // Show similar foods as suggestions instead of empty results
-            console.info('💡 Similar foods found:', result.similar_foods);
-            // Similar foods from backend don't include servings, so we need to fetch them
-            // For now, show them with a generic serving until we can fetch the actual servings
-            standardizedResults = (result.similar_foods || []).map(food => ({
-                is_external: false,
-                food_id: food.id,
-                name: food.name,
-                serving_id: null, // Will need to fetch actual servings
-                serving_description: 'Select to see available servings',
-                calories: '?',
-                protein_g: '?',
-                needs_serving_fetch: true // Flag to indicate we need to fetch servings
-            }));
-        }
+        console.log('🔍 Found food servings:', foodServings);
+
+        const standardizedResults = (foodServings || []).map(serving => ({
+          is_external: false,
+          food_id: null, // No foods table relationship in current structure
+          name: serving.food_name,
+          serving_id: serving.id,
+          serving_description: serving.serving_description,
+          calories: serving.calories,
+          protein_g: serving.protein_g,
+        }));
+
         setSearchResults(standardizedResults);
 
       } catch (error) {
@@ -314,44 +297,31 @@ function NutritionLogPage() {
     const qty = typeof quantity === 'string' ? parseFloat(quantity) : quantity;
     if (!selectedFood || !qty || qty <= 0 || Number.isNaN(qty) || !user) return;
 
-    // NOTE: The `log_food_item` RPC function implicitly uses the current timestamp for `created_at`.
-    // This is correct and doesn't need to be changed.
-    let rpcParams;
+    try {
+      console.log('🔍 DEBUG: Logging food:', selectedFood);
+      
+      // TEMPORARY FIX: Direct database insert until RPC functions are fixed
+      const { data, error } = await supabase
+        .from('nutrition_logs')
+        .insert({
+          user_id: user.id,
+          food_serving_id: selectedFood.serving_id,
+          meal_type: activeMeal,
+          quantity_consumed: qty
+        })
+        .select();
 
-    if (selectedFood.is_external) {
-      rpcParams = {
-        p_user_id: user.id,
-        p_meal_type: activeMeal,
-        p_quantity_consumed: qty,
-        p_external_food: {
-          name: selectedFood.name,
-          serving_description: selectedFood.serving_description,
-          calories: selectedFood.calories,
-          protein_g: selectedFood.protein_g,
-          carbs_g: selectedFood.carbs_g || 0,
-          fat_g: selectedFood.fat_g || 0,
-          category: 'Fast Food' // Better default category
-        }
-      };
-    } else {
-      rpcParams = {
-        p_user_id: user.id,
-        p_meal_type: activeMeal,
-        p_quantity_consumed: qty,
-        p_food_serving_id: selectedFood.serving_id
-      };
-    }
-
-    console.log('🔍 DEBUG: Calling log_food_item with params:', rpcParams);
-    const { data, error } = await supabase.rpc('log_food_item', rpcParams);
-    console.log('🔍 DEBUG: log_food_item response:', { data, error });
-
-    if (error) {
-      console.error('❌ log_food_item error:', error);
+      if (error) {
+        console.error('❌ Error logging food:', error);
+        alert(`Error logging food: ${error.message}`);
+      } else {
+        console.log('✅ Food logged successfully:', data);
+        await fetchLogData(user.id);
+        closeLogModal();
+      }
+    } catch (error) {
+      console.error('❌ Unexpected error:', error);
       alert(`Error logging food: ${error.message}`);
-    } else {
-      await fetchLogData(user.id);
-      closeLogModal();
     }
   };
   
@@ -469,7 +439,7 @@ function NutritionLogPage() {
           log.food_servings ? (
             <div key={log.id} className="food-item-card">
               <div className="food-item-details">
-                <h4>{log.food_servings.foods.name}</h4>
+                <h4>{log.food_servings.food_name}</h4>
                 <span>{log.quantity_consumed} x {log.food_servings.serving_description}</span>
               </div>
               <div className="food-item-actions">

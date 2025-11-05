@@ -25,9 +25,11 @@ import { supabase } from '../supabaseClient.js';
  */
 export const userHasRole = async (userId, tagName) => {
     try {
-        const { data, error } = await supabase.rpc('user_has_tag', {
-            target_user_id: userId,
-            tag_name: tagName
+        const { data, error } = await supabase.functions.invoke('user-has-tag', {
+            body: {
+                target_user_id: userId,
+                tag_name: tagName
+            }
         });
         
         if (error) {
@@ -35,7 +37,7 @@ export const userHasRole = async (userId, tagName) => {
             return false;
         }
         
-        return data === true;
+        return data?.has_tag === true;
     } catch (error) {
         console.error('Error in userHasRole:', error);
         return false;
@@ -66,18 +68,142 @@ export const currentUserHasRole = async (tagName) => {
  */
 export const getUserTags = async (userId) => {
     try {
-        const { data, error } = await supabase.rpc('get_user_tags', {
-            target_user_id: userId
+        console.log('🔍 getUserTags called for user:', userId);
+        
+        // Call the Edge Function
+        const { data, error } = await supabase.functions.invoke('get-user-tags', {
+            body: {
+                target_user_id: userId
+            }
         });
         
         if (error) {
-            console.error('Error fetching user tags:', error);
+            console.error('❌ Edge Function error:', error);
+            // Fallback to direct query if Edge Function fails
+            console.log('⚠️ Edge Function failed, trying fallback...');
+            return await getUserTagsFallback(userId);
+        }
+        
+        console.log('✅ Edge Function successful, found', (data?.tags || []).length, 'tags');
+        return data?.tags || [];
+    } catch (error) {
+        console.error('❌ Error in getUserTags:', error);
+        console.log('⚠️ Trying fallback due to exception...');
+        return await getUserTagsFallback(userId);
+    }
+};
+
+/**
+ * Fallback function to get user tags using direct database queries
+ */
+const getUserTagsFallback = async (userId) => {
+    try {
+        console.log('🔍 Using getUserTags fallback for user:', userId);
+        
+        // Check if user has any user_tags records first
+        const { data: userTagsCheck, error: checkError } = await supabase
+            .from('user_tags')
+            .select('user_id, tag_id')
+            .eq('user_id', userId);
+            
+        console.log('🔍 Direct user_tags check:', userTagsCheck, 'Error:', checkError);
+        
+        if (checkError) {
+            console.log('❌ Error checking user_tags:', checkError);
             return [];
         }
         
-        return data || [];
+        if (!userTagsCheck || userTagsCheck.length === 0) {
+            console.log('⚠️ No user_tags found for user');
+            return [];
+        }
+        
+        // First try the join query - using left join instead of inner join
+        const { data: joinData, error: joinError } = await supabase
+            .from('user_tags')
+            .select(`
+                tag_id,
+                assigned_at,
+                assigned_by,
+                tags (
+                    id,
+                    name,
+                    description,
+                    color
+                )
+            `)
+            .eq('user_id', userId)
+            .order('assigned_at', { ascending: false });
+        
+        console.log('🔍 Join query result:', joinData, 'Error:', joinError);
+        
+        if (!joinError && joinData) {
+            console.log('✅ Join query successful, found', joinData.length, 'tags');
+            // Filter out any null tags and transform to match expected format
+            const validTags = joinData
+                .filter(item => item.tags) // Only include items with valid tag data
+                .map(item => ({
+                    tag_id: item.tag_id,
+                    tag_name: item.tags.name,
+                    tag_description: item.tags.description,
+                    tag_color: item.tags.color,
+                    assigned_at: item.assigned_at,
+                    assigned_by: item.assigned_by
+                }));
+            
+            console.log('✅ Valid tags after filtering:', validTags);
+            return validTags;
+        }
+        
+        console.log('⚠️ Join query failed, trying separate queries:', joinError);
+        
+        // Fallback to separate queries
+        const { data: userTagsData, error: userTagsError } = await supabase
+            .from('user_tags')
+            .select('*')
+            .eq('user_id', userId)
+            .order('assigned_at', { ascending: false });
+        
+        if (userTagsError) {
+            console.error('❌ user_tags query failed:', userTagsError);
+            return [];
+        }
+        
+        if (!userTagsData || userTagsData.length === 0) {
+            console.log('ℹ️ No user tags found for user');
+            return [];
+        }
+        
+        // Get tag details separately
+        const tagIds = userTagsData.map(ut => ut.tag_id);
+        const { data: tagsData, error: tagsError } = await supabase
+            .from('tags')
+            .select('*')
+            .in('id', tagIds);
+        
+        if (tagsError) {
+            console.error('❌ tags query failed:', tagsError);
+            return [];
+        }
+        
+        // Combine the data
+        const result = userTagsData.map(userTag => {
+            const tag = tagsData?.find(t => t.id === userTag.tag_id);
+            return {
+                tag_id: userTag.tag_id,
+                tag_name: tag?.name || 'Unknown Tag',
+                tag_description: tag?.description || '',
+                tag_color: tag?.color || '#3b82f6',
+                assigned_at: userTag.assigned_at,
+                assigned_by: userTag.assigned_by
+            };
+        });
+        
+        console.log('✅ Separate queries successful, found', result.length, 'tags:', result.map(r => r.tag_name));
+        return result;
+        
     } catch (error) {
-        console.error('Error in getUserTags:', error);
+        console.error('❌ Error in getUserTags fallback:', error);
         return [];
     }
 };
@@ -89,7 +215,14 @@ export const getUserTags = async (userId) => {
 export const getCurrentUserTags = async () => {
     try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return [];
+        if (!user) {
+            console.log('❌ No authenticated user found');
+            return [];
+        }
+        
+        console.log('🔍 Current auth user ID:', user.id);
+        console.log('🔍 Expected user ID in database:', '9561bcc5-428c-47e4-b53b-ff978125b767');
+        console.log('🔍 IDs match:', user.id === '9561bcc5-428c-47e4-b53b-ff978125b767');
         
         return await getUserTags(user.id);
     } catch (error) {
@@ -110,23 +243,98 @@ export const getCurrentUserTags = async () => {
  */
 export const assignUserTag = async (userId, tagName) => {
     try {
+        console.log(`🏷️ Assigning tag "${tagName}" to user:`, userId);
+        
         const { data: { user } } = await supabase.auth.getUser();
         const assignedBy = user?.id || null;
         
-        const { data, error } = await supabase.rpc('assign_user_tag', {
-            target_user_id: userId,
-            tag_name: tagName,
-            assigned_by_user_id: assignedBy
+        const { data, error } = await supabase.functions.invoke('assign-user-tag', {
+            body: {
+                target_user_id: userId,
+                tag_name: tagName,
+                assigned_by_user_id: assignedBy
+            }
         });
         
         if (error) {
-            console.error('Error assigning user tag:', error);
+            console.error('❌ Edge Function error:', error);
+            // Fallback to direct query if Edge Function fails
+            console.log('⚠️ Edge Function failed, trying fallback...');
+            return await assignUserTagFallback(userId, tagName, assignedBy);
+        }
+        
+        console.log(`✅ Tag "${tagName}" assigned successfully via Edge Function`);
+        return data?.success === true;
+    } catch (error) {
+        console.error('❌ Error in assignUserTag:', error);
+        console.log('⚠️ Trying fallback due to exception...');
+        const { data: { user } } = await supabase.auth.getUser();
+        const assignedBy = user?.id || null;
+        return await assignUserTagFallback(userId, tagName, assignedBy);
+    }
+};
+
+/**
+ * Fallback function to assign user tags using direct database queries
+ */
+const assignUserTagFallback = async (userId, tagName, assignedBy) => {
+    try {
+        console.log(`🔍 Using assignUserTag fallback for tag "${tagName}" and user:`, userId);
+        
+        // First, get the tag ID
+        const { data: tagData, error: tagError } = await supabase
+            .from('tags')
+            .select('id')
+            .eq('name', tagName)
+            .single();
+        
+        if (tagError || !tagData) {
+            console.error('❌ Error finding tag:', tagError);
             return false;
         }
         
-        return data === true;
+        console.log(`✅ Found tag "${tagName}" with ID:`, tagData.id);
+        
+        // Check if user already has this tag
+        const { data: existingTag, error: checkError } = await supabase
+            .from('user_tags')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('tag_id', tagData.id)
+            .single();
+        
+        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = not found, which is expected
+            console.error('❌ Error checking existing tag:', checkError);
+            return false;
+        }
+        
+        // If tag already exists, return true
+        if (existingTag) {
+            console.log(`✅ User already has tag "${tagName}"`);
+            return true;
+        }
+        
+        console.log(`🏷️ Inserting new user tag "${tagName}"...`);
+        
+        // Insert the user tag
+        const { error: insertError } = await supabase
+            .from('user_tags')
+            .insert({
+                user_id: userId,
+                tag_id: tagData.id,
+                assigned_by: assignedBy,
+                assigned_at: new Date().toISOString()
+            });
+        
+        if (insertError) {
+            console.error('❌ Error inserting user tag:', insertError);
+            return false;
+        }
+        
+        console.log(`✅ Tag "${tagName}" assigned successfully via fallback`);
+        return true;
     } catch (error) {
-        console.error('Error in assignUserTag:', error);
+        console.error('❌ Error in assignUserTag fallback:', error);
         return false;
     }
 };
@@ -139,9 +347,11 @@ export const assignUserTag = async (userId, tagName) => {
  */
 export const removeUserTag = async (userId, tagName) => {
     try {
-        const { data, error } = await supabase.rpc('remove_user_tag', {
-            target_user_id: userId,
-            tag_name: tagName
+        const { data, error } = await supabase.functions.invoke('remove-user-tag', {
+            body: {
+                target_user_id: userId,
+                tag_name: tagName
+            }
         });
         
         if (error) {
@@ -149,7 +359,7 @@ export const removeUserTag = async (userId, tagName) => {
             return false;
         }
         
-        return data === true;
+        return data?.success === true;
     } catch (error) {
         console.error('Error in removeUserTag:', error);
         return false;
@@ -193,10 +403,12 @@ export const getAllTags = async () => {
  */
 export const addClientToTrainer = async (trainerId, clientId, notes = null) => {
     try {
-        const { data, error } = await supabase.rpc('add_client_to_trainer', {
-            trainer_user_id: trainerId,
-            client_user_id: clientId,
-            relationship_notes: notes
+        const { data, error } = await supabase.functions.invoke('add-client-to-trainer', {
+            body: {
+                trainer_user_id: trainerId,
+                client_user_id: clientId,
+                relationship_notes: notes
+            }
         });
         
         if (error) {
@@ -204,7 +416,14 @@ export const addClientToTrainer = async (trainerId, clientId, notes = null) => {
             return null;
         }
         
-        return data; // Returns the relationship ID
+        // Log role assignment status
+        if (data?.roles_assigned) {
+            console.log('✅ Trainer-client relationship created with roles assigned');
+        } else {
+            console.log('✅ Trainer-client relationship created (roles already existed)');
+        }
+        
+        return data?.relationship_id || null;
     } catch (error) {
         console.error('Error in addClientToTrainer:', error);
         return null;
@@ -218,37 +437,102 @@ export const addClientToTrainer = async (trainerId, clientId, notes = null) => {
  */
 export const getTrainerClients = async (trainerId) => {
     try {
-        // TEMP FIX: Simple query without embedded relationships to avoid schema cache issues
+        console.log('🔍 Fetching clients for trainer:', trainerId);
+        
+        // Direct query with simpler join syntax
         const { data, error } = await supabase
             .from('trainer_clients')
-            .select('*')
+            .select(`
+                *,
+                user_profiles (
+                    id,
+                    email,
+                    first_name,
+                    last_name
+                )
+            `)
             .eq('trainer_id', trainerId)
-            .eq('relationship_status', 'active')
             .order('created_at', { ascending: false });
         
         if (error) {
-            console.error('Error fetching trainer clients:', error);
-            return [];
-        }
-        
-        // Get client details separately to avoid schema cache issues
-        if (data && data.length > 0) {
-            const clientIds = data.map(rel => rel.client_id);
+            console.error('❌ Error fetching trainer clients:', error);
             
-            // TEMP FIX: Use placeholder data since user_profiles schema is unclear
-            return data.map(rel => ({
-                ...rel,
-                client: {
-                    id: rel.client_id,
-                    email: `client-${rel.client_id.slice(0, 8)}@example.com`, // Placeholder
-                    user_profiles: { full_name: 'Test Client' } // Placeholder
-                }
-            }));
+            // Fallback: Simple query without joins, then get profile data separately
+            const { data: simpleData, error: simpleError } = await supabase
+                .from('trainer_clients')
+                .select('*')
+                .eq('trainer_id', trainerId)
+                .order('created_at', { ascending: false });
+            
+            if (simpleError) {
+                console.error('❌ Simple query also failed:', simpleError);
+                return [];
+            }
+            
+            console.log('📊 Using simple query fallback:', simpleData);
+            
+            // Get user profiles separately for each client
+            const transformedData = [];
+            for (const relationship of simpleData || []) {
+                // Get user profile data
+                const { data: profileData, error: profileError } = await supabase
+                    .from('user_profiles')
+                    .select('*')
+                    .eq('id', relationship.client_id)
+                    .single();
+                
+                console.log(`📊 Profile for ${relationship.client_id}:`, profileData, profileError);
+                
+                transformedData.push({
+                    id: `${trainerId}-${relationship.client_id}`,
+                    trainer_id: trainerId,
+                    client_id: relationship.client_id,
+                    status: relationship.status,
+                    created_at: relationship.created_at,
+                    updated_at: relationship.updated_at,
+                    client: {
+                        id: relationship.client_id,
+                        email: profileData?.email || 'No email found',
+                        user_profiles: {
+                            full_name: profileData?.first_name && profileData?.last_name 
+                                ? `${profileData.first_name} ${profileData.last_name}`
+                                : profileData?.email?.split('@')[0] || `User ${relationship.client_id.slice(0, 8)}`
+                        }
+                    },
+                    last_message_at: null
+                });
+            }
+            
+            console.log('✅ Fallback transformed data with real profiles:', transformedData);
+            return transformedData;
         }
         
-        return data || [];
+        console.log('📊 Raw database response:', data);
+        
+        // Transform the data to match expected format
+        const transformedData = (data || []).map(relationship => ({
+            id: `${trainerId}-${relationship.client_id}`,
+            trainer_id: trainerId,
+            client_id: relationship.client_id,
+            status: relationship.status,
+            created_at: relationship.created_at,
+            updated_at: relationship.updated_at,
+            client: {
+                id: relationship.client_id,
+                email: relationship.user_profiles?.email || `client-${relationship.client_id.slice(0, 8)}@example.com`,
+                user_profiles: {
+                    full_name: relationship.user_profiles?.first_name && relationship.user_profiles?.last_name 
+                        ? `${relationship.user_profiles.first_name} ${relationship.user_profiles.last_name}` 
+                        : relationship.user_profiles?.email?.split('@')[0] || `Client ${relationship.client_id.slice(0, 8)}`
+                }
+            },
+            last_message_at: null // Could be enhanced later
+        }));
+        
+        console.log('✅ Transformed client data:', transformedData);
+        return transformedData;
     } catch (error) {
-        console.error('Error in getTrainerClients:', error);
+        console.error('❌ Error in getTrainerClients:', error);
         return [];
     }
 };
@@ -265,7 +549,7 @@ export const getClientTrainers = async (clientId) => {
             .from('trainer_clients')
             .select('*')
             .eq('client_id', clientId)
-            .eq('relationship_status', 'active')
+            .eq('status', 'active')  // Fixed: use 'status' not 'relationship_status'
             .order('created_at', { ascending: false });
         
         if (error) {
@@ -306,7 +590,7 @@ export const updateTrainerClientStatus = async (relationshipId, status) => {
         const { error } = await supabase
             .from('trainer_clients')
             .update({ 
-                relationship_status: status,
+                status: status,  // Fixed: use 'status' not 'relationship_status'
                 updated_at: new Date().toISOString()
             })
             .eq('id', relationshipId);

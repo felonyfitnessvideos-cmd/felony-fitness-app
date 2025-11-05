@@ -12,10 +12,10 @@
  *   limited to 'rest' and 'deload' where applicable.
  */
 
-import React, { useEffect, useState } from 'react';
-import './CycleWeekEditor.css';
-import { supabase } from '../supabaseClient.js';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../AuthContext.jsx';
+import { supabase } from '../supabaseClient.js';
+import './CycleWeekEditor.css';
 
 // helper: returns true if focus should auto-deload on 5th week
 function isDeloadFocus(focus) {
@@ -41,10 +41,7 @@ function CycleWeekEditor({ weeks = 4, focus = 'Hypertrophy', onAssignmentsChange
   if (!Number.isFinite(weeks) || weeks <= 0) weeks = 4;
   const { user, loading } = useAuth();
   const [routines, setRoutines] = useState([]);
-  const [assignments, setAssignments] = useState(() => {
-    // returns array of { week_index, day_index, type: 'routine'|'rest'|'deload', routine_id }
-    return [];
-  });
+  const [assignments, setAssignments] = useState([]);
 
   useEffect(() => {
     let mounted = true;
@@ -63,7 +60,7 @@ function CycleWeekEditor({ weeks = 4, focus = 'Hypertrophy', onAssignmentsChange
   }, [user, loading]);
 
   // initialize assignments when weeks or focus changes
-      /** Audited: 2025-10-25 — JSDoc batch 9 */
+  /** Audited: 2025-10-25 — JSDoc batch 9 */
   useEffect(() => {
     // If initial assignments provided (editing mode), use them when lengths match
     if (initialAssignments && initialAssignments.length > 0) {
@@ -71,7 +68,6 @@ function CycleWeekEditor({ weeks = 4, focus = 'Hypertrophy', onAssignmentsChange
       const expected = weeks * 7;
       if (initialAssignments.length === expected) {
         setAssignments(initialAssignments);
-        onAssignmentsChange(initialAssignments);
         return;
       }
     }
@@ -85,22 +81,31 @@ function CycleWeekEditor({ weeks = 4, focus = 'Hypertrophy', onAssignmentsChange
       }
     }
     setAssignments(arr);
-    onAssignmentsChange(arr);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weeks, focus, initialAssignments]);
 
+  // Only call onAssignmentsChange when assignments actually change
+  useEffect(() => {
+    if (assignments && assignments.length > 0) {
+      onAssignmentsChange(assignments);
+    }
+  }, [assignments, onAssignmentsChange]);
+
   const handleSelect = (weekIndex, dayIndex, value) => {
     setAssignments((prev) => {
-      const next = prev.map((a) => {
+      return prev.map((a) => {
         if (a.week_index === weekIndex && a.day_index === dayIndex) {
           if (value === 'rest') return { ...a, type: 'rest', routine_id: null };
           if (value === 'deload') return { ...a, type: 'deload', routine_id: null };
-          return { ...a, type: 'routine', routine_id: value };
+          // Only allow valid UUIDs for routine_id
+          if (typeof value === 'string' && value.length === 36) {
+            return { ...a, type: 'routine', routine_id: value };
+          }
+          // fallback: treat as rest if not valid UUID
+          return { ...a, type: 'rest', routine_id: null };
         }
         return a;
       });
-      onAssignmentsChange(next);
-      return next;
     });
   };
 

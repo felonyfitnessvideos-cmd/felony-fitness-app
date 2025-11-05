@@ -1,0 +1,203 @@
+name,brand,category,data_sources,quality_score
+"Chicken Breast, Skinless","Generic","Meats","['USDA']",95
+"Ground Beef, 80/20","Generic","Meats","['USDA']",95
+"Pork Tenderloin","Generic","Meats","['USDA']",95
+"Turkey Breast, Sliced","Generic","Meats","['USDA']",95
+"Lamb Leg, Lean","Generic","Meats","['USDA']",95
+"Beef Sirloin Steak","Generic","Meats","['USDA']",95
+"Pork Chops, Bone-in","Generic","Meats","['USDA']",95
+"Ground Turkey, 93/7","Generic","Meats","['USDA']",95
+"Chicken Thighs, Skinless","Generic","Meats","['USDA']",95
+"Beef Chuck Roast","Generic","Meats","['USDA']",95
+"Pork Shoulder","Generic","Meats","['USDA']",95
+"Chicken Wings","Generic","Meats","['USDA']",95
+"Turkey Leg","Generic","Meats","['USDA']",95
+"Beef Ribeye Steak","Generic","Meats","['USDA']",95
+"Pork Ribs, Baby Back","Generic","Meats","['USDA']",95
+"Ground Lamb","Generic","Meats","['USDA']",95
+"Chicken Drumsticks","Generic","Meats","['USDA']",95
+"Beef Brisket","Generic","Meats","['USDA']",95
+"Turkey Ground, 85/15","Generic","Meats","['USDA']",95
+"Pork Loin","Generic","Meats","['USDA']",95
+"Chicken Whole, Roasted","Generic","Meats","['USDA']",95
+"Beef T-bone Steak","Generic","Meats","['USDA']",95
+"Lamb Chops","Generic","Meats","['USDA']",95
+"Pork Belly","Generic","Meats","['USDA']",95
+"Turkey Thigh","Generic","Meats","['USDA']",95
+"Beef Tenderloin","Generic","Meats","['USDA']",95
+"Chicken Liver","Generic","Meats","['USDA']",95
+"Pork Sausage, Italian","Generic","Meats","['USDA']",95
+"Ground Chicken","Generic","Meats","['USDA']",95
+"Beef Short Ribs","Generic","Meats","['USDA']",95
+"Turkey Sausage, Breakfast","Generic","Meats","['USDA']",95
+"Lamb Shoulder","Generic","Meats","['USDA']",95
+"Pork Ham, Lean","Generic","Meats","['USDA']",95
+"Chicken Sausage, Apple","Generic","Meats","['USDA']",95
+"Beef Flank Steak","Generic","Meats","['USDA']",95
+"Turkey Bacon","Generic","Meats","['USDA']",95
+"Pork Bacon, Thick Cut","Generic","Meats","['USDA']",95
+"Chicken Gizzards","Generic","Meats","['USDA']",95
+"Beef Eye of Round","Generic","Meats","['USDA']",95
+"Lamb Rack","Generic","Meats","['USDA']",95
+"Pork Hocks","Generic","Meats","['USDA']",95
+"Turkey Wings","Generic","Meats","['USDA']",95
+"Chicken Hearts","Generic","Meats","['USDA']",95
+"Beef Bottom Round","Generic","Meats","['USDA']",95
+"Pork Shoulder Blade","Generic","Meats","['USDA']",95
+"Ground Pork","Generic","Meats","['USDA']",95
+"Chicken Neck","Generic","Meats","['USDA']",95
+"Beef Strip Steak","Generic","Meats","['USDA']",95
+"Turkey Tenderloin","Generic","Meats","['USDA']",95
+"Lamb Ground","Generic","Meats","['USDA']",95
+"Broccoli, Fresh","Generic","Vegetables","['USDA']",95
+"Spinach, Fresh","Generic","Vegetables","['USDA']",95
+"Carrots, Fresh","Generic","Vegetables","['USDA']",95
+"Bell Peppers, Red","Generic","Vegetables","['USDA']",95
+"Asparagus, Fresh","Generic","Vegetables","['USDA']",95
+"Brussels Sprouts","Generic","Vegetables","['USDA']",95
+"Cauliflower, Fresh","Generic","Vegetables","['USDA']",95
+"Green Beans","Generic","Vegetables","['USDA']",95
+"Zucchini, Fresh","Generic","Vegetables","['USDA']",95
+"Kale, Fresh","Generic","Vegetables","['USDA']",95
+"Sweet Potato","Generic","Vegetables","['USDA']",95
+"Onions, Yellow","Generic","Vegetables","['USDA']",95
+"Tomatoes, Fresh","Generic","Vegetables","['USDA']",95
+"Cucumbers, Fresh","Generic","Vegetables","['USDA']",95
+"Lettuce, Romaine","Generic","Vegetables","['USDA']",95
+"Celery, Fresh","Generic","Vegetables","['USDA']",95
+"Mushrooms, White Button","Generic","Vegetables","['USDA']",95
+"Peppers, Green Bell","Generic","Vegetables","['USDA']",95
+"Cabbage, Green","Generic","Vegetables","['USDA']",95
+"Beets, Fresh","Generic","Vegetables","['USDA']",95
+"Radishes, Fresh","Generic","Vegetables","['USDA']",95
+"Artichokes, Fresh","Generic","Vegetables","['USDA']",95
+"Eggplant, Fresh","Generic","Vegetables","['USDA']",95
+"Garlic, Fresh","Generic","Vegetables","['USDA']",95
+"Ginger, Fresh","Generic","Vegetables","['USDA']",95
+"Leeks, Fresh","Generic","Vegetables","['USDA']",95
+"Parsnips, Fresh","Generic","Vegetables","['USDA']",95
+"Turnips, Fresh","Generic","Vegetables","['USDA']",95
+"Swiss Chard","Generic","Vegetables","['USDA']",95
+"Bok Choy","Generic","Vegetables","['USDA']",95
+"Arugula, Fresh","Generic","Vegetables","['USDA']",95
+"Collard Greens","Generic","Vegetables","['USDA']",95
+"Mustard Greens","Generic","Vegetables","['USDA']",95
+"Okra, Fresh","Generic","Vegetables","['USDA']",95
+"Peas, Green","Generic","Vegetables","['USDA']",95
+"Snow Peas","Generic","Vegetables","['USDA']",95
+"Corn, Sweet","Generic","Vegetables","['USDA']",95
+"Butternut Squash","Generic","Vegetables","['USDA']",95
+"Acorn Squash","Generic","Vegetables","['USDA']",95
+"Potato, Russet","Generic","Vegetables","['USDA']",95
+"Potato, Red","Generic","Vegetables","['USDA']",95
+"Fennel, Fresh","Generic","Vegetables","['USDA']",95
+"Watercress, Fresh","Generic","Vegetables","['USDA']",95
+"Endive, Fresh","Generic","Vegetables","['USDA']",95
+"Radicchio, Fresh","Generic","Vegetables","['USDA']",95
+"Scallions, Fresh","Generic","Vegetables","['USDA']",95
+"Shallots, Fresh","Generic","Vegetables","['USDA']",95
+"Jalapeno Peppers","Generic","Vegetables","['USDA']",95
+"Serrano Peppers","Generic","Vegetables","['USDA']",95
+"Poblano Peppers","Generic","Vegetables","['USDA']",95
+"Banana Peppers","Generic","Vegetables","['USDA']",95
+"Apple, Gala","Generic","Fruits","['USDA']",95
+"Banana, Fresh","Generic","Fruits","['USDA']",95
+"Orange, Navel","Generic","Fruits","['USDA']",95
+"Strawberries, Fresh","Generic","Fruits","['USDA']",95
+"Blueberries, Fresh","Generic","Fruits","['USDA']",95
+"Grapes, Red","Generic","Fruits","['USDA']",95
+"Pineapple, Fresh","Generic","Fruits","['USDA']",95
+"Mango, Fresh","Generic","Fruits","['USDA']",95
+"Peach, Fresh","Generic","Fruits","['USDA']",95
+"Pear, Bartlett","Generic","Fruits","['USDA']",95
+"Kiwi, Fresh","Generic","Fruits","['USDA']",95
+"Cantaloupe, Fresh","Generic","Fruits","['USDA']",95
+"Watermelon, Fresh","Generic","Fruits","['USDA']",95
+"Honeydew, Fresh","Generic","Fruits","['USDA']",95
+"Grapefruit, Pink","Generic","Fruits","['USDA']",95
+"Lemon, Fresh","Generic","Fruits","['USDA']",95
+"Lime, Fresh","Generic","Fruits","['USDA']",95
+"Cherries, Sweet","Generic","Fruits","['USDA']",95
+"Plum, Fresh","Generic","Fruits","['USDA']",95
+"Apricot, Fresh","Generic","Fruits","['USDA']",95
+"Blackberries, Fresh","Generic","Fruits","['USDA']",95
+"Raspberries, Fresh","Generic","Fruits","['USDA']",95
+"Cranberries, Fresh","Generic","Fruits","['USDA']",95
+"Pomegranate, Fresh","Generic","Fruits","['USDA']",95
+"Avocado, Hass","Generic","Fruits","['USDA']",95
+"Coconut, Fresh","Generic","Fruits","['USDA']",95
+"Papaya, Fresh","Generic","Fruits","['USDA']",95
+"Passion Fruit","Generic","Fruits","['USDA']",95
+"Dragon Fruit","Generic","Fruits","['USDA']",95
+"Star Fruit","Generic","Fruits","['USDA']",95
+"Guava, Fresh","Generic","Fruits","['USDA']",95
+"Lychee, Fresh","Generic","Fruits","['USDA']",95
+"Rambutan, Fresh","Generic","Fruits","['USDA']",95
+"Persimmon, Fresh","Generic","Fruits","['USDA']",95
+"Fig, Fresh","Generic","Fruits","['USDA']",95
+"Date, Medjool","Generic","Fruits","['USDA']",95
+"Prunes, Dried","Generic","Fruits","['USDA']",95
+"Raisins, Golden","Generic","Fruits","['USDA']",95
+"Cranberries, Dried","Generic","Fruits","['USDA']",95
+"Apricots, Dried","Generic","Fruits","['USDA']",95
+"Banana Chips","Generic","Fruits","['USDA']",95
+"Apple, Granny Smith","Generic","Fruits","['USDA']",95
+"Apple, Red Delicious","Generic","Fruits","['USDA']",95
+"Orange, Valencia","Generic","Fruits","['USDA']",95
+"Grapes, Green","Generic","Fruits","['USDA']",95
+"Pear, Anjou","Generic","Fruits","['USDA']",95
+"Peach, White","Generic","Fruits","['USDA']",95
+"Nectarine, Fresh","Generic","Fruits","['USDA']",95
+"Tangerine, Fresh","Generic","Fruits","['USDA']",95
+"Clementine, Fresh","Generic","Fruits","['USDA']",95
+"Mandarin Orange","Generic","Fruits","['USDA']",95
+"Water, Purified","Generic","Beverages","['USDA']",95
+"Coffee, Black","Generic","Beverages","['USDA']",95
+"Tea, Green","Generic","Beverages","['USDA']",95
+"Tea, Black","Generic","Beverages","['USDA']",95
+"Milk, Whole","Generic","Beverages","['USDA']",95
+"Milk, 2% Fat","Generic","Beverages","['USDA']",95
+"Milk, 1% Fat","Generic","Beverages","['USDA']",95
+"Milk, Skim","Generic","Beverages","['USDA']",95
+"Almond Milk, Unsweetened","Generic","Beverages","['USDA']",95
+"Soy Milk, Unsweetened","Generic","Beverages","['USDA']",95
+"Coconut Milk, Canned","Generic","Beverages","['USDA']",95
+"Oat Milk, Unsweetened","Generic","Beverages","['USDA']",95
+"Orange Juice, Fresh","Generic","Beverages","['USDA']",95
+"Apple Juice, 100%","Generic","Beverages","['USDA']",95
+"Grapefruit Juice","Generic","Beverages","['USDA']",95
+"Cranberry Juice, 100%","Generic","Beverages","['USDA']",95
+"Grape Juice, 100%","Generic","Beverages","['USDA']",95
+"Tomato Juice","Generic","Beverages","['USDA']",95
+"Carrot Juice","Generic","Beverages","['USDA']",95
+"Beet Juice","Generic","Beverages","['USDA']",95
+"Celery Juice","Generic","Beverages","['USDA']",95
+"Lemon Juice, Fresh","Generic","Beverages","['USDA']",95
+"Lime Juice, Fresh","Generic","Beverages","['USDA']",95
+"Coconut Water","Generic","Beverages","['USDA']",95
+"Sparkling Water","Generic","Beverages","['USDA']",95
+"Kombucha, Ginger","Generic","Beverages","['USDA']",95
+"Kefir, Plain","Generic","Beverages","['USDA']",95
+"Protein Shake, Vanilla","Generic","Beverages","['USDA']",95
+"Protein Shake, Chocolate","Generic","Beverages","['USDA']",95
+"Energy Drink, Sugar Free","Generic","Beverages","['USDA']",95
+"Sports Drink, Electrolyte","Generic","Beverages","['USDA']",95
+"Herbal Tea, Chamomile","Generic","Beverages","['USDA']",95
+"Herbal Tea, Peppermint","Generic","Beverages","['USDA']",95
+"Matcha Tea","Generic","Beverages","['USDA']",95
+"Iced Tea, Unsweetened","Generic","Beverages","['USDA']",95
+"Cold Brew Coffee","Generic","Beverages","['USDA']",95
+"Espresso","Generic","Beverages","['USDA']",95
+"Bone Broth, Beef","Generic","Beverages","['USDA']",95
+"Bone Broth, Chicken","Generic","Beverages","['USDA']",95
+"Vegetable Broth","Generic","Beverages","['USDA']",95
+"Wine, Red","Generic","Beverages","['USDA']",95
+"Wine, White","Generic","Beverages","['USDA']",95
+"Beer, Light","Generic","Beverages","['USDA']",95
+"Beer, Regular","Generic","Beverages","['USDA']",95
+"Vodka","Generic","Beverages","['USDA']",95
+"Whiskey","Generic","Beverages","['USDA']",95
+"Tequila","Generic","Beverages","['USDA']",95
+"Gin","Generic","Beverages","['USDA']",95
+"Rum","Generic","Beverages","['USDA']",95
+"Brandy","Generic","Beverages","['USDA']",95

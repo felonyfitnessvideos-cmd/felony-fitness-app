@@ -27,25 +27,29 @@ function NutritionPage() {
 
   /**
    * An effect hook that fetches a random nutrition tip when the component mounts.
-   * It calls a Supabase RPC function `get_random_tip`. On success, it updates the `dailyTip` state.
+   * It calls the get-random-tip Edge Function. On success, it updates the `dailyTip` state.
    * On failure, it logs the error and sets a default fallback message.
    */
   useEffect(() => {
     /**
      * Asynchronously fetches a random tip from the database.
-     * This function calls the 'get_random_tip' remote procedure call in Supabase.
+     * This function calls the 'get-random-tip' Edge Function.
      */
     const fetchRandomTip = async () => {
       try {
-        const { data, error } = await supabase.rpc('get_random_tip');
-        if (error) throw error; // Propagate the error to the catch block.
-        // RPCs sometimes return a single object or an array depending on
-        // server-side implementation. Handle both shapes safely.
+        const { data, error } = await supabase.functions.invoke('get-random-tip', {
+          body: {}
+        });
+        
+        if (error) throw error;
+        
         if (!data) return;
-        if (Array.isArray(data) && data.length > 0) {
-          setDailyTip(data[0].tip_text);
-        } else if (data.tip_text) {
+        
+        // Handle tip data from Edge Function response
+        if (data.tip_text) {
           setDailyTip(data.tip_text);
+        } else if (data.tip) {
+          setDailyTip(data.tip);
         }
       } catch (error) {
         console.error('Error fetching random tip:', error);

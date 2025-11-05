@@ -8,12 +8,12 @@
  * WorkoutGoalsPage (doc): manages workout-specific goals and progress.
  * Provides CRUD and simple progress visuals; backend enforces ownership.
  */
-import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient.js';
-import SubPageHeader from '../components/SubPageHeader.jsx';
-import { Dumbbell, Trash2, Trophy, Edit2 } from 'lucide-react';
+import { Dumbbell, Edit2, Trash2, Trophy } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Modal from 'react-modal';
 import { useAuth } from '../AuthContext.jsx';
+import SubPageHeader from '../components/SubPageHeader.jsx';
+import { supabase } from '../supabaseClient.js';
 import './WorkoutGoalsPage.css';
 
 
@@ -34,16 +34,49 @@ import './WorkoutGoalsPage.css';
  * @returns {JSX.Element} The rendered Workout Goals page component.
  */
 
+/**
+ * Main React component for managing workout goals.
+ * Handles CRUD operations, modal state, and progress visualization.
+ * @component
+ */
 function WorkoutGoalsPage() {
+  /**
+   * Authenticated user object from context.
+   * @type {{ id: string, [key: string]: any }}
+   */
   const { user } = useAuth();
+  /**
+   * User ID for database queries.
+   * @type {string | undefined}
+   */
   const userId = user?.id;
   /** @type {[Goal[], React.Dispatch<React.SetStateAction<Goal[]>>]} */
+  /**
+   * Array of user's workout goals.
+   * @type {[Goal[], Function]}
+   */
   const [goals, setGoals] = useState([]);
+  /**
+   * Loading state for async operations.
+   * @type {[boolean, Function]}
+   */
   const [loading, setLoading] = useState(true);
+  /**
+   * Modal open/close state.
+   * @type {[boolean, Function]}
+   */
   const [isModalOpen, setIsModalOpen] = useState(false);
   /** @type {[Goal | null, React.Dispatch<React.SetStateAction<Goal | null>>]} */
+  /**
+   * Currently editing goal (null if adding new).
+   * @type {[Goal|null, Function]}
+   */
   const [editingGoal, setEditingGoal] = useState(null);
   /** @type {[NewGoal, React.Dispatch<React.SetStateAction<NewGoal>>]} */
+  /**
+   * State for new or edited goal form.
+   * @type {[{goal_description: string, current_value: number, target_value: string|number, target_date: string, isWeightGoal?: boolean}, Function]}
+   */
   const [newGoal, setNewGoal] = useState({
     goal_description: '', current_value: 0, target_value: '', target_date: ''
   });
@@ -52,6 +85,11 @@ function WorkoutGoalsPage() {
    * Fetches all goals for the current user from the database.
    * @param {string} userId - The UUID of the authenticated user.
    * @async
+   */
+  /**
+   * Fetches all goals for the current user from the database.
+   * @param {string} userId - The UUID of the authenticated user.
+   * @returns {Promise<void>}
    */
   const fetchGoals = useCallback(async (userId) => {
     setLoading(true);
@@ -69,6 +107,9 @@ function WorkoutGoalsPage() {
   // Depend only on the user's id and the stable fetchGoals callback. Avoid
   // depending on the full `user` object to prevent redundant fetches when
   // its reference changes without a change to identity.
+  /**
+   * Effect: Loads goals on mount and when userId changes.
+   */
   useEffect(() => {
     if (userId) {
       fetchGoals(userId);
@@ -82,6 +123,12 @@ function WorkoutGoalsPage() {
    * The query is scoped to the user's ID for an extra layer of security.
    * @param {string} goalId - The UUID of the goal to be deleted.
    * @async
+   */
+  /**
+   * Deletes a specific goal after user confirmation.
+   * The query is scoped to the user's ID for an extra layer of security.
+   * @param {string} goalId - The UUID of the goal to be deleted.
+   * @returns {Promise<void>}
    */
   const handleDeleteGoal = async (goalId) => {
     // Guard clause to ensure a user is logged in.
@@ -109,6 +156,10 @@ function WorkoutGoalsPage() {
    * Opens the modal for either creating a new goal or editing an existing one.
    * @param {Goal | null} [goal=null] - The goal object to edit. If null, the modal is in "add new" mode.
    */
+  /**
+   * Opens the modal for either creating a new goal or editing an existing one.
+   * @param {Goal | null} [goal=null] - The goal object to edit. If null, the modal is in "add new" mode.
+   */
   const openModal = (goal = null) => {
     if (goal) {
       setEditingGoal(goal);
@@ -126,11 +177,18 @@ function WorkoutGoalsPage() {
   };
 
   /** Closes the modal and resets its state. */
+  /**
+   * Closes the modal and resets its state.
+   */
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingGoal(null);
   };
 
+  /**
+   * Handles changes to the form inputs within the modal.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
+   */
   /**
    * Handles changes to the form inputs within the modal.
    * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
@@ -145,6 +203,11 @@ function WorkoutGoalsPage() {
    * Handles the form submission to either create a new goal or update an existing one.
    * @param {React.FormEvent<HTMLFormElement>} e - The form submission event.
    * @async
+   */
+  /**
+   * Handles the form submission to either create a new goal or update an existing one.
+   * @param {React.FormEvent<HTMLFormElement>} e - The form submission event.
+   * @returns {Promise<void>}
    */
   const handleSaveGoal = async (e) => {
     e.preventDefault();
@@ -237,27 +300,41 @@ function WorkoutGoalsPage() {
       >
         <h2>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</h2>
         <form onSubmit={handleSaveGoal}>
-          <div className="form-group">
-            <label>Goal Description</label>
-            <input name="goal_description" value={newGoal.goal_description} onChange={handleInputChange} required />
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Current Value</label>
-              <input name="current_value" type="number" min="0" step="any" value={newGoal.current_value} onChange={handleInputChange} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+            <div className="form-group" style={{ width: '100%' }}>
+              <label>Goal Description</label>
+              <input name="goal_description" value={newGoal.goal_description} onChange={handleInputChange} required />
             </div>
-            <div className="form-group">
-              <label>Target Value</label>
-              <input name="target_value" type="number" min="0" step="any" value={newGoal.target_value} onChange={handleInputChange} required />
+            <div className="form-group" style={{ marginBottom: '1.5rem', width: '100%' }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                <input
+                  type="checkbox"
+                  name="isWeightGoal"
+                  checked={!!newGoal.isWeightGoal}
+                  onChange={e => setNewGoal({ ...newGoal, isWeightGoal: e.target.checked })}
+                  style={{ marginRight: '0.5rem' }}
+                />
+                Select if this is a weight related goal
+              </label>
             </div>
-          </div>
-          <div className="form-group">
-            <label>Target Date</label>
-            <input name="target_date" type="date" value={newGoal.target_date} onChange={handleInputChange} />
-          </div>
-          <div className="action-footer">
-            <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
-            <button type="submit" className="save-button">Save Goal</button>
+            <div className="form-row" style={{ display: 'flex', justifyContent: 'center', gap: '3rem', flexWrap: 'wrap', marginBottom: '1.5rem', width: '100%' }}>
+              <div className="form-group" style={{ flex: 1, minWidth: '160px' }}>
+                <label>Current Value</label>
+                <input name="current_value" type="number" min="0" step="any" value={newGoal.current_value} onChange={handleInputChange} />
+              </div>
+              <div className="form-group" style={{ flex: 1, minWidth: '160px' }}>
+                <label>Target Value</label>
+                <input name="target_value" type="number" min="0" step="any" value={newGoal.target_value} onChange={handleInputChange} required />
+              </div>
+            </div>
+            <div className="form-group" style={{ marginBottom: '2rem', width: '100%' }}>
+              <label>Target Date</label>
+              <input name="target_date" type="date" value={newGoal.target_date} onChange={handleInputChange} />
+            </div>
+            <div className="action-footer" style={{ gap: '2rem', justifyContent: 'center', width: '100%' }}>
+              <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
+              <button type="submit" className="save-button">Save Goal</button>
+            </div>
           </div>
         </form>
       </Modal>

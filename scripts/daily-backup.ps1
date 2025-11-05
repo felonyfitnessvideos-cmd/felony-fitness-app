@@ -16,7 +16,10 @@ npx supabase db dump --linked --schema public > "$backupDir\schema-$timestamp.sq
 
 # 2. Export current migrations
 Write-Host "📁 Backing up migrations..." -ForegroundColor Yellow
-Copy-Item -Path "supabase\migrations\*" -Destination "$backupDir\migrations\" -Recurse -Force
+New-Item -ItemType Directory -Path "$backupDir\migrations" -Force | Out-Null
+if (Test-Path "supabase\migrations") {
+    Copy-Item -Path "supabase\migrations\*" -Destination "$backupDir\migrations\" -Recurse -Force
+}
 
 # 3. Backup critical source files
 Write-Host "💾 Backing up source code..." -ForegroundColor Yellow

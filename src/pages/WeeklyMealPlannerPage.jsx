@@ -441,16 +441,19 @@ const WeeklyMealPlannerPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Use atomic function to safely set active plan
-      const { data, error } = await supabase.rpc('set_active_meal_plan', {
-        plan_uuid: planId,
-        user_uuid: user.id
+      // Use Edge Function to safely set active plan
+      const { data, error } = await supabase.functions.invoke('set-active-meal-plan', {
+        body: {
+          plan_id: planId
+        }
       });
 
       if (error) throw error;
       
-      setActivePlan(data);
-      await loadMealPlans();
+      if (data?.success) {
+        setActivePlan({ id: data.plan_id, name: data.plan_name });
+        await loadMealPlans();
+      }
     } catch (error) {
       if (import.meta.env?.DEV) {
          

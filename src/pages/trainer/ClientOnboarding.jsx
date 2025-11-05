@@ -166,14 +166,12 @@ const ClientOnboarding = () => {
         // For testing, use the trainer's own ID as client (since you're testing with yourself)
         const clientUserId = trainer.id; // This will work for self-testing
         
-        // Step 2: Create trainer-client relationship using our function
-        const { error: relationshipError } = await supabase.rpc('add_client_to_trainer', {
-          trainer_user_id: trainer.id,
-          client_user_id: clientUserId
-        });
+        // Step 2: Create trainer-client relationship using our enhanced function with role assignment
+        const { addClientToTrainer } = await import('../../utils/userRoleUtils.js');
+        const relationshipId = await addClientToTrainer(trainer.id, clientUserId, `Onboarded client: ${formData.firstName} ${formData.lastName}`);
         
-        if (relationshipError) {
-          throw new Error(`Error creating trainer-client relationship: ${relationshipError.message}`);
+        if (!relationshipId) {
+          throw new Error('Error creating trainer-client relationship');
         }
         
         alert('Client successfully onboarded and added to your client list!');

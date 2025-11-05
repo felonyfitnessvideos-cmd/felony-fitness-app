@@ -40,6 +40,78 @@
 }
 
 /**
+ * User ID section styling
+ */
+.user-id-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.user-id-toggle {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.user-id-toggle:hover {
+  color: var(--accent-color);
+}
+
+.user-id-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--border-color);
+  padding: 0.5rem;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
+.user-id-text {
+  color: var(--text-primary);
+  user-select: all;
+  word-break: break-all;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.copy-button:hover {
+  color: var(--accent-color);
+}
+
+.loading-message {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+}
+
+/**
  * Base styling for all subscription plan cards.
  */
 .plan-card {
