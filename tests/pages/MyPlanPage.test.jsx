@@ -207,7 +207,7 @@ describe('MyPlanPage Component', () => {
       );
 
       expect(screen.getByText('My Plan')).toBeInTheDocument();
-      
+
       // Wait for loading to complete before checking for YOUR PLAN
       await waitFor(() => {
         expect(screen.getByText('YOUR PLAN')).toBeInTheDocument();
@@ -886,25 +886,6 @@ describe('MyPlanPage Component', () => {
  * Tests real-world usage scenarios and component interactions
  */
 describe('MyPlanPage Integration Tests', () => {
-  let writeTextMock;
-
-  beforeEach(() => {
-    // Setup clipboard API mock for integration tests
-    writeTextMock = vi.fn().mockResolvedValue();
-    Object.defineProperty(navigator, 'clipboard', {
-      value: {
-        writeText: writeTextMock
-      },
-      writable: true,
-      configurable: true
-    });
-  });
-
-  afterEach(() => {
-    // Clean up clipboard mock
-    delete navigator.clipboard;
-  });
-
   it('completes full user workflow: view plans -> toggle ID -> change theme', async () => {
     const user = userEvent.setup();
     const updateUserTheme = vi.fn();
@@ -926,8 +907,11 @@ describe('MyPlanPage Integration Tests', () => {
     expect(screen.getByText('13564e60-efe2-4b55-ae83-0d266b55ebf8')).toBeInTheDocument();
 
     // 3. Copy user ID
+    const clipboardSpy = vi.spyOn(navigator.clipboard, 'writeText');
     await user.click(screen.getByTitle('Copy User ID'));
-    expect(writeTextMock).toHaveBeenCalledWith('13564e60-efe2-4b55-ae83-0d266b55ebf8');
+    await waitFor(() => {
+      expect(clipboardSpy).toHaveBeenCalledWith('13564e60-efe2-4b55-ae83-0d266b55ebf8');
+    });
 
     // 4. Open settings and change theme
     await user.click(screen.getByRole('button', { name: /settings/i }));

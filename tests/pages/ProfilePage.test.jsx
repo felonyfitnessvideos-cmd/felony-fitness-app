@@ -30,14 +30,14 @@ vi.mock('../../src/AuthContext.jsx', () => ({
 // Mock Supabase client - use factory function to avoid hoisting
 vi.mock('../../src/supabaseClient.js', () => ({
   supabase: {
-    from: vi.fn(function() { return this; }),
-    select: vi.fn(function() { return this; }),
-    eq: vi.fn(function() { return this; }),
-    single: vi.fn(function() { return this; }),
-    upsert: vi.fn(function() { return this; }),
-    insert: vi.fn(function() { return this; }),
-    order: vi.fn(function() { return this; }),
-    limit: vi.fn(function() { return this; })
+    from: vi.fn(function () { return this; }),
+    select: vi.fn(function () { return this; }),
+    eq: vi.fn(function () { return this; }),
+    single: vi.fn(function () { return this; }),
+    upsert: vi.fn(function () { return this; }),
+    insert: vi.fn(function () { return this; }),
+    order: vi.fn(function () { return this; }),
+    limit: vi.fn(function () { return this; })
   }
 }));
 
@@ -89,13 +89,13 @@ describe('ProfilePage Component', () => {
   beforeEach(() => {
     // Reset all mocks before each test
     vi.clearAllMocks();
-    
+
     // Default successful responses
     mockSupabase.single.mockResolvedValue({
       data: null,
       error: { code: 'PGRST116', message: 'No profile found' }
     });
-    
+
     mockSupabase.limit.mockResolvedValue({
       data: [],
       error: null
@@ -124,7 +124,7 @@ describe('ProfilePage Component', () => {
     it('shows loading state initially', () => {
       // Mock loading state
       vi.mocked(mockAuthContext).loading = true;
-      
+
       render(
         <TestWrapper>
           <ProfilePage />
@@ -132,7 +132,7 @@ describe('ProfilePage Component', () => {
       );
 
       expect(screen.getByText('Loading Profile...')).toBeInTheDocument();
-      
+
       // Reset loading state
       vi.mocked(mockAuthContext).loading = false;
     });
@@ -209,7 +209,7 @@ describe('ProfilePage Component', () => {
       });
 
       const user = userEvent.setup();
-      
+
       render(
         <TestWrapper>
           <ProfilePage />
@@ -254,7 +254,7 @@ describe('ProfilePage Component', () => {
 
     it('handles feet and inches input correctly', async () => {
       const user = userEvent.setup();
-      
+
       render(
         <TestWrapper>
           <ProfilePage />
@@ -346,7 +346,7 @@ describe('ProfilePage Component', () => {
       });
 
       const sexSelect = screen.getByLabelText(/Sex/);
-      
+
       await user.selectOptions(sexSelect, 'male');
       expect(sexSelect).toHaveValue('male');
     });
@@ -372,7 +372,7 @@ describe('ProfilePage Component', () => {
       await user.selectOptions(screen.getByLabelText(/Sex/), 'male');
       await user.type(screen.getByPlaceholderText('5'), '5');
       await user.type(screen.getByPlaceholderText('9'), '9');
-      
+
       await user.click(screen.getByRole('button', { name: /Save Profile/ }));
 
       await waitFor(() => {
@@ -458,7 +458,7 @@ describe('ProfilePage Component', () => {
       // Fill out metrics form
       await user.type(screen.getByLabelText(/Weight \(lbs\)/), '175.5');
       await user.type(screen.getByLabelText(/Body Fat %/), '15.2');
-      
+
       await user.click(screen.getByRole('button', { name: /Log Measurement/ }));
 
       await waitFor(() => {
@@ -657,7 +657,7 @@ describe('ProfilePage Component', () => {
         error: { code: 'ERROR', message: 'Database connection failed' }
       });
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
       render(
         <TestWrapper>

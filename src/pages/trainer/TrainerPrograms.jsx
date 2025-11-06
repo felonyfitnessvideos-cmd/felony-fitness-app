@@ -88,7 +88,7 @@ const ProgramMuscleMap = ({ program, routines = [] }) => {
         routines.map(async (routine) => {
           // Use routine_id if available (from program_routines join), otherwise use id
           const routineId = routine.routine_id ?? routine.id;
-          
+
           if (!routineId) {
             console.warn('Routine missing both routine_id and id:', routine);
             return { ...routine, exercises: [] };
