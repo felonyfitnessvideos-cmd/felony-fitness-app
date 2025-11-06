@@ -31,7 +31,6 @@ import { useAuth } from '../../AuthContext';
 import InteractiveMuscleMap from '../../components/workout-builder/InteractiveMuscleMap';
 import { supabase } from '../../supabaseClient';
 import { calculateProgramEngagement, generateHeatmapData } from '../../utils/programAnalytics';
-// import { fetchExercisesWithMuscles, analyzeUserProgram } from '../../utils/workoutBuilderIntegration';
 import './TrainerPrograms.css';
 
 /**
@@ -87,6 +86,14 @@ const ProgramMuscleMap = ({ program, routines = [] }) => {
       // Fetch detailed exercise data for all routines
       const routinesWithExercises = await Promise.all(
         routines.map(async (routine) => {
+          // Use routine_id if available (from program_routines join), otherwise use id
+          const routineId = routine.routine_id ?? routine.id;
+          
+          if (!routineId) {
+            console.warn('Routine missing both routine_id and id:', routine);
+            return { ...routine, exercises: [] };
+          }
+
           const { data: routineExercises, error } = await supabase
             .from('routine_exercises')
             .select(`
@@ -98,7 +105,7 @@ const ProgramMuscleMap = ({ program, routines = [] }) => {
                 tertiary_muscle_groups:muscle_groups!tertiary_muscle_group_id(id, name)
               )
             `)
-            .eq('routine_id', routine.id);
+            .eq('routine_id', routineId);
 
           if (error) {
             console.warn('Error fetching routine exercises:', error);

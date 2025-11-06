@@ -17,15 +17,15 @@ export default defineConfig({
   test: {
     // Test environment configuration
     environment: 'jsdom',
-    
+
     // Global test setup files
     setupFiles: ['./tests/setup.js'],
-    
+
     // File patterns for test discovery
     include: [
       'tests/**/*.{test,spec}.{js,jsx,ts,tsx}'
     ],
-    
+
     // File patterns to exclude from testing
     exclude: [
       'node_modules',
@@ -33,10 +33,10 @@ export default defineConfig({
       'build',
       'OldFiles'
     ],
-    
+
     // Global variables available in tests
     globals: true,
-    
+
     // Coverage configuration
     coverage: {
       provider: 'v8',
@@ -61,20 +61,20 @@ export default defineConfig({
         }
       }
     },
-    
+
     // Test timeout configuration
     testTimeout: 10000,
     hookTimeout: 10000,
-    
+
     // Reporters for test output (simplified for CI compatibility)
     reporter: ['verbose', 'json'],
-    
+
     // Output directory for test reports
     outputFile: {
       json: './tests/reports/test-results.json'
     }
   },
-  
+
   // Resolve configuration for imports
   resolve: {
     alias: {
@@ -82,7 +82,7 @@ export default defineConfig({
       '@tests': path.resolve(__dirname, './tests')
     }
   },
-  
+
   // Define configuration for different environments
   define: {
     'process.env.NODE_ENV': '"test"'

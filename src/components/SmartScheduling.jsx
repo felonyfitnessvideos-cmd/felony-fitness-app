@@ -27,6 +27,73 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import './SmartScheduling.css';
 
+// Mock data for demonstration (moved to module scope to avoid re-creation)
+const mockAppointments = [
+  {
+    id: 1,
+    clientName: 'Sarah Johnson',
+    type: 'Personal Training',
+    date: new Date(2025, 10, 4, 9, 0),
+    duration: 60,
+    location: 'Gym Studio A',
+    status: 'confirmed',
+    recurring: true,
+    notes: 'Focus on upper body strength'
+  },
+  {
+    id: 2,
+    clientName: 'Mike Chen',
+    type: 'Nutrition Consultation',
+    date: new Date(2025, 10, 4, 14, 30),
+    duration: 45,
+    location: 'Virtual',
+    status: 'pending',
+    recurring: false,
+    notes: 'Meal prep planning session'
+  },
+  {
+    id: 3,
+    clientName: 'Emma Davis',
+    type: 'Form Check',
+    date: new Date(2025, 10, 5, 11, 0),
+    duration: 30,
+    location: 'Gym Floor',
+    status: 'confirmed',
+    recurring: false,
+    notes: 'Review deadlift technique'
+  }
+];
+
+const mockSuggestions = [
+  {
+    id: 1,
+    time: '10:00 AM',
+    date: 'Tomorrow',
+    confidence: 95,
+    reason: 'Client typically books this time',
+    type: 'Personal Training',
+    duration: 60
+  },
+  {
+    id: 2,
+    time: '3:00 PM',
+    date: 'Friday',
+    confidence: 87,
+    reason: 'Low gym traffic, optimal for consultation',
+    type: 'Nutrition Consultation',
+    duration: 45
+  },
+  {
+    id: 3,
+    time: '11:30 AM',
+    date: 'Next Monday',
+    confidence: 82,
+    reason: 'Matches client workout schedule pattern',
+    type: 'Form Check',
+    duration: 30
+  }
+];
+
 /**
  * SmartScheduling component for intelligent appointment management
  * 
@@ -47,9 +114,9 @@ const SmartScheduling = () => {
   const [viewMode, setViewMode] = useState('week'); // 'day', 'week', 'month'
 
   /** @type {[Date, Function]} Selected date for scheduling */
-  const [selectedDate] = useState(null);
+  const [selectedDate] = useState(new Date());
   // const [availableSlots, setAvailableSlots] = useState([]);
-  const [_showNewAppointment, setShowNewAppointment] = useState(false);
+  const [_showNewAppointment, _setShowNewAppointment] = useState(false);
 
   /** @type {[Object|null, Function]} Currently selected appointment */
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -62,73 +129,6 @@ const SmartScheduling = () => {
 
   /** @type {[string, Function]} Search/filter query */
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Mock data for demonstration
-  const mockAppointments = [
-    {
-      id: 1,
-      clientName: 'Sarah Johnson',
-      type: 'Personal Training',
-      date: new Date(2025, 10, 4, 9, 0), // Updated to 2025
-      duration: 60,
-      location: 'Gym Studio A',
-      status: 'confirmed',
-      recurring: true,
-      notes: 'Focus on upper body strength'
-    },
-    {
-      id: 2,
-      clientName: 'Mike Chen',
-      type: 'Nutrition Consultation',
-      date: new Date(2025, 10, 4, 14, 30), // Updated to 2025
-      duration: 45,
-      location: 'Virtual',
-      status: 'pending',
-      recurring: false,
-      notes: 'Meal prep planning session'
-    },
-    {
-      id: 3,
-      clientName: 'Emma Davis',
-      type: 'Form Check',
-      date: new Date(2025, 10, 5, 11, 0), // Updated to 2025
-      duration: 30,
-      location: 'Gym Floor',
-      status: 'confirmed',
-      recurring: false,
-      notes: 'Review deadlift technique'
-    }
-  ];
-
-  const mockSuggestions = [
-    {
-      id: 1,
-      time: '10:00 AM',
-      date: 'Tomorrow',
-      confidence: 95,
-      reason: 'Client typically books this time',
-      type: 'Personal Training',
-      duration: 60
-    },
-    {
-      id: 2,
-      time: '3:00 PM',
-      date: 'Friday',
-      confidence: 87,
-      reason: 'Low gym traffic, optimal for consultation',
-      type: 'Nutrition Consultation',
-      duration: 45
-    },
-    {
-      id: 3,
-      time: '8:00 AM',
-      date: 'Monday',
-      confidence: 92,
-      reason: 'Best availability match with client schedule',
-      type: 'Personal Training',
-      duration: 60
-    }
-  ];
 
   /**
    * Initialize smart scheduling data
@@ -217,7 +217,7 @@ const SmartScheduling = () => {
             </button>
             <button
               className="new-appointment-btn"
-              onClick={() => setShowNewAppointment(true)}
+              onClick={() => _setShowNewAppointment(true)}
             >
               <Plus size={16} />
               New Appointment

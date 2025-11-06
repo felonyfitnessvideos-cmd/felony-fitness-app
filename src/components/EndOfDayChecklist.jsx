@@ -266,9 +266,10 @@ const EndOfDayChecklist = () => {
         marginBottom: '16px'
       }}>
         <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: '600' }}>
-          📊 Today's Development Summary
+          📊 Project Status (Example Template)
         </h3>
         <div style={{ fontSize: '14px', color: '#6b7280' }}>
+          <p><em>Note: This section displays static example content.</em></p>
           <p>• Database tables: All fresh foundation tables created ✅</p>
           <p>• User roles: Trainer and Client roles configured ✅</p>
           <p>• Testing: Test framework and creation script implemented ✅</p>
