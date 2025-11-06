@@ -425,52 +425,7 @@ const TrainerCalendar = memo(() => {
     }
   }, [signOut]);
 
-  /**
-   * Navigate to previous or next week (disabled in static view)
-   * 
-   * @function navigateWeek
-   * @description Navigates the calendar view to the previous or next week.
-   * Includes error handling and boundary checks.
-   * 
-   * @param {number} direction - Direction to navigate (-1 for previous, 1 for next)
-   * 
-   * @example
-   * // Go to previous week
-   * navigateWeek(-1);
-   * 
-   * // Go to next week
-   * navigateWeek(1);
-   */
-  // const navigateWeek = useCallback((direction) => {
-  //   try {
-  //     if (typeof direction !== 'number' || (direction !== -1 && direction !== 1)) {
-  //       console.error('❌ Invalid direction for week navigation:', direction);
-  //       return;
-  //     }
 
-  //     const newWeek = new Date(currentWeek);
-  //     const newDate = newWeek.getDate() + (direction * 7);
-  //     
-  //     // Check for reasonable date boundaries (not more than 5 years in past/future)
-  //     const fiveYearsAgo = new Date();
-  //     fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
-  //     const fiveYearsFromNow = new Date();
-  //     fiveYearsFromNow.setFullYear(fiveYearsFromNow.getFullYear() + 5);
-  //     
-  //     newWeek.setDate(newDate);
-  //     
-  //     if (newWeek < fiveYearsAgo || newWeek > fiveYearsFromNow) {
-  //       console.warn('⚠️ Week navigation boundary reached');
-  //       return;
-  //     }
-  //     
-  //     setCurrentWeek(newWeek);
-  //     setComponentError(null); // Clear any previous errors
-  //   } catch (error) {
-  //     console.error('❌ Error navigating week:', error);
-  //     setComponentError('Failed to navigate calendar week');
-  //   }
-  // }, [currentWeek]);
 
   /**
    * Format hour number to 12-hour time string

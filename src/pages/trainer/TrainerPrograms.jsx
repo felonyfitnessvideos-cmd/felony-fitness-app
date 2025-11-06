@@ -914,19 +914,7 @@ const ProgramLibrary = () => {
     return displays[level] || level;
   };
 
-  /**
-   * Format estimated duration
-   * @function formatDuration
-   * @param {number} weeks - Number of weeks
-   * @returns {string} Formatted duration string
-   */
-  // Unused helper function - remove if not needed in future
-  // const formatDuration = (weeks) => {
-  //   if (weeks === 1) return '1 week';
-  //   if (weeks < 4) return `${weeks} weeks`;
-  //   const months = Math.round(weeks / 4);
-  //   return months === 1 ? '1 month' : `${months} months`;
-  // };
+
 
 
 

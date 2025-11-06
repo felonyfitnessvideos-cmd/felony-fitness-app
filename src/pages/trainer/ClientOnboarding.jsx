@@ -213,7 +213,7 @@ const ClientOnboarding = () => {
   const handleSubmit = async () => {
     if (validateSection(currentSection)) {
       try {
-        console.log('New client data:', formData);
+        console.log('🔄 Starting client onboarding process');
 
         // Step 1: Get trainer information
         const { data: { user: trainer }, error: trainerError } = await supabase.auth.getUser();
@@ -223,8 +223,7 @@ const ClientOnboarding = () => {
 
         // Step 2: Prepare client identifier
         const trimmedUuid = clientUuid?.trim();
-        console.log('Client UUID:', trimmedUuid);
-        console.log('Client Email:', formData.email);
+        console.log('ℹ️ Processing client:', trimmedUuid ? 'existing UUID' : 'new email');
 
         // Step 3: Create trainer-client relationship
         // Prepare comprehensive intake notes with all collected data

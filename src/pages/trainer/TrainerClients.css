@@ -224,24 +224,7 @@
   gap: 20px;
 }
 
-.client-card {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  align-items: center;
-  gap: 24px;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-}
-
-.client-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  border-color: #e2e8f0;
-}
+/* Note: .client-card styles are defined earlier (line 68) with theme variables */
 
 /* Client Main Info */
 .client-main-info {
