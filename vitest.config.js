@@ -19,7 +19,7 @@ export default defineConfig({
     environment: 'jsdom',
 
     // Global test setup files
-    setupFiles: ['./tests/setup.js'],
+    setupFiles: ['./tests/setup.jsx'],
 
     // File patterns for test discovery
     include: [
