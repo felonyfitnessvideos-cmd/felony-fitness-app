@@ -6,7 +6,15 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   // Centralized ignore patterns (migrated from .eslintignore)
-  globalIgnores(['dist', 'node_modules', 'public', 'supabase/functions/**/*.ts', 'src/database.types.ts']),
+  globalIgnores([
+    'dist',
+    'node_modules',
+    'public',
+    'supabase/functions/**/*.ts',
+    'src/database.types.ts',
+    'OldFiles/**/*',
+    'backups/**/*'
+  ]),
   {
     // Additional explicit ignores via top-level `ignores` for clarity
     ignores: ['*.log'],
