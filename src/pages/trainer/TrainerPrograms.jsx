@@ -26,7 +26,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
 import InteractiveMuscleMap from '../../components/workout-builder/InteractiveMuscleMap';
 import { supabase } from '../../supabaseClient';
@@ -702,7 +702,6 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
  */
 const ProgramLibrary = () => {
   const { user } = useAuth();
-  const _navigate = useNavigate();
   const [programs, setPrograms] = useState([]);
   const [programRoutines, setProgramRoutines] = useState({});
   const [loading, setLoading] = useState(true);
@@ -921,12 +920,13 @@ const ProgramLibrary = () => {
    * @param {number} weeks - Number of weeks
    * @returns {string} Formatted duration string
    */
-  const _formatDuration = (weeks) => {
-    if (weeks === 1) return '1 week';
-    if (weeks < 4) return `${weeks} weeks`;
-    const months = Math.round(weeks / 4);
-    return months === 1 ? '1 month' : `${months} months`;
-  };
+  // Unused helper function - remove if not needed in future
+  // const formatDuration = (weeks) => {
+  //   if (weeks === 1) return '1 week';
+  //   if (weeks < 4) return `${weeks} weeks`;
+  //   const months = Math.round(weeks / 4);
+  //   return months === 1 ? '1 month' : `${months} months`;
+  // };
 
 
 
@@ -1129,21 +1129,14 @@ const ProgramLibrary = () => {
 };
 
 /**
- * Program Detail Component
+ * Program Detail Component - Placeholder
+ * TODO: Implement full program detail functionality
  */
 const ProgramDetail = () => {
-  const { programId: _programId } = useParams();
   const navigate = useNavigate();
-  const { user: _user } = useAuth();
 
-  const [_program, _setProgram] = useState(null);
-  const [_routines, _setRoutines] = useState([]);
-  const [_clients, _setClients] = useState([]);
-  const [_loading, _setLoading] = useState(true);
-  const [_error, _setError] = useState(null);
-  const [_selectedRoutine, _setSelectedRoutine] = useState(null);
-  const [_showScheduleModal, _setShowScheduleModal] = useState(false);
-  const [_groupedRoutines, _setGroupedRoutines] = useState({});
+  const [loading] = useState(true);
+  const [program] = useState(null);
 
   // [Previous ProgramDetail logic would go here - similar to ProgramDetailPage]
   // For brevity, I'll implement the key parts
@@ -1152,7 +1145,7 @@ const ProgramDetail = () => {
     navigate('/trainer-dashboard/programs');
   };
 
-  if (_loading) {
+  if (loading) {
     return (
       <div className="program-detail-container">
         <div className="loading-container">
@@ -1170,7 +1163,7 @@ const ProgramDetail = () => {
           <ArrowLeft size={20} />
           Back to Programs
         </button>
-        <h2>{_program?.name || 'Program Details'}</h2>
+        <h2>{program?.name || 'Program Details'}</h2>
       </div>
 
       {/* Program details and routines would go here */}
