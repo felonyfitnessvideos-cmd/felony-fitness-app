@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient';
-import { Calendar, Plus, Edit, Trash2, ShoppingCart, Target, ChefHat, X } from 'lucide-react';
+import { Calendar, ChefHat, Plus, ShoppingCart, Target, Trash2, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import MealBuilder from '../components/MealBuilder';
-import { MEAL_TYPES, DAYS_OF_WEEK, getWeekDates } from '../constants/mealPlannerConstants';
+import { DAYS_OF_WEEK, getWeekDates, MEAL_TYPES } from '../constants/mealPlannerConstants';
+import { supabase } from '../supabaseClient';
 import './WeeklyMealPlannerPage.css';
 
 /**
@@ -25,42 +25,42 @@ import './WeeklyMealPlannerPage.css';
 const WeeklyMealPlannerPage = () => {
   /** @type {[Date[], Function]} Current week's date array for meal planning */
   const [currentWeek, setCurrentWeek] = useState(() => getWeekDates(new Date()));
-  
+
   /** @type {[Object|null, Function]} Currently active meal plan */
   const [activePlan, setActivePlan] = useState(null);
-  
+
   /** @type {[Array, Function]} User's available meal plans */
   const [_mealPlans, setMealPlans] = useState([]);
-  
+
   /** @type {[Array, Function]} Meal entries for the current week/plan */
   const [planEntries, setPlanEntries] = useState([]);
-  
+
   /** @type {[Array, Function]} User's saved meals library */
   const [userMeals, setUserMeals] = useState([]);
-  
+
   /** @type {[Object|null, Function]} Currently selected meal for assignment */
   const [_selectedMeal, _setSelectedMeal] = useState(null);
-  
+
   /** @type {[Object|null, Function]} Selected time slot for meal assignment */
   const [selectedSlot, setSelectedSlot] = useState(null);
-  
+
   /** @type {[boolean, Function]} Controls MealBuilder modal visibility */
   const [showMealBuilder, setShowMealBuilder] = useState(false);
-  
+
   /** @type {[boolean, Function]} Controls meal selector modal visibility */
   const [showMealSelector, setShowMealSelector] = useState(false);
-  
 
-  
+
+
   /** @type {[Object, Function]} Calculated nutrition totals by day */
   const [weeklyNutrition, setWeeklyNutrition] = useState({});
-  
+
   /** @type {[Object|null, Function]} User's nutrition goals for comparison */
   const [_nutritionGoals, setNutritionGoals] = useState(null);
-  
+
   /** @type {[string, Function]} Selected meal category filter */
   const [selectedCategory, setSelectedCategory] = useState('all');
-  
+
   /** @type {[boolean, Function]} Loading state for initial data fetch */
   const [isLoading, setIsLoading] = useState(true);
 
@@ -94,12 +94,12 @@ const WeeklyMealPlannerPage = () => {
 
       // Load meal plans
       await loadMealPlans();
-      
+
       // Load user meals
       await loadUserMeals();
     } catch (error) {
       if (import.meta.env?.DEV) {
-         
+
         console.warn('WeeklyMealPlannerPage - Error loading initial data:', error);
       }
     } finally {
@@ -147,7 +147,7 @@ const WeeklyMealPlannerPage = () => {
       setPlanEntries(data || []);
     } catch (error) {
       if (import.meta.env?.DEV) {
-         
+
         console.warn('WeeklyMealPlannerPage - Error loading plan entries:', error);
       }
     }
@@ -250,9 +250,9 @@ const WeeklyMealPlannerPage = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       setMealPlans(data);
-      
+
       // Set active plan
       const active = data.find(plan => plan.is_active);
       if (active) {
@@ -263,7 +263,7 @@ const WeeklyMealPlannerPage = () => {
       }
     } catch (error) {
       if (import.meta.env?.DEV) {
-         
+
         console.warn('WeeklyMealPlannerPage - Error loading meal plans:', error);
       }
     }
@@ -334,7 +334,7 @@ const WeeklyMealPlannerPage = () => {
       const error = null;
 
       if (error) throw error;
-      
+
       // Calculate nutrition for each meal and handle user_meals relationship
       const mealsWithNutrition = data.map(meal => {
         const userMeal = meal.user_meals && meal.user_meals.length > 0 ? meal.user_meals[0] : null;
@@ -345,7 +345,7 @@ const WeeklyMealPlannerPage = () => {
           is_favorite: userMeal?.is_favorite || false,
         };
       });
-      
+
       setUserMeals(mealsWithNutrition);
     } catch (error) {
       console.error('Error loading user meals:', error);
@@ -368,7 +368,7 @@ const WeeklyMealPlannerPage = () => {
     return mealFoods.reduce((acc, item) => {
       const food = item.food_servings;
       const quantity = item.quantity || 0;
-      
+
       return {
         calories: acc.calories + (food.calories * quantity * servings || 0),
         protein: acc.protein + (food.protein_g * quantity * servings || 0),
@@ -427,7 +427,7 @@ const WeeklyMealPlannerPage = () => {
         .single();
 
       if (error) throw error;
-      
+
       setActivePlan(data);
       await loadMealPlans();
     } catch (error) {
@@ -449,14 +449,14 @@ const WeeklyMealPlannerPage = () => {
       });
 
       if (error) throw error;
-      
+
       if (data?.success) {
         setActivePlan({ id: data.plan_id, name: data.plan_name });
         await loadMealPlans();
       }
     } catch (error) {
       if (import.meta.env?.DEV) {
-         
+
         console.warn('WeeklyMealPlannerPage - Error setting active meal plan:', error);
       }
     }
@@ -464,17 +464,17 @@ const WeeklyMealPlannerPage = () => {
 
   const handleSlotClick = (date, mealType) => {
     setSelectedSlot({ date: date.toISOString().split('T')[0], mealType });
-    
+
     // Auto-select the appropriate category based on meal type
     const categoryMap = {
       breakfast: 'breakfast',
-      lunch: 'lunch', 
+      lunch: 'lunch',
       dinner: 'dinner',
       snack1: 'snack',
       snack2: 'snack'
     };
     setSelectedCategory(categoryMap[mealType] || 'all');
-    
+
     setShowMealSelector(true);
   };
 
@@ -518,7 +518,7 @@ const WeeklyMealPlannerPage = () => {
         }]);
 
       if (error) throw error;
-      
+
       await loadPlanEntries();
       setShowMealSelector(false);
       setSelectedSlot(null);
@@ -536,11 +536,11 @@ const WeeklyMealPlannerPage = () => {
         .eq('id', entryId);
 
       if (error) throw error;
-      
+
       await loadPlanEntries();
     } catch (error) {
       if (import.meta.env?.DEV) {
-         
+
         console.warn('WeeklyMealPlannerPage - Error removing meal from plan:', error);
       }
     }
@@ -585,7 +585,7 @@ const WeeklyMealPlannerPage = () => {
    */
   const getMealsByTypeAndDate = (date, mealType) => {
     const dateStr = date.toISOString().split('T')[0];
-    return planEntries.filter(entry => 
+    return planEntries.filter(entry =>
       entry.plan_date === dateStr && entry.meal_type === mealType
     );
   };
@@ -636,13 +636,13 @@ const WeeklyMealPlannerPage = () => {
             <button onClick={() => navigateWeek(1)} className="nav-btn">→</button>
           </div>
         </div>
-        
+
         <div className="header-actions">
           <button onClick={() => setShowMealBuilder(true)} className="create-meal-btn">
             <Plus className="icon" />
             Create Meal
           </button>
-          
+
           {!activePlan && (
             <button onClick={createNewMealPlan} className="create-plan-btn">
               <Plus className="icon" />
@@ -681,13 +681,13 @@ const WeeklyMealPlannerPage = () => {
               <div key={day} className="day-column">{day}</div>
             ))}
           </div>
-          
+
           {MEAL_TYPES.map(mealType => (
             <div key={mealType} className="meal-row">
               <div className="meal-type-label">
                 {formatMealType(mealType)}
               </div>
-              
+
               {currentWeek.map((date, dayIndex) => (
                 <div
                   key={`${mealType}-${dayIndex}`}
@@ -715,7 +715,7 @@ const WeeklyMealPlannerPage = () => {
                       </button>
                     </div>
                   ))}
-                  
+
                   {getMealsByTypeAndDate(date, mealType).length === 0 && (
                     <div className="empty-slot">
                       <Plus className="icon" />
@@ -726,7 +726,7 @@ const WeeklyMealPlannerPage = () => {
               ))}
             </div>
           ))}
-          
+
           {/* Daily Nutrition Summary Row */}
           <div className="nutrition-summary-row">
             <div className="meal-type-label">Daily Total</div>
@@ -783,8 +783,8 @@ const WeeklyMealPlannerPage = () => {
           <div className="meal-selector-modal">
             <div className="meal-selector-header">
               <h3>
-                {selectedCategory === 'all' 
-                  ? 'Select a Meal' 
+                {selectedCategory === 'all'
+                  ? 'Select a Meal'
                   : `Select a ${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Meal`
                 }
               </h3>
@@ -792,7 +792,7 @@ const WeeklyMealPlannerPage = () => {
                 <X className="icon" />
               </button>
             </div>
-            
+
             <div className="meal-selector-content">
               {/* Only show category tabs if selectedCategory is 'all' - when adding to specific meal slot, don't show tabs */}
               {selectedCategory === 'all' && (
@@ -808,7 +808,7 @@ const WeeklyMealPlannerPage = () => {
                   ))}
                 </div>
               )}
-              
+
               <div className="meal-list">
                 {(() => {
                   // Debug: Log filtering process
@@ -816,12 +816,12 @@ const WeeklyMealPlannerPage = () => {
                     const matches = selectedCategory === 'all' || meal.category === selectedCategory;
                     return matches;
                   });
-                  
+
                   if (filteredMeals.length === 0) {
                     return (
                       <div className="no-meals-found">
                         <p>No {selectedCategory === 'all' ? '' : selectedCategory} meals found.</p>
-                        <button 
+                        <button
                           className="create-meal-btn"
                           onClick={() => {
                             setShowMealSelector(false);
@@ -834,7 +834,7 @@ const WeeklyMealPlannerPage = () => {
                       </div>
                     );
                   }
-                  
+
                   return filteredMeals.map(meal => (
                     <div
                       key={meal.id}
@@ -845,9 +845,9 @@ const WeeklyMealPlannerPage = () => {
                         <div className="meal-name">{meal.display_name || meal.name}</div>
                         <div className="meal-description">{meal.description}</div>
                         <div className="meal-nutrition">
-                          {Math.round(meal.nutrition.calories)} cal • 
-                          {Math.round(meal.nutrition.protein)}g protein • 
-                          {Math.round(meal.nutrition.carbs)}g carbs • 
+                          {Math.round(meal.nutrition.calories)} cal •
+                          {Math.round(meal.nutrition.protein)}g protein •
+                          {Math.round(meal.nutrition.carbs)}g carbs •
                           {Math.round(meal.nutrition.fat)}g fat
                         </div>
                       </div>

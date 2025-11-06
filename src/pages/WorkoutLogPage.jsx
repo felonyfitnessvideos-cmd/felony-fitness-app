@@ -8,15 +8,15 @@
  * @project Felony Fitness
  */
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { supabase } from '../supabaseClient.js';
-import SubPageHeader from '../components/SubPageHeader.jsx';
-import RestTimerModal from '../components/RestTimerModal.jsx';
-import SuccessModal from '../components/SuccessModal.jsx';
-import { Dumbbell, Edit2, Trash2, Check, X } from 'lucide-react';
-import LazyRecharts from '../components/LazyRecharts.jsx';
+import { Check, Dumbbell, Edit2, Trash2, X } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
+import LazyRecharts from '../components/LazyRecharts.jsx';
+import RestTimerModal from '../components/RestTimerModal.jsx';
+import SubPageHeader from '../components/SubPageHeader.jsx';
+import SuccessModal from '../components/SuccessModal.jsx';
+import { supabase } from '../supabaseClient.js';
 import './WorkoutLogPage.css';
 
 // --- 1. MODIFIED HELPER FUNCTION ---
@@ -90,19 +90,19 @@ function WorkoutLogPage() {
 
   // Get the whole routine_exercise object (which includes target_sets and exercises)
   const selectedRoutineExercise = useMemo(() => routine?.routine_exercises[selectedExerciseIndex], [routine, selectedExerciseIndex]);
-  
+
   // Get the nested exercise details from the object above
   const selectedExercise = useMemo(() => selectedRoutineExercise?.exercises, [selectedRoutineExercise]);
-  
+
   // Get the target sets number from the object above
   const targetSets = useMemo(() => selectedRoutineExercise?.target_sets, [selectedRoutineExercise]);
-    // Adjust target sets according to deload multiplier when a mesocycle session is active
-    const adjustedTargetSets = useMemo(() => {
-      const base = Number(targetSets) || 0;
-      const mult = sessionMeta?.planned_volume_multiplier ?? 1;
-      if (!base) return 0;
-      return Math.max(1, Math.round(base * mult));
-    }, [targetSets, sessionMeta?.planned_volume_multiplier]);
+  // Adjust target sets according to deload multiplier when a mesocycle session is active
+  const adjustedTargetSets = useMemo(() => {
+    const base = Number(targetSets) || 0;
+    const mult = sessionMeta?.planned_volume_multiplier ?? 1;
+    if (!base) return 0;
+    return Math.max(1, Math.round(base * mult));
+  }, [targetSets, sessionMeta?.planned_volume_multiplier]);
 
   useEffect(() => {
     // track mounted state to avoid calling setState on an unmounted component
@@ -136,7 +136,7 @@ function WorkoutLogPage() {
   // network requests triggered by unrelated re-renders. If you need to
   // capture changing external values, add them to the dependency array and
   // update this rationale accordingly.
-   
+
   const location = useLocation();
 
   const fetchAndStartWorkout = useCallback(async (userId, opts = {}) => {
@@ -204,7 +204,7 @@ function WorkoutLogPage() {
         });
 
         const prevLogResults = await Promise.all(prevLogPromises);
-        
+
         console.log("Results from Edge Function calls:", prevLogResults);
 
         const prevLogMap = {};
@@ -218,7 +218,7 @@ function WorkoutLogPage() {
         setPreviousLog(prevLogMap);
       }
 
-  // Step 3: Determine the day range we want to open/create a log for.
+      // Step 3: Determine the day range we want to open/create a log for.
       // If a mesocycle session was specified, use its scheduled_date; otherwise use today.
       let targetDate = scheduledDateFromSession || (new URLSearchParams(location.search).get('date')) || null;
       let startOfDay = new Date();
@@ -228,7 +228,7 @@ function WorkoutLogPage() {
         if (parts.length >= 3) startOfDay = new Date(parts[0], parts[1] - 1, parts[2]);
         else startOfDay = new Date(targetDate);
       }
-      startOfDay.setHours(0,0,0,0);
+      startOfDay.setHours(0, 0, 0, 0);
       const startOfTomorrow = new Date(startOfDay);
       startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
@@ -241,10 +241,10 @@ function WorkoutLogPage() {
         .lt('created_at', startOfTomorrow.toISOString());
 
       if (todaysLogsError) throw todaysLogsError;
-      
+
       const todaysEntriesMap = {};
       let activeLog = todaysLogsData.find(log => !log.is_complete);
-      
+
       todaysLogsData.forEach(log => {
         log.workout_log_entries.sort((a, b) => a.set_number - b.set_number);
         log.workout_log_entries.forEach(entry => {
@@ -272,7 +272,7 @@ function WorkoutLogPage() {
           // session via `cycle_session_id` when available.
         };
         // Try to see if there's a cycle_session for this user/routine/date so we can link the log
-        const { data: matchingSession } = await supabase.from('cycle_sessions').select('id,mesocycle_id').eq('user_id', userId).eq('routine_id', currentRoutineId).eq('scheduled_date', startOfDay.toISOString().slice(0,10)).maybeSingle();
+        const { data: matchingSession } = await supabase.from('cycle_sessions').select('id,mesocycle_id').eq('user_id', userId).eq('routine_id', currentRoutineId).eq('scheduled_date', startOfDay.toISOString().slice(0, 10)).maybeSingle();
         if (matchingSession && matchingSession.id) payload.cycle_session_id = matchingSession.id;
 
         // Avoid selecting 'cycle_session_id' here in case the DB migration hasn't been applied yet.
@@ -292,8 +292,8 @@ function WorkoutLogPage() {
       if (activeLog && currentLogId) {
         try {
           const { data: existingLog } = await supabase.from('workout_logs').select('id,cycle_session_id').eq('id', currentLogId).maybeSingle();
-            if (existingLog && !existingLog.cycle_session_id) {
-            const { data: matchingSession2 } = await supabase.from('cycle_sessions').select('id,mesocycle_id').eq('user_id', userId).eq('routine_id', currentRoutineId).eq('scheduled_date', startOfDay.toISOString().slice(0,10)).maybeSingle();
+          if (existingLog && !existingLog.cycle_session_id) {
+            const { data: matchingSession2 } = await supabase.from('cycle_sessions').select('id,mesocycle_id').eq('user_id', userId).eq('routine_id', currentRoutineId).eq('scheduled_date', startOfDay.toISOString().slice(0, 10)).maybeSingle();
             if (matchingSession2 && matchingSession2.id) {
               // wrap update in try/catch in case the column doesn't exist on the DB yet
               try {
@@ -315,12 +315,12 @@ function WorkoutLogPage() {
         }
       }
 
-  // Fetch user's weight for calorie calculation
+      // Fetch user's weight for calorie calculation
       const { data: metricsData } = await supabase.from('body_metrics').select('weight_lbs').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).single();
       if (metricsData) setUserWeightLbs(metricsData.weight_lbs);
 
-  // If no explicit session meta set, clear it
-  if (!opts.mesocycleSessionId) setSessionMeta(null);
+      // If no explicit session meta set, clear it
+      if (!opts.mesocycleSessionId) setSessionMeta(null);
 
     } catch (error) {
       console.error("A critical error occurred while fetching workout data:", error);
@@ -359,12 +359,12 @@ function WorkoutLogPage() {
         }
       });
       if (error) throw error;
-      
+
       const formattedData = data.data.map(item => ({
-        date: new Date(item.log_date).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit'}),
+        date: new Date(item.log_date).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' }),
         value: item.value,
       }));
-      
+
       setChartData(formattedData);
     } catch (error) {
       console.error(`Error fetching ${metric} data:`, error);
@@ -397,15 +397,15 @@ function WorkoutLogPage() {
       setSaveSetLoading(false);
       return;
     }
-    
+
     const newTodaysLog = { ...todaysLog, [selectedExercise.id]: [...(todaysLog[selectedExercise.id] || []), newEntry] };
     setTodaysLog(newTodaysLog);
-    
+
     const targetSets = routine.routine_exercises[selectedExerciseIndex]?.target_sets;
     const completedSets = newTodaysLog[selectedExercise.id].length;
     const adjusted = Math.max(1, Math.round((Number(targetSets) || 0) * (sessionMeta?.planned_volume_multiplier ?? 1)));
     const isLastExercise = selectedExerciseIndex === routine.routine_exercises.length - 1;
-    
+
     if (adjusted && completedSets >= adjusted) {
       if (isLastExercise) {
         setIsWorkoutCompletable(true);
@@ -413,7 +413,7 @@ function WorkoutLogPage() {
         setShouldAdvance(true);
       }
     }
-    
+
     setIsTimerOpen(true);
     setSaveSetLoading(false);
   };
@@ -435,7 +435,7 @@ function WorkoutLogPage() {
     try {
       const { data: logData, error: fetchError } = await supabase.from('workout_logs').select('created_at').eq('id', workoutLogId).single();
       if (fetchError) throw fetchError;
-      
+
       const startTime = new Date(logData.created_at);
       const endTime = new Date();
       const duration_minutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
@@ -444,18 +444,18 @@ function WorkoutLogPage() {
       const duration_hours = duration_minutes / 60;
       const calories_burned = Math.round(MET_VALUE * weight_kg * duration_hours);
 
-      const updatePayload = { 
-        is_complete: true, 
-        duration_minutes, 
-        ended_at: endTime.toISOString(), 
-        notes: routine.routine_name, 
-        calories_burned 
+      const updatePayload = {
+        is_complete: true,
+        duration_minutes,
+        ended_at: endTime.toISOString(),
+        notes: routine.routine_name,
+        calories_burned
       };
-      
-  // Ensure the update is scoped to the current user for safety.
-  const { error: updateError } = await supabase.from('workout_logs').update(updatePayload).eq('id', workoutLogId).eq('user_id', userId);
+
+      // Ensure the update is scoped to the current user for safety.
+      const { error: updateError } = await supabase.from('workout_logs').update(updatePayload).eq('id', workoutLogId).eq('user_id', userId);
       if (updateError) throw updateError;
-      
+
       // Also mark cycle_session as complete if this log is associated with one
       try {
         // Prefer sessionMeta.id if available
@@ -464,7 +464,7 @@ function WorkoutLogPage() {
           if (userId) await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', sessionMeta.id).eq('user_id', userId);
         } else {
           // fallback: find cycle_session by user, routine and date
-          const startDateStr = new Date(logData.created_at).toISOString().slice(0,10);
+          const startDateStr = new Date(logData.created_at).toISOString().slice(0, 10);
           const { data: found } = await supabase.from('cycle_sessions').select('id').eq('user_id', userId).eq('routine_id', routineId).eq('scheduled_date', startDateStr).maybeSingle();
           if (found && found.id) {
             await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', found.id).eq('user_id', userId);
@@ -480,7 +480,7 @@ function WorkoutLogPage() {
       alert(`Error finishing workout: ${error.message}`);
     }
   };
-  
+
   const handleCloseSuccessModal = () => {
     setSuccessModalOpen(false);
     navigate('/dashboard');
@@ -492,7 +492,7 @@ function WorkoutLogPage() {
     setRpcLoading(true);
     try {
       // SECURITY FIX: Call the secure Edge Function.
-      const { error } = await supabase.functions.invoke('delete-workout-set', { 
+      const { error } = await supabase.functions.invoke('delete-workout-set', {
         body: { entry_id: entryId }
       });
       if (error) {
@@ -550,7 +550,7 @@ function WorkoutLogPage() {
   return (
     <div className="workout-log-page-container">
       <SubPageHeader title={routine?.routine_name || 'Workout'} icon={<Dumbbell size={28} />} iconColor="#f97316" backTo={returnTo} />
-      
+
       <div className="log-toggle-header">
         <div className="log-toggle">
           <button className={`toggle-btn ${activeView === 'log' ? 'active' : ''}`} onClick={() => setActiveView('log')}>Log</button>
@@ -560,18 +560,18 @@ function WorkoutLogPage() {
 
       <div className="thumbnail-scroller">
         {routine?.routine_exercises.map((item, index) => (
-            <button key={item.exercises.id} className={`thumbnail-btn ${index === selectedExerciseIndex ? 'selected' : ''}`} onClick={() => setSelectedExerciseIndex(index)}>
-            <img 
-              src={item.exercises.thumbnail_url || 'https://placehold.co/50x50/4a556j8/ffffff?text=IMG'} 
+          <button key={item.exercises.id} className={`thumbnail-btn ${index === selectedExerciseIndex ? 'selected' : ''}`} onClick={() => setSelectedExerciseIndex(index)}>
+            <img
+              src={item.exercises.thumbnail_url || 'https://placehold.co/50x50/4a556j8/ffffff?text=IMG'}
               alt={item.exercises.name}
               width="50"
               height="50"
               loading="lazy"
             />
-            </button>
+          </button>
         ))}
       </div>
-      
+
       {/* --- This JSX remains the same, but will now use the new function --- */}
       <h2 className="current-exercise-name">
         {selectedExercise?.name}
@@ -587,22 +587,22 @@ function WorkoutLogPage() {
           <div style={{ marginLeft: '0.5rem', color: '#92400e', fontSize: '0.85rem' }}>Deload week — volume reduced</div>
         )}
       </h2>
-      
+
       {activeView === 'log' ? (
         <>
           <div className="log-inputs">
             <div className="input-group">
-                <label>Weight</label>
-                {/* Use text + inputMode to avoid mobile numeric input quirks while still
+              <label>Weight</label>
+              {/* Use text + inputMode to avoid mobile numeric input quirks while still
                     presenting a numeric keyboard. Sanitize to digits but allow empty
                     string so users can clear the field without the browser forcing a
                     default like `1`. */}
-                <input type="text" inputMode="numeric" pattern="[0-9]*" value={currentSet.weight} onChange={(e) => setCurrentSet(prev => ({...prev, weight: e.target.value.replace(/\D/g, '')}))} placeholder="0"/>
-              </div>
-              <div className="input-group">
-                <label>Reps</label>
-                <input type="text" inputMode="numeric" pattern="[0-9]*" value={currentSet.reps} onChange={(e) => setCurrentSet(prev => ({...prev, reps: e.target.value.replace(/\D/g, '')}))} placeholder="0"/>
-              </div>
+              <input type="text" inputMode="numeric" pattern="[0-9]*" value={currentSet.weight} onChange={(e) => setCurrentSet(prev => ({ ...prev, weight: e.target.value.replace(/\D/g, '') }))} placeholder="0" />
+            </div>
+            <div className="input-group">
+              <label>Reps</label>
+              <input type="text" inputMode="numeric" pattern="[0-9]*" value={currentSet.reps} onChange={(e) => setCurrentSet(prev => ({ ...prev, reps: e.target.value.replace(/\D/g, '') }))} placeholder="0" />
+            </div>
           </div>
           <button className="save-set-button" onClick={handleSaveSet} disabled={saveSetLoading}>{saveSetLoading ? 'Saving...' : 'Save Set'}</button>
 
@@ -614,9 +614,9 @@ function WorkoutLogPage() {
                   <li key={set.id}>
                     {editingSet && editingSet.entryId === set.id ? (
                       <div className="edit-set-form">
-                        <input type="text" inputMode="numeric" pattern="[0-9]*" value={editSetValue.weight} onChange={(e) => setEditSetValue(prev => ({...prev, weight: e.target.value.replace(/\D/g, '')}))} />
+                        <input type="text" inputMode="numeric" pattern="[0-9]*" value={editSetValue.weight} onChange={(e) => setEditSetValue(prev => ({ ...prev, weight: e.target.value.replace(/\D/g, '') }))} />
                         <span>lbs x</span>
-                        <input type="text" inputMode="numeric" pattern="[0-9]*" value={editSetValue.reps} onChange={(e) => setEditSetValue(prev => ({...prev, reps: e.target.value.replace(/\D/g, '')}))} />
+                        <input type="text" inputMode="numeric" pattern="[0-9]*" value={editSetValue.reps} onChange={(e) => setEditSetValue(prev => ({ ...prev, reps: e.target.value.replace(/\D/g, '') }))} />
                         <button onClick={handleUpdateSet} className="edit-action-btn save" disabled={rpcLoading}><Check size={16} /></button>
                         <button onClick={handleCancelEdit} className="edit-action-btn cancel" disabled={rpcLoading}><X size={16} /></button>
                       </div>
@@ -624,8 +624,8 @@ function WorkoutLogPage() {
                       <>
                         <span>{set.weight_lbs} lbs x {set.reps_completed}</span>
                         <div className="set-actions">
-                          <button onClick={() => handleEditSetClick(set)} disabled={rpcLoading}><Edit2 size={14}/></button>
-                          <button onClick={() => handleDeleteSet(set.id)} disabled={rpcLoading}><Trash2 size={14}/></button>
+                          <button onClick={() => handleEditSetClick(set)} disabled={rpcLoading}><Edit2 size={14} /></button>
+                          <button onClick={() => handleDeleteSet(set.id)} disabled={rpcLoading}><Trash2 size={14} /></button>
                         </div>
                       </>
                     )}
@@ -645,45 +645,45 @@ function WorkoutLogPage() {
         </>
       ) : (
         <div className="chart-view-container">
-            <div className="chart-metric-selector">
-                <button className={chartMetric === '1RM' ? 'active' : ''} onClick={() => setChartMetric('1RM')}>1RM</button>
-                <button className={chartMetric === 'Weight Volume' ? 'active' : ''} onClick={() => setChartMetric('Weight Volume')}>Weight Volume</button>
-                <button className={chartMetric === 'Set Volume' ? 'active' : ''} onClick={() => setChartMetric('Set Volume')}>Set Volume</button>
-            </div>
-            <div className="chart-container">
+          <div className="chart-metric-selector">
+            <button className={chartMetric === '1RM' ? 'active' : ''} onClick={() => setChartMetric('1RM')}>1RM</button>
+            <button className={chartMetric === 'Weight Volume' ? 'active' : ''} onClick={() => setChartMetric('Weight Volume')}>Weight Volume</button>
+            <button className={chartMetric === 'Set Volume' ? 'active' : ''} onClick={() => setChartMetric('Set Volume')}>Set Volume</button>
+          </div>
+          <div className="chart-container">
             {chartLoading ? (
               <div className="loading-message">Loading Chart...</div>
             ) : chartData.length > 0 ? (
               <LazyRecharts fallback={<div className="loading-message">Loading chart...</div>}>
                 {// libs is used inside JSX via property access; ESLint sometimes flags this as unused
-                // eslint-disable-next-line no-unused-vars
-                (libs) => (
-                  <libs.ResponsiveContainer width="100%" height={250}>
-                    <libs.LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                      <libs.CartesianGrid stroke="#4a5568" strokeDasharray="3 3" />
-                      <libs.XAxis dataKey="date" stroke="#a0aec0" />
-                      <libs.YAxis stroke="#a0aec0" domain={["dataMin - 10", "dataMax + 10"]} />
-                      <libs.Tooltip contentStyle={{ backgroundColor: '#2d3748', border: '1px solid #4a5568' }} />
-                      <libs.Line type="monotone" dataKey="value" name={chartMetric} stroke="#f97316" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }} />
-                    </libs.LineChart>
-                  </libs.ResponsiveContainer>
-                )}
+                  // eslint-disable-next-line no-unused-vars
+                  (libs) => (
+                    <libs.ResponsiveContainer width="100%" height={250}>
+                      <libs.LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                        <libs.CartesianGrid stroke="#4a5568" strokeDasharray="3 3" />
+                        <libs.XAxis dataKey="date" stroke="#a0aec0" />
+                        <libs.YAxis stroke="#a0aec0" domain={["dataMin - 10", "dataMax + 10"]} />
+                        <libs.Tooltip contentStyle={{ backgroundColor: '#2d3748', border: '1px solid #4a5568' }} />
+                        <libs.Line type="monotone" dataKey="value" name={chartMetric} stroke="#f97316" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 8 }} />
+                      </libs.LineChart>
+                    </libs.ResponsiveContainer>
+                  )}
               </LazyRecharts>
             ) : (
               <p className="no-data-message">No progress data available for this exercise yet.</p>
             )}
-            </div>
+          </div>
         </div>
       )}
 
-      <RestTimerModal 
-        isOpen={isTimerOpen} 
+      <RestTimerModal
+        isOpen={isTimerOpen}
         onClose={handleTimerClose}
         isWorkoutComplete={isWorkoutCompletable}
         onFinishWorkout={handleFinishWorkout}
       />
-      
-      <SuccessModal 
+
+      <SuccessModal
         isOpen={isSuccessModalOpen}
         onClose={handleCloseSuccessModal}
         title="Workout Saved!"

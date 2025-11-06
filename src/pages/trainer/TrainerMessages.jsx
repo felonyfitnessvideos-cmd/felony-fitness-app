@@ -19,18 +19,17 @@
  * @requires messagingUtils
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Send, Search, AlertCircle, CheckCircle, Loader, Plus } from 'lucide-react';
-import { 
-  getConversations, 
-  getConversationMessages, 
-  sendMessage, 
-  markMessagesAsRead, 
+import { AlertCircle, Loader, MessageSquare, Send } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useAuth } from '../../AuthContext';
+import {
+  getConversationMessages,
+  getConversations,
+  handleMessagingError,
+  markMessagesAsRead,
+  sendMessage,
   subscribeToMessages,
-  formatMessageTime,
-  truncateMessage,
-  validateMessageContent,
-  handleMessagingError
+  validateMessageContent
 } from '../../utils/messagingUtils';
 import './TrainerMessages.css';
 
@@ -53,33 +52,38 @@ import './TrainerMessages.css';
  * @state {string} messageType - Communication channel ('sms' or 'email')
  */
 const TrainerMessages = () => {
+  const { user } = useAuth();
+
   /** @type {[Array, Function]} Array of conversation objects with client messaging history */
   const [conversations, setConversations] = useState([]);
-  
+
   /** @type {[Object|null, Function]} Currently selected conversation for viewing/messaging */
   const [selectedConversation, setSelectedConversation] = useState(null);
-  
+
   /** @type {[Array, Function]} Messages in the current conversation */
   const [messages, setMessages] = useState([]);
-  
+
   /** @type {[string, Function]} Message content being composed */
   const [newMessage, setNewMessage] = useState('');
-  
+
   /** @type {[boolean, Function]} Loading state for conversations */
   const [loading, setLoading] = useState(true);
-  
+
   /** @type {[boolean, Function]} Sending state for new messages */
   const [sendingMessage, setSendingMessage] = useState(false);
-  
+
   /** @type {[string|null, Function]} Error state for messaging operations */
   const [error, setError] = useState(null);
-  
+
   /** @type {[string, Function]} Search term for filtering conversations */
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   /** @type {[Object|null, Function]} Real-time message subscription */
   const [messageSubscription, setMessageSubscription] = useState(null);
-  
+
+  /** @type {[Array, Function]} List of all clients for sidebar */
+  const [allClients, setAllClients] = useState([]);
+
   // Refs for auto-scrolling and message input
   const messagesEndRef = useRef(null);
   const messageInputRef = useRef(null);
@@ -89,20 +93,21 @@ const TrainerMessages = () => {
    */
   useEffect(() => {
     loadConversations();
-    
+    loadAllClients(); // Load clients for sidebar
+
     const setupSubscription = async () => {
       try {
         const subscription = await subscribeToMessages((payload) => {
           console.log('📨 New message received:', payload);
           loadConversations();
-          
-          if (selectedConversation && 
-              (payload.new.sender_id === selectedConversation.user_id || 
-               payload.new.recipient_id === selectedConversation.user_id)) {
+
+          if (selectedConversation &&
+            (payload.new.sender_id === selectedConversation.user_id ||
+              payload.new.recipient_id === selectedConversation.user_id)) {
             loadMessages(selectedConversation.user_id);
           }
         });
-        
+
         if (subscription) {
           setMessageSubscription(subscription);
         }
@@ -110,16 +115,16 @@ const TrainerMessages = () => {
         console.error('Failed to setup message subscription:', error);
       }
     };
-    
+
     setupSubscription();
-    
+
     return () => {
       if (messageSubscription) {
         messageSubscription.unsubscribe();
       }
     };
   }, [selectedConversation]);
-  
+
   /**
    * Load messages when conversation selection changes
    */
@@ -129,14 +134,14 @@ const TrainerMessages = () => {
       markConversationAsRead(selectedConversation.user_id);
     }
   }, [selectedConversation]);
-  
+
   /**
    * Auto-scroll to bottom when new messages arrive
    */
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-  
+
   /**
    * Load conversations from database
    */
@@ -144,7 +149,7 @@ const TrainerMessages = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const conversations = await getConversations();
       setConversations(conversations);
     } catch (error) {
@@ -154,14 +159,66 @@ const TrainerMessages = () => {
       setLoading(false);
     }
   };
-  
+
+  /**
+   * Load all clients for new message modal
+   */
+  const loadAllClients = async () => {
+    try {
+      const { supabase } = await import('../../supabaseClient');
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      // Get all clients from trainer_clients relationship
+      const { data: relationships, error } = await supabase
+        .from('trainer_clients')
+        .select('client_id')
+        .eq('trainer_id', user.id)
+        .eq('status', 'active');
+
+      if (error) throw error;
+
+      const clientIds = relationships?.map(rel => rel.client_id) || [];
+
+      if (clientIds.length > 0) {
+        const { data: clients, error: clientsError } = await supabase
+          .from('user_profiles')
+          .select('id, first_name, last_name, email')
+          .in('id', clientIds);
+
+        if (clientsError) throw clientsError;
+
+        setAllClients(clients || []);
+      }
+    } catch (error) {
+      console.error('Failed to load clients:', error);
+    }
+  };
+
+  /**
+   * Start conversation with a client
+   */
+  const startConversation = (client) => {
+    setSelectedConversation({
+      user_id: client.id,
+      user_full_name: `${client.first_name || ''} ${client.last_name || ''}`.trim() || client.email,
+      user_email: client.email,
+      last_message_content: '',
+      last_message_at: new Date().toISOString(),
+      unread_count: 0,
+      is_last_message_from_me: false
+    });
+    loadMessages(client.id);
+  };
+
   /**
    * Load messages for a specific conversation
    */
   const loadMessages = async (otherUserId) => {
     try {
       setError(null);
-      
+
       const messages = await getConversationMessages(otherUserId);
       setMessages(messages);
     } catch (error) {
@@ -169,7 +226,7 @@ const TrainerMessages = () => {
       setError(handleMessagingError(error));
     }
   };
-  
+
   /**
    * Mark conversation messages as read
    */
@@ -182,7 +239,7 @@ const TrainerMessages = () => {
       console.error('Failed to mark messages as read:', error);
     }
   };
-  
+
   /**
    * Handle sending a new message
    */
@@ -190,28 +247,28 @@ const TrainerMessages = () => {
     if (!selectedConversation || !newMessage.trim()) {
       return;
     }
-    
+
     const validation = validateMessageContent(newMessage);
     if (!validation.isValid) {
       setError(validation.error);
       return;
     }
-    
+
     try {
       setSendingMessage(true);
       setError(null);
-      
+
       await sendMessage(selectedConversation.user_id, newMessage.trim());
-      
+
       // Clear the input
       setNewMessage('');
-      
+
       // Refresh messages and conversations
       await Promise.all([
         loadMessages(selectedConversation.user_id),
         loadConversations()
       ]);
-      
+
       // Focus back to input
       if (messageInputRef.current) {
         messageInputRef.current.focus();
@@ -223,7 +280,7 @@ const TrainerMessages = () => {
       setSendingMessage(false);
     }
   };
-  
+
   /**
    * Handle conversation selection
    */
@@ -232,7 +289,7 @@ const TrainerMessages = () => {
     setMessages([]);
     setError(null);
   };
-  
+
   /**
    * Handle Enter key press in message input
    */
@@ -242,7 +299,7 @@ const TrainerMessages = () => {
       handleSendMessage();
     }
   };
-  
+
   /**
    * Auto-scroll to bottom of messages
    */
@@ -251,7 +308,17 @@ const TrainerMessages = () => {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
-  
+
+  /**
+   * Get initials from a full name
+   */
+  const getInitials = (fullName) => {
+    if (!fullName) return '?';
+    const names = fullName.trim().split(' ');
+    if (names.length === 1) return names[0][0]?.toUpperCase() || '?';
+    return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+  };
+
   /**
    * Filter conversations based on search term
    */
@@ -260,7 +327,7 @@ const TrainerMessages = () => {
     conversation.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     conversation.last_message_content?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+
 
 
 
@@ -269,152 +336,113 @@ const TrainerMessages = () => {
 
   return (
     <div className="trainer-messages-container">
-      <div className="messages-header">
-        <h2><MessageSquare size={24} />Client Messages</h2>
-        <button onClick={() => console.log('New message feature coming soon')} className="new-message-button">
-          <Plus size={18} />
-          New Message
-        </button>
-      </div>
-
-      <div className="messages-layout">
-        {/* Conversations List */}
-        <div className="conversations-sidebar">
-          <div className="conversations-search">
-            <Search size={16} />
-            <input 
-              type="text" 
-              placeholder="Search conversations..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+      {!selectedConversation ? (
+        /* Client Cards Grid */
+        <div className="clients-grid">
+          {loading ? (
+            <div className="loading-state">
+              <Loader className="spinning" size={20} />
+              <p>Loading clients...</p>
+            </div>
+          ) : allClients.length === 0 ? (
+            <div className="empty-state">
+              <MessageSquare size={48} style={{ opacity: 0.3 }} />
+              <p>No clients yet</p>
+              <p>Add clients through the Client Onboarding tool to start messaging.</p>
+            </div>
+          ) : (
+            allClients.map(client => (
+              <div
+                key={client.id}
+                className="client-message-card"
+                onClick={() => startConversation(client)}
+              >
+                <div className="client-avatar">
+                  {(client.first_name?.[0] || client.email?.[0] || '?').toUpperCase()}
+                </div>
+                <div className="client-card-info">
+                  <h3>{`${client.first_name || ''} ${client.last_name || ''}`.trim() || client.email}</h3>
+                  <p>{client.email}</p>
+                </div>
+                <MessageSquare size={20} />
+              </div>
+            ))
+          )}
+        </div>
+      ) : (
+        /* Messaging View */
+        <div className="messaging-view">
+          <div className="messages-header-bar">
+            <button
+              className="back-button"
+              onClick={() => setSelectedConversation(null)}
+            >
+              ←
+            </button>
+            <h3>{selectedConversation.user_full_name || 'Unknown User'}</h3>
           </div>
 
-          <div className="conversations-list">
-            {loading ? (
-              <div className="loading-state">
-                <Loader className="spinning" size={20} />
-                <p>Loading conversations...</p>
-              </div>
-            ) : filteredConversations.length === 0 ? (
-              <div className="empty-state">
-                <MessageSquare size={32} />
-                <p>No conversations yet</p>
+          <div className="messages-content">
+            {messages.length === 0 ? (
+              <div className="empty-messages">
+                <MessageSquare size={48} />
+                <p>No messages yet</p>
+                <p>Send a message to get started!</p>
               </div>
             ) : (
-              filteredConversations.map(conversation => (
+              messages.map(message => (
                 <div
-                  key={conversation.user_id}
-                  className={`conversation-item ${selectedConversation?.user_id === conversation.user_id ? 'selected' : ''}`}
-                  onClick={() => handleConversationSelect(conversation)}
+                  key={message.id}
+                  className={`message ${message.is_from_current_user ? 'sent' : 'received'}`}
                 >
-                  <div className="conversation-avatar">
-                    {conversation.user_full_name?.split(' ').map(n => n[0]).join('') || 'U'}
-                  </div>
-                  
-                  <div className="conversation-details">
-                    <div className="conversation-header">
-                      <span className="client-name">{conversation.user_full_name || 'Unknown User'}</span>
-                      {conversation.unread_count > 0 && (
-                        <span className="unread-badge">{conversation.unread_count}</span>
-                      )}
+                  {!message.is_from_current_user && (
+                    <div className="message-avatar">
+                      {getInitials(selectedConversation.user_full_name)}
                     </div>
-                    
-                    <div className="last-message">
-                      <span className="message-preview">
-                        {truncateMessage(conversation.last_message_content || 'No messages yet', 50)}
-                      </span>
-                    </div>
-                    
-                    <div className="conversation-meta">
-                      <span className="message-time">
-                        {formatMessageTime(conversation.last_message_at)}
-                      </span>
+                  )}
+                  <div className="message-bubble">
+                    <div className="message-content">
+                      {message.content}
                     </div>
                   </div>
+                  {message.is_from_current_user && (
+                    <div className="message-avatar message-avatar-sent">
+                      {getInitials(user?.user_metadata?.full_name || user?.email)}
+                    </div>
+                  )}
                 </div>
               ))
             )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="message-composer">
+            {error && (
+              <div className="error-message">
+                <AlertCircle size={16} />
+                {error}
+              </div>
+            )}
+            <div className="composer-input">
+              <textarea
+                ref={messageInputRef}
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Message..."
+                disabled={sendingMessage}
+              />
+              <button
+                onClick={handleSendMessage}
+                className="send-button"
+                disabled={!newMessage.trim() || sendingMessage}
+              >
+                {sendingMessage ? <Loader className="spinning" size={18} /> : <Send size={18} />}
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* Messages View */}
-        <div className="messages-main">
-          {selectedConversation ? (
-            <>
-              <div className="messages-header-bar">
-                <h3>{selectedConversation.user_full_name || 'Unknown User'}</h3>
-                <div className="message-actions">
-                  <span className="user-email">{selectedConversation.user_email}</span>
-                </div>
-              </div>
-
-              <div className="messages-content">
-                {messages.length === 0 ? (
-                  <div className="empty-messages">
-                    <MessageSquare size={48} />
-                    <p>No messages in this conversation yet</p>
-                    <p>Send a message to get started!</p>
-                  </div>
-                ) : (
-                  messages.map(message => (
-                    <div
-                      key={message.id}
-                      className={`message ${message.is_from_current_user ? 'sent' : 'received'}`}
-                    >
-                      <div className="message-content">
-                        {message.content}
-                      </div>
-                      <div className="message-meta">
-                        <span className="message-time">{formatMessageTime(message.created_at)}</span>
-                        {message.is_from_current_user && (
-                          <span className="message-status">
-                            {message.is_read ? <CheckCircle size={12} /> : <AlertCircle size={12} />}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-
-              <div className="message-composer">
-                {error && (
-                  <div className="error-message">
-                    <AlertCircle size={16} />
-                    {error}
-                  </div>
-                )}
-                <div className="composer-input">
-                  <textarea
-                    ref={messageInputRef}
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Type your message..."
-                    rows={3}
-                    disabled={sendingMessage}
-                  />
-                  <button
-                    onClick={handleSendMessage}
-                    className="send-button"
-                    disabled={!newMessage.trim() || sendingMessage}
-                  >
-                    {sendingMessage ? <Loader className="spinning" size={18} /> : <Send size={18} />}
-                  </button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="no-conversation-selected">
-              <MessageSquare size={48} />
-              <h3>Select a conversation</h3>
-              <p>Choose a client from the left to start messaging, or create a new conversation.</p>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Global error display */}
       {error && (

@@ -159,8 +159,8 @@ serve(async (req) => {
       content: message.content,
       created_at: message.created_at,
       read_at: message.read_at,
-      sender_name: message.sender 
-        ? `${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim() || message.sender.email 
+      sender_name: message.sender
+        ? `${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim() || message.sender.email
         : 'Unknown User',
       is_from_current_user: message.sender_id === user.id,
       is_read: message.read_at !== null

@@ -118,7 +118,7 @@ async function calculateWeightVolume(supabase: any, userId: string, exerciseId: 
 
   // Group by log_date and calculate total volume
   const volumeByDate: Record<string, number> = {};
-  
+
   data?.forEach((entry: any) => {
     const date = entry.workout_logs.log_date;
     const volume = (entry.weight_lbs || 0) * (entry.reps_completed || 0);
@@ -162,7 +162,7 @@ async function calculateSetVolume(supabase: any, userId: string, exerciseId: str
 
   // Group by log_date and count sets
   const setsByDate: Record<string, number> = {};
-  
+
   data?.forEach((entry: any) => {
     const date = entry.workout_logs.log_date;
     setsByDate[date] = (setsByDate[date] || 0) + 1;
@@ -209,15 +209,15 @@ async function calculate1RM(supabase: any, userId: string, exerciseId: string, l
 
   // Group by log_date and find max 1RM
   const oneRMByDate: Record<string, number> = {};
-  
+
   data?.forEach((entry: any) => {
     const date = entry.workout_logs.log_date;
     const weight = entry.weight_lbs || 0;
     const reps = entry.reps_completed || 0;
-    
+
     // Epley formula: 1RM = weight × (1 + reps/30)
     const estimated1RM = weight * (1 + reps / 30);
-    
+
     oneRMByDate[date] = Math.max(oneRMByDate[date] || 0, estimated1RM);
   });
 
@@ -262,8 +262,8 @@ serve(async (req) => {
     // Validate metric type
     if (!VALID_METRICS.includes(metric as MetricType)) {
       return new Response(
-        JSON.stringify({ 
-          error: `Invalid metric type. Must be one of: ${VALID_METRICS.join(', ')}` 
+        JSON.stringify({
+          error: `Invalid metric type. Must be one of: ${VALID_METRICS.join(', ')}`
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

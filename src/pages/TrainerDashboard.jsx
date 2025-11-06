@@ -14,30 +14,30 @@
  * and larger due to interface complexity.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Routes, Route, useLocation } from 'react-router-dom';
-import { 
-  Users, 
-  TrendingUp, 
-  Calendar, 
-  MessageSquare, 
+import {
+  Apple,
   ArrowLeft,
   BarChart3,
+  Calendar,
   Dumbbell,
-  Apple,
-  Clock,
+  FolderOpen,
+  MessageSquare,
+  Timer,
+  TrendingUp,
   UserPlus,
-  Send,
-  ChefHat
+  Users
 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import useResponsive from '../hooks/useResponsive.jsx';
+import ClientOnboarding from './trainer/ClientOnboarding.jsx';
+import IntervalTimer from './trainer/IntervalTimer.jsx';
 import TrainerCalendar from './trainer/TrainerCalendar.jsx';
-import TrainerPrograms from './trainer/TrainerPrograms.jsx';
 import TrainerClients from './trainer/TrainerClients.jsx';
 import TrainerMessages from './trainer/TrainerMessages.jsx';
-import ClientOnboarding from './trainer/ClientOnboarding.jsx';
-import SmartScheduling from '../components/SmartScheduling.jsx';
+import TrainerPrograms from './trainer/TrainerPrograms.jsx';
+import TrainerResources from './trainer/TrainerResources.jsx';
 import './TrainerDashboard.css';
 
 /**
@@ -74,18 +74,22 @@ const TrainerDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isTabletOrLarger } = useResponsive();
-  
+
   /** @type {[boolean, Function]} Loading state for trainer dashboard */
   const [isLoading, setIsLoading] = useState(true);
-  
+
   /** @type {[string|null, Function]} Currently active workspace tool */
   const [activeWorkspaceTool, setActiveWorkspaceTool] = useState('scheduling');
+
+  /** @type {[boolean, Function]} Show interval timer modal */
+  const [showIntervalTimer, setShowIntervalTimer] = useState(false);
 
   // Navigation functions for trainer sections
   const navigateToCalendar = () => navigate('/trainer-dashboard/calendar');
   const navigateToPrograms = () => navigate('/trainer-dashboard/programs');
   const navigateToClients = () => navigate('/trainer-dashboard/clients');
   const navigateToMessages = () => navigate('/trainer-dashboard/messages');
+  const navigateToResources = () => navigate('/trainer-dashboard/resources');
   const navigateToOnboarding = () => navigate('/trainer-dashboard/onboarding');
 
   /**
@@ -101,7 +105,7 @@ const TrainerDashboard = () => {
       setIsLoading(false);
       return;
     }
-    
+
     try {
       setIsLoading(true);
       // Initialize any dashboard-wide data here
@@ -254,10 +258,10 @@ const TrainerDashboard = () => {
         </div>
         <div className="header-logo">
           <button onClick={handleBackToDashboard} className="logo-button" aria-label="Go to main dashboard">
-            <img 
-              src="https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/sign/logo_banner/Felony%20Fitness%20Logo.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81M2NhYTc4NC1hZjEzLTQxZTAtYjljYS02Njk3NjRiZWVkODEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsb2dvX2Jhbm5lci9GZWxvbnkgRml0bmVzcyBMb2dvLnBuZyIsImlhdCI6MTc1ODgxNDU4MCwiZXhwIjoxOTE2NDk0NTgwfQ.TUTMDUtZpccUdwSp8NFTltJR1GHnEc6zO6j7iigwF1g" 
-              alt="Felony Fitness" 
-              className="header-logo-img" 
+            <img
+              src="https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/sign/logo_banner/Felony%20Fitness%20Logo.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV81M2NhYTc4NC1hZjEzLTQxZTAtYjljYS02Njk3NjRiZWVkODEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJsb2dvX2Jhbm5lci9GZWxvbnkgRml0bmVzcyBMb2dvLnBuZyIsImlhdCI6MTc1ODgxNDU4MCwiZXhwIjoxOTE2NDk0NTgwfQ.TUTMDUtZpccUdwSp8NFTltJR1GHnEc6zO6j7iigwF1g"
+              alt="Felony Fitness"
+              className="header-logo-img"
             />
           </button>
         </div>
@@ -269,7 +273,7 @@ const TrainerDashboard = () => {
           <div className="dashboard-top-section">
             {/* Left Sidebar - Quick Access Tools */}
             <aside className="quick-tools-sidebar">
-              <button 
+              <button
                 type="button"
                 className={`tool-item ${(location.pathname === '/trainer-dashboard/calendar' || location.pathname === '/trainer-dashboard') ? 'active' : ''}`}
                 onClick={navigateToCalendar}
@@ -278,7 +282,7 @@ const TrainerDashboard = () => {
                 <Calendar size={20} />
                 <span>Calendar</span>
               </button>
-              <button 
+              <button
                 type="button"
                 className={`tool-item ${location.pathname === '/trainer-dashboard/programs' ? 'active' : ''}`}
                 onClick={navigateToPrograms}
@@ -287,7 +291,7 @@ const TrainerDashboard = () => {
                 <BarChart3 size={20} />
                 <span>Programs</span>
               </button>
-              <button 
+              <button
                 type="button"
                 className={`tool-item ${location.pathname === '/trainer-dashboard/clients' ? 'active' : ''}`}
                 onClick={navigateToClients}
@@ -296,7 +300,7 @@ const TrainerDashboard = () => {
                 <Users size={20} />
                 <span>Clients</span>
               </button>
-              <button 
+              <button
                 type="button"
                 className={`tool-item ${location.pathname === '/trainer-dashboard/messages' ? 'active' : ''}`}
                 onClick={navigateToMessages}
@@ -305,7 +309,25 @@ const TrainerDashboard = () => {
                 <MessageSquare size={20} />
                 <span>Messages</span>
               </button>
-              <button 
+              <button
+                type="button"
+                className={`tool-item ${location.pathname === '/trainer-dashboard/resources' ? 'active' : ''}`}
+                onClick={navigateToResources}
+                aria-label="Open Resources"
+              >
+                <FolderOpen size={20} />
+                <span>Resources</span>
+              </button>
+              <button
+                type="button"
+                className="tool-item"
+                onClick={() => setShowIntervalTimer(true)}
+                aria-label="Open Interval Timer"
+              >
+                <Timer size={20} />
+                <span>Interval Timer</span>
+              </button>
+              <button
                 type="button"
                 className={`tool-item onboarding-btn ${location.pathname === '/trainer-dashboard/onboarding' ? 'active' : ''}`}
                 onClick={navigateToOnboarding}
@@ -326,6 +348,7 @@ const TrainerDashboard = () => {
                   <Route path="/programs/*" element={<TrainerPrograms />} />
                   <Route path="/clients" element={<TrainerClients />} />
                   <Route path="/messages" element={<TrainerMessages />} />
+                  <Route path="/resources" element={<TrainerResources />} />
                   <Route path="/onboarding" element={<ClientOnboarding />} />
                 </Routes>
               </main>
@@ -334,9 +357,9 @@ const TrainerDashboard = () => {
 
           <div className="core-tools-workspace">
             <div className="tools-selector">
-              <button 
+              <button
                 type="button"
-                className={`workspace-tool ${activeWorkspaceTool === 'scheduling' ? 'active' : ''}`} 
+                className={`workspace-tool ${activeWorkspaceTool === 'scheduling' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('scheduling')}
                 aria-pressed={activeWorkspaceTool === 'scheduling'}
                 aria-label="Smart Scheduling Tool"
@@ -344,9 +367,9 @@ const TrainerDashboard = () => {
                 <Calendar size={16} />
                 <span>Smart Scheduling</span>
               </button>
-              <button 
+              <button
                 type="button"
-                className={`workspace-tool ${activeWorkspaceTool === 'progress' ? 'active' : ''}`} 
+                className={`workspace-tool ${activeWorkspaceTool === 'progress' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('progress')}
                 aria-pressed={activeWorkspaceTool === 'progress'}
                 aria-label="Progress Tracker Tool"
@@ -354,9 +377,9 @@ const TrainerDashboard = () => {
                 <TrendingUp size={16} />
                 <span>Progress Tracker</span>
               </button>
-              <button 
+              <button
                 type="button"
-                className={`workspace-tool ${activeWorkspaceTool === 'workout' ? 'active' : ''}`} 
+                className={`workspace-tool ${activeWorkspaceTool === 'workout' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('workout')}
                 aria-pressed={activeWorkspaceTool === 'workout'}
                 aria-label="Workout Builder Tool"
@@ -364,9 +387,9 @@ const TrainerDashboard = () => {
                 <Dumbbell size={16} />
                 <span>Workout Builder</span>
               </button>
-              <button 
+              <button
                 type="button"
-                className={`workspace-tool ${activeWorkspaceTool === 'messaging' ? 'active' : ''}`} 
+                className={`workspace-tool ${activeWorkspaceTool === 'messaging' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('messaging')}
                 aria-pressed={activeWorkspaceTool === 'messaging'}
                 aria-label="Messaging Hub Tool"
@@ -374,9 +397,9 @@ const TrainerDashboard = () => {
                 <MessageSquare size={16} />
                 <span>Messaging Hub</span>
               </button>
-              <button 
+              <button
                 type="button"
-                className={`workspace-tool ${activeWorkspaceTool === 'nutrition' ? 'active' : ''}`} 
+                className={`workspace-tool ${activeWorkspaceTool === 'nutrition' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('nutrition')}
                 aria-pressed={activeWorkspaceTool === 'nutrition'}
                 aria-label="Nutrition Planner Tool"
@@ -391,6 +414,11 @@ const TrainerDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Interval Timer Modal */}
+      {showIntervalTimer && (
+        <IntervalTimer onClose={() => setShowIntervalTimer(false)} />
+      )}
     </div>
   );
 }

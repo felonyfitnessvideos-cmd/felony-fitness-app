@@ -1,0 +1,349 @@
+/**
+ * IntervalTimer.css
+ * Styles for the interval timer component
+ */
+
+.interval-timer-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* Configuration Modal */
+.timer-config-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 2rem;
+}
+
+.config-content {
+  background: var(--background-primary);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.config-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.config-header > div {
+  flex: 1;
+  text-align: center;
+}
+
+.config-header svg {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.config-header h2 {
+  margin: 0.5rem 0;
+  font-size: 1.75rem;
+  color: var(--text-primary);
+}
+
+.config-header p {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: var(--background-secondary);
+  color: var(--text-primary);
+}
+
+.config-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.time-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.time-input-group label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.time-input-group input {
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1.25rem;
+  text-align: center;
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  transition: border-color 0.2s;
+}
+
+.time-input-group input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.config-preview {
+  background: var(--background-secondary);
+  padding: 1rem;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+}
+
+.config-preview p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.config-preview strong {
+  display: block;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.config-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.start-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.start-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Full-Screen Timer Display */
+.timer-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  transition: background-color 0.5s ease;
+}
+
+.timer-fullscreen.bg-work {
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+}
+
+.timer-fullscreen.bg-rest {
+  background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+}
+
+.timer-fullscreen.bg-countdown {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.timer-controls {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  display: flex;
+  gap: 1rem;
+  z-index: 10;
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.control-btn.stop-btn {
+  background: rgba(231, 76, 60, 0.8);
+  border-color: rgba(231, 76, 60, 0.5);
+}
+
+.control-btn.stop-btn:hover {
+  background: rgba(192, 57, 43, 0.9);
+}
+
+.timer-info {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  text-align: left;
+  z-index: 10;
+}
+
+.round-counter {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  margin-bottom: 0.5rem;
+}
+
+.phase-label {
+  font-size: 2rem;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  letter-spacing: 0.1em;
+}
+
+.timer-display {
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  user-select: none;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.timer-display.text-timer {
+  font-size: 16rem;
+  line-height: 1;
+}
+
+.timer-display.text-break {
+  font-size: 14rem;
+  line-height: 1;
+  animation: breakPulse 0.5s ease-in-out;
+}
+
+.timer-display.text-countdown {
+  font-size: 24rem;
+  line-height: 1;
+  animation: countdownPop 1s ease-out;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes breakPulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes countdownPop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .timer-display.text-timer {
+    font-size: 10rem;
+  }
+
+  .timer-display.text-break {
+    font-size: 8rem;
+  }
+
+  .timer-display.text-countdown {
+    font-size: 14rem;
+  }
+
+  .phase-label {
+    font-size: 1.5rem;
+  }
+
+  .round-counter {
+    font-size: 1.2rem;
+  }
+
+  .timer-controls {
+    top: 1rem;
+    right: 1rem;
+  }
+
+  .timer-info {
+    top: 1rem;
+    left: 1rem;
+  }
+}

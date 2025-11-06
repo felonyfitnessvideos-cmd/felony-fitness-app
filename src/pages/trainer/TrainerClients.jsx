@@ -20,10 +20,9 @@
  * @requires ./TrainerClients.css
  */
 
-import React, { useState, useEffect } from 'react';
+import { Activity, Calendar, Mail, Phone, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Phone, Mail, Calendar, Activity } from 'lucide-react';
-import { supabase } from '../../supabaseClient.js';
 import { useAuth } from '../../AuthContext.jsx';
 import { getTrainerClients } from '../../utils/userRoleUtils.js';
 import './TrainerClients.css';
@@ -50,12 +49,13 @@ import './TrainerClients.css';
 const TrainerClients = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   // State management for client data and UI
   const [clients, setClients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [expandedClient, setExpandedClient] = useState(null);
 
   /**
    * Load trainer's clients from database
@@ -70,20 +70,20 @@ const TrainerClients = () => {
   useEffect(() => {
     const loadClients = async () => {
       if (!user) return;
-      
+
       try {
         setLoading(true);
         setError(null);
-        
+
         const clientData = await getTrainerClients(user.id);
         console.log('🔍 Raw client data from database:', clientData);
-        
+
         // Transform database records into display format
         const formattedClients = clientData.map(relationship => {
           const profile = relationship.client?.user_profiles || relationship.client;
           return {
             id: relationship.client_id,
-            name: profile?.first_name && profile?.last_name 
+            name: profile?.first_name && profile?.last_name
               ? `${profile.first_name} ${profile.last_name}`
               : profile?.full_name || relationship.client?.email?.split('@')[0] || 'Unknown Client',
             email: relationship.client?.email || profile?.email || '',
@@ -98,9 +98,9 @@ const TrainerClients = () => {
             lastMessageAt: relationship.last_message_at
           };
         });
-        
+
         console.log('✅ Formatted clients:', formattedClients);
-        
+
         setClients(formattedClients);
       } catch (err) {
         console.error('Error loading clients:', err);
@@ -148,7 +148,7 @@ const TrainerClients = () => {
    */
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.email.toLowerCase().includes(searchTerm.toLowerCase());
+      client.email.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
@@ -182,17 +182,17 @@ const TrainerClients = () => {
           </div>
         ) : (
           filteredClients.map(client => (
-            <div 
-              key={client.id} 
+            <div
+              key={client.id}
               className="client-card"
+              onClick={() => setExpandedClient(expandedClient === client.id ? null : client.id)}
             >
-              <div className="client-header">
+              <div className="client-card-header">
                 <h3>{client.name}</h3>
-                <button 
+                <button
                   className="message-btn"
                   onClick={(e) => {
                     e.stopPropagation();
-                    // Navigate to messages with this client
                     navigate(`/trainer-dashboard/messages?client=${client.id}`);
                   }}
                 >
@@ -200,32 +200,60 @@ const TrainerClients = () => {
                   Message
                 </button>
               </div>
-              
-              <div className="client-info">
-                <div className="info-row">
-                  <Mail size={16} />
-                  <span>{client.email}</span>
-                </div>
-                <div className="info-row">
-                  <Phone size={16} />
-                  <span>{client.phone}</span>
-                </div>
-                <div className="info-row">
-                  <Calendar size={16} />
-                  <span>Joined: {client.joinDate}</span>
-                </div>
-                {client.fitnessGoals && (
-                  <div className="info-row">
-                    <Activity size={16} />
-                    <span>Goals: {client.fitnessGoals}</span>
+
+              {/* Expanded Client Info */}
+              {expandedClient === client.id && (
+                <div className="client-details-expanded">
+                  <div className="info-section">
+                    <h4>Contact Information</h4>
+                    <div className="info-row">
+                      <Mail size={16} />
+                      <span>{client.email}</span>
+                    </div>
+                    <div className="info-row">
+                      <Phone size={16} />
+                      <span>{client.phone}</span>
+                    </div>
                   </div>
-                )}
-                {client.emergencyContact && (
-                  <div className="info-row">
-                    <span>Emergency: {client.emergencyContact} ({client.emergencyPhone})</span>
+
+                  <div className="info-section">
+                    <h4>Profile Details</h4>
+                    <div className="info-row">
+                      <Calendar size={16} />
+                      <span>Joined: {client.joinDate}</span>
+                    </div>
+                    {client.dateOfBirth && (
+                      <div className="info-row">
+                        <Activity size={16} />
+                        <span>DOB: {client.dateOfBirth}</span>
+                      </div>
+                    )}
+                    {client.fitnessGoals && (
+                      <div className="info-row">
+                        <Activity size={16} />
+                        <span>Goals: {client.fitnessGoals}</span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+
+                  {client.medicalConditions && (
+                    <div className="info-section">
+                      <h4>Medical Information</h4>
+                      <p>{client.medicalConditions}</p>
+                    </div>
+                  )}
+
+                  {client.emergencyContact && (
+                    <div className="info-section">
+                      <h4>Emergency Contact</h4>
+                      <div className="info-row">
+                        <Phone size={16} />
+                        <span>{client.emergencyContact} - {client.emergencyPhone}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))
         )}

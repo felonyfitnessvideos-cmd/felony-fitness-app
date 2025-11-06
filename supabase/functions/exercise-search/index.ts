@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
       throw muscleError;
     }
     const muscleGroupList = muscleGroups.map(mg => mg.name);
-    
+
     // Construct a detailed, structured prompt for the OpenAI API.
     const prompt = `
       Provide details for the exercise "${query}". 
@@ -108,21 +108,21 @@ Deno.serve(async (req) => {
 
     // Make the request to the OpenAI Chat Completions endpoint.
     const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            model: 'gpt-4o',
-            messages: [{ role: 'user', content: prompt }],
-            response_format: { type: 'json_object' },
-            temperature: 0.1 // Lower temperature for more deterministic, predictable results.
-        })
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+        temperature: 0.1 // Lower temperature for more deterministic, predictable results.
+      })
     });
 
     if (!aiResponse.ok) {
-        throw new Error(`AI API request failed: ${await aiResponse.text()}`);
+      throw new Error(`AI API request failed: ${await aiResponse.text()}`);
     }
 
     const aiData = await aiResponse.json();
@@ -130,15 +130,15 @@ Deno.serve(async (req) => {
 
     // Return the AI-generated results to the client.
     return new Response(JSON.stringify({ ...externalResults, source: 'external' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
     });
 
   } catch (err) {
     // Generic error handler for any failures in the try block.
     return new Response(JSON.stringify({ error: (err as Error)?.message || 'Unknown error' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500
     });
   }
 });

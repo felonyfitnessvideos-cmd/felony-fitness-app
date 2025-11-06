@@ -5,9 +5,9 @@
  * @date 10/17/2025
  */
 
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { Apple, Lightbulb } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { supabase } from '../supabaseClient.js';
 import './NutritionPage.css';
@@ -40,11 +40,11 @@ function NutritionPage() {
         const { data, error } = await supabase.functions.invoke('get-random-tip', {
           body: {}
         });
-        
+
         if (error) throw error;
-        
+
         if (!data) return;
-        
+
         // Handle tip data from Edge Function response
         if (data.tip_text) {
           setDailyTip(data.tip_text);
