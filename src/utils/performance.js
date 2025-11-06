@@ -155,7 +155,7 @@ export const registerSW = async () => {
         scope: '/',
         updateViaCache: 'none'
       });
-    } catch (error) {
+    } catch {
       // Service worker registration failed - handled silently
     }
   }

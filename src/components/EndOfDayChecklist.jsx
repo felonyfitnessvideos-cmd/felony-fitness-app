@@ -5,7 +5,7 @@
  * @testFile src/__tests__/components/EndOfDayChecklist.test.jsx
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { CheckCircle, Circle, AlertTriangle, Save, Download, TestTube } from 'lucide-react';
 
 const EndOfDayChecklist = () => {
@@ -68,13 +68,14 @@ const EndOfDayChecklist = () => {
     }
   ]);
 
-  const [todaysSummary, setTodaysSummary] = useState({
-    componentsCreated: [],
-    migrationsApplied: [], 
-    testsAdded: [],
-    bugsFixed: [],
-    featuresCompleted: []
-  });
+  // Summary tracking disabled for now
+  // const [todaysSummary, setTodaysSummary] = useState({
+  //   componentsCreated: [],
+  //   migrationsApplied: [], 
+  //   testsAdded: [],
+  //   bugsFixed: [],
+  //   featuresCompleted: []
+  // });
 
   const toggleItem = (id) => {
     setChecklist(prev => prev.map(item => 

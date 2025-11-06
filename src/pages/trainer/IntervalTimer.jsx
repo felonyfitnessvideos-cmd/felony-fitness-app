@@ -49,14 +49,14 @@ const IntervalTimer = ({ onClose }) => {
     const [round, setRound] = useState(1);
 
     const intervalRef = useRef(null);
-    const audioRef = useRef(null);
+    // const audioRef = useRef(null);
 
     /**
      * Start the timer
      */
     const handleStart = () => {
         const work = parseInt(workTime) || 30;
-        const rest = parseInt(restTime) || 15;
+        // const rest = parseInt(restTime) || 15;
         setShowConfig(false);
         setShowTimer(true);
         setIsRunning(true);

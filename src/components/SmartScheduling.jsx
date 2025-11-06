@@ -44,20 +44,22 @@ const SmartScheduling = () => {
   /** @type {[Array, Function]} List of scheduled appointments */
   const [appointments, setAppointments] = useState([]);
   
-  /** @type {[Array, Function]} Available time slots */
-  const [availableSlots, setAvailableSlots] = useState([]);
+  // Available time slots feature - to be implemented
+  // const [availableSlots, setAvailableSlots] = useState([]);
   
   /** @type {[string, Function]} Current view mode */
   const [viewMode, setViewMode] = useState('week'); // 'day', 'week', 'month'
   
   /** @type {[Date, Function]} Selected date for scheduling */
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate] = useState(null);
+  // const [availableSlots, setAvailableSlots] = useState([]);
+  const [_showNewAppointment, setShowNewAppointment] = useState(false);
   
   /** @type {[Object|null, Function]} Currently selected appointment */
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   
-  /** @type {[boolean, Function]} New appointment modal visibility */
-  const [showNewAppointment, setShowNewAppointment] = useState(false);
+  // New appointment modal - to be implemented
+  // const [showNewAppointment, setShowNewAppointment] = useState(false);
   
   /** @type {[Array, Function]} Smart scheduling suggestions */
   const [smartSuggestions, setSmartSuggestions] = useState([]);
@@ -155,18 +157,18 @@ const SmartScheduling = () => {
   }, []);
 
   /**
-   * Handle new appointment creation
+   * Handle new appointment creation - to be implemented
    */
-  const handleCreateAppointment = (appointmentData) => {
-    const newAppointment = {
-      id: appointments.length + 1,
-      ...appointmentData,
-      status: 'pending'
-    };
-    
-    setAppointments(prev => [...prev, newAppointment]);
-    setShowNewAppointment(false);
-  };
+  // const handleCreateAppointment = (appointmentData) => {
+  //   const newAppointment = {
+  //     id: appointments.length + 1,
+  //     ...appointmentData,
+  //     status: 'pending'
+  //   };
+  //   
+  //   setAppointments(prev => [...prev, newAppointment]);
+  //   setShowNewAppointment(false);
+  // };
 
   /**
    * Filter appointments based on search query

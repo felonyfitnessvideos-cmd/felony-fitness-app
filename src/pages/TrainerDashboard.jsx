@@ -111,7 +111,7 @@ const TrainerDashboard = () => {
       // Initialize any dashboard-wide data here
       // Add a small delay to prevent flash
       await new Promise(resolve => setTimeout(resolve, 100));
-    } catch (error) {
+    } catch {
       // Error initializing dashboard - handled silently
     } finally {
       setIsLoading(false);

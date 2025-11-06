@@ -195,7 +195,7 @@ const ClientOnboarding = () => {
     }));
   };
 
-  const validateSection = (section) => {
+  const validateSection = () => {
     const newErrors = {};
 
     // No required fields - all validation removed

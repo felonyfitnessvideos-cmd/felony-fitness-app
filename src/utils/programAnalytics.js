@@ -306,7 +306,7 @@ const analyzeProgramBalance = (sortedMuscles, muscleDetails) => {
 
   const pushScore = pushMuscles.reduce((sum, muscle) => sum + (muscleDetails[muscle]?.primaryHits || 0), 0);
   const pullScore = pullMuscles.reduce((sum, muscle) => sum + (muscleDetails[muscle]?.primaryHits || 0), 0);
-  const legScore = legMuscles.reduce((sum, muscle) => sum + (muscleDetails[muscle]?.primaryHits || 0), 0);
+  const _legScore = legMuscles.reduce((sum, muscle) => sum + (muscleDetails[muscle]?.primaryHits || 0), 0);
 
   if (pushScore > 0 && pullScore > 0) {
     const pushPullRatio = pushScore / pullScore;
@@ -326,7 +326,7 @@ const analyzeProgramBalance = (sortedMuscles, muscleDetails) => {
  * @returns {Array} - Array of muscle data with intensity levels
  */
 export const generateHeatmapData = (engagementData) => {
-  const { sortedMuscles, programStats } = engagementData;
+  const { sortedMuscles } = engagementData;
   
   if (!sortedMuscles || sortedMuscles.length === 0) {
     return [];

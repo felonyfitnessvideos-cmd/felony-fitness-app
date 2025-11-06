@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient.js';
-import { nutritionAPI } from '../utils/nutritionAPI.js';
+// import { nutritionAPI } from '../utils/nutritionAPI.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 /**
  * NutritionLogPage — log daily nutrition entries.

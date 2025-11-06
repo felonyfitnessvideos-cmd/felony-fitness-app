@@ -14,8 +14,7 @@ const DebugOverlay = () => {
     deviceType, 
     isMobile, 
     isTablet, 
-    isTabletOrLarger,
-    breakpoints 
+    isTabletOrLarger
   } = useResponsive();
 
   // Temporarily show in production for tablet debugging

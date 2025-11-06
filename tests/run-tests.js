@@ -56,7 +56,7 @@ function executeCommand(command, description) {
   console.log(`Command: ${command}\n`);
   
   try {
-    const output = execSync(command, { 
+    execSync(command, { 
       encoding: 'utf-8', 
       stdio: 'inherit',
       cwd: process.cwd()

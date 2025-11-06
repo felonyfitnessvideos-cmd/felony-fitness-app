@@ -6,14 +6,11 @@
  * @created 2025-11-03
  */
 
-import { describe, test, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { supabase } from '../src/supabaseClient.js';
 import {
   getConversations,
   getConversationMessages,
-  sendMessage,
-  markMessagesAsRead,
-  getUnreadMessageCount,
   formatMessageTime,
   truncateMessage,
   validateMessageContent,
@@ -21,8 +18,7 @@ import {
 } from '../src/utils/messagingUtils.js';
 
 describe('Messaging System Tests', () => {
-  let testUser1, testUser2;
-  let authSession1, authSession2;
+  let testUser1;
 
   beforeAll(async () => {
     console.log('🔧 Setting up messaging system tests...');
@@ -268,7 +264,7 @@ describe('Messaging System Tests', () => {
     test('should verify direct_messages table exists and has correct structure', async () => {
       try {
         // Try to query the table structure
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('direct_messages')
           .select('*')
           .limit(0); // Don't return any rows, just test the query

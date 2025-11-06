@@ -10,7 +10,7 @@
  * - Responsive design with mobile support
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { supabase } from '../../supabaseClient';
 import InteractiveMuscleMap from './InteractiveMuscleMap';
 import './MuscleExplorer.css';

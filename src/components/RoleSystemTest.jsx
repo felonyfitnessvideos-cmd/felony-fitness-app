@@ -91,7 +91,7 @@ const RoleSystemTest = () => {
                 }
                 
                 // Check if trainer_clients table exists
-                const { data: tcTest, error: tcError } = await supabase
+                const { error: tcError } = await supabase
                     .from('trainer_clients')
                     .select('id')
                     .limit(1);
@@ -141,7 +141,7 @@ const RoleSystemTest = () => {
                 content: `Test message from trainer to client - ${new Date().toLocaleTimeString()}`
             };
             
-            const { data: messageResult, error: messageError } = await supabase
+            const { error: messageError } = await supabase
                 .from('direct_messages')
                 .insert([testMessage])
                 .select();
@@ -260,7 +260,7 @@ const RoleSystemTest = () => {
                     overflowY: 'auto'
                 }}>
                     <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem' }}>Test Results:</h3>
-                    {results.map((result, index) => (
+                    {results.map((result) => (
                         <div key={result.id} style={{
                             display: 'flex',
                             alignItems: 'flex-start',

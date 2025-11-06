@@ -36,7 +36,7 @@ import { useAuth } from '../../AuthContext';
 import ScheduleRoutineModal from '../../components/ScheduleRoutineModal';
 import InteractiveMuscleMap from '../../components/workout-builder/InteractiveMuscleMap';
 import { calculateProgramEngagement, generateHeatmapData } from '../../utils/programAnalytics';
-import { fetchExercisesWithMuscles, analyzeUserProgram } from '../../utils/workoutBuilderIntegration';
+// import { fetchExercisesWithMuscles, analyzeUserProgram } from '../../utils/workoutBuilderIntegration';
 import './TrainerPrograms.css';
 
 /**
@@ -700,7 +700,7 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
  */
 const ProgramLibrary = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const _navigate = useNavigate();
   const [programs, setPrograms] = useState([]);
   const [programRoutines, setProgramRoutines] = useState({});
   const [loading, setLoading] = useState(true);
@@ -919,7 +919,7 @@ const ProgramLibrary = () => {
    * @param {number} weeks - Number of weeks
    * @returns {string} Formatted duration string
    */
-  const formatDuration = (weeks) => {
+  const _formatDuration = (weeks) => {
     if (weeks === 1) return '1 week';
     if (weeks < 4) return `${weeks} weeks`;
     const months = Math.round(weeks / 4);
@@ -1130,18 +1130,18 @@ const ProgramLibrary = () => {
  * Program Detail Component
  */
 const ProgramDetail = () => {
-  const { programId } = useParams();
+  const { programId: _programId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
 
-  const [program, setProgram] = useState(null);
-  const [routines, setRoutines] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedRoutine, setSelectedRoutine] = useState(null);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [groupedRoutines, setGroupedRoutines] = useState({});
+  const [_program, _setProgram] = useState(null);
+  const [_routines, _setRoutines] = useState([]);
+  const [_clients, _setClients] = useState([]);
+  const [_loading, _setLoading] = useState(true);
+  const [_error, _setError] = useState(null);
+  const [_selectedRoutine, _setSelectedRoutine] = useState(null);
+  const [_showScheduleModal, _setShowScheduleModal] = useState(false);
+  const [_groupedRoutines, _setGroupedRoutines] = useState({});
 
   // [Previous ProgramDetail logic would go here - similar to ProgramDetailPage]
   // For brevity, I'll implement the key parts
@@ -1150,7 +1150,7 @@ const ProgramDetail = () => {
     navigate('/trainer-dashboard/programs');
   };
 
-  if (loading) {
+  if (_loading) {
     return (
       <div className="program-detail-container">
         <div className="loading-container">
@@ -1168,7 +1168,7 @@ const ProgramDetail = () => {
           <ArrowLeft size={20} />
           Back to Programs
         </button>
-        <h2>{program?.name || 'Program Details'}</h2>
+        <h2>{_program?.name || 'Program Details'}</h2>
       </div>
       
       {/* Program details and routines would go here */}
@@ -1184,7 +1184,7 @@ const ProgramDetail = () => {
  * Main TrainerPrograms Component with Routing
  */
 const TrainerPrograms = () => {
-  const location = useLocation();
+  const _location = useLocation();
 
   return (
     <div className="trainer-programs-wrapper">

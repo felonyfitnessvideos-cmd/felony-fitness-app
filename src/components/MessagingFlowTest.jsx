@@ -105,7 +105,7 @@ const MessagingFlowTest = () => {
       addResult('3️⃣ Testing real-time subscription...');
       
       try {
-        const subscription = await subscribeToMessages((payload) => {
+        const subscription = await subscribeToMessages(() => {
           addResult('📨 Real-time message received!');
         });
         

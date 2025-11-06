@@ -81,7 +81,7 @@ function CycleWeekEditor({ weeks = 4, focus = 'Hypertrophy', onAssignmentsChange
       }
     }
     setAssignments(arr);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [weeks, focus, initialAssignments]);
 
   // Only call onAssignmentsChange when assignments actually change

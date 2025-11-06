@@ -77,10 +77,10 @@ import './TrainerCalendar.css';
 const TrainerCalendar = memo(() => {
   // Core state management
   /** @type {[Array<LocalAppointment>, Function]} Local appointments state */
-  const [appointments, setAppointments] = useState([]);
+  const [_appointments, setAppointments] = useState([]);
   
   /** @type {[Date, Function]} Currently selected date */
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // const [selectedDate, setSelectedDate] = useState(new Date());
   
   /** @type {[Array, Function]} Events converted from Google Calendar */
   const [localEvents, setLocalEvents] = useState([]);
@@ -426,7 +426,7 @@ const TrainerCalendar = memo(() => {
   }, [signOut]);
 
   /**
-   * Navigate to previous or next week
+   * Navigate to previous or next week (disabled in static view)
    * 
    * @function navigateWeek
    * @description Navigates the calendar view to the previous or next week.
@@ -441,36 +441,36 @@ const TrainerCalendar = memo(() => {
    * // Go to next week
    * navigateWeek(1);
    */
-  const navigateWeek = useCallback((direction) => {
-    try {
-      if (typeof direction !== 'number' || (direction !== -1 && direction !== 1)) {
-        console.error('❌ Invalid direction for week navigation:', direction);
-        return;
-      }
+  // const navigateWeek = useCallback((direction) => {
+  //   try {
+  //     if (typeof direction !== 'number' || (direction !== -1 && direction !== 1)) {
+  //       console.error('❌ Invalid direction for week navigation:', direction);
+  //       return;
+  //     }
 
-      const newWeek = new Date(currentWeek);
-      const newDate = newWeek.getDate() + (direction * 7);
-      
-      // Check for reasonable date boundaries (not more than 5 years in past/future)
-      const fiveYearsAgo = new Date();
-      fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
-      const fiveYearsFromNow = new Date();
-      fiveYearsFromNow.setFullYear(fiveYearsFromNow.getFullYear() + 5);
-      
-      newWeek.setDate(newDate);
-      
-      if (newWeek < fiveYearsAgo || newWeek > fiveYearsFromNow) {
-        console.warn('⚠️ Week navigation boundary reached');
-        return;
-      }
-      
-      setCurrentWeek(newWeek);
-      setComponentError(null); // Clear any previous errors
-    } catch (error) {
-      console.error('❌ Error navigating week:', error);
-      setComponentError('Failed to navigate calendar week');
-    }
-  }, [currentWeek]);
+  //     const newWeek = new Date(currentWeek);
+  //     const newDate = newWeek.getDate() + (direction * 7);
+  //     
+  //     // Check for reasonable date boundaries (not more than 5 years in past/future)
+  //     const fiveYearsAgo = new Date();
+  //     fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+  //     const fiveYearsFromNow = new Date();
+  //     fiveYearsFromNow.setFullYear(fiveYearsFromNow.getFullYear() + 5);
+  //     
+  //     newWeek.setDate(newDate);
+  //     
+  //     if (newWeek < fiveYearsAgo || newWeek > fiveYearsFromNow) {
+  //       console.warn('⚠️ Week navigation boundary reached');
+  //       return;
+  //     }
+  //     
+  //     setCurrentWeek(newWeek);
+  //     setComponentError(null); // Clear any previous errors
+  //   } catch (error) {
+  //     console.error('❌ Error navigating week:', error);
+  //     setComponentError('Failed to navigate calendar week');
+  //   }
+  // }, [currentWeek]);
 
   /**
    * Format hour number to 12-hour time string
@@ -592,7 +592,7 @@ const TrainerCalendar = memo(() => {
    * // Called when user clicks create test event button
    * await handleCreateTestEvent();
    */
-  const handleCreateTestEvent = useCallback(async () => {
+  const _handleCreateTestEvent = useCallback(async () => {
     try {
       setComponentError(null);
       
@@ -664,7 +664,7 @@ const TrainerCalendar = memo(() => {
   const hours = useMemo(() => Array.from({ length: 16 }, (_, i) => i + 5), []); // 5am (5) to 8pm (20)
   
   /** @type {string} Formatted week range string */
-  const weekRangeText = useMemo(() => {
+  const _weekRangeText = useMemo(() => {
     try {
       const startDate = weekDates[0];
       const endDate = weekDates[6];

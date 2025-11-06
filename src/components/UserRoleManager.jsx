@@ -36,10 +36,10 @@ const UserRoleManager = () => {
     // State management
     const [loading, setLoading] = useState(true);
     const [currentUserTags, setCurrentUserTags] = useState([]);
-    const [allTags, setAllTags] = useState([]);
+    const [_allTags, setAllTags] = useState([]);
     const [clients, setClients] = useState([]);
     const [trainers, setTrainers] = useState([]);
-    const [canAccessAdmin, setCanAccessAdmin] = useState(false);
+    const [_canAccessAdmin, setCanAccessAdmin] = useState(false);
     const [canAccessTrainer, setCanAccessTrainer] = useState(false);
     
     // UI state

@@ -514,7 +514,7 @@ function MyPlanPage() {
 
       {/* Dynamic plans display - current plan first */}
       <div className="plans-grid">
-        {sortedPlans.map((plan, index) => {
+        {sortedPlans.map((plan) => {
           const isCurrentPlan = plan.plan_name?.toLowerCase() === currentPlanType?.toLowerCase();
           
           // Use helper functions for consistent styling

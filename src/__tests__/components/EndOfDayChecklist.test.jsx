@@ -4,7 +4,7 @@
  * @created 2025-11-03
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import EndOfDayChecklist from '../components/EndOfDayChecklist';
 

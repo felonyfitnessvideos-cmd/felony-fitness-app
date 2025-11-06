@@ -195,9 +195,9 @@ export async function getConversationMessages(otherUserId) {
 
     console.log('✅ Fetched', data?.messages?.length || 0, 'messages');
     return data?.messages || [];
-  } catch (error) {
-    console.error('Error in getConversationMessages:', error);
-    throw error;
+  } catch (_error) {
+    console.error('Error in getConversationMessages:', _error);
+    throw _error;
   }
 }
 
@@ -336,7 +336,7 @@ export async function sendMessage(recipientId, content) {
  * Fallback method to send messages when Edge Function is not available
  * Uses the send_direct_message database function
  */
-async function sendMessageFallback(recipientId, content) {
+async function _sendMessageFallback(recipientId, content) {
   try {
     console.log('📤 Using fallback send message method (database function)...');
 

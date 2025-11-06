@@ -20,7 +20,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { useAuth } from '../AuthContext';
+// import { useAuth } from '../AuthContext';
 import SubPageHeader from '../components/SubPageHeader';
 import './ProgramLibraryPage.css';
 
@@ -47,7 +47,7 @@ import './ProgramLibraryPage.css';
  */
 
 const ProgramLibraryPage = () => {
-  const { user } = useAuth();
+  // const { user } = useAuth();
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

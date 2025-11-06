@@ -216,7 +216,7 @@ async function testDeploymentStatus() {
 
     for (const funcName of functions) {
         try {
-            const { data, error } = await supabase.functions.invoke(funcName, {
+            const { error } = await supabase.functions.invoke(funcName, {
                 body: {}
             });
 

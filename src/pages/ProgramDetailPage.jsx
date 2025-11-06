@@ -18,7 +18,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../AuthContext';
 import SubPageHeader from '../components/SubPageHeader';
@@ -40,7 +40,7 @@ import './ProgramDetailPage.css';
 
 const ProgramDetailPage = () => {
   const { programId } = useParams();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const { user } = useAuth();
 
   const [program, setProgram] = useState(null);

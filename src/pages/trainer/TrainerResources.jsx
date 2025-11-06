@@ -187,7 +187,7 @@ const TRAINING_RESOURCES = [
  * <TrainerResources />
  */
 const TrainerResources = () => {
-    const { user } = useAuth();
+    const { user: _user } = useAuth();
 
     /** @type {[string, Function]} Search/filter query */
     const [searchQuery, setSearchQuery] = useState('');

@@ -873,6 +873,7 @@ describe('MyPlanPage Component', () => {
  */
 describe('MyPlanPage Integration Tests', () => {
   it('completes full user workflow: view plans -> toggle ID -> change theme', async () => {
+    const user = userEvent.setup();
     const updateUserTheme = vi.fn();
     setupMocks({ updateUserTheme });
     

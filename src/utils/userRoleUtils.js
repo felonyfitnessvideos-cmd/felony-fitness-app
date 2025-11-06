@@ -580,7 +580,7 @@ export const getClientTrainers = async (clientId) => {
 
         // Get trainer details separately to avoid schema cache issues
         if (data && data.length > 0) {
-            const trainerIds = data.map(rel => rel.trainer_id);
+            const _trainerIds = data.map(rel => rel.trainer_id);
 
             // TEMP FIX: Use placeholder data since user_profiles schema is unclear
             return data.map(rel => ({

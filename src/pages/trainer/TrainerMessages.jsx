@@ -76,7 +76,7 @@ const TrainerMessages = () => {
   const [error, setError] = useState(null);
 
   /** @type {[string, Function]} Search term for filtering conversations */
-  const [searchTerm, setSearchTerm] = useState('');
+  const [_searchTerm, _setSearchTerm] = useState('');
 
   /** @type {[Object|null, Function]} Real-time message subscription */
   const [messageSubscription, setMessageSubscription] = useState(null);
@@ -284,7 +284,7 @@ const TrainerMessages = () => {
   /**
    * Handle conversation selection
    */
-  const handleConversationSelect = (conversation) => {
+  const _handleConversationSelect = (conversation) => {
     setSelectedConversation(conversation);
     setMessages([]);
     setError(null);
@@ -322,10 +322,10 @@ const TrainerMessages = () => {
   /**
    * Filter conversations based on search term
    */
-  const filteredConversations = conversations.filter(conversation =>
-    conversation.user_full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conversation.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conversation.last_message_content?.toLowerCase().includes(searchTerm.toLowerCase())
+  const _filteredConversations = conversations.filter(conversation =>
+    conversation.user_full_name?.toLowerCase().includes(_searchTerm.toLowerCase()) ||
+    conversation.user_email?.toLowerCase().includes(_searchTerm.toLowerCase()) ||
+    conversation.last_message_content?.toLowerCase().includes(_searchTerm.toLowerCase())
   );
 
 
