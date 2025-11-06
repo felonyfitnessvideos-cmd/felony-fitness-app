@@ -334,7 +334,7 @@ const ClientOnboarding = () => {
           profileUpdates.fitness_goal = goalMap[formData.primaryGoal] || null;
         }
 
-        console.log('📝 Updating user_profiles with:', profileUpdates);
+        console.log('📝 Updating user profile with', Object.keys(profileUpdates).length, 'fields');
 
         // Update the user_profiles table only if we have a valid UUID
         if (trimmedUuid) {

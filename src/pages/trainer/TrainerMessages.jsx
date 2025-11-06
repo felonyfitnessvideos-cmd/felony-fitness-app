@@ -20,7 +20,7 @@
  */
 
 import { AlertCircle, Loader, MessageSquare, Send } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../AuthContext';
 import {
   getConversationMessages,
@@ -115,7 +115,7 @@ const TrainerMessages = () => {
     return () => {
       subscription?.unsubscribe();
     };
-  }, [selectedConversation]);
+  }, [selectedConversation, loadConversations, loadMessages]);
 
   /**
    * Load messages when conversation selection changes
@@ -125,7 +125,7 @@ const TrainerMessages = () => {
       loadMessages(selectedConversation.user_id);
       markConversationAsRead(selectedConversation.user_id);
     }
-  }, [selectedConversation]);
+  }, [selectedConversation, loadMessages, markConversationAsRead]);
 
   /**
    * Auto-scroll to bottom when new messages arrive
@@ -137,7 +137,7 @@ const TrainerMessages = () => {
   /**
    * Load conversations from database
    */
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -150,7 +150,7 @@ const TrainerMessages = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   /**
    * Load all clients for new message modal
@@ -207,7 +207,7 @@ const TrainerMessages = () => {
   /**
    * Load messages for a specific conversation
    */
-  const loadMessages = async (otherUserId) => {
+  const loadMessages = useCallback(async (otherUserId) => {
     try {
       setError(null);
 
@@ -217,12 +217,12 @@ const TrainerMessages = () => {
       console.error('Failed to load messages:', error);
       setError(handleMessagingError(error));
     }
-  };
+  }, []);
 
   /**
    * Mark conversation messages as read
    */
-  const markConversationAsRead = async (otherUserId) => {
+  const markConversationAsRead = useCallback(async (otherUserId) => {
     try {
       await markMessagesAsRead(otherUserId);
       // Refresh conversations to update unread counts
@@ -230,7 +230,7 @@ const TrainerMessages = () => {
     } catch (error) {
       console.error('Failed to mark messages as read:', error);
     }
-  };
+  }, [loadConversations]);
 
   /**
    * Handle sending a new message
@@ -377,6 +377,7 @@ const TrainerMessages = () => {
             <button
               className="back-button"
               onClick={() => setSelectedConversation(null)}
+              aria-label="Back to conversations"
             >
               ←
             </button>
@@ -432,11 +433,13 @@ const TrainerMessages = () => {
                 onKeyPress={handleKeyPress}
                 placeholder="Message..."
                 disabled={sendingMessage}
+                aria-label="Message text"
               />
               <button
                 onClick={handleSendMessage}
                 className="send-button"
                 disabled={!newMessage.trim() || sendingMessage}
+                aria-label="Send message"
               >
                 {sendingMessage ? <Loader className="spinning" size={18} /> : <Send size={18} />}
               </button>

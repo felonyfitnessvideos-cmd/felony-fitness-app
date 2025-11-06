@@ -585,5 +585,33 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  /* TODO: Add responsive styles for mobile devices */
+  .conversations-panel {
+    width: 100%;
+    border-right: none;
+  }
+
+  .messages-panel {
+    display: none;
+  }
+
+  .conversations-panel.hidden {
+    display: none;
+  }
+
+  .messages-panel.active {
+    display: flex;
+    width: 100%;
+  }
+
+  .conversation-item {
+    padding: 0.875rem;
+  }
+
+  .message-bubble {
+    max-width: 85%;
+  }
+
+  .message-input-area {
+    padding: 0.75rem;
+  }
 }
