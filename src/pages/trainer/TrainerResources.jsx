@@ -24,7 +24,19 @@ import {
 import { useState } from 'react';
 import './TrainerResources.css';
 
-// Static list of training manual chapters
+/**
+ * Static list of training manual chapters
+ * 
+ * TODO: Refactor to load dynamically from trainer-resources storage bucket
+ * This would allow trainers to upload new resources via the bucket policies
+ * without requiring code changes. Implementation approach:
+ * 1. Import useEffect and supabase: import { useEffect, useState } from 'react';
+ * 2. Import: import { supabase } from '../../supabaseClient';
+ * 3. Use supabase.storage.from('trainer-resources').list() in useEffect
+ * 4. Transform file list to match current resource shape
+ * 5. Keep this array as fallback if bucket loading fails
+ * 6. Add loading state and error handling
+ */
 const TRAINING_RESOURCES = [
     {
         id: 1,

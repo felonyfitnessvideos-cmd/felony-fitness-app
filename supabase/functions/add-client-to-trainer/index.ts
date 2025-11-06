@@ -201,7 +201,7 @@ serve(async (req) => {
 
     // If only email provided, look up user by email
     if (!finalClientId && client_email) {
-      const { data: clientProfile, error: lookupError } = await supabase
+      const { data: clientProfile } = await supabase
         .from("user_profiles")
         .select("id")
         .eq("email", client_email)

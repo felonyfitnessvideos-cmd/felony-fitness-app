@@ -54,8 +54,8 @@ describe('Messaging System Tests', () => {
         const { data, error } = await supabase.rpc('get_conversations');
 
         if (error) {
-          console.log('⚠️ Database function error (expected if no conversations exist):', error);
-          // This is acceptable - function exists but may return empty results
+          console.error('❌ Database function error:', error);
+          throw error;
         }
 
         expect(error).toBeFalsy();

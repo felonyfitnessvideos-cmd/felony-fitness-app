@@ -76,7 +76,6 @@ const TrainerClients = () => {
         setError(null);
 
         const clientData = await getTrainerClients(user.id);
-        console.log('🔍 Raw client data from database:', clientData);
 
         // Transform database records into display format
         const formattedClients = clientData.map(relationship => {
@@ -98,8 +97,6 @@ const TrainerClients = () => {
             lastMessageAt: relationship.last_message_at
           };
         });
-
-        console.log('✅ Formatted clients:', formattedClients);
 
         setClients(formattedClients);
       } catch (err) {

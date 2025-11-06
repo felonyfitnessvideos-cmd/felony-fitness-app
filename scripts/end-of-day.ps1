@@ -59,7 +59,13 @@ if (Test-Path $configFile) {
             $host = $matches[2]
             $port = $matches[3]
             
-            $env:PGPASSWORD = $password
+            # Validate that password was extracted successfully
+            if (-not $password -or -not $host -or -not $port) {
+                Write-Host "   ⚠️  Failed to parse connection string components" -ForegroundColor Yellow
+                Write-Host "   Skipping pg_dump, will use Supabase CLI method" -ForegroundColor Yellow
+            }
+            else {
+                $env:PGPASSWORD = $password
             
             # Full database dump with schema and data
             Write-Host "   💾 Creating full database dump (schema + data)..." -ForegroundColor Yellow
@@ -95,6 +101,7 @@ if (Test-Path $configFile) {
             }
             
             Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
+            } # End of password validation block
         }
     }
     else {
