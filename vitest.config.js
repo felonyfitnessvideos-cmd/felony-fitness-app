@@ -66,13 +66,12 @@ export default defineConfig({
     testTimeout: 10000,
     hookTimeout: 10000,
     
-    // Reporters for test output
-    reporter: ['verbose', 'json', 'html'],
+    // Reporters for test output (simplified for CI compatibility)
+    reporter: ['verbose', 'json'],
     
     // Output directory for test reports
     outputFile: {
-      json: './tests/reports/test-results.json',
-      html: './tests/reports/test-results.html'
+      json: './tests/reports/test-results.json'
     }
   },
   
