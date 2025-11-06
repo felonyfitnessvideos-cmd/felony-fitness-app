@@ -49,14 +49,13 @@ const IntervalTimer = ({ onClose }) => {
     const [round, setRound] = useState(1);
 
     const intervalRef = useRef(null);
-    // const audioRef = useRef(null);
+    const timeoutRef = useRef(null);
 
     /**
      * Start the timer
      */
     const handleStart = () => {
         const work = parseInt(workTime) || 30;
-        // const rest = parseInt(restTime) || 15;
         setShowConfig(false);
         setShowTimer(true);
         setIsRunning(true);
@@ -76,6 +75,9 @@ const IntervalTimer = ({ onClose }) => {
         setRound(1);
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
+        }
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
         }
         if (onClose) {
             onClose();
@@ -106,7 +108,7 @@ const IntervalTimer = ({ onClose }) => {
                             return rest;
                         } else {
                             // Delay before switching to work to show "GO!"
-                            setTimeout(() => {
+                            timeoutRef.current = setTimeout(() => {
                                 setPhase('work');
                                 setRound(r => r + 1);
                                 setCurrentTime(work);
@@ -126,6 +128,9 @@ const IntervalTimer = ({ onClose }) => {
         return () => {
             if (intervalRef.current) {
                 clearInterval(intervalRef.current);
+            }
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
             }
         };
     }, [isRunning, phase, workTime, restTime]);

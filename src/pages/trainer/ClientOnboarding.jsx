@@ -33,6 +33,20 @@ import { supabase } from '../../supabaseClient.js';
 import './ClientOnboarding.css';
 
 /**
+ * Mapping of form goal values to database fitness_goal enum values
+ * @constant
+ */
+const GOAL_MAP = {
+  'weight-loss': 'lose_weight',
+  'muscle-gain': 'build_muscle',
+  'strength': 'build_muscle',
+  'endurance': 'improve_endurance',
+  'general-fitness': 'maintain_weight',
+  'sport-specific': 'improve_endurance',
+  'rehabilitation': 'maintain_weight'
+};
+
+/**
  * ClientOnboarding component for comprehensive client intake
  * 
  * Provides a multi-section form for gathering all necessary client information
@@ -223,7 +237,8 @@ const ClientOnboarding = () => {
 
         // Step 2: Prepare client identifier
         const trimmedUuid = clientUuid?.trim();
-        console.log('ℹ️ Processing client:', trimmedUuid ? 'existing UUID' : 'new email');
+        const isLookupSuccessful = lookupMessage.includes('✅');
+        console.log('ℹ️ Processing client:', isLookupSuccessful ? 'existing UUID' : 'new email');
 
         // Step 3: Create trainer-client relationship
         // Prepare comprehensive intake notes with all collected data
@@ -321,17 +336,7 @@ const ClientOnboarding = () => {
 
         // Goals - sent as TEXT string, map form values to database enum
         if (formData.primaryGoal) {
-          // Map form values to database constraint values
-          const goalMap = {
-            'weight-loss': 'lose_weight',
-            'muscle-gain': 'build_muscle',
-            'strength': 'build_muscle',
-            'endurance': 'improve_endurance',
-            'general-fitness': 'maintain_weight',
-            'sport-specific': 'improve_endurance',
-            'rehabilitation': 'maintain_weight'
-          };
-          profileUpdates.fitness_goal = goalMap[formData.primaryGoal] || null;
+          profileUpdates.fitness_goal = GOAL_MAP[formData.primaryGoal] || null;
         }
 
         console.log('📝 Updating user profile with', Object.keys(profileUpdates).length, 'fields');

@@ -5,12 +5,14 @@
  */
 
 import { MessageSquare, Send } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../AuthContext.jsx';
+import { useTheme } from '../context/ThemeContext.jsx';
 import { supabase } from '../supabaseClient.js';
 
 const ClientMessaging = () => {
     const { user } = useAuth();
+    const { theme } = useTheme();
     const [isClient, setIsClient] = useState(false);
     const [loading, setLoading] = useState(true);
     const [messages, setMessages] = useState([]);
@@ -49,14 +51,7 @@ const ClientMessaging = () => {
         checkClientStatus();
     }, [user]);
 
-    // Load trainers and messages
-    useEffect(() => {
-        if (user && isClient) {
-            loadTrainers();
-        }
-    }, [user, isClient]);
-
-    const loadTrainers = async () => {
+    const loadTrainers = useCallback(async () => {
         try {
             // TEMP FIX: Simple query without embedded relationships to avoid schema cache issues
             const { data: relationships, error } = await supabase
@@ -96,9 +91,9 @@ const ClientMessaging = () => {
         } catch (error) {
             console.error('Error loading trainers:', error);
         }
-    };
+    }, [user, selectedTrainer]);
 
-    const loadMessages = async (trainerId) => {
+    const loadMessages = useCallback(async (trainerId) => {
         if (!trainerId) return;
 
         try {
@@ -113,13 +108,21 @@ const ClientMessaging = () => {
         } catch (error) {
             console.error('Error loading messages:', error);
         }
-    };
+    }, [user]);
 
+    // Load trainers when user and client status are confirmed
+    useEffect(() => {
+        if (user && isClient) {
+            loadTrainers();
+        }
+    }, [user, isClient, loadTrainers]);
+
+    // Load messages when trainer is selected
     useEffect(() => {
         if (selectedTrainer) {
             loadMessages(selectedTrainer.id);
         }
-    }, [selectedTrainer, user]);
+    }, [selectedTrainer, loadMessages]);
 
     const sendMessage = async (e) => {
         e.preventDefault();
@@ -248,7 +251,7 @@ const ClientMessaging = () => {
                     </div>
                 ) : (
                     messages.map((message) => {
-                        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                        const isDark = theme === 'dark';
                         const isFromClient = message.sender_id === user.id;
                         return (
                             <div

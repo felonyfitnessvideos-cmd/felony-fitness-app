@@ -107,22 +107,14 @@ const SmartScheduling = () => {
   /** @type {[Array, Function]} List of scheduled appointments */
   const [appointments, setAppointments] = useState([]);
 
-  // Available time slots feature - to be implemented
-  // const [availableSlots, setAvailableSlots] = useState([]);
-
   /** @type {[string, Function]} Current view mode */
   const [viewMode, setViewMode] = useState('week'); // 'day', 'week', 'month'
 
   /** @type {[Date, Function]} Selected date for scheduling */
   const [selectedDate] = useState(new Date());
-  // const [availableSlots, setAvailableSlots] = useState([]);
-  const [_showNewAppointment, _setShowNewAppointment] = useState(false);
 
   /** @type {[Object|null, Function]} Currently selected appointment */
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-
-  // New appointment modal - to be implemented
-  // const [showNewAppointment, setShowNewAppointment] = useState(false);
 
   /** @type {[Array, Function]} Smart scheduling suggestions */
   const [smartSuggestions, setSmartSuggestions] = useState([]);
@@ -151,20 +143,6 @@ const SmartScheduling = () => {
 
     setSmartSuggestions(suggestions);
   }, []);
-
-  /**
-   * Handle new appointment creation - to be implemented
-   */
-  // const handleCreateAppointment = (appointmentData) => {
-  //   const newAppointment = {
-  //     id: appointments.length + 1,
-  //     ...appointmentData,
-  //     status: 'pending'
-  //   };
-  //   
-  //   setAppointments(prev => [...prev, newAppointment]);
-  //   setShowNewAppointment(false);
-  // };
 
   /**
    * Filter appointments based on search query
@@ -214,13 +192,6 @@ const SmartScheduling = () => {
             >
               <Zap size={16} />
               Get AI Suggestions
-            </button>
-            <button
-              className="new-appointment-btn"
-              onClick={() => _setShowNewAppointment(true)}
-            >
-              <Plus size={16} />
-              New Appointment
             </button>
           </div>
         </div>

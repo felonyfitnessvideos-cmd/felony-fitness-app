@@ -22,7 +22,6 @@ import {
     X
 } from 'lucide-react';
 import { useState } from 'react';
-import { useAuth } from '../../AuthContext';
 import './TrainerResources.css';
 
 // Static list of training manual chapters
@@ -187,8 +186,6 @@ const TRAINING_RESOURCES = [
  * <TrainerResources />
  */
 const TrainerResources = () => {
-    const { user: _user } = useAuth();
-
     /** @type {[string, Function]} Search/filter query */
     const [searchQuery, setSearchQuery] = useState('');
 

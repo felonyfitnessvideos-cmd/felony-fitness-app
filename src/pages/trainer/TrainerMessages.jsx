@@ -310,13 +310,22 @@ const TrainerMessages = () => {
    */
   const getInitials = (fullName) => {
     if (!fullName) return '?';
-    
+
+    let nameToProcess = fullName.trim();
+
+    // Handle email addresses - extract local part (before @)
+    if (nameToProcess.includes('@')) {
+      const localPart = nameToProcess.split('@')[0];
+      // Replace common separators with spaces for better initials
+      nameToProcess = localPart.replace(/[._-]/g, ' ');
+    }
+
     // Filter out empty strings from split (handles multiple spaces)
-    const names = fullName.trim().split(' ').filter(n => n.length > 0);
-    
+    const names = nameToProcess.split(' ').filter(n => n.length > 0);
+
     if (names.length === 0) return '?';
     if (names.length === 1) return names[0][0]?.toUpperCase() || '?';
-    
+
     return (names[0][0] + names[names.length - 1][0]).toUpperCase();
   };
 
