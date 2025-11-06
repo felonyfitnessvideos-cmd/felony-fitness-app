@@ -185,7 +185,7 @@ function MyPlanPage() {
   // Context hooks for authentication and theme management
   const { user } = useAuth(); // Get authenticated user data from AuthContext
   const { theme, updateUserTheme } = useTheme(); // Get theme state and updater from ThemeContext
-  
+
   // Component state management
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false); // Settings modal visibility
   const [showUserId, setShowUserId] = useState(false); // User ID visibility toggle
@@ -197,14 +197,14 @@ function MyPlanPage() {
   useEffect(() => {
     const loadData = async () => {
       if (!user) return;
-      
+
       try {
         // Load all plans
         const { data: plansData, error: plansError } = await supabase
           .from('plans')
           .select('*')
           .order('id');
-        
+
         if (plansError) throw plansError;
         setPlans(plansData || []);
 
@@ -214,7 +214,7 @@ function MyPlanPage() {
           .select('*')
           .eq('user_id', user.id)
           .single();
-        
+
         if (profileError && profileError.code !== 'PGRST116') {
           console.error('Error loading user profile:', profileError);
         } else {
@@ -257,7 +257,7 @@ function MyPlanPage() {
    * <button onClick={closeSettingsModal}>Close</button>
    */
   const closeSettingsModal = () => setIsSettingsModalOpen(false);
-  
+
   /**
    * Toggles the visibility of the user's UUID
    * 
@@ -273,7 +273,7 @@ function MyPlanPage() {
    * <button onClick={toggleUserIdVisibility} title={showUserId ? "Hide User ID" : "Show User ID"}>
    */
   const toggleUserIdVisibility = () => setShowUserId(!showUserId);
-  
+
   /**
    * Copies the user's UUID to the system clipboard
    * 
@@ -323,14 +323,14 @@ function MyPlanPage() {
    * @description Found by matching user_profiles.plan_type with plans.id
    */
   const currentPlan = plans.find(plan => plan.id === userProfile?.plan_type) || null;
-  
+
   /**
    * User's current plan name for display and comparison
    * @type {string}
    * @description Defaults to 'Sponsored' if no plan is found or user has no profile
    */
   const currentPlanType = currentPlan?.plan_name || 'Sponsored';
-  
+
   /**
    * Returns the appropriate Lucide React icon for a subscription plan
    * 
@@ -484,13 +484,13 @@ function MyPlanPage() {
   return (
     <div className="my-plan-container">
       <SubPageHeader title="My Plan" icon={<ClipboardList size={28} />} iconColor="var(--accent-color)" backTo="/dashboard" />
-      
+
       <div className="plan-header">
         <h2>YOUR PLAN</h2>
         <p>{user?.email}</p>
         <div className="user-id-section">
           <span>User ID:</span>
-          <button 
+          <button
             className="user-id-toggle"
             onClick={toggleUserIdVisibility}
             title={showUserId ? "Hide User ID" : "Show User ID"}
@@ -500,7 +500,7 @@ function MyPlanPage() {
           {showUserId && (
             <div className="user-id-display">
               <span className="user-id-text">{user?.id}</span>
-              <button 
+              <button
                 className="copy-button"
                 onClick={copyUserId}
                 title="Copy User ID"
@@ -516,11 +516,11 @@ function MyPlanPage() {
       <div className="plans-grid">
         {sortedPlans.map((plan) => {
           const isCurrentPlan = plan.plan_name?.toLowerCase() === currentPlanType?.toLowerCase();
-          
+
           // Use helper functions for consistent styling
           const planPricing = getPlanPricing(plan.plan_name);
           const planDescription = getPlanDescription(plan.plan_name);
-          
+
           return (
             <div key={plan.id} className={`plan-card ${isCurrentPlan ? 'current-plan' : ''}`}>
               <div className="plan-icon">{getPlanIcon(plan.plan_name)}</div>
@@ -535,7 +535,7 @@ function MyPlanPage() {
           );
         })}
       </div>
-      
+
       <p className="footer-blurb">
         Every plan is built to support your comeback. Choose what fuels you.
       </p>

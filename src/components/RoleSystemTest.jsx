@@ -4,30 +4,30 @@
  * @author Felony Fitness Development Team
  */
 
-import React, { useState, useEffect } from 'react';
-import { User, Shield, Users, UserPlus, MessageSquare, Check, X, AlertCircle } from 'lucide-react';
+import { AlertCircle, Check, Shield, User, Users, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../AuthContext.jsx';
-import userRoleUtils from '../utils/userRoleUtils.js';
 import { supabase } from '../supabaseClient.js';
+import userRoleUtils from '../utils/userRoleUtils.js';
 
 const RoleSystemTest = () => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState([]);
     const [currentRoles, setCurrentRoles] = useState([]);
-    
+
     const addResult = (message, success = true) => {
-        setResults(prev => [...prev, { 
+        setResults(prev => [...prev, {
             id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            message, 
-            success, 
-            timestamp: Date.now() 
+            message,
+            success,
+            timestamp: Date.now()
         }]);
     };
 
     const loadCurrentRoles = async () => {
         if (!user) return;
-        
+
         try {
             const tags = await userRoleUtils.getCurrentUserTags();
             setCurrentRoles(tags);
@@ -50,11 +50,11 @@ const RoleSystemTest = () => {
 
         setLoading(true);
         setResults([]);
-        
+
         try {
             addResult(`🚀 Starting role system test for ${user.email}`);
             addResult(`🔍 User ID: ${user.id}`);
-            
+
             // Check if user exists in auth.users
             addResult('🔍 Checking if user exists in auth.users...');
             try {
@@ -74,7 +74,7 @@ const RoleSystemTest = () => {
             } catch (authCheckError) {
                 addResult(`❌ Auth check failed: ${authCheckError.message}`, false);
             }
-            
+
             // Step 0: Database diagnostics
             addResult('0️⃣ Checking database setup...');
             try {
@@ -83,29 +83,29 @@ const RoleSystemTest = () => {
                     .from('tags')
                     .select('name, id')
                     .in('name', ['User', 'Trainer', 'Client']);
-                
+
                 if (tagsError) {
                     addResult(`❌ Tags table error: ${tagsError.message}`, false);
                 } else {
                     addResult(`✅ Found ${systemTags?.length || 0} system tags: ${systemTags?.map(t => t.name).join(', ')}`);
                 }
-                
+
                 // Check if trainer_clients table exists
                 const { error: tcError } = await supabase
                     .from('trainer_clients')
                     .select('id')
                     .limit(1);
-                
+
                 if (tcError) {
                     addResult(`❌ trainer_clients table error: ${tcError.message}`, false);
                 } else {
                     addResult(`✅ trainer_clients table accessible`);
                 }
-                
+
             } catch (diagError) {
                 addResult(`❌ Database diagnostics failed: ${diagError.message}`, false);
             }
-            
+
             // Step 1: Assign Trainer role
             addResult('1️⃣ Assigning Trainer role...');
             try {
@@ -115,7 +115,7 @@ const RoleSystemTest = () => {
                 addResult(`Trainer role: ❌ Error: ${error.message}`, false);
                 console.error('Trainer role assignment error:', error);
             }
-            
+
             // Step 2: Create trainer-client relationship with yourself
             addResult('2️⃣ Adding yourself as client...');
             try {
@@ -125,14 +125,14 @@ const RoleSystemTest = () => {
                 addResult(`Client relationship: ❌ Error: ${error.message}`, false);
                 console.error('Client relationship error:', error);
             }
-            
+
             // Step 3: Verify roles
             addResult('3️⃣ Checking updated roles...');
             const updatedRoles = await userRoleUtils.getCurrentUserTags();
             setCurrentRoles(updatedRoles);
             const roleNames = updatedRoles.map(r => r.tag_name);
             addResult(`Current roles: ${roleNames.join(', ')}`);
-            
+
             // Step 4: Test messaging system
             addResult('4️⃣ Testing messaging system...');
             const testMessage = {
@@ -140,28 +140,28 @@ const RoleSystemTest = () => {
                 recipient_id: user.id,
                 content: `Test message from trainer to client - ${new Date().toLocaleTimeString()}`
             };
-            
+
             const { error: messageError } = await supabase
                 .from('direct_messages')
                 .insert([testMessage])
                 .select();
-            
+
             if (messageError) {
                 addResult(`Messaging: ❌ ${messageError.message}`, false);
             } else {
                 addResult('Messaging: ✅ Test message sent successfully');
             }
-            
+
             // Step 5: Verify trainer-client relationships
             addResult('5️⃣ Checking trainer-client relationships...');
             const clients = await userRoleUtils.getTrainerClients(user.id);
             addResult(`Trainer has ${clients.length} client(s)`);
-            
+
             const trainers = await userRoleUtils.getClientTrainers(user.id);
             addResult(`Client has ${trainers.length} trainer(s)`);
-            
+
             addResult('🎉 Role system test completed!');
-            
+
         } catch (error) {
             addResult(`❌ Test failed: ${error.message}`, false);
         } finally {
@@ -189,23 +189,23 @@ const RoleSystemTest = () => {
     }
 
     return (
-        <div style={{ 
-            padding: '1rem', 
-            color: 'white', 
-            maxWidth: '600px', 
+        <div style={{
+            padding: '1rem',
+            color: 'white',
+            maxWidth: '600px',
             margin: '0 auto',
             fontFamily: 'system-ui, -apple-system, sans-serif'
         }}>
             <h2 style={{ textAlign: 'center', marginBottom: '1rem' }}>
                 🧪 Role System Test
             </h2>
-            
+
             {/* Current Roles Display */}
-            <div style={{ 
-                background: 'rgba(255, 255, 255, 0.1)', 
-                padding: '1rem', 
-                borderRadius: '8px', 
-                marginBottom: '1rem' 
+            <div style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                padding: '1rem',
+                borderRadius: '8px',
+                marginBottom: '1rem'
             }}>
                 <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem' }}>Current Roles:</h3>
                 {currentRoles.length > 0 ? (
@@ -252,9 +252,9 @@ const RoleSystemTest = () => {
 
             {/* Results Display */}
             {results.length > 0 && (
-                <div style={{ 
-                    background: 'rgba(0, 0, 0, 0.3)', 
-                    padding: '1rem', 
+                <div style={{
+                    background: 'rgba(0, 0, 0, 0.3)',
+                    padding: '1rem',
                     borderRadius: '8px',
                     maxHeight: '300px',
                     overflowY: 'auto'
@@ -271,7 +271,7 @@ const RoleSystemTest = () => {
                             borderRadius: '4px',
                             fontSize: '0.875rem'
                         }}>
-                            {result.success !== false ? 
+                            {result.success !== false ?
                                 <Check size={16} style={{ color: '#22c55e', flexShrink: 0, marginTop: '1px' }} /> :
                                 <X size={16} style={{ color: '#ef4444', flexShrink: 0, marginTop: '1px' }} />
                             }
@@ -282,10 +282,10 @@ const RoleSystemTest = () => {
             )}
 
             {/* Quick Role Check */}
-            <div style={{ 
-                marginTop: '1rem', 
-                padding: '0.75rem', 
-                background: 'rgba(255, 255, 255, 0.05)', 
+            <div style={{
+                marginTop: '1rem',
+                padding: '0.75rem',
+                background: 'rgba(255, 255, 255, 0.05)',
                 borderRadius: '6px',
                 fontSize: '0.875rem'
             }}>

@@ -278,7 +278,38 @@ if (Test-Path "backups") {
 Write-Host ""
 
 # ═══════════════════════════════════════════════════════════════════════
-# STEP 9: Generate Database Statistics
+# STEP 9: Cleanup Root Directory
+# ═══════════════════════════════════════════════════════════════════════
+Write-Host "🧹 CLEANING UP ROOT DIRECTORY..." -ForegroundColor Blue
+
+# Move temporary/old files to OldFiles
+$tempFiles = @()
+$tempFiles += Get-ChildItem -Path "." -Filter "*.sql" -File | Where-Object { $_.Name -notlike "*backup*" }
+$tempFiles += Get-ChildItem -Path "." -Filter "*.csv" -File
+$tempFiles += Get-ChildItem -Path "." -Filter "temp_*.sql" -File
+$tempFiles += Get-ChildItem -Path "." -Filter "*-REPORT.md" -File
+$tempFiles += Get-ChildItem -Path "." -Filter "*_COMPLETE.md" -File
+$tempFiles += Get-ChildItem -Path "." -Filter "*_STATUS.md" -File
+
+$movedCount = 0
+foreach ($file in $tempFiles) {
+    if ($file -and (Test-Path $file.FullName)) {
+        Move-Item -Path $file.FullName -Destination "OldFiles\" -Force -ErrorAction SilentlyContinue
+        $movedCount++
+    }
+}
+
+if ($movedCount -gt 0) {
+    Write-Host "   🗑️  Moved $movedCount temporary file(s) to OldFiles/" -ForegroundColor Yellow
+}
+else {
+    Write-Host "   ℹ️  Root directory already clean" -ForegroundColor Gray
+}
+
+Write-Host ""
+
+# ═══════════════════════════════════════════════════════════════════════
+# STEP 10: Generate Database Statistics
 # ═══════════════════════════════════════════════════════════════════════
 Write-Host "📊 GENERATING DATABASE STATISTICS..." -ForegroundColor Blue
 
@@ -287,7 +318,7 @@ $dbStats = npx supabase inspect db table-stats --linked 2>&1 | Out-String
 Write-Host ""
 
 # ═══════════════════════════════════════════════════════════════════════
-# STEP 10: Generate End-of-Day Report
+# STEP 11: Generate End-of-Day Report
 # ═══════════════════════════════════════════════════════════════════════
 Write-Host "📋 GENERATING END-OF-DAY REPORT..." -ForegroundColor Blue
 
@@ -391,11 +422,16 @@ npx supabase db push
 
 $report | Out-File "$backupDir\EOD-REPORT.md" -Encoding UTF8
 
-Write-Host "   ✅ Report generated: EOD-REPORT.md" -ForegroundColor Green
-Write-Host ""
+# Save to Protocols/reports directory
+$protocolReportDir = "Protocols\reports"
+if (-not (Test-Path $protocolReportDir)) {
+    New-Item -ItemType Directory -Path $protocolReportDir -Force | Out-Null
+}
+$report | Out-File "$protocolReportDir\EOD-REPORT-$date.md" -Encoding UTF8
 
-# Also update the root END_OF_DAY_REPORT.md
-$report | Out-File "END_OF_DAY_REPORT.md" -Encoding UTF8
+Write-Host "   ✅ Report generated: EOD-REPORT.md" -ForegroundColor Green
+Write-Host "   ✅ Saved to: $protocolReportDir\EOD-REPORT-$date.md" -ForegroundColor Green
+Write-Host ""
 
 # ═══════════════════════════════════════════════════════════════════════
 # FINAL SUMMARY

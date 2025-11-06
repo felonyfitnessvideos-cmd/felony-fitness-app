@@ -11,9 +11,9 @@
  * 4. Both Edge Function and fallback methods work
  */
 
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient.js';
-import { sendMessage, getConversationMessages, subscribeToMessages } from '../utils/messagingUtils.js';
+import { getConversationMessages, sendMessage, subscribeToMessages } from '../utils/messagingUtils.js';
 
 const MessagingFlowTest = () => {
   const [user, setUser] = useState(null);
@@ -29,7 +29,7 @@ const MessagingFlowTest = () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
     };
-    
+
     getCurrentUser();
     loadUserProfiles();
   }, []);
@@ -72,12 +72,12 @@ const MessagingFlowTest = () => {
 
     try {
       addResult('📡 Starting comprehensive messaging flow test...');
-      
+
       // Test 1: Send message using sendMessage utility
       addResult('1️⃣ Testing sendMessage utility...');
-      
+
       const result = await sendMessage(selectedRecipient, testMessage);
-      
+
       if (result && result.success !== false) {
         addResult('✅ Message sent successfully!');
         addResult(`📝 Message ID: ${result.message_id || 'Generated'}`);
@@ -87,13 +87,13 @@ const MessagingFlowTest = () => {
 
       // Test 2: Verify message appears in database
       addResult('2️⃣ Verifying message in database...');
-      
+
       const messages = await getConversationMessages(selectedRecipient);
-      const sentMessage = messages.find(msg => 
-        msg.content === testMessage && 
+      const sentMessage = messages.find(msg =>
+        msg.content === testMessage &&
         msg.is_from_current_user === true
       );
-      
+
       if (sentMessage) {
         addResult('✅ Message found in database');
         addResult(`📅 Created at: ${new Date(sentMessage.created_at).toLocaleString()}`);
@@ -103,12 +103,12 @@ const MessagingFlowTest = () => {
 
       // Test 3: Test subscription (if implemented)
       addResult('3️⃣ Testing real-time subscription...');
-      
+
       try {
         const subscription = await subscribeToMessages(() => {
           addResult('📨 Real-time message received!');
         });
-        
+
         if (subscription) {
           addResult('✅ Real-time subscription established');
           // Clean up subscription
@@ -135,20 +135,20 @@ const MessagingFlowTest = () => {
   };
 
   return (
-    <div style={{ 
-      maxWidth: '800px', 
-      margin: '20px auto', 
-      padding: '20px', 
-      border: '1px solid #ddd', 
+    <div style={{
+      maxWidth: '800px',
+      margin: '20px auto',
+      padding: '20px',
+      border: '1px solid #ddd',
       borderRadius: '8px',
       fontFamily: 'Arial, sans-serif'
     }}>
       <h2>🧪 Messaging Flow Test</h2>
-      
+
       <div style={{ marginBottom: '20px' }}>
         <h3>Current User</h3>
         <p>
-          <strong>ID:</strong> {user?.id || 'Not logged in'}<br/>
+          <strong>ID:</strong> {user?.id || 'Not logged in'}<br />
           <strong>Email:</strong> {user?.email || 'N/A'}
         </p>
       </div>
@@ -158,8 +158,8 @@ const MessagingFlowTest = () => {
         <div style={{ marginBottom: '10px' }}>
           <label>
             <strong>Recipient:</strong>
-            <select 
-              value={selectedRecipient} 
+            <select
+              value={selectedRecipient}
               onChange={(e) => setSelectedRecipient(e.target.value)}
               style={{ marginLeft: '10px', padding: '5px', width: '300px' }}
             >
@@ -172,10 +172,10 @@ const MessagingFlowTest = () => {
             </select>
           </label>
         </div>
-        
+
         <div style={{ marginBottom: '10px' }}>
           <label>
-            <strong>Test Message:</strong><br/>
+            <strong>Test Message:</strong><br />
             <textarea
               value={testMessage}
               onChange={(e) => setTestMessage(e.target.value)}
@@ -187,7 +187,7 @@ const MessagingFlowTest = () => {
       </div>
 
       <div style={{ marginBottom: '20px' }}>
-        <button 
+        <button
           onClick={runMessagingTest}
           disabled={isRunning || !user || !selectedRecipient}
           style={{
@@ -203,7 +203,7 @@ const MessagingFlowTest = () => {
           {isRunning ? '🔄 Running Test...' : '🚀 Run Messaging Test'}
         </button>
 
-        <button 
+        <button
           onClick={clearResults}
           style={{
             backgroundColor: '#6c757d',
@@ -234,9 +234,9 @@ const MessagingFlowTest = () => {
             </p>
           ) : (
             testResults.map((result, index) => (
-              <div 
-                key={index} 
-                style={{ 
+              <div
+                key={index}
+                style={{
                   marginBottom: '8px',
                   color: result.isSuccess ? '#28a745' : '#dc3545'
                 }}

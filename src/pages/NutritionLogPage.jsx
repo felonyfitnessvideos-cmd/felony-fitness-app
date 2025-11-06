@@ -1,11 +1,11 @@
- 
+
 /**
  * @file NutritionLogPage.jsx
  * @description This page allows users to log their daily food and water intake for different meals.
  * @project Felony Fitness
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabaseClient.js';
 // import { nutritionAPI } from '../utils/nutritionAPI.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
@@ -20,7 +20,7 @@ import SubPageHeader from '../components/SubPageHeader.jsx';
  * - uses text + inputMode for numeric fields to avoid mobile quirks and
  *   sanitizes values before persisting.
  */
-import { Apple, Search, Camera, X, Droplets, Loader2, Trash2 } from 'lucide-react';
+import { Apple, Camera, Droplets, Loader2, Search, Trash2, X } from 'lucide-react';
 import Modal from 'react-modal';
 import { useAuth } from '../AuthContext.jsx';
 import './NutritionLogPage.css';
@@ -100,7 +100,7 @@ function NutritionLogPage() {
       startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
       // DEBUGGING: Log the exact timestamps being sent to the database (guarded).
-    if (import.meta.env?.DEV) {
+      if (import.meta.env?.DEV) {
         console.debug('Fetching logs between (UTC):', startOfToday.toISOString(), 'and', startOfTomorrow.toISOString());
       }
 
@@ -121,7 +121,7 @@ function NutritionLogPage() {
 
       if (logsResponse.error) throw logsResponse.error;
       if (profileResponse.error && profileResponse.error.code !== 'PGRST116') throw profileResponse.error;
-      
+
       const logs = logsResponse.data || [];
       // DEBUGGING: Avoid logging full objects in production; only show non-sensitive fields in development.
       if (import.meta.env?.DEV) {
@@ -163,7 +163,7 @@ function NutritionLogPage() {
   // Depend only on the user's id and the stable fetchLogData callback. We
   // intentionally avoid depending on the full `user` object to prevent
   // re-fetches caused by non-essential reference changes.
-   
+
   useEffect(() => {
     if (userId) {
       fetchLogData(userId);
@@ -171,7 +171,7 @@ function NutritionLogPage() {
       setLoading(false);
     }
   }, [userId, fetchLogData]);
-  
+
   const handleSearch = useCallback((term) => {
     setSearchTerm(term);
 
@@ -181,7 +181,7 @@ function NutritionLogPage() {
       searchDebounceRef.current = null;
     }
 
-      if (term.length < 3) {
+    if (term.length < 3) {
       if (searchAbortControllerRef.current) {
         try { searchAbortControllerRef.current.abort(); } catch (_err) { void _err; /* ignore */ }
         searchAbortControllerRef.current = null;
@@ -202,7 +202,7 @@ function NutritionLogPage() {
       try {
         // TEMPORARY FIX: Direct database search until functions are fixed
         console.log('🔍 Searching for:', term);
-        
+
         const { data: foodServings, error } = await supabase
           .from('food_servings')
           .select('*')
@@ -241,7 +241,7 @@ function NutritionLogPage() {
       }
     }, 300);
   }, []);
-  
+
   const openLogModal = async (food) => {
     if (food.needs_serving_fetch) {
       // Fetch servings for this food
@@ -250,12 +250,12 @@ function NutritionLogPage() {
           .from('food_servings')
           .select('*')
           .eq('food_id', food.food_id);
-        
+
         if (error) {
           console.error('Error fetching servings:', error);
           return;
         }
-        
+
         if (servings && servings.length > 0) {
           // Use the first serving as default, or show a selection if multiple
           const defaultServing = servings[0];
@@ -291,7 +291,7 @@ function NutritionLogPage() {
     setSearchResults([]);
     setQuantity('1');
   };
-  
+
   const handleLogFood = async () => {
     // Normalize quantity to a number for validation and payload.
     const qty = typeof quantity === 'string' ? parseFloat(quantity) : quantity;
@@ -299,7 +299,7 @@ function NutritionLogPage() {
 
     try {
       console.log('🔍 DEBUG: Logging food:', selectedFood);
-      
+
       // TEMPORARY FIX: Direct database insert until RPC functions are fixed
       const { data, error } = await supabase
         .from('nutrition_logs')
@@ -324,7 +324,7 @@ function NutritionLogPage() {
       alert(`Error logging food: ${error.message}`);
     }
   };
-  
+
   const handleLogWater = async (ounces) => {
     if (!user) return;
     const { error } = await supabase.from('nutrition_logs').insert({
@@ -342,7 +342,7 @@ function NutritionLogPage() {
 
   const handleDeleteFoodLog = async (logId) => {
     if (!user || !logId) return;
-    
+
     if (!confirm('Are you sure you want to delete this food entry?')) {
       return;
     }
@@ -360,7 +360,7 @@ function NutritionLogPage() {
       await fetchLogData(user.id); // Refresh the data
     }
   };
-  
+
   // Cleanup debounce timer and abort controller on unmount
   // NOTE: This cleanup effect must be declared before any early returns
   // (for example `if (loading) return ...`). React hooks must be called
@@ -387,18 +387,18 @@ function NutritionLogPage() {
   return (
     <div className="nutrition-log-page-container">
       <SubPageHeader title="Log" icon={<Apple size={28} />} iconColor="#f97316" backTo="/nutrition" />
-      
+
       <div className="meal-tabs">
         {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map(meal => (
-            <button key={meal} className={activeMeal === meal ? 'active' : ''} onClick={() => setActiveMeal(meal)}>{meal}</button>
+          <button key={meal} className={activeMeal === meal ? 'active' : ''} onClick={() => setActiveMeal(meal)}>{meal}</button>
         ))}
       </div>
 
       <div className="search-bar-wrapper">
         <Search className="search-icon" size={20} />
-        <input 
-          type="text" 
-          placeholder="Search for a food..." 
+        <input
+          type="text"
+          placeholder="Search for a food..."
           value={searchTerm}
           onChange={(e) => handleSearch(e.target.value)}
           disabled={!user}
@@ -446,7 +446,7 @@ function NutritionLogPage() {
                 <span className="food-item-calories">
                   {Math.round((log.food_servings.calories || 0) * log.quantity_consumed)} cal
                 </span>
-                <button 
+                <button
                   className="delete-food-btn"
                   onClick={() => handleDeleteFoodLog(log.id)}
                   title="Delete this food entry"
@@ -458,7 +458,7 @@ function NutritionLogPage() {
           ) : null
         ))}
       </div>
-      
+
       <div className="calorie-status-footer">
         <div className="calorie-info">
           <span>{dailyTotals.calories} / {goals.daily_calorie_goal || 2000} cal</span>
@@ -483,30 +483,30 @@ function NutritionLogPage() {
               <button onClick={closeLogModal} className="close-modal-btn"><X size={24} /></button>
             </div>
             <div className="modal-body">
-                <p>Serving: {selectedFood.serving_description} ({Math.round(selectedFood.calories)} cal)</p>
-                <div className="quantity-input">
-                  <label htmlFor="quantity">Quantity</label>
-                  <input
-                    id="quantity"
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*\.?[0-9]*"
-                    value={quantity}
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      if (raw === '') {
-                        setQuantity('');
-                        return;
-                      }
-                      // Allow only digits and a single decimal point
-                      const sanitized = raw.replace(/[^0-9.]/g, '');
-                      const parts = sanitized.split('.');
-                      const normalized = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : sanitized;
-                      const parsed = parseFloat(normalized);
-                      setQuantity(Number.isNaN(parsed) ? '' : String(normalized));
-                    }}
-                  />
-                </div>
+              <p>Serving: {selectedFood.serving_description} ({Math.round(selectedFood.calories)} cal)</p>
+              <div className="quantity-input">
+                <label htmlFor="quantity">Quantity</label>
+                <input
+                  id="quantity"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  value={quantity}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === '') {
+                      setQuantity('');
+                      return;
+                    }
+                    // Allow only digits and a single decimal point
+                    const sanitized = raw.replace(/[^0-9.]/g, '');
+                    const parts = sanitized.split('.');
+                    const normalized = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : sanitized;
+                    const parsed = parseFloat(normalized);
+                    setQuantity(Number.isNaN(parsed) ? '' : String(normalized));
+                  }}
+                />
+              </div>
             </div>
             <div className="modal-footer">
               <button className="log-food-btn" onClick={handleLogFood}>

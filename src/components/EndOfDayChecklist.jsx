@@ -5,64 +5,64 @@
  * @testFile src/__tests__/components/EndOfDayChecklist.test.jsx
  */
 
-import React, { useState } from 'react';
-import { CheckCircle, Circle, AlertTriangle, Save, Download, TestTube } from 'lucide-react';
+import { CheckCircle, Circle } from 'lucide-react';
+import { useState } from 'react';
 
 const EndOfDayChecklist = () => {
   const [checklist, setChecklist] = useState([
-    { 
-      id: 'tests', 
-      label: 'All components have tests', 
-      completed: false, 
+    {
+      id: 'tests',
+      label: 'All components have tests',
+      completed: false,
       priority: 'high',
       description: 'Ensure every component created today has a corresponding test file'
     },
-    { 
-      id: 'backup', 
-      label: 'Run daily backup script', 
-      completed: false, 
+    {
+      id: 'backup',
+      label: 'Run daily backup script',
+      completed: false,
       priority: 'high',
       description: 'Execute scripts/daily-backup.ps1 to backup database and files'
     },
-    { 
-      id: 'types', 
-      label: 'Generate fresh TypeScript types', 
-      completed: false, 
+    {
+      id: 'types',
+      label: 'Generate fresh TypeScript types',
+      completed: false,
       priority: 'medium',
       description: 'Run: npx supabase gen types typescript --linked > src/types/supabase.ts'
     },
-    { 
-      id: 'commit', 
-      label: 'Git commit with descriptive message', 
-      completed: false, 
+    {
+      id: 'commit',
+      label: 'Git commit with descriptive message',
+      completed: false,
       priority: 'high',
       description: 'Commit all changes with clear, descriptive commit message'
     },
-    { 
-      id: 'migrations', 
-      label: 'Verify all migrations applied', 
-      completed: false, 
+    {
+      id: 'migrations',
+      label: 'Verify all migrations applied',
+      completed: false,
       priority: 'high',
       description: 'Check that all database migrations are successfully applied'
     },
-    { 
-      id: 'cleanup', 
-      label: 'Clean up temporary files', 
-      completed: false, 
+    {
+      id: 'cleanup',
+      label: 'Clean up temporary files',
+      completed: false,
       priority: 'low',
       description: 'Remove any temporary files, logs, or debug artifacts'
     },
-    { 
-      id: 'documentation', 
-      label: 'Update documentation', 
-      completed: false, 
+    {
+      id: 'documentation',
+      label: 'Update documentation',
+      completed: false,
       priority: 'medium',
       description: 'Update README, add comments to new functions, document any API changes'
     },
-    { 
-      id: 'plan', 
-      label: 'Plan tomorrow\'s tasks', 
-      completed: false, 
+    {
+      id: 'plan',
+      label: 'Plan tomorrow\'s tasks',
+      completed: false,
       priority: 'medium',
       description: 'Create a brief plan for tomorrow\'s development priorities'
     }
@@ -78,7 +78,7 @@ const EndOfDayChecklist = () => {
   // });
 
   const toggleItem = (id) => {
-    setChecklist(prev => prev.map(item => 
+    setChecklist(prev => prev.map(item =>
       item.id === id ? { ...item, completed: !item.completed } : item
     ));
   };
@@ -90,7 +90,7 @@ const EndOfDayChecklist = () => {
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'high': return '#ef4444';
-      case 'medium': return '#f59e0b'; 
+      case 'medium': return '#f59e0b';
       case 'low': return '#10b981';
       default: return '#6b7280';
     }
@@ -109,17 +109,17 @@ const EndOfDayChecklist = () => {
   };
 
   return (
-    <div style={{ 
-      maxWidth: '800px', 
-      margin: '20px auto', 
-      padding: '20px', 
+    <div style={{
+      maxWidth: '800px',
+      margin: '20px auto',
+      padding: '20px',
       backgroundColor: '#f8fafc',
       borderRadius: '12px',
       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
     }}>
       <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ 
-          margin: '0 0 8px 0', 
+        <h2 style={{
+          margin: '0 0 8px 0',
           color: '#1f2937',
           fontSize: '24px',
           fontWeight: 'bold'
@@ -133,9 +133,9 @@ const EndOfDayChecklist = () => {
 
       {/* Progress Bar */}
       <div style={{ marginBottom: '24px' }}>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: '8px'
         }}>
@@ -144,14 +144,14 @@ const EndOfDayChecklist = () => {
             {completedCount}/{totalCount} ({completionPercentage}%)
           </span>
         </div>
-        <div style={{ 
-          width: '100%', 
-          height: '8px', 
+        <div style={{
+          width: '100%',
+          height: '8px',
           backgroundColor: '#e5e7eb',
           borderRadius: '4px',
           overflow: 'hidden'
         }}>
-          <div style={{ 
+          <div style={{
             width: `${completionPercentage}%`,
             height: '100%',
             backgroundColor: completionPercentage === 100 ? '#10b981' : '#3b82f6',
@@ -163,9 +163,9 @@ const EndOfDayChecklist = () => {
       {/* Checklist Items */}
       <div style={{ marginBottom: '24px' }}>
         {checklist.map(item => (
-          <div 
+          <div
             key={item.id}
-            style={{ 
+            style={{
               display: 'flex',
               alignItems: 'flex-start',
               padding: '12px',
@@ -185,21 +185,21 @@ const EndOfDayChecklist = () => {
                 <Circle size={20} color="#6b7280" />
               )}
             </div>
-            
+
             <div style={{ flex: 1 }}>
-              <div style={{ 
-                display: 'flex', 
+              <div style={{
+                display: 'flex',
                 alignItems: 'center',
                 marginBottom: '4px'
               }}>
-                <span style={{ 
+                <span style={{
                   textDecoration: item.completed ? 'line-through' : 'none',
                   fontWeight: '500',
                   color: item.completed ? '#6b7280' : '#1f2937'
                 }}>
                   {item.label}
                 </span>
-                <div style={{ 
+                <div style={{
                   width: '8px',
                   height: '8px',
                   backgroundColor: getPriorityColor(item.priority),
@@ -207,7 +207,7 @@ const EndOfDayChecklist = () => {
                   marginLeft: '8px'
                 }} />
               </div>
-              <p style={{ 
+              <p style={{
                 margin: 0,
                 fontSize: '14px',
                 color: '#6b7280',
@@ -216,12 +216,12 @@ const EndOfDayChecklist = () => {
                 {item.description}
               </p>
             </div>
-            
+
             {/* Quick Action Buttons */}
             {item.id === 'backup' && !item.completed && (
-              <button 
+              <button
                 onClick={(e) => { e.stopPropagation(); runBackupScript(); }}
-                style={{ 
+                style={{
                   marginLeft: '8px',
                   padding: '4px 8px',
                   backgroundColor: '#3b82f6',
@@ -235,11 +235,11 @@ const EndOfDayChecklist = () => {
                 Run
               </button>
             )}
-            
+
             {item.id === 'types' && !item.completed && (
-              <button 
+              <button
                 onClick={(e) => { e.stopPropagation(); generateTypes(); }}
-                style={{ 
+                style={{
                   marginLeft: '8px',
                   padding: '4px 8px',
                   backgroundColor: '#10b981',
@@ -258,7 +258,7 @@ const EndOfDayChecklist = () => {
       </div>
 
       {/* Summary Section */}
-      <div style={{ 
+      <div style={{
         padding: '16px',
         backgroundColor: '#ffffff',
         border: '1px solid #e5e7eb',
@@ -270,7 +270,7 @@ const EndOfDayChecklist = () => {
         </h3>
         <div style={{ fontSize: '14px', color: '#6b7280' }}>
           <p>• Database tables: All fresh foundation tables created ✅</p>
-          <p>• User roles: Trainer and Client roles configured ✅</p> 
+          <p>• User roles: Trainer and Client roles configured ✅</p>
           <p>• Testing: Test framework and creation script implemented ✅</p>
           <p>• Backup: Daily backup protocol established ✅</p>
           <p>• Components: TrainerClients component reviewed and tested ✅</p>
@@ -279,7 +279,7 @@ const EndOfDayChecklist = () => {
 
       {/* Completion Status */}
       {completionPercentage === 100 && (
-        <div style={{ 
+        <div style={{
           padding: '16px',
           backgroundColor: '#f0fdf4',
           border: '1px solid #bbf7d0',
@@ -287,7 +287,7 @@ const EndOfDayChecklist = () => {
           textAlign: 'center'
         }}>
           <CheckCircle size={24} color="#10b981" style={{ marginBottom: '8px' }} />
-          <p style={{ 
+          <p style={{
             margin: 0,
             fontWeight: '600',
             color: '#15803d'

@@ -17,24 +17,19 @@
  * <Route path="/programs/*" element={<TrainerPrograms />} />
  */
 
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation, useParams } from 'react-router-dom';
-import { 
-  BarChart3, 
-  Plus, 
-  Filter, 
-  Eye, 
-  Calendar,
-  Users,
-  BookOpen,
-  ArrowLeft,
+import {
   Activity,
+  ArrowLeft,
+  BookOpen,
+  Calendar,
+  Plus,
   TrendingUp
 } from 'lucide-react';
-import { supabase } from '../../supabaseClient';
+import { useEffect, useState } from 'react';
+import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
-import ScheduleRoutineModal from '../../components/ScheduleRoutineModal';
 import InteractiveMuscleMap from '../../components/workout-builder/InteractiveMuscleMap';
+import { supabase } from '../../supabaseClient';
 import { calculateProgramEngagement, generateHeatmapData } from '../../utils/programAnalytics';
 // import { fetchExercisesWithMuscles, analyzeUserProgram } from '../../utils/workoutBuilderIntegration';
 import './TrainerPrograms.css';
@@ -82,7 +77,7 @@ const ProgramMuscleMap = ({ program, routines = [] }) => {
   const generateProgramHeatmap = async () => {
     try {
       setLoading(true);
-      
+
       if (!program || routines.length === 0) {
         setHeatmapData([]);
         setAnalysisData(null);
@@ -131,7 +126,7 @@ const ProgramMuscleMap = ({ program, routines = [] }) => {
 
       // Generate heatmap data
       const heatmap = generateHeatmapData(engagementData);
-      
+
       setHeatmapData(heatmap);
       setAnalysisData(engagementData);
 
@@ -172,7 +167,7 @@ const ProgramMuscleMap = ({ program, routines = [] }) => {
           className="program-map-display"
         />
       </div>
-      
+
       <div className="muscle-engagement-summary">
         <div className="engagement-stats">
           <div className="stat-item">
@@ -186,12 +181,12 @@ const ProgramMuscleMap = ({ program, routines = [] }) => {
           <div className="stat-item balance-indicator">
             <span className={`balance-status ${analysisData.balanceAnalysis.overall}`}>
               {analysisData.balanceAnalysis.overall === 'balanced' ? '✓ Balanced' :
-               analysisData.balanceAnalysis.overall === 'moderately_imbalanced' ? '⚠ Moderate' :
-               analysisData.balanceAnalysis.overall === 'imbalanced' ? '⚠ Imbalanced' : 'Unknown'}
+                analysisData.balanceAnalysis.overall === 'moderately_imbalanced' ? '⚠ Moderate' :
+                  analysisData.balanceAnalysis.overall === 'imbalanced' ? '⚠ Imbalanced' : 'Unknown'}
             </span>
           </div>
         </div>
-        
+
         {analysisData.sortedMuscles.length > 0 && (
           <div className="top-muscles">
             <span className="top-muscles-label">Primary focus:</span>
@@ -204,7 +199,7 @@ const ProgramMuscleMap = ({ program, routines = [] }) => {
             </div>
           </div>
         )}
-        
+
         {analysisData.balanceAnalysis.recommendations.length > 0 && (
           <div className="program-recommendations">
             <details className="recommendations-details">
@@ -251,7 +246,7 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
   const loadProgramData = async () => {
     try {
       setLoading(true);
-      
+
       // Load program routines
       const { data: routinesData, error: routinesError } = await supabase
         .from('program_routines')
@@ -297,7 +292,7 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
     // Logic to distribute routines across the week based on frequency
     const scheduledRoutines = [];
     const startDateObj = new Date(start);
-    
+
     // Days of week for different frequencies
     const frequencyPatterns = {
       1: [1], // Monday
@@ -462,8 +457,8 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
                 <div className="config-row">
                   <div className="config-group">
                     <label>Frequency (per week):</label>
-                    <select 
-                      value={frequency} 
+                    <select
+                      value={frequency}
                       onChange={(e) => handleFrequencyChange(parseInt(e.target.value))}
                       className="config-select"
                     >
@@ -475,11 +470,11 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
                       <option value={6}>6x per week</option>
                     </select>
                   </div>
-                  
+
                   <div className="config-group">
                     <label>Duration (weeks):</label>
-                    <select 
-                      value={duration} 
+                    <select
+                      value={duration}
                       onChange={(e) => handleDurationChange(parseInt(e.target.value))}
                       className="config-select"
                     >
@@ -493,11 +488,11 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
                       <option value={24}>24 weeks</option>
                     </select>
                   </div>
-                  
+
                   <div className="config-group">
                     <label>Start Date:</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       value={startDate}
                       onChange={(e) => handleStartDateChange(e.target.value)}
                       className="config-input"
@@ -509,7 +504,7 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
               <div className="routines-management">
                 <div className="routines-management-header">
                   <h3>Program Routines ({routines.length} base routines)</h3>
-                  <button 
+                  <button
                     className="add-routine-btn"
                     onClick={() => setShowRoutineSelector(true)}
                   >
@@ -539,14 +534,14 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
                           </button>
                         </div>
                       </div>
-                      
+
                       <div className="routine-muscle-preview">
-                        <ProgramMuscleMap 
-                          program={{ ...program, routines: [routine] }} 
+                        <ProgramMuscleMap
+                          program={{ ...program, routines: [routine] }}
                           routines={[routine]}
                         />
                       </div>
-                      
+
                       {routine.exercises && routine.exercises.length > 0 && (
                         <div className="routine-exercises-preview">
                           <div className="exercise-list">
@@ -565,7 +560,7 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
                       )}
                     </div>
                   ))}
-                  
+
                   {routines.length > 4 && (
                     <div className="more-routines-card">
                       <div className="more-routines-content">
@@ -580,8 +575,8 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
 
               <div className="program-analytics-section">
                 <h3>Program Analysis</h3>
-                <ProgramMuscleMap 
-                  program={{ ...program, routines: routines.slice(0, 4) }} 
+                <ProgramMuscleMap
+                  program={{ ...program, routines: routines.slice(0, 4) }}
                   routines={routines.slice(0, 4)}
                 />
               </div>
@@ -603,10 +598,10 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
                       <span className="stat-label">unique routines</span>
                     </div>
                   </div>
-                  
+
                   <div className="schedule-note">
                     <small>
-                      Routines will cycle through the program. Each routine may repeat 
+                      Routines will cycle through the program. Each routine may repeat
                       {Math.ceil((duration * frequency) / routines.length)} times over {duration} weeks.
                     </small>
                   </div>
@@ -618,7 +613,7 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
                 <div className="config-row">
                   <div className="config-group">
                     <label>Select Client:</label>
-                    <select 
+                    <select
                       value={selectedClient}
                       onChange={(e) => setSelectedClient(e.target.value)}
                       className="config-select"
@@ -635,7 +630,7 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
               </div>
 
               <div className="modal-actions">
-                <button 
+                <button
                   onClick={enrollClient}
                   disabled={!selectedClient || enrolling}
                   className="enroll-btn"
@@ -659,7 +654,7 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
               <h4>Add Routine to Program</h4>
               <button onClick={() => setShowRoutineSelector(false)} className="close-btn">×</button>
             </div>
-            
+
             <div className="routine-selector-content">
               {availableRoutines.length === 0 ? (
                 <div className="no-routines">
@@ -792,14 +787,14 @@ const ProgramLibrary = () => {
               .from('program_routines')
               .select('*', { count: 'exact' })
               .eq('program_id', program.id);
-            
+
             if (routinesData && routinesData.length > 0) {
               setProgramRoutines(prev => ({
                 ...prev,
                 [program.id]: routinesData
               }));
             }
-            
+
             return {
               ...program,
               routine_count: count || 0
@@ -849,50 +844,50 @@ const ProgramLibrary = () => {
   const getCategoryMatch = (program, category) => {
     const programName = program.name.toLowerCase();
     const programDesc = program.description.toLowerCase();
-    
+
     switch (category) {
       case 'Strength':
-        return programName.includes('strength') || 
-               programName.includes('power') || 
-               programName.includes('foundation') ||
-               programDesc.includes('strength') ||
-               programDesc.includes('compound');
-      
+        return programName.includes('strength') ||
+          programName.includes('power') ||
+          programName.includes('foundation') ||
+          programDesc.includes('strength') ||
+          programDesc.includes('compound');
+
       case 'Hypertrophy':
-        return programName.includes('hypertrophy') || 
-               programName.includes('builder') || 
-               programName.includes('muscle') ||
-               programDesc.includes('muscle growth') ||
-               programDesc.includes('hypertrophy');
-      
+        return programName.includes('hypertrophy') ||
+          programName.includes('builder') ||
+          programName.includes('muscle') ||
+          programDesc.includes('muscle growth') ||
+          programDesc.includes('hypertrophy');
+
       case 'Endurance':
-        return programName.includes('endurance') || 
-               programName.includes('cardio') || 
-               programName.includes('conditioning') ||
-               programDesc.includes('endurance') ||
-               programDesc.includes('cardio');
-      
+        return programName.includes('endurance') ||
+          programName.includes('cardio') ||
+          programName.includes('conditioning') ||
+          programDesc.includes('endurance') ||
+          programDesc.includes('cardio');
+
       case 'Flexibility':
-        return programName.includes('flexibility') || 
-               programName.includes('stretch') || 
-               programName.includes('mobility') ||
-               programDesc.includes('flexibility') ||
-               programDesc.includes('mobility');
-      
+        return programName.includes('flexibility') ||
+          programName.includes('stretch') ||
+          programName.includes('mobility') ||
+          programDesc.includes('flexibility') ||
+          programDesc.includes('mobility');
+
       case 'Balance':
-        return programName.includes('balance') || 
-               programName.includes('stability') || 
-               programName.includes('functional') ||
-               programDesc.includes('balance') ||
-               programDesc.includes('functional');
-      
+        return programName.includes('balance') ||
+          programName.includes('stability') ||
+          programName.includes('functional') ||
+          programDesc.includes('balance') ||
+          programDesc.includes('functional');
+
       case 'Recovery':
-        return programName.includes('recovery') || 
-               programName.includes('restore') || 
-               programName.includes('flow') ||
-               programDesc.includes('recovery') ||
-               programDesc.includes('gentle');
-      
+        return programName.includes('recovery') ||
+          programName.includes('restore') ||
+          programName.includes('flow') ||
+          programDesc.includes('recovery') ||
+          programDesc.includes('gentle');
+
       default:
         return true;
     }
@@ -907,7 +902,7 @@ const ProgramLibrary = () => {
   const getDifficultyDisplay = (level) => {
     const displays = {
       beginner: '🟢 Beginner',
-      intermediate: '🟡 Intermediate', 
+      intermediate: '🟡 Intermediate',
       advanced: '🔴 Advanced'
     };
     return displays[level] || level;
@@ -975,7 +970,7 @@ const ProgramLibrary = () => {
             </button>
           ))}
         </div>
-        
+
         <div className="header-controls">
           <select
             value={difficultyFilter}
@@ -1064,8 +1059,8 @@ const ProgramLibrary = () => {
                         <span className="routine-name">Legs & Shoulders</span>
                       </div>
                       <div className="muscle-map-small">
-                        <ProgramMuscleMap 
-                          program={program} 
+                        <ProgramMuscleMap
+                          program={program}
                           routines={programRoutines[program.id] || []}
                         />
                       </div>
@@ -1077,8 +1072,8 @@ const ProgramLibrary = () => {
                         <span className="routine-name">Back & Biceps</span>
                       </div>
                       <div className="muscle-map-small">
-                        <ProgramMuscleMap 
-                          program={program} 
+                        <ProgramMuscleMap
+                          program={program}
                           routines={programRoutines[program.id] || []}
                         />
                       </div>
@@ -1090,8 +1085,8 @@ const ProgramLibrary = () => {
                         <span className="routine-name">Chest & Triceps</span>
                       </div>
                       <div className="muscle-map-small">
-                        <ProgramMuscleMap 
-                          program={program} 
+                        <ProgramMuscleMap
+                          program={program}
                           routines={programRoutines[program.id] || []}
                         />
                       </div>
@@ -1099,7 +1094,7 @@ const ProgramLibrary = () => {
                   </div>
 
                   <div className="program-actions-bottom">
-                    <button 
+                    <button
                       onClick={() => setSelectedProgram(program)}
                       className="configure-program-btn"
                     >
@@ -1116,10 +1111,10 @@ const ProgramLibrary = () => {
 
       {/* Program Configuration Modal */}
       {selectedProgram && (
-        <ProgramConfigModal 
-          program={selectedProgram} 
+        <ProgramConfigModal
+          program={selectedProgram}
           user={user}
-          onClose={() => setSelectedProgram(null)} 
+          onClose={() => setSelectedProgram(null)}
         />
       )}
     </div>
@@ -1170,7 +1165,7 @@ const ProgramDetail = () => {
         </button>
         <h2>{_program?.name || 'Program Details'}</h2>
       </div>
-      
+
       {/* Program details and routines would go here */}
       <div className="coming-soon">
         <p>Program detail view coming soon!</p>

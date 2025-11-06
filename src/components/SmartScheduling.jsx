@@ -11,24 +11,20 @@
  * - Automated reminder system
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Calendar, 
-  Clock, 
-  Users, 
-  Plus, 
-  Search,
-  Filter,
-  Bell,
-  Repeat,
+import {
   AlertTriangle,
+  Bell,
   CheckCircle,
-  User,
+  Clock,
+  Filter,
   MapPin,
-  Phone,
-  Video,
+  Plus,
+  Repeat,
+  Search,
+  User,
   Zap
 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import './SmartScheduling.css';
 
 /**
@@ -43,27 +39,27 @@ import './SmartScheduling.css';
 const SmartScheduling = () => {
   /** @type {[Array, Function]} List of scheduled appointments */
   const [appointments, setAppointments] = useState([]);
-  
+
   // Available time slots feature - to be implemented
   // const [availableSlots, setAvailableSlots] = useState([]);
-  
+
   /** @type {[string, Function]} Current view mode */
   const [viewMode, setViewMode] = useState('week'); // 'day', 'week', 'month'
-  
+
   /** @type {[Date, Function]} Selected date for scheduling */
   const [selectedDate] = useState(null);
   // const [availableSlots, setAvailableSlots] = useState([]);
   const [_showNewAppointment, setShowNewAppointment] = useState(false);
-  
+
   /** @type {[Object|null, Function]} Currently selected appointment */
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  
+
   // New appointment modal - to be implemented
   // const [showNewAppointment, setShowNewAppointment] = useState(false);
-  
+
   /** @type {[Array, Function]} Smart scheduling suggestions */
   const [smartSuggestions, setSmartSuggestions] = useState([]);
-  
+
   /** @type {[string, Function]} Search/filter query */
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -152,7 +148,7 @@ const SmartScheduling = () => {
       ...suggestion,
       confidence: Math.floor(Math.random() * 20) + 80 // 80-100% confidence
     }));
-    
+
     setSmartSuggestions(suggestions);
   }, []);
 
@@ -212,14 +208,14 @@ const SmartScheduling = () => {
             <span className="ai-badge">AI-Powered</span>
           </div>
           <div className="header-actions">
-            <button 
+            <button
               className="smart-suggest-btn"
               onClick={generateSmartSuggestions}
             >
               <Zap size={16} />
               Get AI Suggestions
             </button>
-            <button 
+            <button
               className="new-appointment-btn"
               onClick={() => setShowNewAppointment(true)}
             >
@@ -228,7 +224,7 @@ const SmartScheduling = () => {
             </button>
           </div>
         </div>
-        
+
         <div className="scheduling-controls">
           <div className="search-filter-section">
             <div className="search-wrapper">
@@ -246,21 +242,21 @@ const SmartScheduling = () => {
               Filter
             </button>
           </div>
-          
+
           <div className="view-controls">
-            <button 
+            <button
               className={`view-btn ${viewMode === 'day' ? 'active' : ''}`}
               onClick={() => setViewMode('day')}
             >
               Day
             </button>
-            <button 
+            <button
               className={`view-btn ${viewMode === 'week' ? 'active' : ''}`}
               onClick={() => setViewMode('week')}
             >
               Week
             </button>
-            <button 
+            <button
               className={`view-btn ${viewMode === 'month' ? 'active' : ''}`}
               onClick={() => setViewMode('month')}
             >
@@ -278,10 +274,10 @@ const SmartScheduling = () => {
             <h3>Upcoming Appointments</h3>
             <span className="appointment-count">{filteredAppointments.length}</span>
           </div>
-          
+
           <div className="appointments-list">
             {filteredAppointments.map(appointment => (
-              <div 
+              <div
                 key={appointment.id}
                 className={`appointment-card ${selectedAppointment?.id === appointment.id ? 'selected' : ''}`}
                 onClick={() => setSelectedAppointment(appointment)}
@@ -295,7 +291,7 @@ const SmartScheduling = () => {
                     {appointment.status}
                   </span>
                 </div>
-                
+
                 <div className="appointment-details">
                   <div className="detail-item">
                     <Clock size={14} />
@@ -312,7 +308,7 @@ const SmartScheduling = () => {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="appointment-type">
                   {appointment.type}
                 </div>
@@ -328,15 +324,15 @@ const SmartScheduling = () => {
             <div className="calendar-nav">
               <button className="nav-btn">‹</button>
               <span className="current-period">
-                {selectedDate.toLocaleDateString('en-US', { 
-                  month: 'long', 
-                  year: 'numeric' 
+                {selectedDate.toLocaleDateString('en-US', {
+                  month: 'long',
+                  year: 'numeric'
                 })}
               </span>
               <button className="nav-btn">›</button>
             </div>
           </div>
-          
+
           <div className="calendar-view">
             <div className="time-grid">
               {/* Time slots */}
@@ -363,13 +359,13 @@ const SmartScheduling = () => {
             <h3>AI Suggestions</h3>
             <Bell size={16} className="notification-icon" />
           </div>
-          
+
           <div className="suggestions-list">
             {smartSuggestions.map(suggestion => (
               <div key={suggestion.id} className="suggestion-card">
                 <div className="suggestion-header">
                   <div className="confidence-indicator">
-                    <div 
+                    <div
                       className="confidence-bar"
                       style={{ width: `${suggestion.confidence}%` }}
                     ></div>
@@ -377,7 +373,7 @@ const SmartScheduling = () => {
                   </div>
                   <Zap size={14} className="ai-indicator" />
                 </div>
-                
+
                 <div className="suggestion-details">
                   <div className="suggestion-time">
                     <Clock size={14} />
@@ -386,7 +382,7 @@ const SmartScheduling = () => {
                   <div className="suggestion-type">{suggestion.type}</div>
                   <div className="suggestion-reason">{suggestion.reason}</div>
                 </div>
-                
+
                 <div className="suggestion-actions">
                   <button className="accept-btn">
                     <CheckCircle size={14} />
@@ -397,7 +393,7 @@ const SmartScheduling = () => {
               </div>
             ))}
           </div>
-          
+
           <div className="conflict-alerts">
             <div className="alert-item">
               <AlertTriangle size={16} className="warning-icon" />

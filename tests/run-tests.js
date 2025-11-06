@@ -19,11 +19,11 @@ const TEST_CONFIG = {
   // Test files and patterns
   myPlanPageTest: 'tests/pages/MyPlanPage.test.jsx',
   allTests: 'tests/**/*.{test,spec}.{js,jsx,ts,tsx}',
-  
+
   // Output directories
   reportsDir: './tests/reports',
   coverageDir: './tests/coverage',
-  
+
   // Coverage thresholds
   coverageThreshold: {
     branches: 80,
@@ -54,10 +54,10 @@ function ensureDirectories() {
 function executeCommand(command, description) {
   console.log(`\n🔄 ${description}...`);
   console.log(`Command: ${command}\n`);
-  
+
   try {
-    execSync(command, { 
-      encoding: 'utf-8', 
+    execSync(command, {
+      encoding: 'utf-8',
       stdio: 'inherit',
       cwd: process.cwd()
     });
@@ -76,7 +76,7 @@ function executeCommand(command, description) {
 function runMyPlanPageTests() {
   console.log('🧪 Running MyPlanPage Component Tests');
   console.log('=====================================');
-  
+
   const command = `npx vitest run ${TEST_CONFIG.myPlanPageTest} --reporter=verbose --coverage`;
   return executeCommand(command, 'MyPlanPage tests');
 }
@@ -87,7 +87,7 @@ function runMyPlanPageTests() {
 function runAllTests() {
   console.log('🧪 Running All Tests with Coverage');
   console.log('==================================');
-  
+
   const command = 'npx vitest run --coverage --reporter=verbose --reporter=json --reporter=html';
   return executeCommand(command, 'All tests with coverage');
 }
@@ -98,7 +98,7 @@ function runAllTests() {
 function runWatchMode() {
   console.log('👀 Running Tests in Watch Mode');
   console.log('==============================');
-  
+
   const command = `npx vitest ${TEST_CONFIG.myPlanPageTest} --watch`;
   return executeCommand(command, 'Watch mode tests');
 }
@@ -109,12 +109,12 @@ function runWatchMode() {
 function generateDetailedReport() {
   console.log('📊 Generating Detailed Test Report');
   console.log('==================================');
-  
+
   const commands = [
     'npx vitest run --coverage --reporter=json --outputFile=./tests/reports/test-results.json',
     'npx vitest run --coverage --reporter=html --outputFile=./tests/reports/test-results.html'
   ];
-  
+
   let success = true;
   commands.forEach((command, index) => {
     const description = `Report generation step ${index + 1}`;
@@ -122,7 +122,7 @@ function generateDetailedReport() {
       success = false;
     }
   });
-  
+
   return success;
 }
 
@@ -132,7 +132,7 @@ function generateDetailedReport() {
 function runLintChecks() {
   console.log('🔍 Running Lint Checks');
   console.log('======================');
-  
+
   const command = 'npm run lint';
   return executeCommand(command, 'ESLint checks');
 }
@@ -143,55 +143,55 @@ function runLintChecks() {
 function main() {
   const args = process.argv.slice(2);
   const command = args[0] || 'myplan';
-  
+
   console.log('🚀 Felony Fitness Test Runner');
   console.log('=============================');
   console.log(`Timestamp: ${new Date().toISOString()}`);
   console.log(`Node Version: ${process.version}`);
   console.log(`Working Directory: ${process.cwd()}\n`);
-  
+
   // Ensure directories exist
   ensureDirectories();
-  
+
   let success = false;
-  
+
   switch (command) {
     case 'myplan':
     case 'myplan-page':
       success = runMyPlanPageTests();
       break;
-      
+
     case 'all':
     case 'full':
       success = runLintChecks() && runAllTests();
       break;
-      
+
     case 'watch':
     case 'dev':
       success = runWatchMode();
       break;
-      
+
     case 'report':
     case 'detailed':
       success = generateDetailedReport();
       break;
-      
+
     case 'lint':
       success = runLintChecks();
       break;
-      
+
     case 'help':
     case '--help':
     case '-h':
       printHelp();
       return;
-      
+
     default:
       console.error(`❌ Unknown command: ${command}`);
       printHelp();
       process.exit(1);
   }
-  
+
   // Exit with appropriate code
   if (success) {
     console.log('\n🎉 Test execution completed successfully!');

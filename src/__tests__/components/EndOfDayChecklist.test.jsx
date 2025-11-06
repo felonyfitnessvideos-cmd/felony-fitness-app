@@ -18,8 +18,8 @@ vi.mock('../supabaseClient', () => ({
       delete: vi.fn(() => Promise.resolve({ data: [], error: null }))
     })),
     auth: {
-      getUser: vi.fn(() => Promise.resolve({ 
-        data: { user: { id: 'test-user-id', email: 'test@example.com' } } 
+      getUser: vi.fn(() => Promise.resolve({
+        data: { user: { id: 'test-user-id', email: 'test@example.com' } }
       }))
     }
   }

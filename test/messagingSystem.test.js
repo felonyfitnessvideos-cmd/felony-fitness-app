@@ -6,15 +6,15 @@
  * @created 2025-11-03
  */
 
-import { describe, test, expect, beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { supabase } from '../src/supabaseClient.js';
 import {
-  getConversations,
-  getConversationMessages,
   formatMessageTime,
+  getConversationMessages,
+  getConversations,
+  handleMessagingError,
   truncateMessage,
-  validateMessageContent,
-  handleMessagingError
+  validateMessageContent
 } from '../src/utils/messagingUtils.js';
 
 describe('Messaging System Tests', () => {
@@ -22,14 +22,14 @@ describe('Messaging System Tests', () => {
 
   beforeAll(async () => {
     console.log('🔧 Setting up messaging system tests...');
-    
+
     // Create test users for messaging tests
     try {
       // Note: In a real test environment, you would use test-specific auth
       // For now, we'll test with existing user data
       const { data: { user } } = await supabase.auth.getUser();
       testUser1 = user;
-      
+
       if (!testUser1) {
         console.warn('⚠️ No authenticated user found. Some tests may be skipped.');
       }
@@ -52,12 +52,12 @@ describe('Messaging System Tests', () => {
 
       try {
         const { data, error } = await supabase.rpc('get_conversations');
-        
+
         if (error) {
           console.log('⚠️ Database function error (expected if no conversations exist):', error);
           // This is acceptable - function exists but may return empty results
         }
-        
+
         expect(error).toBeFalsy();
         expect(Array.isArray(data)).toBe(true);
       } catch (error) {
@@ -74,12 +74,12 @@ describe('Messaging System Tests', () => {
 
       // Test with a dummy UUID (should return empty array)
       const dummyUserId = '00000000-0000-0000-0000-000000000000';
-      
+
       try {
         const { data, error } = await supabase.rpc('get_conversation_messages', {
           other_user_id: dummyUserId
         });
-        
+
         expect(error).toBeFalsy();
         expect(Array.isArray(data)).toBe(true);
         expect(data.length).toBe(0); // Should be empty for dummy user
@@ -97,14 +97,14 @@ describe('Messaging System Tests', () => {
 
       const dummyRecipientId = '00000000-0000-0000-0000-000000000000';
       const testMessage = 'Test message from automated test';
-      
+
       try {
         // This should fail because the recipient doesn't exist, but function should be callable
         const { data, error } = await supabase.rpc('send_direct_message', {
           recipient_id: dummyRecipientId,
           message_content: testMessage
         });
-        
+
         // We expect this to potentially fail due to invalid recipient
         // but the function should exist and be callable
         if (error) {
@@ -128,7 +128,7 @@ describe('Messaging System Tests', () => {
         const conversations = await getConversations();
         expect(Array.isArray(conversations)).toBe(true);
         console.log('✅ Retrieved', conversations.length, 'conversations');
-        
+
         // Test structure if conversations exist
         if (conversations.length > 0) {
           const conversation = conversations[0];
@@ -151,7 +151,7 @@ describe('Messaging System Tests', () => {
       }
 
       const dummyUserId = '00000000-0000-0000-0000-000000000000';
-      
+
       try {
         const messages = await getConversationMessages(dummyUserId);
         expect(Array.isArray(messages)).toBe(true);

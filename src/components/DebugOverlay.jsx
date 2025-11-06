@@ -4,16 +4,15 @@
  * Only shows in development mode
  */
 
-import React from 'react';
 import { useResponsive } from '../hooks/useResponsive';
 
 const DebugOverlay = () => {
-  const { 
-    width, 
-    height, 
-    deviceType, 
-    isMobile, 
-    isTablet, 
+  const {
+    width,
+    height,
+    deviceType,
+    isMobile,
+    isTablet,
     isTabletOrLarger
   } = useResponsive();
 
@@ -43,8 +42,8 @@ const DebugOverlay = () => {
       <div>Device: {deviceType}</div>
       <div>Mobile: {isMobile ? 'Yes' : 'No'}</div>
       <div>Tablet: {isTablet ? 'Yes' : 'No'}</div>
-      <div>Tablet+: <span style={{color: isTabletOrLarger ? 'lime' : 'red'}}>{isTabletOrLarger ? 'Yes' : 'No'}</span></div>
-      <div>Layout: <span style={{color: isTabletOrLarger ? 'lime' : 'red'}}>{isTabletOrLarger ? 'desktop-layout' : 'mobile-layout'}</span></div>
+      <div>Tablet+: <span style={{ color: isTabletOrLarger ? 'lime' : 'red' }}>{isTabletOrLarger ? 'Yes' : 'No'}</span></div>
+      <div>Layout: <span style={{ color: isTabletOrLarger ? 'lime' : 'red' }}>{isTabletOrLarger ? 'desktop-layout' : 'mobile-layout'}</span></div>
       <div>Breakpoint: 699px</div>
       <div>DPR: {window.devicePixelRatio}</div>
       <div style={{ fontSize: '10px', marginTop: '5px' }}>

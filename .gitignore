@@ -37,6 +37,12 @@ dist-ssr
 # Ignore local database/backup dumps
 backups/
 
+# Protocols (internal procedures, reports, summaries)
+Protocols/
+
+# Old/archived files
+OldFiles/
+
 # Testing
 /coverage/
 *.lcov
