@@ -27,21 +27,24 @@ vi.mock('../../src/AuthContext.jsx', () => ({
   useAuth: () => mockAuthContext
 }));
 
-// Mock Supabase client
-const mockSupabase = {
-  from: vi.fn(() => mockSupabase),
-  select: vi.fn(() => mockSupabase),
-  eq: vi.fn(() => mockSupabase),
-  single: vi.fn(() => mockSupabase),
-  upsert: vi.fn(() => mockSupabase),
-  insert: vi.fn(() => mockSupabase),
-  order: vi.fn(() => mockSupabase),
-  limit: vi.fn(() => mockSupabase)
+// Mock Supabase client with factory function to avoid hoisting issues
+const mockSupabaseInstance = {
+  from: vi.fn(function() { return this; }),
+  select: vi.fn(function() { return this; }),
+  eq: vi.fn(function() { return this; }),
+  single: vi.fn(function() { return this; }),
+  upsert: vi.fn(function() { return this; }),
+  insert: vi.fn(function() { return this; }),
+  order: vi.fn(function() { return this; }),
+  limit: vi.fn(function() { return this; })
 };
 
 vi.mock('../../src/supabaseClient.js', () => ({
-  default: mockSupabase
+  supabase: mockSupabaseInstance
 }));
+
+// Make mockSupabase available in tests
+const mockSupabase = mockSupabaseInstance;
 
 // Mock react-router-dom navigate
 const mockNavigate = vi.fn();

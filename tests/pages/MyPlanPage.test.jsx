@@ -173,11 +173,13 @@ describe('MyPlanPage Component', () => {
     // Setup user event for interactions
     user = userEvent.setup();
 
-    // Setup clipboard API mock
-    Object.assign(navigator, {
-      clipboard: {
+    // Setup clipboard API mock (defineProperty for read-only properties)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {
         writeText: vi.fn().mockResolvedValue()
-      }
+      },
+      writable: true,
+      configurable: true
     });
 
     // Clear all mocks before each test
@@ -186,6 +188,8 @@ describe('MyPlanPage Component', () => {
 
   afterEach(() => {
     vi.resetAllMocks();
+    // Clean up clipboard mock
+    delete navigator.clipboard;
   });
 
   /**
@@ -872,6 +876,22 @@ describe('MyPlanPage Component', () => {
  * Tests real-world usage scenarios and component interactions
  */
 describe('MyPlanPage Integration Tests', () => {
+  beforeEach(() => {
+    // Setup clipboard API mock for integration tests
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {
+        writeText: vi.fn().mockResolvedValue()
+      },
+      writable: true,
+      configurable: true
+    });
+  });
+
+  afterEach(() => {
+    // Clean up clipboard mock
+    delete navigator.clipboard;
+  });
+
   it('completes full user workflow: view plans -> toggle ID -> change theme', async () => {
     const user = userEvent.setup();
     const updateUserTheme = vi.fn();
