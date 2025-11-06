@@ -4,7 +4,7 @@
  * @created 2025-11-03
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import TrainerClients from '../pages/trainer/TrainerClients';
 
@@ -18,8 +18,8 @@ vi.mock('../supabaseClient', () => ({
       delete: vi.fn(() => Promise.resolve({ data: [], error: null }))
     })),
     auth: {
-      getUser: vi.fn(() => Promise.resolve({ 
-        data: { user: { id: 'test-user-id', email: 'test@example.com' } } 
+      getUser: vi.fn(() => Promise.resolve({
+        data: { user: { id: 'test-user-id', email: 'test@example.com' } }
       }))
     }
   }

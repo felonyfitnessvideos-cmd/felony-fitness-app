@@ -29,14 +29,14 @@ export const calculateProgramEngagement = (program, options = {}) => {
   const engagementScores = {};
   const muscleDetails = {};
   const exerciseBreakdown = [];
-  
+
   let totalExercises = 0;
   let totalSets = 0;
 
   try {
     // Handle different program structures
     const routines = program.routines || program.program_routines || [program];
-    
+
     if (!Array.isArray(routines)) {
       throw new Error('Invalid program structure: routines must be an array');
     }
@@ -44,7 +44,7 @@ export const calculateProgramEngagement = (program, options = {}) => {
     // Loop through all routines in the program
     routines.forEach((routine, routineIndex) => {
       const exercises = routine.exercises || routine.routine_exercises || [];
-      
+
       if (!Array.isArray(exercises)) {
         console.warn(`Routine ${routineIndex} has invalid exercises structure`);
         return;
@@ -53,24 +53,24 @@ export const calculateProgramEngagement = (program, options = {}) => {
       // Process each exercise in the routine
       exercises.forEach((exerciseEntry, exerciseIndex) => {
         const exercise = exerciseEntry.exercise || exerciseEntry;
-        
+
         if (!exercise) {
           console.warn(`Invalid exercise at routine ${routineIndex}, exercise ${exerciseIndex}`);
           return;
         }
 
         totalExercises++;
-        
+
         // Get set count for volume calculation
         const sets = exerciseEntry.target_sets || exerciseEntry.sets || 1;
         totalSets += sets;
-        
+
         // Calculate volume multiplier if enabled
         const volumeBonus = includeVolume ? sets * volumeMultiplier : 1;
 
         // Extract muscle groups from exercise
         const muscles = extractMuscleGroups(exercise);
-        
+
         // Add to exercise breakdown for detailed analysis
         exerciseBreakdown.push({
           exerciseName: exercise.name,
@@ -117,7 +117,7 @@ export const calculateProgramEngagement = (program, options = {}) => {
           // Add points to total score
           engagementScores[muscleName] += points;
           muscleDetails[muscleName].totalSets += sets;
-          
+
           // Track which exercises target this muscle
           if (!muscleDetails[muscleName].exercises.some(ex => ex.name === exercise.name)) {
             muscleDetails[muscleName].exercises.push({
@@ -133,7 +133,7 @@ export const calculateProgramEngagement = (program, options = {}) => {
     // Calculate percentages and rankings
     const totalPoints = Object.values(engagementScores).reduce((sum, score) => sum + score, 0);
     const sortedMuscles = Object.entries(engagementScores)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .map(([muscle, score], index) => ({
         muscle,
         score,
@@ -184,8 +184,8 @@ const extractMuscleGroups = (exercise) => {
 
   // Primary muscle
   const primaryMuscle = getMuscleGroupName(
-    exercise.primary_muscle_groups || 
-    exercise.primary_muscle_group || 
+    exercise.primary_muscle_groups ||
+    exercise.primary_muscle_group ||
     exercise.primary_muscle
   );
   if (primaryMuscle) {
@@ -194,8 +194,8 @@ const extractMuscleGroups = (exercise) => {
 
   // Secondary muscle
   const secondaryMuscle = getMuscleGroupName(
-    exercise.secondary_muscle_groups || 
-    exercise.secondary_muscle_group || 
+    exercise.secondary_muscle_groups ||
+    exercise.secondary_muscle_group ||
     exercise.secondary_muscle
   );
   if (secondaryMuscle && secondaryMuscle !== primaryMuscle) {
@@ -204,8 +204,8 @@ const extractMuscleGroups = (exercise) => {
 
   // Tertiary muscle
   const tertiaryMuscle = getMuscleGroupName(
-    exercise.tertiary_muscle_groups || 
-    exercise.tertiary_muscle_group || 
+    exercise.tertiary_muscle_groups ||
+    exercise.tertiary_muscle_group ||
     exercise.tertiary_muscle
   );
   if (tertiaryMuscle && tertiaryMuscle !== primaryMuscle && tertiaryMuscle !== secondaryMuscle) {
@@ -222,10 +222,10 @@ const extractMuscleGroups = (exercise) => {
  */
 const getMuscleGroupName = (muscleData) => {
   if (!muscleData) return null;
-  
+
   if (typeof muscleData === 'string') return muscleData;
   if (typeof muscleData === 'object' && muscleData.name) return muscleData.name;
-  
+
   return null;
 };
 
@@ -278,7 +278,7 @@ const analyzeProgramBalance = (sortedMuscles, muscleDetails) => {
 
   // Generate analysis insights
   const imbalanceRatio = maxScore > 0 ? minScore / maxScore : 1;
-  
+
   if (imbalanceRatio < 0.3) {
     analysis.overall = 'imbalanced';
     analysis.details.push(`Significant imbalance detected: ${sortedMuscles[0].muscle} is heavily emphasized while ${sortedMuscles[sortedMuscles.length - 1].muscle} is neglected`);
@@ -294,7 +294,7 @@ const analyzeProgramBalance = (sortedMuscles, muscleDetails) => {
   if (analysis.muscleGroupCategories.overworked.length > 0) {
     analysis.recommendations.push(`Consider reducing volume for: ${analysis.muscleGroupCategories.overworked.map(m => m.muscle).join(', ')}`);
   }
-  
+
   if (analysis.muscleGroupCategories.neglected.length > 0) {
     analysis.recommendations.push(`Add exercises targeting: ${analysis.muscleGroupCategories.neglected.map(m => m.muscle).join(', ')}`);
   }
@@ -306,7 +306,7 @@ const analyzeProgramBalance = (sortedMuscles, muscleDetails) => {
 
   const pushScore = pushMuscles.reduce((sum, muscle) => sum + (muscleDetails[muscle]?.primaryHits || 0), 0);
   const pullScore = pullMuscles.reduce((sum, muscle) => sum + (muscleDetails[muscle]?.primaryHits || 0), 0);
-  const legScore = legMuscles.reduce((sum, muscle) => sum + (muscleDetails[muscle]?.primaryHits || 0), 0);
+  const _legScore = legMuscles.reduce((sum, muscle) => sum + (muscleDetails[muscle]?.primaryHits || 0), 0);
 
   if (pushScore > 0 && pullScore > 0) {
     const pushPullRatio = pushScore / pullScore;
@@ -326,14 +326,14 @@ const analyzeProgramBalance = (sortedMuscles, muscleDetails) => {
  * @returns {Array} - Array of muscle data with intensity levels
  */
 export const generateHeatmapData = (engagementData) => {
-  const { sortedMuscles, programStats } = engagementData;
-  
+  const { sortedMuscles } = engagementData;
+
   if (!sortedMuscles || sortedMuscles.length === 0) {
     return [];
   }
 
   const maxScore = sortedMuscles[0].score;
-  
+
   return sortedMuscles.map(muscle => ({
     muscleName: muscle.muscle,
     intensity: maxScore > 0 ? muscle.score / maxScore : 0,
@@ -380,14 +380,14 @@ export const exportProgramAnalytics = (engagementData, format = 'json') => {
  */
 const generateCSVReport = (engagementData) => {
   const { sortedMuscles, muscleDetails } = engagementData;
-  
+
   let csv = 'Muscle Group,Score,Percentage,Rank,Primary Hits,Secondary Hits,Tertiary Hits,Total Sets\n';
-  
+
   sortedMuscles.forEach(muscle => {
     const details = muscleDetails[muscle.muscle] || {};
     csv += `"${muscle.muscle}",${muscle.score},${muscle.percentage.toFixed(2)},${muscle.rank},${details.primaryHits || 0},${details.secondaryHits || 0},${details.tertiaryHits || 0},${details.totalSets || 0}\n`;
   });
-  
+
   return csv;
 };
 
@@ -398,7 +398,7 @@ const generateCSVReport = (engagementData) => {
  */
 const generateSummaryReport = (engagementData) => {
   const { sortedMuscles, balanceAnalysis, programStats } = engagementData;
-  
+
   let summary = `PROGRAM ANALYSIS SUMMARY\n`;
   summary += `========================\n\n`;
   summary += `Program Statistics:\n`;
@@ -406,19 +406,19 @@ const generateSummaryReport = (engagementData) => {
   summary += `- Total Sets: ${programStats.totalSets}\n`;
   summary += `- Muscle Groups Targeted: ${programStats.uniqueMusclesTargeted}\n`;
   summary += `- Overall Balance: ${balanceAnalysis.overall}\n\n`;
-  
+
   summary += `Top 5 Most Targeted Muscles:\n`;
   sortedMuscles.slice(0, 5).forEach((muscle, index) => {
     summary += `${index + 1}. ${muscle.muscle}: ${muscle.score} points (${muscle.percentage.toFixed(1)}%)\n`;
   });
-  
+
   if (balanceAnalysis.recommendations.length > 0) {
     summary += `\nRecommendations:\n`;
     balanceAnalysis.recommendations.forEach((rec, index) => {
       summary += `${index + 1}. ${rec}\n`;
     });
   }
-  
+
   return summary;
 };
 

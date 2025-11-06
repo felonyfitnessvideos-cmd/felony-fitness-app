@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     if (p_external_food) {
       // Validate nutrition data
       const validation = validateNutritionData(p_external_food);
-      
+
       if (!validation.isValid) {
         return new Response(
           JSON.stringify({

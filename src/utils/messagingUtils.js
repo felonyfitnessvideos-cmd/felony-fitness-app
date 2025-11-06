@@ -78,18 +78,18 @@ import { supabase } from '../supabaseClient';
 export async function getConversations() {
   try {
     console.log('📥 Fetching conversations...');
-    
+
     // Call the Edge Function
     const { data, error } = await supabase.functions.invoke('get-conversations', {
       body: {}
     });
-    
+
     if (error) {
       // If Edge Function fails, use fallback
       console.log('⚠️ Edge Function failed. Using fallback approach...');
       return await getConversationsFallback();
     }
-    
+
     console.log('✅ Fetched', data?.conversations?.length || 0, 'conversations');
     return data?.conversations || [];
   } catch (error) {
@@ -105,7 +105,7 @@ export async function getConversations() {
 async function getConversationsFallback() {
   try {
     console.log('📥 Using fallback conversation method...');
-    
+
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
@@ -114,39 +114,43 @@ async function getConversationsFallback() {
     }
 
     const fallbackConversations = [];
-    
+
     // Get trainer-client relationships to show potential conversations
     const { data: relationships, error: relationshipsError } = await supabase
       .from('trainer_clients')
-      .select(`
-        client_id,
-        trainer_id,
-        client:user_profiles!trainer_clients_client_id_fkey(id, first_name, last_name, email),
-        trainer:user_profiles!trainer_clients_trainer_id_fkey(id, first_name, last_name, email)
-      `)
+      .select('client_id, trainer_id')
       .or(`trainer_id.eq.${user.id},client_id.eq.${user.id}`)
       .eq('status', 'active');
-    
+
     if (!relationshipsError && relationships) {
-      // Convert relationships to conversation format for display
-      relationships.forEach(relationship => {
-        // Determine the other user based on current user's role
-        const otherUser = relationship.trainer_id === user.id ? relationship.client : relationship.trainer;
-        
-        if (otherUser) {
-          fallbackConversations.push({
-            user_id: otherUser.id,
-            user_full_name: `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || otherUser.email,
-            user_email: otherUser.email,
-            last_message_content: 'Start a conversation...',
-            last_message_at: new Date().toISOString(),
-            unread_count: 0,
-            is_last_message_from_me: false
+      // Get unique user IDs (excluding self)
+      const otherUserIds = relationships.map(rel =>
+        rel.trainer_id === user.id ? rel.client_id : rel.trainer_id
+      ).filter(id => id !== user.id);
+
+      // Fetch user profiles separately
+      if (otherUserIds.length > 0) {
+        const { data: users, error: usersError } = await supabase
+          .from('user_profiles')
+          .select('id, first_name, last_name, email')
+          .in('id', otherUserIds);
+
+        if (!usersError && users) {
+          users.forEach(otherUser => {
+            fallbackConversations.push({
+              user_id: otherUser.id,
+              user_full_name: `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || otherUser.email,
+              user_email: otherUser.email,
+              last_message_content: 'Start a conversation...',
+              last_message_at: new Date().toISOString(),
+              unread_count: 0,
+              is_last_message_from_me: false
+            });
           });
         }
-      });
+      }
     }
-    
+
     console.log('✅ Fallback: showing', fallbackConversations.length, 'potential conversations from trainer-client relationships');
     return fallbackConversations;
   } catch (error) {
@@ -173,27 +177,27 @@ async function getConversationsFallback() {
 export async function getConversationMessages(otherUserId) {
   try {
     console.log('📥 Fetching messages for conversation with:', otherUserId);
-    
+
     if (!otherUserId) {
       throw new Error('Other user ID is required');
     }
-    
+
     // Call the Edge Function
     const { data, error } = await supabase.functions.invoke('get-conversation-messages', {
       body: { other_user_id: otherUserId }
     });
-    
+
     if (error) {
       // If Edge Function fails, use fallback
       console.log('⚠️ Edge Function failed. Using fallback approach...');
       return await getConversationMessagesFallback(otherUserId);
     }
-    
+
     console.log('✅ Fetched', data?.messages?.length || 0, 'messages');
     return data?.messages || [];
-  } catch (error) {
-    console.error('Error in getConversationMessages:', error);
-    throw error;
+  } catch (_error) {
+    console.error('Error in getConversationMessages:', _error);
+    throw _error;
   }
 }
 
@@ -203,34 +207,42 @@ export async function getConversationMessages(otherUserId) {
 async function getConversationMessagesFallback(otherUserId) {
   try {
     console.log('📥 Using fallback messages method for user:', otherUserId);
-    
+
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       console.log('⚠️ No authenticated user for messages fallback');
       return [];
     }
-    
-    // Query the direct_messages table directly
+
+    // Query the direct_messages table directly WITHOUT foreign key relationships
     const { data: messages, error: messagesError } = await supabase
       .from('direct_messages')
-      .select(`
-        id,
-        sender_id,
-        recipient_id,
-        content,
-        created_at,
-        read_at,
-        sender:user_profiles!direct_messages_sender_id_fkey(first_name, last_name, email)
-      `)
+      .select('id, sender_id, recipient_id, content, created_at, read_at')
       .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},recipient_id.eq.${user.id})`)
       .order('created_at', { ascending: true });
-    
+
     if (messagesError) {
       console.error('Error in fallback messages query:', messagesError);
       return [];
     }
-    
+
+    // Get sender info separately if we have messages
+    let senderNames = {};
+    if (messages && messages.length > 0) {
+      const senderIds = [...new Set(messages.map(m => m.sender_id))];
+      const { data: senders } = await supabase
+        .from('user_profiles')
+        .select('id, first_name, last_name, email')
+        .in('id', senderIds);
+
+      if (senders) {
+        senders.forEach(sender => {
+          senderNames[sender.id] = `${sender.first_name || ''} ${sender.last_name || ''}`.trim() || sender.email;
+        });
+      }
+    }
+
     // Transform messages to match expected format
     const fallbackMessages = (messages || []).map(message => ({
       id: message.id,
@@ -239,11 +251,11 @@ async function getConversationMessagesFallback(otherUserId) {
       content: message.content,
       created_at: message.created_at,
       read_at: message.read_at,
-      sender_name: message.sender ? `${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim() || message.sender.email : 'Unknown User',
+      sender_name: senderNames[message.sender_id] || 'Unknown User',
       is_from_current_user: message.sender_id === user.id,
       is_read: message.read_at !== null
     }));
-    
+
     console.log('✅ Fallback: showing', fallbackMessages.length, 'messages from direct query');
     return fallbackMessages;
   } catch (error) {
@@ -275,52 +287,45 @@ async function getConversationMessagesFallback(otherUserId) {
 export async function sendMessage(recipientId, content) {
   try {
     console.log('📤 Sending message to:', recipientId);
-    
+
     if (!recipientId || !content) {
       throw new Error('Recipient ID and content are required');
     }
-    
+
     if (content.trim().length === 0) {
       throw new Error('Message content cannot be empty');
     }
-    
+
     if (content.length > 5000) {
       throw new Error('Message too long (maximum 5000 characters)');
     }
-    
-    // Get the current session to include auth token
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
+
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
       throw new Error('Authentication required to send messages');
     }
-    
-    // Try to call the Edge Function first
-    const { data, error } = await supabase.functions.invoke('send-direct-message', {
-      body: {
+
+    // Insert message directly into database
+    const { data, error } = await supabase
+      .from('direct_messages')
+      .insert({
+        sender_id: user.id,
         recipient_id: recipientId,
-        message_content: content.trim()
-      }
-    });
-    
+        content: content.trim(),
+        message_type: 'text',
+        created_at: new Date().toISOString()
+      })
+      .select('id')
+      .single();
+
     if (error) {
-      // If Edge Function doesn't exist, use fallback approach
-      if (error.message && error.message.includes('Edge Function not found')) {
-        console.log('⚠️ Edge Function not yet deployed. Using fallback approach...');
-        return await sendMessageFallback(recipientId, content);
-      }
-      
-      console.error('Edge Function error:', error);
+      console.error('Database insert error:', error);
       throw new Error(`Failed to send message: ${error.message}`);
     }
-    
-    if (!data?.success) {
-      console.error('Edge Function returned error:', data?.error);
-      throw new Error(data?.message || 'Failed to send message');
-    }
-    
-    console.log('✅ Message sent successfully:', data.message_id);
-    return { message_id: data.message_id, success: true };
+
+    console.log('✅ Message sent successfully:', data.id);
+    return { message_id: data.id, success: true };
   } catch (error) {
     console.error('Error in sendMessage:', error);
     throw error;
@@ -331,26 +336,26 @@ export async function sendMessage(recipientId, content) {
  * Fallback method to send messages when Edge Function is not available
  * Uses the send_direct_message database function
  */
-async function sendMessageFallback(recipientId, content) {
+async function _sendMessageFallback(recipientId, content) {
   try {
     console.log('📤 Using fallback send message method (database function)...');
-    
+
     // Use the database function to send message
     const { data: result, error: functionError } = await supabase
       .rpc('send_direct_message', {
         recipient_id: recipientId,
         message_content: content.trim()
       });
-    
+
     if (functionError) {
       console.error('Database function error in fallback:', functionError);
       throw new Error(`Failed to send message: ${functionError.message}`);
     }
-    
+
     if (!result || !result.success) {
       throw new Error('Message sending failed via database function');
     }
-    
+
     console.log('✅ Fallback: message sent successfully via database function');
     return {
       message_id: result.message_id,
@@ -386,22 +391,22 @@ async function sendMessageFallback(recipientId, content) {
 export async function markMessagesAsRead(otherUserId) {
   try {
     console.log('📖 Marking messages as read for conversation with:', otherUserId);
-    
+
     if (!otherUserId) {
       throw new Error('Other user ID is required');
     }
-    
+
     // Call the Edge Function
     const { data, error } = await supabase.functions.invoke('mark-messages-as-read', {
       body: { other_user_id: otherUserId }
     });
-    
+
     if (error) {
       // If Edge Function fails, use fallback
       console.log('⚠️ Edge Function failed. Using fallback approach...');
       return await markMessagesAsReadFallback(otherUserId);
     }
-    
+
     const markedCount = data?.marked_count || 0;
     console.log('✅ Marked', markedCount, 'messages as read');
     return markedCount;
@@ -417,14 +422,14 @@ export async function markMessagesAsRead(otherUserId) {
 async function markMessagesAsReadFallback(otherUserId) {
   try {
     console.log('📖 Using fallback mark as read method...');
-    
+
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       console.log('⚠️ No authenticated user for mark as read fallback');
       return 0;
     }
-    
+
     // Update messages directly
     const { error: updateError, count } = await supabase
       .from('direct_messages')
@@ -432,12 +437,12 @@ async function markMessagesAsReadFallback(otherUserId) {
       .eq('sender_id', otherUserId)
       .eq('recipient_id', user.id)
       .is('read_at', null);
-    
+
     if (updateError) {
       console.error('Error in fallback mark as read:', updateError);
       return 0;
     }
-    
+
     const markedCount = count || 0;
     console.log('✅ Fallback: marked', markedCount, 'messages as read via direct update');
     return markedCount;
@@ -466,17 +471,17 @@ async function markMessagesAsReadFallback(otherUserId) {
 export async function getUnreadMessageCount() {
   try {
     console.log('📊 Fetching unread message count...');
-    
+
     // Call the Edge Function
     const { data, error } = await supabase.functions.invoke('get-unread-message-count', {
       body: {}
     });
-    
+
     if (error) {
       console.error('Error fetching unread count:', error);
       throw new Error(`Failed to fetch unread count: ${error.message}`);
     }
-    
+
     const count = data?.count || 0;
     console.log('✅ Unread message count:', count);
     return count;
@@ -512,18 +517,18 @@ export async function getUnreadMessageCount() {
 export async function subscribeToMessages(callback) {
   try {
     console.log('🔔 Setting up real-time message subscription...');
-    
+
     if (typeof callback !== 'function') {
       throw new Error('Callback must be a function');
     }
-    
+
     // Get current user synchronously
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       console.warn('⚠️ No authenticated user for message subscription');
       return null;
     }
-    
+
     const subscription = supabase
       .channel('direct_messages')
       .on(
@@ -542,7 +547,7 @@ export async function subscribeToMessages(callback) {
       .subscribe((status) => {
         console.log('📡 Message subscription status:', status);
       });
-    
+
     console.log('✅ Real-time subscription established');
     return subscription;
   } catch (error) {
@@ -571,11 +576,11 @@ export async function subscribeToMessages(callback) {
 export function subscribeToMessageUpdates(callback) {
   try {
     console.log('🔔 Setting up message update subscription...');
-    
+
     if (typeof callback !== 'function') {
       throw new Error('Callback must be a function');
     }
-    
+
     const subscription = supabase
       .channel('message_updates')
       .on(
@@ -593,7 +598,7 @@ export function subscribeToMessageUpdates(callback) {
       .subscribe((status) => {
         console.log('Update subscription status:', status);
       });
-    
+
     console.log('✅ Message update subscription established');
     return subscription;
   } catch (error) {
@@ -627,37 +632,37 @@ export function formatMessageTime(timestamp) {
     const diffInMinutes = Math.floor((now - messageDate) / (1000 * 60));
     const diffInHours = Math.floor(diffInMinutes / 60);
     const diffInDays = Math.floor(diffInHours / 24);
-    
+
     // Less than 1 minute ago
     if (diffInMinutes < 1) {
       return 'Just now';
     }
-    
+
     // Less than 1 hour ago
     if (diffInMinutes < 60) {
       return `${diffInMinutes}m ago`;
     }
-    
+
     // Less than 24 hours ago (same day)
     if (diffInHours < 24 && messageDate.getDate() === now.getDate()) {
       return messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
-    
+
     // Yesterday
     if (diffInDays === 1) {
       return 'Yesterday';
     }
-    
+
     // Within the past week
     if (diffInDays < 7) {
       return messageDate.toLocaleDateString([], { weekday: 'short' });
     }
-    
+
     // Within the current year
     if (messageDate.getFullYear() === now.getFullYear()) {
       return messageDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
     }
-    
+
     // Older than current year
     return messageDate.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
   } catch (error) {
@@ -685,19 +690,19 @@ export function truncateMessage(content, maxLength = 100) {
     if (!content || typeof content !== 'string') {
       return '';
     }
-    
+
     if (content.length <= maxLength) {
       return content;
     }
-    
+
     // Try to truncate at word boundary
     const truncated = content.substring(0, maxLength);
     const lastSpaceIndex = truncated.lastIndexOf(' ');
-    
+
     if (lastSpaceIndex > maxLength * 0.7) { // Only use word boundary if it's not too short
       return truncated.substring(0, lastSpaceIndex) + '...';
     }
-    
+
     return truncated + '...';
   } catch (error) {
     console.error('Error truncating message:', error);
@@ -727,22 +732,22 @@ export function validateMessageContent(content) {
     if (!content || typeof content !== 'string') {
       return { isValid: false, error: 'Message content is required' };
     }
-    
+
     const trimmedContent = content.trim();
-    
+
     if (trimmedContent.length === 0) {
       return { isValid: false, error: 'Message cannot be empty' };
     }
-    
+
     if (trimmedContent.length > 5000) {
       return { isValid: false, error: 'Message too long (maximum 5000 characters)' };
     }
-    
+
     // Check for potentially problematic content
     if (trimmedContent.length < 1) {
       return { isValid: false, error: 'Message too short' };
     }
-    
+
     return { isValid: true, error: null };
   } catch (error) {
     console.error('Error validating message content:', error);
@@ -773,37 +778,37 @@ export function validateMessageContent(content) {
  */
 export function handleMessagingError(error) {
   console.error('Messaging error:', error);
-  
+
   if (!error) {
     return 'An unknown error occurred';
   }
-  
+
   const errorMessage = error.message || error.toString();
-  
+
   // Authentication errors
   if (errorMessage.includes('Authentication') || errorMessage.includes('auth')) {
     return 'Please log in to send messages';
   }
-  
+
   // Network errors
   if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
     return 'Network error. Please check your connection and try again';
   }
-  
+
   // Validation errors
   if (errorMessage.includes('empty') || errorMessage.includes('required')) {
     return 'Please enter a message before sending';
   }
-  
+
   if (errorMessage.includes('too long')) {
     return 'Message is too long. Please shorten it and try again';
   }
-  
+
   // Server errors
   if (errorMessage.includes('server') || errorMessage.includes('500')) {
     return 'Server error. Please try again in a moment';
   }
-  
+
   // Default fallback
   return 'Unable to send message. Please try again';
 }
@@ -830,7 +835,7 @@ export function handleMessagingError(error) {
  */
 export async function retryMessagingOperation(operation, maxRetries = 3, baseDelay = 1000) {
   let lastError;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       console.log(`🔄 Messaging operation attempt ${attempt + 1}/${maxRetries + 1}`);
@@ -840,28 +845,28 @@ export async function retryMessagingOperation(operation, maxRetries = 3, baseDel
     } catch (error) {
       lastError = error;
       console.error(`❌ Messaging operation attempt ${attempt + 1} failed:`, error);
-      
+
       // Don't retry on the last attempt
       if (attempt === maxRetries) {
         break;
       }
-      
+
       // Don't retry certain types of errors
-      if (error.message?.includes('Authentication') || 
-          error.message?.includes('validation') ||
-          error.message?.includes('empty') ||
-          error.message?.includes('too long')) {
+      if (error.message?.includes('Authentication') ||
+        error.message?.includes('validation') ||
+        error.message?.includes('empty') ||
+        error.message?.includes('too long')) {
         console.log('🚫 Not retrying due to error type');
         break;
       }
-      
+
       // Calculate delay with exponential backoff
       const delay = baseDelay * Math.pow(2, attempt);
       console.log(`⏳ Waiting ${delay}ms before retry...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-  
+
   throw lastError;
 }
 

@@ -83,21 +83,21 @@ export class NutritionAPI {
             message: '✅ Found in your database',
             quality: 'verified'
           };
-          
+
         case 'duplicate_check':
           return {
             ...data,
             message: '⚠️ Similar foods exist',
             quality: 'duplicate_warning'
           };
-          
+
         case 'external':
           return {
             ...data,
             message: this.getQualityMessage(data.quality_score),
             quality: data.quality_score
           };
-          
+
         default:
           return data;
       }
@@ -209,14 +209,14 @@ export class NutritionAPI {
   async runAudit() {
     try {
       const { data, error } = await supabase.functions.invoke('nutrition-audit');
-      
+
       if (error) throw error;
-      
+
       return {
         ...data,
         summary: this.generateAuditSummary(data)
       };
-      
+
     } catch (error) {
       console.error('Audit error:', error);
       throw new Error('Audit failed. Please try again.');
@@ -327,14 +327,14 @@ export class NutritionAPI {
     }
 
     // Calorie consistency
-    const estimatedCalories = 
-      (nutritionData.carbs_g || 0) * 4 + 
-      (nutritionData.protein_g || 0) * 4 + 
+    const estimatedCalories =
+      (nutritionData.carbs_g || 0) * 4 +
+      (nutritionData.protein_g || 0) * 4 +
       (nutritionData.fat_g || 0) * 9;
-    
+
     const actualCalories = nutritionData.calories || 0;
     const difference = Math.abs(estimatedCalories - actualCalories);
-    
+
     if (actualCalories > 0 && difference > actualCalories * 0.3) {
       warnings.push(`Calorie inconsistency: ${actualCalories} provided vs ${Math.round(estimatedCalories)} estimated`);
     }
@@ -395,7 +395,7 @@ export class NutritionAPI {
   generateAuditSummary(auditData) {
     const totalIssues = Object.values(auditData.quality_issues)
       .reduce((sum, issues) => sum + issues.length, 0);
-    
+
     const qualityPercentage = Math.round(
       ((auditData.total_servings - totalIssues) / auditData.total_servings) * 100
     );
@@ -403,8 +403,8 @@ export class NutritionAPI {
     return {
       totalIssues,
       qualityPercentage,
-      status: qualityPercentage > 90 ? 'excellent' : 
-              qualityPercentage > 70 ? 'good' : 'needs_attention',
+      status: qualityPercentage > 90 ? 'excellent' :
+        qualityPercentage > 70 ? 'good' : 'needs_attention',
       priorityActions: auditData.recommendations.slice(0, 3)
     };
   }

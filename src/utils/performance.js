@@ -155,7 +155,7 @@ export const registerSW = async () => {
         scope: '/',
         updateViaCache: 'none'
       });
-    } catch (error) {
+    } catch {
       // Service worker registration failed - handled silently
     }
   }
@@ -197,7 +197,7 @@ export const monitorPerformance = () => {
         }
       });
     });
-    
+
     observer.observe({ entryTypes: ['resource'] });
   }
 };
@@ -244,7 +244,7 @@ export const initPerformanceOptimizations = () => {
     // prefetchCriticalRoutes();
     lazyLoadImages();
     registerSW();
-    
+
     if (import.meta.env.MODE === 'development') {
       monitorPerformance();
     }

@@ -5,20 +5,20 @@
  * @version 1.0.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { 
-    Users, 
-    UserPlus, 
-    Tag, 
-    Shield, 
-    Crown, 
-    User as UserIcon,
-    ChevronRight,
-    Plus,
-    X,
+import {
+    AlertCircle,
     Check,
-    AlertCircle
+    ChevronRight,
+    Crown,
+    Plus,
+    Shield,
+    Tag,
+    User as UserIcon,
+    UserPlus,
+    Users,
+    X
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../AuthContext.jsx';
 import userRoleUtils from '../utils/userRoleUtils.js';
 import './UserRoleManager.css';
@@ -32,16 +32,16 @@ import './UserRoleManager.css';
  */
 const UserRoleManager = () => {
     const { user } = useAuth();
-    
+
     // State management
     const [loading, setLoading] = useState(true);
     const [currentUserTags, setCurrentUserTags] = useState([]);
-    const [allTags, setAllTags] = useState([]);
+    const [_allTags, setAllTags] = useState([]);
     const [clients, setClients] = useState([]);
     const [trainers, setTrainers] = useState([]);
-    const [canAccessAdmin, setCanAccessAdmin] = useState(false);
+    const [_canAccessAdmin, setCanAccessAdmin] = useState(false);
     const [canAccessTrainer, setCanAccessTrainer] = useState(false);
-    
+
     // UI state
     const [activeTab, setActiveTab] = useState('overview');
     const [showAddClient, setShowAddClient] = useState(false);
@@ -180,27 +180,27 @@ const UserRoleManager = () => {
 
             {/* Tab Navigation */}
             <div className="tab-navigation">
-                <button 
+                <button
                     className={activeTab === 'overview' ? 'active' : ''}
                     onClick={() => setActiveTab('overview')}
                 >
                     Overview
                 </button>
-                <button 
+                <button
                     className={activeTab === 'roles' ? 'active' : ''}
                     onClick={() => setActiveTab('roles')}
                 >
                     My Roles
                 </button>
                 {canAccessTrainer && (
-                    <button 
+                    <button
                         className={activeTab === 'clients' ? 'active' : ''}
                         onClick={() => setActiveTab('clients')}
                     >
                         My Clients
                     </button>
                 )}
-                <button 
+                <button
                     className={activeTab === 'trainers' ? 'active' : ''}
                     onClick={() => setActiveTab('trainers')}
                 >
@@ -247,7 +247,7 @@ const UserRoleManager = () => {
                             <h3>Quick Actions</h3>
                             <div className="action-buttons">
                                 {!canAccessTrainer && (
-                                    <button 
+                                    <button
                                         className="action-btn trainer"
                                         onClick={handleRequestTrainerRole}
                                     >
@@ -256,7 +256,7 @@ const UserRoleManager = () => {
                                     </button>
                                 )}
                                 {canAccessTrainer && (
-                                    <button 
+                                    <button
                                         className="action-btn add-client"
                                         onClick={() => setShowAddClient(true)}
                                     >
@@ -297,7 +297,7 @@ const UserRoleManager = () => {
                     <div className="clients-tab">
                         <div className="tab-header">
                             <h3>My Clients</h3>
-                            <button 
+                            <button
                                 className="add-btn"
                                 onClick={() => setShowAddClient(true)}
                             >
@@ -305,7 +305,7 @@ const UserRoleManager = () => {
                                 Add Client
                             </button>
                         </div>
-                        
+
                         {clients.length === 0 ? (
                             <div className="empty-state">
                                 <UserPlus size={48} />
@@ -318,8 +318,8 @@ const UserRoleManager = () => {
                                     <div key={relationship.id} className="client-card">
                                         <div className="client-info">
                                             <div className="client-name">
-                                                {relationship.client?.user_profiles?.[0]?.full_name || 
-                                                 relationship.client?.email || 'Unknown Client'}
+                                                {relationship.client?.user_profiles?.[0]?.full_name ||
+                                                    relationship.client?.email || 'Unknown Client'}
                                             </div>
                                             <div className="client-meta">
                                                 Added {new Date(relationship.created_at).toLocaleDateString()}
@@ -337,7 +337,7 @@ const UserRoleManager = () => {
                 {activeTab === 'trainers' && (
                     <div className="trainers-tab">
                         <h3>My Trainers</h3>
-                        
+
                         {trainers.length === 0 ? (
                             <div className="empty-state">
                                 <Users size={48} />
@@ -350,8 +350,8 @@ const UserRoleManager = () => {
                                     <div key={relationship.id} className="trainer-card">
                                         <div className="trainer-info">
                                             <div className="trainer-name">
-                                                {relationship.trainer?.user_profiles?.[0]?.full_name || 
-                                                 relationship.trainer?.email || 'Unknown Trainer'}
+                                                {relationship.trainer?.user_profiles?.[0]?.full_name ||
+                                                    relationship.trainer?.email || 'Unknown Trainer'}
                                             </div>
                                             <div className="trainer-meta">
                                                 Training since {new Date(relationship.created_at).toLocaleDateString()}
@@ -372,7 +372,7 @@ const UserRoleManager = () => {
                     <div className="modal">
                         <div className="modal-header">
                             <h3>Add New Client</h3>
-                            <button 
+                            <button
                                 className="close-btn"
                                 onClick={() => setShowAddClient(false)}
                             >
@@ -393,8 +393,8 @@ const UserRoleManager = () => {
                                 <small>The client must have an existing account</small>
                             </div>
                             <div className="modal-actions">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     className="cancel-btn"
                                     onClick={() => setShowAddClient(false)}
                                 >

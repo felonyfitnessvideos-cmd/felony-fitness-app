@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
         const scheduled = row.scheduled_date; // YYYY-MM-DD
         // define day range
         const start = new Date(scheduled);
-        start.setHours(0,0,0,0);
+        start.setHours(0, 0, 0, 0);
         const end = new Date(start);
         end.setDate(end.getDate() + 1);
 

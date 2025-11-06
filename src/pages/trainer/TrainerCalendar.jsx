@@ -21,8 +21,8 @@
  * }
  */
 
-import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
-import { Calendar, Plus, Clock, User, MapPin, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, Calendar, CheckCircle, RefreshCw } from 'lucide-react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useGoogleCalendar from '../../hooks/useGoogleCalendar.jsx';
 import './TrainerCalendar.css';
 
@@ -77,17 +77,17 @@ import './TrainerCalendar.css';
 const TrainerCalendar = memo(() => {
   // Core state management
   /** @type {[Array<LocalAppointment>, Function]} Local appointments state */
-  const [appointments, setAppointments] = useState([]);
-  
+  const [_appointments, setAppointments] = useState([]);
+
   /** @type {[Date, Function]} Currently selected date */
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  
+  // const [selectedDate, setSelectedDate] = useState(new Date());
+
   /** @type {[Array, Function]} Events converted from Google Calendar */
   const [localEvents, setLocalEvents] = useState([]);
-  
+
   /** @type {[Date, Function]} Current week being displayed */
   const [currentWeek, setCurrentWeek] = useState(new Date());
-  
+
   /** @type {[number, Function]} Number of weeks to show - static view */
   const [weeksToShow] = useState(12); // Show 12 weeks (3 months) in static view
 
@@ -98,10 +98,10 @@ const TrainerCalendar = memo(() => {
   // Refs for scroll functionality
   /** @type {React.MutableRefObject<HTMLDivElement|null>} Reference to calendar scroll container */
   const scrollContainerRef = useRef(null);
-  
+
   /** @type {React.MutableRefObject<HTMLDivElement|null>} Reference to headers scroll container */
   const headersScrollRef = useRef(null);
-  
+
   // Google Calendar integration
   const {
     isLoading,
@@ -146,7 +146,7 @@ const TrainerCalendar = memo(() => {
         dayDate.setDate(startOfWeek.getDate() + i);
         week.push(dayDate);
       }
-      
+
       return week;
     } catch (error) {
       console.error('❌ Error calculating week dates:', error);
@@ -164,14 +164,14 @@ const TrainerCalendar = memo(() => {
   const getAllWeekDates = useCallback(() => {
     const allDates = [];
     const startWeek = new Date(currentWeek);
-    
+
     for (let weekOffset = 0; weekOffset < weeksToShow; weekOffset++) {
       const weekDate = new Date(startWeek);
       weekDate.setDate(startWeek.getDate() + (weekOffset * 7));
       const weekDates = getWeekDates(weekDate);
       allDates.push(...weekDates);
     }
-    
+
     return allDates;
   }, [currentWeek, weeksToShow, getWeekDates]);
 
@@ -196,7 +196,7 @@ const TrainerCalendar = memo(() => {
       // Add one day to end to include the full last day
       const endDate = new Date(endOfWeek);
       endDate.setDate(endDate.getDate() + 1);
-      
+
       console.log('🗓️ Loading events for week:', {
         start: startOfWeek.toISOString(),
         end: endDate.toISOString(),
@@ -209,18 +209,18 @@ const TrainerCalendar = memo(() => {
   // Convert Google Calendar events to appointment format
   useEffect(() => {
     console.log(`🔄 Converting ${events.length} Google Calendar events to local format`);
-    
+
     if (events.length > 0) {
       const convertedEvents = events.map(event => ({
         id: event.id,
         clientName: event.summary?.split(' - ')[1] || 'Unknown Client',
         date: event.start?.dateTime ? new Date(event.start.dateTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        time: event.start?.dateTime ? new Date(event.start.dateTime).toLocaleTimeString('en-US', { 
-          hour: 'numeric', 
-          minute: '2-digit', 
-          hour12: true 
+        time: event.start?.dateTime ? new Date(event.start.dateTime).toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
         }) : 'All Day',
-        duration: event.start?.dateTime && event.end?.dateTime ? 
+        duration: event.start?.dateTime && event.end?.dateTime ?
           Math.round((new Date(event.end.dateTime) - new Date(event.start.dateTime)) / (1000 * 60)) : 60,
         type: event.summary?.split(' - ')[0] || 'Appointment',
         location: event.location || 'TBD',
@@ -228,26 +228,26 @@ const TrainerCalendar = memo(() => {
         googleEventId: event.id,
         source: 'google'
       }));
-      
-      console.log(`✅ Converted events:`, convertedEvents.map(e => ({ 
-        id: e.id, 
-        client: e.clientName, 
-        date: e.date, 
-        time: e.time 
+
+      console.log(`✅ Converted events:`, convertedEvents.map(e => ({
+        id: e.id,
+        client: e.clientName,
+        date: e.date,
+        time: e.time
       })));
-      
+
       setLocalEvents(convertedEvents);
     } else {
       console.log('📝 No events to convert, clearing local events');
       setLocalEvents([]);
     }
   }, [events]);
-  
+
   // Mock local appointments data (fallback when not using Google Calendar)
   useEffect(() => {
     if (!isAuthenticated || !isConfigured) {
       const today = new Date().toISOString().split('T')[0];
-      
+
       setAppointments([
         {
           id: 1,
@@ -262,7 +262,7 @@ const TrainerCalendar = memo(() => {
         },
         {
           id: 2,
-          clientName: "Jane Smith", 
+          clientName: "Jane Smith",
           date: today,
           time: "2:00 PM",
           duration: 45,
@@ -294,19 +294,19 @@ const TrainerCalendar = memo(() => {
   const handleGoogleCalendarSync = useCallback(async () => {
     try {
       setComponentError(null);
-      
+
       if (!isAuthenticated) {
         console.log('🔍 User not authenticated, initiating sign-in...');
         await signIn({ loadData: true });
       } else {
         console.log('🔍 User authenticated, refreshing events...');
-        
+
         // Calculate date range for refresh (current week + 1 month)
         const weekDates = getWeekDates(currentWeek);
         const startDate = weekDates[0];
         const endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + 1);
-        
+
         await loadEvents('primary', startDate, endDate);
         console.log('✅ Events refreshed successfully');
       }
@@ -314,7 +314,7 @@ const TrainerCalendar = memo(() => {
       const errorMsg = err.message || 'Failed to sync with Google Calendar';
       console.error('❌ Google Calendar sync error:', err);
       setComponentError(errorMsg);
-      
+
       // Don't re-throw - let the component handle the error gracefully
     }
   }, [isAuthenticated, signIn, loadEvents, currentWeek, getWeekDates]);
@@ -326,33 +326,33 @@ const TrainerCalendar = memo(() => {
         // Silently fail - scroll container may not be ready yet
         return;
       }
-      
+
       const now = new Date();
       const currentHour = now.getHours();
-      
+
       // Ensure we're showing the week that contains today
       const weekDates = getWeekDates(currentWeek);
-      const todayInCurrentWeek = weekDates.some(date => 
+      const todayInCurrentWeek = weekDates.some(date =>
         date.toDateString() === now.toDateString()
       );
-      
+
       // If today is not in the current week view, navigate to this week
       if (!todayInCurrentWeek) {
         console.log('📅 Current day not in view, navigating to current week');
         setCurrentWeek(now);
         return; // Let the effect run again when currentWeek updates
       }
-      
+
       // Calculate scroll position more accurately
       // Each hour is approximately 50px, we start at 6 AM (index 0)
       // So hour 8 AM would be at position (8-6) * 50 = 100px
       const startHour = 6;
       const hourHeight = 50;
       const scrollTop = Math.max(0, (currentHour - startHour) * hourHeight);
-      
+
       // Offset to show some context above current time
       const offsetScrollTop = Math.max(0, scrollTop - 100);
-      
+
       scrollContainerRef.current.scrollTop = offsetScrollTop;
       console.log(`📍 Auto-scrolled to current time: ${currentHour}:00 (scroll position: ${offsetScrollTop}px, calculated: ${scrollTop}px)`);
     };
@@ -361,7 +361,7 @@ const TrainerCalendar = memo(() => {
     const scrollTimer1 = setTimeout(scrollToCurrentDayAndTime, 300);
     const scrollTimer2 = setTimeout(scrollToCurrentDayAndTime, 800);
     const scrollTimer3 = setTimeout(scrollToCurrentDayAndTime, 1500);
-    
+
     return () => {
       clearTimeout(scrollTimer1);
       clearTimeout(scrollTimer2);
@@ -394,10 +394,10 @@ const TrainerCalendar = memo(() => {
     try {
       setComponentError(null);
       console.log('🔍 Signing out from Google Calendar...');
-      
+
       await signOut();
       setLocalEvents([]);
-      
+
       // Reset to default local appointments
       const today = new Date().toISOString().split('T')[0];
       setAppointments([
@@ -413,64 +413,19 @@ const TrainerCalendar = memo(() => {
           source: 'local'
         }
       ]);
-      
+
       console.log('✅ Successfully signed out from Google Calendar');
     } catch (err) {
       const errorMsg = err.message || 'Failed to sign out from Google Calendar';
       console.error('❌ Google Calendar sign out error:', err);
       setComponentError(errorMsg);
-      
+
       // Even if sign out fails, clear local data
       setLocalEvents([]);
     }
   }, [signOut]);
 
-  /**
-   * Navigate to previous or next week
-   * 
-   * @function navigateWeek
-   * @description Navigates the calendar view to the previous or next week.
-   * Includes error handling and boundary checks.
-   * 
-   * @param {number} direction - Direction to navigate (-1 for previous, 1 for next)
-   * 
-   * @example
-   * // Go to previous week
-   * navigateWeek(-1);
-   * 
-   * // Go to next week
-   * navigateWeek(1);
-   */
-  const navigateWeek = useCallback((direction) => {
-    try {
-      if (typeof direction !== 'number' || (direction !== -1 && direction !== 1)) {
-        console.error('❌ Invalid direction for week navigation:', direction);
-        return;
-      }
 
-      const newWeek = new Date(currentWeek);
-      const newDate = newWeek.getDate() + (direction * 7);
-      
-      // Check for reasonable date boundaries (not more than 5 years in past/future)
-      const fiveYearsAgo = new Date();
-      fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
-      const fiveYearsFromNow = new Date();
-      fiveYearsFromNow.setFullYear(fiveYearsFromNow.getFullYear() + 5);
-      
-      newWeek.setDate(newDate);
-      
-      if (newWeek < fiveYearsAgo || newWeek > fiveYearsFromNow) {
-        console.warn('⚠️ Week navigation boundary reached');
-        return;
-      }
-      
-      setCurrentWeek(newWeek);
-      setComponentError(null); // Clear any previous errors
-    } catch (error) {
-      console.error('❌ Error navigating week:', error);
-      setComponentError('Failed to navigate calendar week');
-    }
-  }, [currentWeek]);
 
   /**
    * Format hour number to 12-hour time string
@@ -541,7 +496,7 @@ const TrainerCalendar = memo(() => {
           if (!event || (!event.start?.dateTime && !event.start?.date)) {
             return false;
           }
-          
+
           let eventStart;
           if (event.start.dateTime) {
             // Timed event
@@ -550,7 +505,7 @@ const TrainerCalendar = memo(() => {
               console.warn('⚠️ Invalid event start time:', event.start.dateTime);
               return false;
             }
-            
+
             const eventDate = eventStart.toDateString();
             const eventHour = eventStart.getHours();
             return eventDate === date.toDateString() && eventHour === hour;
@@ -561,11 +516,11 @@ const TrainerCalendar = memo(() => {
               console.warn('⚠️ Invalid event start date:', event.start.date);
               return false;
             }
-            
+
             const eventDate = eventStart.toDateString();
             return eventDate === date.toDateString() && hour === 0;
           }
-          
+
           return false;
         } catch (error) {
           console.error('❌ Error processing event in time slot check:', error);
@@ -592,10 +547,10 @@ const TrainerCalendar = memo(() => {
    * // Called when user clicks create test event button
    * await handleCreateTestEvent();
    */
-  const handleCreateTestEvent = useCallback(async () => {
+  const _handleCreateTestEvent = useCallback(async () => {
     try {
       setComponentError(null);
-      
+
       if (!isAuthenticated) {
         const errorMsg = 'Please sign in to Google Calendar first';
         setComponentError(errorMsg);
@@ -603,12 +558,12 @@ const TrainerCalendar = memo(() => {
       }
 
       console.log('🔍 Creating test appointment...');
-      
+
       // Create test appointment for tomorrow at a reasonable time
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       tomorrow.setHours(14, 0, 0, 0); // 2:00 PM tomorrow
-      
+
       const testAppointment = {
         clientName: 'John Test Client',
         type: 'Personal Training Session',
@@ -627,16 +582,16 @@ const TrainerCalendar = memo(() => {
 
       if (createdEvent) {
         console.log('✅ Test appointment created:', createdEvent.id);
-        
+
         // Force a refresh of events for the week containing the new event
         const eventWeek = new Date(tomorrow);
         const weekStart = getWeekDates(eventWeek)[0];
         const weekEnd = new Date(getWeekDates(eventWeek)[6]);
         weekEnd.setDate(weekEnd.getDate() + 1); // Include full last day
-        
+
         console.log(`🔄 Force refreshing events for week: ${weekStart.toDateString()} to ${weekEnd.toDateString()}`);
         await loadEvents('primary', weekStart, weekEnd);
-        
+
         // Show success message (could be replaced with a proper toast notification)
         if (window.confirm('Test appointment created successfully! Check your Google Calendar to see it. Navigate to tomorrow to see it in the calendar view?')) {
           // Navigate to the day the event was created
@@ -647,7 +602,7 @@ const TrainerCalendar = memo(() => {
       const errorMsg = err.message || 'Failed to create test appointment';
       console.error('❌ Create test event error:', err);
       setComponentError(errorMsg);
-      
+
       // Show error to user (could be replaced with proper error toast)
       alert(`Failed to create test appointment: ${errorMsg}`);
     }
@@ -656,19 +611,19 @@ const TrainerCalendar = memo(() => {
   // Memoized calculations for performance
   /** @type {Array<Date>} All dates for infinite scrolling (multiple weeks) */
   const allDates = useMemo(() => getAllWeekDates(), [getAllWeekDates]);
-  
+
   /** @type {Array<Date>} Current week dates (for display purposes) */
   const weekDates = useMemo(() => getWeekDates(currentWeek), [currentWeek, getWeekDates]);
-  
+
   /** @type {Array<number>} Hours array for time slots (5am to 8pm) */
   const hours = useMemo(() => Array.from({ length: 16 }, (_, i) => i + 5), []); // 5am (5) to 8pm (20)
-  
+
   /** @type {string} Formatted week range string */
-  const weekRangeText = useMemo(() => {
+  const _weekRangeText = useMemo(() => {
     try {
       const startDate = weekDates[0];
       const endDate = weekDates[6];
-      
+
       return `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
     } catch (error) {
       console.error('❌ Error formatting week range:', error);
@@ -685,8 +640,8 @@ const TrainerCalendar = memo(() => {
             <AlertCircle size={48} />
             <h3>Calendar Error</h3>
             <p>{componentError}</p>
-            <button 
-              onClick={() => setComponentError(null)} 
+            <button
+              onClick={() => setComponentError(null)}
               className="error-retry-button"
               aria-label="Clear error and retry"
             >
@@ -699,7 +654,7 @@ const TrainerCalendar = memo(() => {
   }
 
   return (
-    <div 
+    <div
       className="trainer-calendar-container"
       role="main"
       aria-label="Trainer Calendar Application"
@@ -710,7 +665,7 @@ const TrainerCalendar = memo(() => {
           {/* Google Calendar Status - Clickable for connection */}
           <div className="google-calendar-status">
             {!isConfigured ? (
-              <button 
+              <button
                 className="status-badge warning clickable"
                 disabled={true}
                 aria-label="Google Calendar not configured - check environment variables"
@@ -720,7 +675,7 @@ const TrainerCalendar = memo(() => {
                 <span>Not Configured</span>
               </button>
             ) : isAuthenticated ? (
-              <button 
+              <button
                 className="status-badge success clickable"
                 onClick={handleGoogleCalendarSync}
                 disabled={isLoading}
@@ -731,16 +686,16 @@ const TrainerCalendar = memo(() => {
                 <span>{isLoading ? 'Syncing...' : 'Connected'}</span>
               </button>
             ) : (
-              <button 
+              <button
                 className="status-badge neutral clickable"
                 onClick={handleGoogleCalendarSync}
                 disabled={isLoading}
                 aria-label={isLoading ? 'Connecting to Google Calendar...' : 'Connect to Google Calendar'}
                 type="button"
               >
-                <RefreshCw 
-                  size={16} 
-                  className={isLoading ? 'spinning' : ''} 
+                <RefreshCw
+                  size={16}
+                  className={isLoading ? 'spinning' : ''}
                   aria-hidden="true"
                 />
                 <span>{isLoading ? 'Connecting...' : 'Connect Now'}</span>
@@ -750,8 +705,8 @@ const TrainerCalendar = memo(() => {
 
           {/* Sign Out Button - Only show when connected */}
           {isConfigured && isAuthenticated && (
-            <button 
-              onClick={handleSignOut} 
+            <button
+              onClick={handleSignOut}
               className="signout-button compact"
               disabled={isLoading}
               aria-label="Sign out from Google Calendar"
@@ -765,16 +720,16 @@ const TrainerCalendar = memo(() => {
 
       {/* Error Display */}
       {error && (
-        <div 
-          className="error-banner" 
-          role="alert" 
+        <div
+          className="error-banner"
+          role="alert"
           aria-live="assertive"
           aria-label={`Error: ${error}`}
         >
           <AlertCircle size={16} aria-hidden="true" />
           <span>{error}</span>
-          <button 
-            onClick={clearError} 
+          <button
+            onClick={clearError}
             className="error-close"
             aria-label="Dismiss error message"
             type="button"
@@ -794,9 +749,9 @@ const TrainerCalendar = memo(() => {
             <ol>
               <li>
                 Go to{' '}
-                <a 
-                  href="https://console.cloud.google.com/" 
-                  target="_blank" 
+                <a
+                  href="https://console.cloud.google.com/"
+                  target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Google Cloud Console (opens in new tab)"
                 >
@@ -829,34 +784,34 @@ const TrainerCalendar = memo(() => {
 
 
               {/* Calendar Grid */}
-              <div 
+              <div
                 className="calendar-grid-container"
                 role="grid"
                 aria-labelledby="current-date-heading"
                 aria-describedby="calendar-instructions"
               >
-                <div 
-                  id="calendar-instructions" 
+                <div
+                  id="calendar-instructions"
                   className="sr-only"
                   aria-live="polite"
                 >
-                  Weekly calendar view. Use arrow keys to navigate between time slots. 
+                  Weekly calendar view. Use arrow keys to navigate between time slots.
                   Events are displayed in their corresponding time slots.
                 </div>
-                
+
                 {/* Fixed Headers Row - scrolls horizontally but not vertically */}
                 <div className="calendar-headers-fixed">
                   <div className="time-column-header-fixed">Time</div>
-                  <div 
+                  <div
                     className="days-headers-scroll"
                     ref={headersScrollRef}
                   >
                     {allDates.map((date, dayIndex) => {
                       const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
                       const isToday = date.toDateString() === new Date().toDateString();
-                      
+
                       return (
-                        <div 
+                        <div
                           key={`header-${date.getTime()}-${dayIndex}`}
                           className={`day-header-fixed ${isToday ? 'current-day' : ''}`}
                           role="columnheader"
@@ -873,9 +828,9 @@ const TrainerCalendar = memo(() => {
                     })}
                   </div>
                 </div>
-                
+
                 {/* Scrollable content container */}
-                <div 
+                <div
                   ref={scrollContainerRef}
                   className="calendar-scroll-container"
                   role="grid"
@@ -884,15 +839,15 @@ const TrainerCalendar = memo(() => {
                 >
                   <div className="calendar-content">
                     {/* Time Column */}
-                    <div 
-                      className="time-column" 
+                    <div
+                      className="time-column"
                       role="columnheader"
                       aria-label="Time column"
                     >
                       <div className="time-slots-list">
                         {hours.map((hour) => (
-                          <div 
-                            key={hour} 
+                          <div
+                            key={hour}
                             className="time-slot"
                             role="rowheader"
                             aria-label={`${formatTime(hour)}`}
@@ -902,20 +857,20 @@ const TrainerCalendar = memo(() => {
                         ))}
                       </div>
                     </div>
-                    
+
                     {/* Days Grid with sticky headers - infinite scrolling */}
-                    <div 
-                      className="days-grid" 
+                    <div
+                      className="days-grid"
                       role="grid"
                       onScroll={handleContentScroll}
                     >
                       {allDates.map((date, dayIndex) => {
                         const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
                         const isToday = date.toDateString() === new Date().toDateString();
-                        
+
                         return (
-                          <div 
-                            key={`${date.getTime()}-${dayIndex}`} 
+                          <div
+                            key={`${date.getTime()}-${dayIndex}`}
                             className={`day-column ${isToday ? 'today current-day' : ''}`}
                             role="gridcell"
                             aria-label={`${dayName}, ${date.toLocaleDateString()}`}
@@ -925,27 +880,27 @@ const TrainerCalendar = memo(() => {
                               {hours.map((hour) => {
                                 const event = getEventForTimeSlot(date, hour);
                                 const slotId = `slot-${dayIndex}-${hour}`;
-                                
+
                                 return (
-                                  <div 
-                                    key={hour} 
+                                  <div
+                                    key={hour}
                                     id={slotId}
                                     className={`time-slot ${event ? 'has-event' : ''}`}
                                     role="gridcell"
                                     tabIndex={event ? 0 : -1}
                                     aria-label={
-                                      event 
-                                        ? `${formatTime(hour)} - ${event.summary} ${event.start?.dateTime ? 
-                                            `at ${new Date(event.start.dateTime).toLocaleTimeString('en-US', { 
-                                              hour: 'numeric', 
-                                              minute: '2-digit' 
-                                            })}` : 'All Day'
-                                          }`
+                                      event
+                                        ? `${formatTime(hour)} - ${event.summary} ${event.start?.dateTime ?
+                                          `at ${new Date(event.start.dateTime).toLocaleTimeString('en-US', {
+                                            hour: 'numeric',
+                                            minute: '2-digit'
+                                          })}` : 'All Day'
+                                        }`
                                         : `${formatTime(hour)} - No events`
                                     }
                                   >
                                     {event && (
-                                      <div 
+                                      <div
                                         className="event-block"
                                         role="button"
                                         tabIndex={0}
@@ -955,10 +910,10 @@ const TrainerCalendar = memo(() => {
                                           {event.summary}
                                         </div>
                                         <div className="event-time" aria-hidden="true">
-                                          {event.start?.dateTime ? 
-                                            new Date(event.start.dateTime).toLocaleTimeString('en-US', { 
-                                              hour: 'numeric', 
-                                              minute: '2-digit' 
+                                          {event.start?.dateTime ?
+                                            new Date(event.start.dateTime).toLocaleTimeString('en-US', {
+                                              hour: 'numeric',
+                                              minute: '2-digit'
                                             }) : 'All Day'
                                           }
                                         </div>
@@ -977,7 +932,7 @@ const TrainerCalendar = memo(() => {
               </div>
             </div>
           ) : (
-            <div 
+            <div
               className="calendar-placeholder"
               role="region"
               aria-labelledby="placeholder-title"
@@ -988,15 +943,15 @@ const TrainerCalendar = memo(() => {
               <p id="placeholder-description">
                 Sync your appointments and manage your schedule with Google Calendar integration
               </p>
-              <button 
-                onClick={handleGoogleCalendarSync} 
+              <button
+                onClick={handleGoogleCalendarSync}
                 className="connect-button"
                 disabled={isLoading || !isConfigured}
                 aria-label={
-                  !isConfigured 
+                  !isConfigured
                     ? 'Google Calendar not configured. Please set up API credentials first.'
-                    : isLoading 
-                      ? 'Connecting to Google Calendar...' 
+                    : isLoading
+                      ? 'Connecting to Google Calendar...'
                       : 'Connect to Google Calendar now'
                 }
                 type="button"

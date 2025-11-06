@@ -157,20 +157,24 @@ serve(async (req) => {
 
     // Parse request body
     const payload = await req.json();
-    const { trainer_user_id, client_user_id, relationship_notes } = payload;
+    const {
+      trainer_user_id,
+      client_user_id,
+      client_email,
+      relationship_notes
+    } = payload;
 
-    // Validate required parameters
-    if (!trainer_user_id || !client_user_id) {
+    // Validate required parameters - need either client_user_id or client_email
+    if (!trainer_user_id) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: trainer_user_id and client_user_id are required" }),
+        JSON.stringify({ error: "Missing required field: trainer_user_id" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Prevent self-assignment
-    if (trainer_user_id === client_user_id) {
+    if (!client_user_id && !client_email) {
       return new Response(
-        JSON.stringify({ error: "Trainer and client cannot be the same user" }),
+        JSON.stringify({ error: "Missing required field: client_user_id or client_email is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -192,18 +196,70 @@ serve(async (req) => {
       );
     }
 
-    // Check if relationship already exists
+    // Step 1: Determine final client_user_id
+    let finalClientId = client_user_id;
+
+    // If only email provided, look up user by email
+    if (!finalClientId && client_email) {
+      const { data: clientProfile } = await supabase
+        .from("user_profiles")
+        .select("id")
+        .eq("email", client_email)
+        .single();
+
+      if (clientProfile) {
+        finalClientId = clientProfile.id;
+      } else {
+        // User doesn't exist yet - that's okay, we'll note this
+        return new Response(
+          JSON.stringify({
+            error: "Client user not found. Please ensure the client has created an account first."
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // Step 2: Update is_trainer flag for trainer (idempotent)
+    const { error: trainerUpdateError } = await supabase
+      .from("user_profiles")
+      .update({ is_trainer: true, updated_at: new Date().toISOString() })
+      .eq("id", trainer_user_id);
+
+    if (trainerUpdateError) {
+      console.error("Error updating trainer profile:", trainerUpdateError);
+      return new Response(
+        JSON.stringify({ error: `Failed to update trainer profile: ${trainerUpdateError.message}` }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Step 3: Update is_client flag for client (idempotent)
+    const { error: clientUpdateError } = await supabase
+      .from("user_profiles")
+      .update({ is_client: true, updated_at: new Date().toISOString() })
+      .eq("id", finalClientId);
+
+    if (clientUpdateError) {
+      console.error("Error updating client profile:", clientUpdateError);
+      return new Response(
+        JSON.stringify({ error: `Failed to update client profile: ${clientUpdateError.message}` }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Step 4: Check if relationship already exists
     const { data: existingRelationship, error: checkError } = await supabase
       .from("trainer_clients")
       .select("id")
       .eq("trainer_id", trainer_user_id)
-      .eq("client_id", client_user_id)
+      .eq("client_id", finalClientId)
       .single();
 
     // If relationship already exists, return existing ID
     if (existingRelationship) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           relationship_id: existingRelationship.id,
           message: "Relationship already exists",
           roles_assigned: false
@@ -212,12 +268,12 @@ serve(async (req) => {
       );
     }
 
-    // Insert new trainer-client relationship
+    // Step 5: Insert new trainer-client relationship
     const { data: newRelationship, error: insertError } = await supabase
       .from("trainer_clients")
       .insert({
         trainer_id: trainer_user_id,
-        client_id: client_user_id,
+        client_id: finalClientId,
         status: "active",
         notes: relationship_notes || null,
         created_at: new Date().toISOString(),
@@ -226,17 +282,29 @@ serve(async (req) => {
       .select("id")
       .single();
 
-    if (insertError || !newRelationship) {
-      throw insertError || new Error("Failed to create relationship");
+    if (insertError) {
+      console.error("Error inserting trainer-client relationship:", insertError);
+      return new Response(
+        JSON.stringify({ error: `Failed to create relationship: ${insertError.message}` }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // Auto-assign roles
+    if (!newRelationship) {
+      console.error("No relationship data returned after insert");
+      return new Response(
+        JSON.stringify({ error: "Failed to create relationship: No data returned" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Step 6: Auto-assign role tags (optional, for additional RBAC if using tags)
     const trainerRoleAssigned = await assignRoleTag(supabase, trainer_user_id, "Trainer");
-    const clientRoleAssigned = await assignRoleTag(supabase, client_user_id, "Client");
+    const clientRoleAssigned = await assignRoleTag(supabase, finalClientId, "Client");
 
     // Return success with relationship ID
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         relationship_id: newRelationship.id,
         message: "Trainer-client relationship created successfully",
         roles_assigned: trainerRoleAssigned && clientRoleAssigned
@@ -244,9 +312,13 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
-    // Catch-all error handler
+    // Catch-all error handler with detailed logging
+    console.error("Unexpected error in add-client-to-trainer:", err);
     return new Response(
-      JSON.stringify({ error: err?.message || "Unknown error" }),
+      JSON.stringify({
+        error: err?.message || "Unknown error",
+        details: err?.toString() || "No additional details"
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

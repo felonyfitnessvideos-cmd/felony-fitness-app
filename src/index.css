@@ -77,6 +77,35 @@ html, body {
   overflow: hidden; /* Prevent body from scrolling */
 }
 
+/* 
+ * Hide scrollbars on specific containers while keeping scroll functionality
+ * Note: Maintaining accessibility by only hiding scrollbars on main content areas
+ * where overflow is intentional (chat, messages, lists). Users can still scroll
+ * with mouse wheel, touch, or keyboard navigation.
+ */
+.messages-container,
+.conversation-list,
+.message-list,
+.client-list,
+.workout-list,
+.exercise-list,
+.scrollable-content,
+#root {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.messages-container::-webkit-scrollbar,
+.conversation-list::-webkit-scrollbar,
+.message-list::-webkit-scrollbar,
+.client-list::-webkit-scrollbar,
+.workout-list::-webkit-scrollbar,
+.exercise-list::-webkit-scrollbar,
+.scrollable-content::-webkit-scrollbar,
+#root::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
 body {
   background-color: var(--background-color);
   color: var(--text-primary);

@@ -10,21 +10,21 @@
  * - Responsive design with mobile support
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import { Filter, RotateCcw, Search, Zap } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import InteractiveMuscleMap from './InteractiveMuscleMap';
 import './MuscleExplorer.css';
-import { Search, Filter, RotateCcw, Zap } from 'lucide-react';
 
 /**
  * MuscleExplorer Component
  * Main component that orchestrates the muscle map and exercise interactions
  */
-const MuscleExplorer = ({ 
+const MuscleExplorer = ({
   className = '',
-  onExerciseSelect = () => {},
+  onExerciseSelect = () => { },
   initialMuscles = [],
-  showFilters = true 
+  showFilters = true
 }) => {
   // State management
   const [selectedMuscle, setSelectedMuscle] = useState(null);
@@ -63,7 +63,7 @@ const MuscleExplorer = ({
       if (queryError) throw queryError;
 
       setExercises(data || []);
-      
+
       // Highlight the clicked muscle
       setHighlightedMuscles([muscleName]);
 
@@ -82,10 +82,10 @@ const MuscleExplorer = ({
    */
   const handleExerciseSelect = useCallback((exercise) => {
     setSelectedExercise(exercise);
-    
+
     // Extract all muscle groups from the exercise
     const muscles = [];
-    
+
     if (exercise.primary_muscle_groups?.name) {
       muscles.push(exercise.primary_muscle_groups.name);
     }
@@ -99,7 +99,7 @@ const MuscleExplorer = ({
     // Remove duplicates and set highlighted muscles
     const uniqueMuscles = [...new Set(muscles)];
     setHighlightedMuscles(uniqueMuscles);
-    
+
     // Notify parent component
     onExerciseSelect(exercise);
   }, [onExerciseSelect]);
@@ -128,9 +128,9 @@ const MuscleExplorer = ({
    */
   const filteredExercises = exercises.filter(exercise => {
     const matchesSearch = exercise.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDifficulty = difficultyFilter === 'all' || 
+    const matchesDifficulty = difficultyFilter === 'all' ||
       exercise.type?.toLowerCase() === difficultyFilter.toLowerCase();
-    
+
     return matchesSearch && matchesDifficulty;
   });
 
@@ -156,7 +156,7 @@ const MuscleExplorer = ({
           Muscle Explorer
         </h2>
         <div className="header-actions">
-          <button 
+          <button
             className="view-toggle-btn"
             onClick={toggleMapView}
             title={`Switch to ${mapView === 'front' ? 'back' : 'front'} view`}
@@ -164,7 +164,7 @@ const MuscleExplorer = ({
             <RotateCcw size={16} />
             {mapView === 'front' ? 'Back' : 'Front'}
           </button>
-          <button 
+          <button
             className="reset-btn"
             onClick={handleReset}
             title="Reset explorer"
@@ -183,7 +183,7 @@ const MuscleExplorer = ({
             variant={mapView}
             className={loading ? 'loading' : ''}
           />
-          
+
           {selectedMuscle && (
             <div className="selected-muscle-info">
               <h3>Selected Muscle: {selectedMuscle}</h3>
@@ -205,7 +205,7 @@ const MuscleExplorer = ({
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              
+
               <div className="difficulty-filter">
                 <Filter size={16} />
                 <select
@@ -240,7 +240,7 @@ const MuscleExplorer = ({
                 Exercises for {selectedMuscle}
                 <span className="result-count">({filteredExercises.length})</span>
               </h3>
-              
+
               {filteredExercises.length === 0 ? (
                 <div className="no-results">
                   <p>No exercises found{searchTerm ? ` for "${searchTerm}"` : ''}.</p>
@@ -259,7 +259,7 @@ const MuscleExplorer = ({
                           {getMuscleEngagement(exercise, selectedMuscle)}
                         </span>
                       </div>
-                      
+
                       <div className="exercise-muscles">
                         {exercise.primary_muscle_groups?.name && (
                           <span className="muscle-tag primary">

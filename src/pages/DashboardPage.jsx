@@ -29,12 +29,11 @@
  * import DashboardPage from './pages/DashboardPage';
  * <DashboardPage />
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../supabaseClient.js';
 import { useAuth } from '../AuthContext.jsx';
-import RoleSystemTest from '../components/RoleSystemTest.jsx';
 import ClientMessaging from '../components/ClientMessaging.jsx';
+import { supabase } from '../supabaseClient.js';
 import './DashboardPage.css';
 
 const motivationalQuotes = [
@@ -116,7 +115,7 @@ function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const userId = user?.id;
-  
+
   const [quote, setQuote] = useState('');
   /** @type {[DailyGoals, React.Dispatch<React.SetStateAction<DailyGoals>>]} */
   const [goals, setGoals] = useState({ calories: 0, protein: 0, water: 0 });
@@ -189,17 +188,17 @@ function DashboardPage() {
         }, { calories: 0, protein: 0, water: 0 });
 
         setNutrition({
-            calories: Math.round(totals.calories),
-            protein: Math.round(totals.protein),
-            water: totals.water,
+          calories: Math.round(totals.calories),
+          protein: Math.round(totals.protein),
+          water: totals.water,
         });
       }
-      
+
       if (goalsRes.data) {
         setActiveGoals(goalsRes.data);
       }
-      
-      if (workoutLogRes.error) { 
+
+      if (workoutLogRes.error) {
         throw workoutLogRes.error;
       }
 
@@ -216,10 +215,10 @@ function DashboardPage() {
       }
 
     } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-        setTraining({ name: 'Rest Day', duration: 0, calories: 0 });
+      console.error("Error fetching dashboard data:", error);
+      setTraining({ name: 'Rest Day', duration: 0, calories: 0 });
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   }, []);
 
@@ -230,7 +229,7 @@ function DashboardPage() {
   useEffect(() => {
     const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
     setQuote(randomQuote);
-    
+
     if (userId) {
       fetchDashboardData(userId);
     } else {
@@ -245,7 +244,7 @@ function DashboardPage() {
    *   both shapes in `fetchDashboardData` and default to sensible fallbacks
    *   when data is missing.
    */
-  
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/');
@@ -326,14 +325,9 @@ function DashboardPage() {
           </div>
         )) : <p className="no-goals-message">No active goals set.</p>}
       </Link>
-      
+
       <div className="dashboard-card quote-card">
         <p>{quote}</p>
-      </div>
-
-      {/* Role System Testing - For development/testing */}
-      <div className="dashboard-card">
-        <RoleSystemTest />
       </div>
 
       {/* Client Messaging - Only visible to clients */}

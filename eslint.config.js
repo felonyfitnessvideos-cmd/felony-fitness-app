@@ -1,12 +1,21 @@
 import js from '@eslint/js'
-import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
+import globals from 'globals'
 
 export default defineConfig([
   // Centralized ignore patterns (migrated from .eslintignore)
-  globalIgnores(['dist', 'node_modules', 'public', 'supabase/functions/**/*.ts', 'src/database.types.ts']),
+  globalIgnores([
+    'dist',
+    'node_modules',
+    'public',
+    'supabase/functions/**/*.ts',
+    'src/database.types.ts',
+    'src/types/**/*.ts', // Ignore TypeScript type files
+    'OldFiles/**/*',
+    'backups/**/*'
+  ]),
   {
     // Additional explicit ignores via top-level `ignores` for clarity
     ignores: ['*.log'],
@@ -30,8 +39,8 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { 
-        varsIgnorePattern: '^[A-Z_]|^IconComponent$', 
+      'no-unused-vars': ['error', {
+        varsIgnorePattern: '^[A-Z_]|^IconComponent$',
         argsIgnorePattern: '^_|^IconComponent$',
         destructuredArrayIgnorePattern: '^_'
       }],
@@ -40,7 +49,7 @@ export default defineConfig([
   },
   // Test files configuration
   {
-    files: ['**/*.test.{js,jsx}', '**/test/**/*.{js,jsx}', '**/src/test/**/*.{js,jsx}'],
+    files: ['**/*.test.{js,jsx}', '**/test/**/*.{js,jsx}', '**/tests/**/*.{js,jsx}', '**/src/__tests__/**/*.{js,jsx}'],
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -49,6 +58,8 @@ export default defineConfig([
         global: 'readonly',
         describe: 'readonly',
         it: 'readonly',
+        test: 'readonly', // Added for Jest
+        jest: 'readonly', // Added for Jest
         expect: 'readonly',
         beforeEach: 'readonly',
         afterEach: 'readonly',
@@ -64,9 +75,14 @@ export default defineConfig([
   // Ensure scripts and backend functions are linted with Node globals and
   // do NOT receive browser globals from the top-level override above.
   {
-    files: ['scripts/**/*.{js,mjs}', 'lighthouserc.js', 'test-*.js'],
+    files: ['scripts/**/*.{js,mjs}', 'lighthouserc.js', 'test-*.js', '*.config.js', '*.config.mjs'],
     languageOptions: {
-      globals: globals.node,
+      globals: {
+        ...globals.node,
+        __dirname: 'readonly', // Added for Node.js
+        __filename: 'readonly', // Added for Node.js
+        global: 'readonly', // Added for Node.js
+      },
       parserOptions: {
         ecmaVersion: 2024,
         sourceType: 'module',

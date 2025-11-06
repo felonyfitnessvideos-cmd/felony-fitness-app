@@ -4,42 +4,67 @@
  * @author Felony Fitness Development Team
  */
 
-import React, { useState, useEffect } from 'react';
-import { MessageSquare, Send, User, Clock } from 'lucide-react';
+import { MessageSquare, Send } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../AuthContext.jsx';
-import { useUserRoles } from '../hooks/useUserRoles.js';
+import { useTheme } from '../context/ThemeContext.jsx';
 import { supabase } from '../supabaseClient.js';
 
 const ClientMessaging = () => {
     const { user } = useAuth();
-    const { isClient, loading: rolesLoading } = useUserRoles();
+    const { theme } = useTheme();
+    const [isClient, setIsClient] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [trainers, setTrainers] = useState([]);
     const [selectedTrainer, setSelectedTrainer] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [sendLoading, setSendLoading] = useState(false);
 
-    // Load trainers and messages
+    // Check if user is a client by checking is_client flag in user_profiles
     useEffect(() => {
-        if (user && isClient) {
-            loadTrainers();
-        }
-    }, [user, isClient]);
+        const checkClientStatus = async () => {
+            if (!user) {
+                setIsClient(false);
+                setLoading(false);
+                return;
+            }
 
-    const loadTrainers = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('user_profiles')
+                    .select('is_client')
+                    .eq('id', user.id)
+                    .single();
+
+                if (error) throw error;
+
+                setIsClient(data?.is_client || false);
+            } catch (error) {
+                console.error('Error checking client status:', error);
+                setIsClient(false);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        checkClientStatus();
+    }, [user]);
+
+    const loadTrainers = useCallback(async () => {
         try {
             // TEMP FIX: Simple query without embedded relationships to avoid schema cache issues
             const { data: relationships, error } = await supabase
                 .from('trainer_clients')
                 .select('trainer_id')
                 .eq('client_id', user.id)
-                .eq('relationship_status', 'active');
+                .eq('status', 'active');
 
             if (error) throw error;
 
             // Get trainer details separately to avoid schema cache issues
             const trainerIds = relationships?.map(rel => rel.trainer_id) || [];
-            
+
             if (trainerIds.length === 0) {
                 setTrainers([]);
                 return;
@@ -50,7 +75,7 @@ const ClientMessaging = () => {
             const trainersList = trainerIds.map(trainerId => {
                 // For self-testing (when trainer ID equals user ID), show a friendly name
                 const displayName = trainerId === user.id ? 'Your Trainer (David)' : `Trainer ${trainerId.slice(0, 8)}`;
-                
+
                 return {
                     id: trainerId,
                     email: displayName
@@ -58,7 +83,7 @@ const ClientMessaging = () => {
             });
 
             setTrainers(trainersList);
-            
+
             // Auto-select first trainer if available
             if (trainersList.length > 0 && !selectedTrainer) {
                 setSelectedTrainer(trainersList[0]);
@@ -66,11 +91,11 @@ const ClientMessaging = () => {
         } catch (error) {
             console.error('Error loading trainers:', error);
         }
-    };
+    }, [user, selectedTrainer]);
 
-    const loadMessages = async (trainerId) => {
+    const loadMessages = useCallback(async (trainerId) => {
         if (!trainerId) return;
-        
+
         try {
             const { data, error } = await supabase
                 .from('direct_messages')
@@ -83,40 +108,56 @@ const ClientMessaging = () => {
         } catch (error) {
             console.error('Error loading messages:', error);
         }
-    };
+    }, [user]);
 
+    // Load trainers when user and client status are confirmed
+    useEffect(() => {
+        if (user && isClient) {
+            loadTrainers();
+        }
+    }, [user, isClient, loadTrainers]);
+
+    // Load messages when trainer is selected
     useEffect(() => {
         if (selectedTrainer) {
             loadMessages(selectedTrainer.id);
         }
-    }, [selectedTrainer, user]);
+    }, [selectedTrainer, loadMessages]);
 
     const sendMessage = async (e) => {
         e.preventDefault();
-        if (!newMessage.trim() || !selectedTrainer || loading) return;
+        if (!newMessage.trim() || !selectedTrainer || sendLoading) return;
 
-        setLoading(true);
+        setSendLoading(true);
         try {
             // Import and use the proper messaging utilities
             const { sendMessage: sendMessageUtil } = await import('../utils/messagingUtils.js');
-            
+
             await sendMessageUtil(selectedTrainer.id, newMessage.trim());
 
             // Clear the input and reload messages
             setNewMessage('');
-            
+
             // Reload messages to show the new message
             loadMessages(selectedTrainer.id);
         } catch (error) {
             console.error('Error sending message:', error);
             alert(`Failed to send message: ${error.message}`);
         } finally {
-            setLoading(false);
+            setSendLoading(false);
         }
     };
 
+    // Get initials from a name
+    const getInitials = (name) => {
+        if (!name) return '?';
+        const names = name.trim().split(' ');
+        if (names.length === 1) return names[0][0]?.toUpperCase() || '?';
+        return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+    };
+
     // Don't render if user is not a client
-    if (rolesLoading) {
+    if (loading) {
         return <div style={{ color: '#888', textAlign: 'center', padding: '1rem' }}>Loading permissions...</div>;
     }
 
@@ -146,13 +187,18 @@ const ClientMessaging = () => {
             background: 'rgba(255, 255, 255, 0.05)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '12px',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            height: '500px'
         }}>
             {/* Header */}
             <div style={{
                 background: 'rgba(255, 107, 53, 0.1)',
                 padding: '1rem',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                flexShrink: 0
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                     <MessageSquare size={20} style={{ color: '#ff6b35' }} />
@@ -160,7 +206,7 @@ const ClientMessaging = () => {
                         {trainers.length === 1 ? `Message ${selectedTrainer?.email || 'Trainer'}` : 'Messages'}
                     </h3>
                 </div>
-                
+
                 {/* Trainer selector */}
                 {trainers.length > 1 && (
                     <select
@@ -189,95 +235,132 @@ const ClientMessaging = () => {
 
             {/* Messages */}
             <div style={{
-                height: '200px',
+                flex: 1,
+                paddingBottom: '100px',
                 overflowY: 'auto',
                 padding: '1rem',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: '0.75rem'
+                flexDirection: 'column-reverse',
+                gap: '0.5rem',
+                background: 'var(--background-color)',
+                minHeight: 0
             }}>
                 {messages.length === 0 ? (
                     <div style={{ textAlign: 'center', color: '#888', padding: '2rem 0' }}>
                         <p>No messages yet. Start a conversation with your trainer!</p>
                     </div>
                 ) : (
-                    messages.map((message) => (
-                        <div
-                            key={message.id}
-                            style={{
-                                display: 'flex',
-                                justifyContent: message.sender_id === user.id ? 'flex-end' : 'flex-start'
-                            }}
-                        >
-                            <div style={{
-                                maxWidth: '70%',
-                                background: message.sender_id === user.id ? '#ff6b35' : 'rgba(255, 255, 255, 0.1)',
-                                color: 'white',
-                                padding: '0.75rem',
-                                borderRadius: '12px',
-                                borderBottomRightRadius: message.sender_id === user.id ? '4px' : '12px',
-                                borderBottomLeftRadius: message.sender_id === user.id ? '12px' : '4px'
-                            }}>
-                                <div style={{ fontSize: '0.875rem' }}>
-                                    {message.content}
-                                </div>
+                    messages.map((message) => {
+                        const isDark = theme === 'dark';
+                        const isFromClient = message.sender_id === user.id;
+                        return (
+                            <div
+                                key={message.id}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'flex-end',
+                                    gap: '8px',
+                                    flexDirection: isFromClient ? 'row-reverse' : 'row'
+                                }}
+                            >
+                                {/* Avatar */}
                                 <div style={{
-                                    fontSize: '0.75rem',
-                                    opacity: 0.7,
-                                    marginTop: '0.25rem',
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '50%',
+                                    background: isFromClient ? (isDark ? '#636366' : '#c7c7cc') : '#f97316',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '0.25rem'
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    fontSize: '13px',
+                                    fontWeight: '600',
+                                    flexShrink: 0
                                 }}>
-                                    <Clock size={10} />
-                                    {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    {isFromClient
+                                        ? getInitials(user?.user_metadata?.full_name || user?.email)
+                                        : getInitials(selectedTrainer?.email)
+                                    }
+                                </div>
+
+                                {/* Message bubble */}
+                                <div style={{
+                                    maxWidth: '70%',
+                                    background: isFromClient ? (isDark ? '#3a3a3c' : '#e5e5ea') : '#f97316',
+                                    color: isFromClient ? (isDark ? '#ffffff' : '#000000') : 'white',
+                                    padding: '12px 16px',
+                                    borderRadius: '20px',
+                                    borderBottomRightRadius: isFromClient ? '4px' : '20px',
+                                    borderBottomLeftRadius: isFromClient ? '20px' : '4px',
+                                    fontSize: '15px',
+                                    lineHeight: '1.4'
+                                }}>
+                                    {message.content}
                                 </div>
                             </div>
-                        </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
 
-            {/* Message input */}
+            {/* Message input - iOS style - Fixed at Bottom */}
             <form onSubmit={sendMessage} style={{
-                padding: '1rem',
-                borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-                display: 'flex',
-                gap: '0.5rem'
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                padding: '12px 16px',
+                borderTop: '1px solid var(--border-color)',
+                background: 'var(--surface-color)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)'
             }}>
-                <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder={`Message ${selectedTrainer?.email || 'trainer'}...`}
-                    disabled={loading}
-                    style={{
-                        flex: 1,
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        borderRadius: '6px',
-                        padding: '0.75rem',
-                        color: 'white',
-                        fontSize: '0.875rem'
-                    }}
-                />
-                <button
-                    type="submit"
-                    disabled={loading || !newMessage.trim()}
-                    style={{
-                        background: loading || !newMessage.trim() ? '#666' : '#ff6b35',
-                        border: 'none',
-                        borderRadius: '6px',
-                        color: 'white',
-                        padding: '0.75rem',
-                        cursor: loading || !newMessage.trim() ? 'not-allowed' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}
-                >
-                    <Send size={16} />
-                </button>
+                <div style={{
+                    display: 'flex',
+                    gap: '8px',
+                    alignItems: 'flex-end',
+                    background: 'var(--background-color)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '24px',
+                    padding: '8px 12px'
+                }}>
+                    <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Message..."
+                        disabled={sendLoading}
+                        style={{
+                            flex: 1,
+                            background: 'transparent',
+                            border: 'none',
+                            outline: 'none',
+                            color: 'var(--text-primary)',
+                            fontSize: '16px',
+                            padding: '8px 4px'
+                        }}
+                    />
+                    <button
+                        type="submit"
+                        disabled={sendLoading || !newMessage.trim()}
+                        style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            background: sendLoading || !newMessage.trim() ? 'var(--border-color)' : '#007aff',
+                            border: 'none',
+                            color: 'white',
+                            cursor: sendLoading || !newMessage.trim() ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            transition: 'all 0.2s ease'
+                        }}
+                    >
+                        <Send size={16} />
+                    </button>
+                </div>
             </form>
         </div>
     );

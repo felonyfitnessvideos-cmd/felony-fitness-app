@@ -11,25 +11,88 @@
  * - Automated reminder system
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Calendar, 
-  Clock, 
-  Users, 
-  Plus, 
-  Search,
-  Filter,
-  Bell,
-  Repeat,
+import {
   AlertTriangle,
+  Bell,
   CheckCircle,
-  User,
+  Clock,
+  Filter,
   MapPin,
-  Phone,
-  Video,
+  Plus,
+  Repeat,
+  Search,
+  User,
   Zap
 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import './SmartScheduling.css';
+
+// Mock data for demonstration (moved to module scope to avoid re-creation)
+const mockAppointments = [
+  {
+    id: 1,
+    clientName: 'Sarah Johnson',
+    type: 'Personal Training',
+    date: new Date(2025, 10, 4, 9, 0),
+    duration: 60,
+    location: 'Gym Studio A',
+    status: 'confirmed',
+    recurring: true,
+    notes: 'Focus on upper body strength'
+  },
+  {
+    id: 2,
+    clientName: 'Mike Chen',
+    type: 'Nutrition Consultation',
+    date: new Date(2025, 10, 4, 14, 30),
+    duration: 45,
+    location: 'Virtual',
+    status: 'pending',
+    recurring: false,
+    notes: 'Meal prep planning session'
+  },
+  {
+    id: 3,
+    clientName: 'Emma Davis',
+    type: 'Form Check',
+    date: new Date(2025, 10, 5, 11, 0),
+    duration: 30,
+    location: 'Gym Floor',
+    status: 'confirmed',
+    recurring: false,
+    notes: 'Review deadlift technique'
+  }
+];
+
+const mockSuggestions = [
+  {
+    id: 1,
+    time: '10:00 AM',
+    date: 'Tomorrow',
+    confidence: 95,
+    reason: 'Client typically books this time',
+    type: 'Personal Training',
+    duration: 60
+  },
+  {
+    id: 2,
+    time: '3:00 PM',
+    date: 'Friday',
+    confidence: 87,
+    reason: 'Low gym traffic, optimal for consultation',
+    type: 'Nutrition Consultation',
+    duration: 45
+  },
+  {
+    id: 3,
+    time: '11:30 AM',
+    date: 'Next Monday',
+    confidence: 82,
+    reason: 'Matches client workout schedule pattern',
+    type: 'Form Check',
+    duration: 30
+  }
+];
 
 /**
  * SmartScheduling component for intelligent appointment management
@@ -43,94 +106,21 @@ import './SmartScheduling.css';
 const SmartScheduling = () => {
   /** @type {[Array, Function]} List of scheduled appointments */
   const [appointments, setAppointments] = useState([]);
-  
-  /** @type {[Array, Function]} Available time slots */
-  const [availableSlots, setAvailableSlots] = useState([]);
-  
+
   /** @type {[string, Function]} Current view mode */
   const [viewMode, setViewMode] = useState('week'); // 'day', 'week', 'month'
-  
+
   /** @type {[Date, Function]} Selected date for scheduling */
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  
+  const [selectedDate] = useState(new Date());
+
   /** @type {[Object|null, Function]} Currently selected appointment */
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  
-  /** @type {[boolean, Function]} New appointment modal visibility */
-  const [showNewAppointment, setShowNewAppointment] = useState(false);
-  
+
   /** @type {[Array, Function]} Smart scheduling suggestions */
   const [smartSuggestions, setSmartSuggestions] = useState([]);
-  
+
   /** @type {[string, Function]} Search/filter query */
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Mock data for demonstration
-  const mockAppointments = [
-    {
-      id: 1,
-      clientName: 'Sarah Johnson',
-      type: 'Personal Training',
-      date: new Date(2025, 10, 4, 9, 0), // Updated to 2025
-      duration: 60,
-      location: 'Gym Studio A',
-      status: 'confirmed',
-      recurring: true,
-      notes: 'Focus on upper body strength'
-    },
-    {
-      id: 2,
-      clientName: 'Mike Chen',
-      type: 'Nutrition Consultation',
-      date: new Date(2025, 10, 4, 14, 30), // Updated to 2025
-      duration: 45,
-      location: 'Virtual',
-      status: 'pending',
-      recurring: false,
-      notes: 'Meal prep planning session'
-    },
-    {
-      id: 3,
-      clientName: 'Emma Davis',
-      type: 'Form Check',
-      date: new Date(2025, 10, 5, 11, 0), // Updated to 2025
-      duration: 30,
-      location: 'Gym Floor',
-      status: 'confirmed',
-      recurring: false,
-      notes: 'Review deadlift technique'
-    }
-  ];
-
-  const mockSuggestions = [
-    {
-      id: 1,
-      time: '10:00 AM',
-      date: 'Tomorrow',
-      confidence: 95,
-      reason: 'Client typically books this time',
-      type: 'Personal Training',
-      duration: 60
-    },
-    {
-      id: 2,
-      time: '3:00 PM',
-      date: 'Friday',
-      confidence: 87,
-      reason: 'Low gym traffic, optimal for consultation',
-      type: 'Nutrition Consultation',
-      duration: 45
-    },
-    {
-      id: 3,
-      time: '8:00 AM',
-      date: 'Monday',
-      confidence: 92,
-      reason: 'Best availability match with client schedule',
-      type: 'Personal Training',
-      duration: 60
-    }
-  ];
 
   /**
    * Initialize smart scheduling data
@@ -150,23 +140,9 @@ const SmartScheduling = () => {
       ...suggestion,
       confidence: Math.floor(Math.random() * 20) + 80 // 80-100% confidence
     }));
-    
+
     setSmartSuggestions(suggestions);
   }, []);
-
-  /**
-   * Handle new appointment creation
-   */
-  const handleCreateAppointment = (appointmentData) => {
-    const newAppointment = {
-      id: appointments.length + 1,
-      ...appointmentData,
-      status: 'pending'
-    };
-    
-    setAppointments(prev => [...prev, newAppointment]);
-    setShowNewAppointment(false);
-  };
 
   /**
    * Filter appointments based on search query
@@ -210,23 +186,16 @@ const SmartScheduling = () => {
             <span className="ai-badge">AI-Powered</span>
           </div>
           <div className="header-actions">
-            <button 
+            <button
               className="smart-suggest-btn"
               onClick={generateSmartSuggestions}
             >
               <Zap size={16} />
               Get AI Suggestions
             </button>
-            <button 
-              className="new-appointment-btn"
-              onClick={() => setShowNewAppointment(true)}
-            >
-              <Plus size={16} />
-              New Appointment
-            </button>
           </div>
         </div>
-        
+
         <div className="scheduling-controls">
           <div className="search-filter-section">
             <div className="search-wrapper">
@@ -244,21 +213,21 @@ const SmartScheduling = () => {
               Filter
             </button>
           </div>
-          
+
           <div className="view-controls">
-            <button 
+            <button
               className={`view-btn ${viewMode === 'day' ? 'active' : ''}`}
               onClick={() => setViewMode('day')}
             >
               Day
             </button>
-            <button 
+            <button
               className={`view-btn ${viewMode === 'week' ? 'active' : ''}`}
               onClick={() => setViewMode('week')}
             >
               Week
             </button>
-            <button 
+            <button
               className={`view-btn ${viewMode === 'month' ? 'active' : ''}`}
               onClick={() => setViewMode('month')}
             >
@@ -276,10 +245,10 @@ const SmartScheduling = () => {
             <h3>Upcoming Appointments</h3>
             <span className="appointment-count">{filteredAppointments.length}</span>
           </div>
-          
+
           <div className="appointments-list">
             {filteredAppointments.map(appointment => (
-              <div 
+              <div
                 key={appointment.id}
                 className={`appointment-card ${selectedAppointment?.id === appointment.id ? 'selected' : ''}`}
                 onClick={() => setSelectedAppointment(appointment)}
@@ -293,7 +262,7 @@ const SmartScheduling = () => {
                     {appointment.status}
                   </span>
                 </div>
-                
+
                 <div className="appointment-details">
                   <div className="detail-item">
                     <Clock size={14} />
@@ -310,7 +279,7 @@ const SmartScheduling = () => {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="appointment-type">
                   {appointment.type}
                 </div>
@@ -326,15 +295,15 @@ const SmartScheduling = () => {
             <div className="calendar-nav">
               <button className="nav-btn">‹</button>
               <span className="current-period">
-                {selectedDate.toLocaleDateString('en-US', { 
-                  month: 'long', 
-                  year: 'numeric' 
+                {selectedDate.toLocaleDateString('en-US', {
+                  month: 'long',
+                  year: 'numeric'
                 })}
               </span>
               <button className="nav-btn">›</button>
             </div>
           </div>
-          
+
           <div className="calendar-view">
             <div className="time-grid">
               {/* Time slots */}
@@ -361,13 +330,13 @@ const SmartScheduling = () => {
             <h3>AI Suggestions</h3>
             <Bell size={16} className="notification-icon" />
           </div>
-          
+
           <div className="suggestions-list">
             {smartSuggestions.map(suggestion => (
               <div key={suggestion.id} className="suggestion-card">
                 <div className="suggestion-header">
                   <div className="confidence-indicator">
-                    <div 
+                    <div
                       className="confidence-bar"
                       style={{ width: `${suggestion.confidence}%` }}
                     ></div>
@@ -375,7 +344,7 @@ const SmartScheduling = () => {
                   </div>
                   <Zap size={14} className="ai-indicator" />
                 </div>
-                
+
                 <div className="suggestion-details">
                   <div className="suggestion-time">
                     <Clock size={14} />
@@ -384,7 +353,7 @@ const SmartScheduling = () => {
                   <div className="suggestion-type">{suggestion.type}</div>
                   <div className="suggestion-reason">{suggestion.reason}</div>
                 </div>
-                
+
                 <div className="suggestion-actions">
                   <button className="accept-btn">
                     <CheckCircle size={14} />
@@ -395,7 +364,7 @@ const SmartScheduling = () => {
               </div>
             ))}
           </div>
-          
+
           <div className="conflict-alerts">
             <div className="alert-item">
               <AlertTriangle size={16} className="warning-icon" />

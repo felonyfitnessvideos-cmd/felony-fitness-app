@@ -83,11 +83,11 @@ serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    
+
     // Parse and validate request body
     const payload = await req.json();
     const { p_routine_id, p_name, p_items } = payload;
-    
+
     // Validate required fields
     if (!p_routine_id || !p_name || !Array.isArray(p_items)) {
       return new Response(
@@ -100,7 +100,7 @@ serve(async (req) => {
     // This ensures all database operations respect RLS policies for the authenticated user
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    
+
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
     });

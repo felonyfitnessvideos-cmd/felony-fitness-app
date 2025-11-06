@@ -149,7 +149,7 @@ serve(async (req) => {
     // If tag already exists, return success (idempotent operation)
     if (existingTag) {
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           success: true,
           message: "User already has this tag"
         }),
@@ -173,7 +173,7 @@ serve(async (req) => {
 
     // Return success
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         message: "Tag assigned successfully"
       }),

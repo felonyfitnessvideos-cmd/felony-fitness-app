@@ -17,12 +17,12 @@
  * <Route path="/program-library/:programId" element={<ProgramDetailPage />} />
  */
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../supabaseClient';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import SubPageHeader from '../components/SubPageHeader';
 import ScheduleRoutineModal from '../components/ScheduleRoutineModal';
+import SubPageHeader from '../components/SubPageHeader';
+import { supabase } from '../supabaseClient';
 import './ProgramDetailPage.css';
 
 /**
@@ -40,7 +40,7 @@ import './ProgramDetailPage.css';
 
 const ProgramDetailPage = () => {
   const { programId } = useParams();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const { user } = useAuth();
 
   const [program, setProgram] = useState(null);
@@ -152,7 +152,7 @@ const ProgramDetailPage = () => {
   const handleScheduleSuccess = (scheduleData) => {
     setShowScheduleModal(false);
     setSelectedRoutine(null);
-    
+
     // Show success message
     alert(`Routine "${selectedRoutine.name}" successfully scheduled for ${scheduleData.clientName}!`);
   };
@@ -217,8 +217,8 @@ const ProgramDetailPage = () => {
   if (loading) {
     return (
       <div className="program-detail-page">
-        <SubPageHeader 
-          title="Loading Program..." 
+        <SubPageHeader
+          title="Loading Program..."
           subtitle="Please wait"
         />
         <div className="loading-container">
@@ -232,8 +232,8 @@ const ProgramDetailPage = () => {
   if (error) {
     return (
       <div className="program-detail-page">
-        <SubPageHeader 
-          title="Error" 
+        <SubPageHeader
+          title="Error"
           subtitle="Failed to load program"
         />
         <div className="error-container">
@@ -254,8 +254,8 @@ const ProgramDetailPage = () => {
   if (!program) {
     return (
       <div className="program-detail-page">
-        <SubPageHeader 
-          title="Program Not Found" 
+        <SubPageHeader
+          title="Program Not Found"
           subtitle="The requested program could not be found"
         />
         <div className="error-container">
@@ -272,7 +272,7 @@ const ProgramDetailPage = () => {
 
   return (
     <div className="program-detail-page">
-      <SubPageHeader 
+      <SubPageHeader
         title={program.name}
         subtitle={`${routines.length} workout routine${routines.length !== 1 ? 's' : ''}`}
       />
@@ -302,7 +302,7 @@ const ProgramDetailPage = () => {
             <span className="stat-label">⏱️ Duration</span>
             <span className="stat-value">{formatProgramDuration(program.estimated_weeks)}</span>
           </div>
-          
+
           <div className="stat-item">
             <span className="stat-label">🎯 Target Areas</span>
             <span className="stat-value">{program.target_muscle_groups.join(', ')}</span>
@@ -343,7 +343,7 @@ const ProgramDetailPage = () => {
                 <div className="week-routines">
                   {weekRoutines.map((routine) => {
                     const routineDifficulty = getDifficultyDisplay(routine.difficulty_level);
-                    
+
                     return (
                       <div key={routine.id} className="routine-card">
                         <div className="routine-header">
@@ -388,7 +388,7 @@ const ProgramDetailPage = () => {
 
                         <div className="routine-actions">
                           {clients.length > 0 ? (
-                            <button 
+                            <button
                               onClick={() => handleAssignRoutine(routine)}
                               className="assign-routine-btn"
                             >

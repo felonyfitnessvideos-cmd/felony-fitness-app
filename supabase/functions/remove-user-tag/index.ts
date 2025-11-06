@@ -157,7 +157,7 @@ serve(async (req) => {
 
     // Return success (idempotent - success even if tag wasn't assigned)
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         message: "Tag removed successfully"
       }),

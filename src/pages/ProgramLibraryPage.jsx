@@ -17,10 +17,10 @@
  * <Route path="/program-library" element={<ProgramLibraryPage />} />
  */
 
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { useAuth } from '../AuthContext';
+// import { useAuth } from '../AuthContext';
 import SubPageHeader from '../components/SubPageHeader';
 import './ProgramLibraryPage.css';
 
@@ -47,7 +47,7 @@ import './ProgramLibraryPage.css';
  */
 
 const ProgramLibraryPage = () => {
-  const { user } = useAuth();
+  // const { user } = useAuth();
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -99,7 +99,7 @@ const ProgramLibraryPage = () => {
             .from('program_routines')
             .select('*', { count: 'exact', head: true })
             .eq('program_id', program.id);
-          
+
           return {
             ...program,
             routine_count: count || 0
@@ -133,10 +133,10 @@ const ProgramLibraryPage = () => {
       // Search filter
       if (filters.search) {
         const searchTerm = filters.search.toLowerCase();
-        const matchesSearch = 
+        const matchesSearch =
           program.name.toLowerCase().includes(searchTerm) ||
           program.description.toLowerCase().includes(searchTerm) ||
-          program.target_muscle_groups.some(muscle => 
+          program.target_muscle_groups.some(muscle =>
             muscle.toLowerCase().includes(searchTerm)
           );
         if (!matchesSearch) return false;
@@ -196,7 +196,7 @@ const ProgramLibraryPage = () => {
   const getDifficultyDisplay = (level) => {
     const displays = {
       beginner: '🟢 Beginner',
-      intermediate: '🟡 Intermediate', 
+      intermediate: '🟡 Intermediate',
       advanced: '🔴 Advanced'
     };
     return displays[level] || level;
@@ -226,8 +226,8 @@ const ProgramLibraryPage = () => {
   if (loading) {
     return (
       <div className="program-library-page">
-        <SubPageHeader 
-          title="Program Library" 
+        <SubPageHeader
+          title="Program Library"
           subtitle="Browse and assign workout programs"
         />
         <div className="loading-container">
@@ -241,8 +241,8 @@ const ProgramLibraryPage = () => {
   if (error) {
     return (
       <div className="program-library-page">
-        <SubPageHeader 
-          title="Program Library" 
+        <SubPageHeader
+          title="Program Library"
           subtitle="Browse and assign workout programs"
         />
         <div className="error-container">
@@ -257,8 +257,8 @@ const ProgramLibraryPage = () => {
 
   return (
     <div className="program-library-page">
-      <SubPageHeader 
-        title="Program Library" 
+      <SubPageHeader
+        title="Program Library"
         subtitle={`${programs.length} workout program${programs.length !== 1 ? 's' : ''} available`}
       />
 
@@ -388,7 +388,7 @@ const ProgramLibraryPage = () => {
             <div className="no-results-icon">🔍</div>
             <h3>No programs found</h3>
             <p>
-              {hasActiveFilters 
+              {hasActiveFilters
                 ? "Try adjusting your filters to see more results."
                 : "No programs are currently available."
               }
@@ -417,7 +417,7 @@ const ProgramLibraryPage = () => {
                     <span className="detail-label">⏱️ Duration:</span>
                     <span className="detail-value">{formatDuration(program.estimated_weeks)}</span>
                   </div>
-                  
+
                   <div className="detail-item">
                     <span className="detail-label">🎯 Target:</span>
                     <span className="detail-value">{program.target_muscle_groups.join(', ')}</span>
@@ -435,7 +435,7 @@ const ProgramLibraryPage = () => {
                 </div>
 
                 <div className="program-actions">
-                  <Link 
+                  <Link
                     to={`/program-library/${program.id}`}
                     className="view-program-btn"
                   >

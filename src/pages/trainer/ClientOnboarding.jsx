@@ -12,25 +12,39 @@
  * - Program preferences and scheduling
  */
 
-import React, { useState } from 'react';
-import { 
-  User, 
-  Phone, 
-  Mail, 
-  Calendar, 
-  MapPin, 
-  AlertTriangle,
+import {
   Activity,
-  Target,
+  AlertTriangle,
+  Calendar,
   Clock,
   Heart,
-  Scale,
+  Mail,
+  MapPin,
+  Phone,
   Ruler,
   Save,
-  X
+  Scale,
+  Search,
+  Target,
+  User
 } from 'lucide-react';
+import { useState } from 'react';
 import { supabase } from '../../supabaseClient.js';
 import './ClientOnboarding.css';
+
+/**
+ * Mapping of form goal values to database fitness_goal enum values
+ * @constant
+ */
+const GOAL_MAP = {
+  'weight-loss': 'lose_weight',
+  'muscle-gain': 'build_muscle',
+  'strength': 'build_muscle',
+  'endurance': 'improve_endurance',
+  'general-fitness': 'maintain_weight',
+  'sport-specific': 'improve_endurance',
+  'rehabilitation': 'maintain_weight'
+};
 
 /**
  * ClientOnboarding component for comprehensive client intake
@@ -54,39 +68,39 @@ const ClientOnboarding = () => {
     city: '',
     state: '',
     zipCode: '',
-    
+
     // Emergency Contact
     emergencyName: '',
     emergencyPhone: '',
     emergencyRelationship: '',
-    
+
     // Initial Metrics
     height: '',
     weight: '',
     bodyFatPercentage: '',
     restingHeartRate: '',
     bloodPressure: '',
-    
+
     // Health Information
     medicalConditions: '',
     medications: '',
     injuries: '',
     allergies: '',
     doctorClearance: false,
-    
+
     // Fitness Goals
     primaryGoal: '',
     secondaryGoals: [],
     targetWeight: '',
     timeframe: '',
-    
+
     // Preferences
     workoutDays: [],
     preferredTime: '',
     sessionLength: '',
     exercisePreferences: [],
     exerciseRestrictions: '',
-    
+
     // Program Details
     programType: '',
     nutritionCoaching: false,
@@ -96,13 +110,87 @@ const ClientOnboarding = () => {
 
   const [currentSection, setCurrentSection] = useState('personal');
   const [errors, setErrors] = useState({});
+  const [clientUuid, setClientUuid] = useState('');
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupMessage, setLookupMessage] = useState('');
+
+  /**
+   * Validate UUID format
+   */
+  const isValidUuid = (uuid) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+  };
+
+  /**
+   * Lookup user by UUID and auto-fill form
+   */
+  const handleUuidLookup = async () => {
+    if (!clientUuid.trim()) {
+      setLookupMessage('Please enter a UUID');
+      return;
+    }
+
+    // Validate UUID format
+    if (!isValidUuid(clientUuid.trim())) {
+      setLookupMessage('Invalid UUID format. Expected format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
+      return;
+    }
+
+    setLookupLoading(true);
+    setLookupMessage('');
+
+    try {
+      // Query user_profiles by ID
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', clientUuid.trim())
+        .single();
+
+      if (error || !profile) {
+        setLookupMessage('User not found. Please check the UUID and try again.');
+        setLookupLoading(false);
+        return;
+      }
+
+      // Auto-fill form with existing data
+      setFormData(prev => ({
+        ...prev,
+        firstName: profile.first_name || '',
+        lastName: profile.last_name || '',
+        email: profile.email || '',
+        phone: profile.phone || '',
+        dateOfBirth: profile.date_of_birth || '',
+        gender: profile.gender || '',
+        address: profile.address || '',
+        city: profile.city || '',
+        state: profile.state || '',
+        zipCode: profile.zip_code || '',
+        height: profile.height || '',
+        weight: profile.weight || ''
+      }));
+
+      // Create user display name
+      const userName = profile.first_name && profile.last_name
+        ? `${profile.first_name} ${profile.last_name}`
+        : profile.email || 'User';
+
+      setLookupMessage(`✅ User found: ${userName}`);
+    } catch (err) {
+      console.error('Error looking up user:', err);
+      setLookupMessage('Error looking up user. Please try again.');
+    } finally {
+      setLookupLoading(false);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
@@ -115,67 +203,163 @@ const ClientOnboarding = () => {
   const handleArrayChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
-      [field]: prev[field].includes(value) 
+      [field]: prev[field].includes(value)
         ? prev[field].filter(item => item !== value)
         : [...prev[field], value]
     }));
   };
 
-  const validateSection = (section) => {
+  const validateSection = () => {
     const newErrors = {};
-    
-    switch (section) {
-      case 'personal':
-        if (!formData.firstName) newErrors.firstName = 'First name is required';
-        if (!formData.lastName) newErrors.lastName = 'Last name is required';
-        if (!formData.email) newErrors.email = 'Email is required';
-        if (!formData.phone) newErrors.phone = 'Phone is required';
-        if (!formData.dateOfBirth) newErrors.dateOfBirth = 'Date of birth is required';
-        break;
-      case 'metrics':
-        if (!formData.height) newErrors.height = 'Height is required';
-        if (!formData.weight) newErrors.weight = 'Weight is required';
-        break;
-      case 'goals':
-        if (!formData.primaryGoal) newErrors.primaryGoal = 'Primary goal is required';
-        break;
-    }
-    
+
+    // No required fields - all validation removed
+    // Clients can provide as much or as little information as they're comfortable with
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSectionChange = (section) => {
-    if (validateSection(currentSection)) {
-      setCurrentSection(section);
-    }
+    // Always allow section changes since no validation required
+    setCurrentSection(section);
   };
 
   const handleSubmit = async () => {
     if (validateSection(currentSection)) {
       try {
-        console.log('New client data:', formData);
-        
-        // Step 1: Look up existing user by email (auth.users is not directly queryable, need RPC)
-        // For now, try to create the relationship and let it succeed if user exists
+        console.log('🔄 Starting client onboarding process');
+
+        // Step 1: Get trainer information
         const { data: { user: trainer }, error: trainerError } = await supabase.auth.getUser();
         if (trainerError || !trainer) {
           throw new Error('Unable to get trainer information');
         }
-        
-        // For testing, use the trainer's own ID as client (since you're testing with yourself)
-        const clientUserId = trainer.id; // This will work for self-testing
-        
-        // Step 2: Create trainer-client relationship using our enhanced function with role assignment
+
+        // Step 2: Prepare client identifier
+        const trimmedUuid = clientUuid?.trim();
+        const isLookupSuccessful = lookupMessage.includes('✅');
+        console.log('ℹ️ Processing client:', isLookupSuccessful ? 'existing UUID' : 'new email');
+
+        // Step 3: Create trainer-client relationship
+        // Prepare comprehensive intake notes with all collected data
+        const intakeData = {
+          personalInfo: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            dateOfBirth: formData.dateOfBirth,
+            gender: formData.gender,
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            zipCode: formData.zipCode
+          },
+          emergencyContact: {
+            name: formData.emergencyName,
+            phone: formData.emergencyPhone,
+            relationship: formData.emergencyRelationship
+          },
+          metricsHealth: {
+            height: formData.height,
+            weight: formData.weight,
+            bodyFatPercentage: formData.bodyFatPercentage,
+            restingHeartRate: formData.restingHeartRate,
+            bloodPressure: formData.bloodPressure,
+            medicalConditions: formData.medicalConditions,
+            medications: formData.medications,
+            injuries: formData.injuries,
+            allergies: formData.allergies,
+            doctorClearance: formData.doctorClearance
+          },
+          goalsPreferences: {
+            primaryGoal: formData.primaryGoal,
+            secondaryGoals: formData.secondaryGoals,
+            targetWeight: formData.targetWeight,
+            timeframe: formData.timeframe,
+            workoutDays: formData.workoutDays,
+            preferredTime: formData.preferredTime,
+            sessionLength: formData.sessionLength,
+            exercisePreferences: formData.exercisePreferences,
+            exerciseRestrictions: formData.exerciseRestrictions
+          },
+          programSetup: {
+            programType: formData.programType,
+            nutritionCoaching: formData.nutritionCoaching,
+            startDate: formData.startDate,
+            notes: formData.notes
+          },
+          onboardedAt: new Date().toISOString()
+        };
+
+        const relationshipNotes = `CLIENT INTAKE DATA:\n${JSON.stringify(intakeData, null, 2)}`;
+
+        // Use UUID if it was looked up, otherwise use email
         const { addClientToTrainer } = await import('../../utils/userRoleUtils.js');
-        const relationshipId = await addClientToTrainer(trainer.id, clientUserId, `Onboarded client: ${formData.firstName} ${formData.lastName}`);
-        
+        const relationshipId = await addClientToTrainer(
+          trainer.id,
+          trimmedUuid || null, // Use UUID if available
+          relationshipNotes, // Send comprehensive intake data as notes
+          !trimmedUuid ? formData.email : null // Use email only if no UUID
+        );
+
         if (!relationshipId) {
           throw new Error('Error creating trainer-client relationship');
         }
-        
+
+        // Step 4: Update client's user_profiles with form data
+        // Build update object with only filled fields
+        const profileUpdates = {
+          updated_at: new Date().toISOString()
+        };
+
+        // Personal Info - only fields that exist in user_profiles table
+        if (formData.firstName) profileUpdates.first_name = formData.firstName;
+        if (formData.lastName) profileUpdates.last_name = formData.lastName;
+        if (formData.email) profileUpdates.email = formData.email;
+        if (formData.dateOfBirth) profileUpdates.date_of_birth = formData.dateOfBirth; // Sent as string, DB converts to DATE
+        if (formData.gender) profileUpdates.sex = formData.gender.toLowerCase(); // Sent as string
+        // Note: phone, address, city, state, zip_code don't exist in user_profiles - stored in intake notes instead
+
+        // Metrics - height sent as TEXT string, weights as numeric in lbs
+        if (formData.height) {
+          profileUpdates.height_cm = formData.height; // Send as TEXT string
+        }
+        if (formData.weight) {
+          // Weight in pounds as numeric DECIMAL
+          profileUpdates.current_weight_lbs = parseFloat(formData.weight) || null;
+        }
+        if (formData.targetWeight) {
+          // Target weight in pounds as numeric DECIMAL
+          profileUpdates.target_weight_lbs = parseFloat(formData.targetWeight) || null;
+        }
+
+        // Goals - sent as TEXT string, map form values to database enum
+        if (formData.primaryGoal) {
+          profileUpdates.fitness_goal = GOAL_MAP[formData.primaryGoal] || null;
+        }
+
+        console.log('📝 Updating user profile with', Object.keys(profileUpdates).length, 'fields');
+
+        // Update the user_profiles table only if we have a valid UUID
+        if (trimmedUuid) {
+          const { error: updateError } = await supabase
+            .from('user_profiles')
+            .update(profileUpdates)
+            .eq('id', trimmedUuid);
+
+          if (updateError) {
+            console.error('❌ Error updating user profile:', updateError);
+            throw new Error(`Failed to save client data: ${updateError.message}`);
+          }
+
+          console.log('✅ Client profile updated successfully');
+        } else {
+          console.log('ℹ️ Skipping user_profiles update (no existing client UUID provided)');
+        }
+
         alert('Client successfully onboarded and added to your client list!');
-        
+
         // Reset form
         setFormData({
           firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '', gender: '',
@@ -189,7 +373,9 @@ const ClientOnboarding = () => {
           startDate: '', notes: ''
         });
         setCurrentSection('personal');
-        
+        setClientUuid('');
+        setLookupMessage('');
+
       } catch (error) {
         console.error('Onboarding error:', error);
         alert(`Error onboarding client: ${error.message}`);
@@ -199,27 +385,60 @@ const ClientOnboarding = () => {
 
   const renderPersonalInfo = () => (
     <div className="form-section">
-      <h3><User size={20} /> Personal Information</h3>
-      
-      <div className="form-row">
+      {/* UUID Lookup Field */}
+      <div className="form-group uuid-lookup-field">
+        <div className="uuid-label-row">
+          <label>
+            <Search size={16} /> Load Existing User
+          </label>
+          <button
+            onClick={handleUuidLookup}
+            disabled={lookupLoading}
+            className="load-button-inline"
+            type="button"
+          >
+            {lookupLoading ? 'Loading...' : 'Load User Data'}
+          </button>
+        </div>
+        <input
+          type="text"
+          placeholder={lookupMessage && lookupMessage.includes('✅') ? lookupMessage : "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"}
+          value={lookupMessage && lookupMessage.includes('✅') ? '' : clientUuid}
+          onChange={(e) => setClientUuid(e.target.value)}
+          pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+          title="UUID format: 8-4-4-4-12 hexadecimal characters"
+          className={`uuid-input-inline ${lookupMessage ? (lookupMessage.includes('✅') ? 'success' : 'error') : ''}`}
+          maxLength="36"
+          disabled={lookupMessage && lookupMessage.includes('✅')}
+        />
+        {lookupMessage && !lookupMessage.includes('✅') && (
+          <div className="lookup-error-message">
+            {lookupMessage}
+          </div>
+        )}
+      </div>
+
+      <div className="form-row compact-names">
         <div className="form-group">
-          <label>First Name *</label>
+          <label>First Name</label>
           <input
             type="text"
             value={formData.firstName}
             onChange={(e) => handleInputChange('firstName', e.target.value)}
             className={errors.firstName ? 'error' : ''}
+            maxLength="20"
           />
           {errors.firstName && <span className="error-text">{errors.firstName}</span>}
         </div>
-        
+
         <div className="form-group">
-          <label>Last Name *</label>
+          <label>Last Name</label>
           <input
             type="text"
             value={formData.lastName}
             onChange={(e) => handleInputChange('lastName', e.target.value)}
             className={errors.lastName ? 'error' : ''}
+            maxLength="20"
           />
           {errors.lastName && <span className="error-text">{errors.lastName}</span>}
         </div>
@@ -227,7 +446,7 @@ const ClientOnboarding = () => {
 
       <div className="form-row">
         <div className="form-group">
-          <label><Mail size={16} /> Email *</label>
+          <label><Mail size={16} /> Email</label>
           <input
             type="email"
             value={formData.email}
@@ -236,9 +455,9 @@ const ClientOnboarding = () => {
           />
           {errors.email && <span className="error-text">{errors.email}</span>}
         </div>
-        
+
         <div className="form-group">
-          <label><Phone size={16} /> Phone *</label>
+          <label><Phone size={16} /> Phone</label>
           <input
             type="tel"
             value={formData.phone}
@@ -249,9 +468,9 @@ const ClientOnboarding = () => {
         </div>
       </div>
 
-      <div className="form-row">
+      <div className="form-row compact-date-gender">
         <div className="form-group">
-          <label><Calendar size={16} /> Date of Birth *</label>
+          <label><Calendar size={16} /> Date of Birth</label>
           <input
             type="date"
             value={formData.dateOfBirth}
@@ -260,7 +479,7 @@ const ClientOnboarding = () => {
           />
           {errors.dateOfBirth && <span className="error-text">{errors.dateOfBirth}</span>}
         </div>
-        
+
         <div className="form-group">
           <label>Gender</label>
           <select
@@ -286,37 +505,40 @@ const ClientOnboarding = () => {
         />
       </div>
 
-      <div className="form-row">
-        <div className="form-group">
-          <label>City</label>
-          <input
-            type="text"
-            value={formData.city}
-            onChange={(e) => handleInputChange('city', e.target.value)}
-          />
-        </div>
-        
+      <div className="form-group">
+        <label>City</label>
+        <input
+          type="text"
+          value={formData.city}
+          onChange={(e) => handleInputChange('city', e.target.value)}
+        />
+      </div>
+
+      <div className="form-row compact-state-zip">
         <div className="form-group">
           <label>State</label>
           <input
             type="text"
             value={formData.state}
             onChange={(e) => handleInputChange('state', e.target.value)}
+            maxLength="2"
+            placeholder="CA"
           />
         </div>
-        
+
         <div className="form-group">
           <label>Zip Code</label>
           <input
             type="text"
             value={formData.zipCode}
             onChange={(e) => handleInputChange('zipCode', e.target.value)}
+            maxLength="10"
           />
         </div>
       </div>
 
       <h4><AlertTriangle size={18} /> Emergency Contact</h4>
-      
+
       <div className="form-row">
         <div className="form-group">
           <label>Emergency Contact Name</label>
@@ -326,7 +548,7 @@ const ClientOnboarding = () => {
             onChange={(e) => handleInputChange('emergencyName', e.target.value)}
           />
         </div>
-        
+
         <div className="form-group">
           <label>Emergency Contact Phone</label>
           <input
@@ -335,7 +557,7 @@ const ClientOnboarding = () => {
             onChange={(e) => handleInputChange('emergencyPhone', e.target.value)}
           />
         </div>
-        
+
         <div className="form-group">
           <label>Relationship</label>
           <input
@@ -352,10 +574,10 @@ const ClientOnboarding = () => {
   const renderMetrics = () => (
     <div className="form-section">
       <h3><Activity size={20} /> Initial Metrics</h3>
-      
+
       <div className="form-row">
         <div className="form-group">
-          <label><Ruler size={16} /> Height (inches) *</label>
+          <label><Ruler size={16} /> Height (inches)</label>
           <input
             type="number"
             value={formData.height}
@@ -364,9 +586,9 @@ const ClientOnboarding = () => {
           />
           {errors.height && <span className="error-text">{errors.height}</span>}
         </div>
-        
+
         <div className="form-group">
-          <label><Scale size={16} /> Weight (lbs) *</label>
+          <label><Scale size={16} /> Weight (lbs)</label>
           <input
             type="number"
             value={formData.weight}
@@ -379,7 +601,7 @@ const ClientOnboarding = () => {
 
       <div className="form-row">
         <div className="form-group">
-          <label>Body Fat % (optional)</label>
+          <label>Body Fat %</label>
           <input
             type="number"
             step="0.1"
@@ -387,9 +609,9 @@ const ClientOnboarding = () => {
             onChange={(e) => handleInputChange('bodyFatPercentage', e.target.value)}
           />
         </div>
-        
+
         <div className="form-group">
-          <label><Heart size={16} /> Resting Heart Rate (optional)</label>
+          <label><Heart size={16} /> Resting Heart Rate</label>
           <input
             type="number"
             value={formData.restingHeartRate}
@@ -409,7 +631,7 @@ const ClientOnboarding = () => {
       </div>
 
       <h4>Health Information</h4>
-      
+
       <div className="form-group">
         <label>Medical Conditions</label>
         <textarea
@@ -462,9 +684,9 @@ const ClientOnboarding = () => {
   const renderGoals = () => (
     <div className="form-section">
       <h3><Target size={20} /> Fitness Goals & Preferences</h3>
-      
+
       <div className="form-group">
-        <label>Primary Goal *</label>
+        <label>Primary Goal</label>
         <select
           value={formData.primaryGoal}
           onChange={(e) => handleInputChange('primaryGoal', e.target.value)}
@@ -507,7 +729,7 @@ const ClientOnboarding = () => {
             onChange={(e) => handleInputChange('targetWeight', e.target.value)}
           />
         </div>
-        
+
         <div className="form-group">
           <label>Timeframe</label>
           <select
@@ -524,7 +746,7 @@ const ClientOnboarding = () => {
       </div>
 
       <h4><Clock size={18} /> Schedule Preferences</h4>
-      
+
       <div className="form-group">
         <label>Preferred Workout Days</label>
         <div className="checkbox-grid">
@@ -556,7 +778,7 @@ const ClientOnboarding = () => {
             <option value="evening">Evening (6-9 PM)</option>
           </select>
         </div>
-        
+
         <div className="form-group">
           <label>Session Length</label>
           <select
@@ -602,7 +824,7 @@ const ClientOnboarding = () => {
   const renderProgram = () => (
     <div className="form-section">
       <h3>Program Details</h3>
-      
+
       <div className="form-group">
         <label>Program Type</label>
         <select
@@ -650,34 +872,29 @@ const ClientOnboarding = () => {
 
   return (
     <div className="client-onboarding">
-      <div className="onboarding-header">
-        <h2>New Client Onboarding</h2>
-        <p>Complete all sections to set up your new client's profile and program</p>
-      </div>
-
       <div className="section-tabs">
-        <button 
+        <button
           className={`tab ${currentSection === 'personal' ? 'active' : ''}`}
           onClick={() => handleSectionChange('personal')}
         >
           <User size={16} />
           Personal Info
         </button>
-        <button 
+        <button
           className={`tab ${currentSection === 'metrics' ? 'active' : ''}`}
           onClick={() => handleSectionChange('metrics')}
         >
           <Activity size={16} />
           Metrics & Health
         </button>
-        <button 
+        <button
           className={`tab ${currentSection === 'goals' ? 'active' : ''}`}
           onClick={() => handleSectionChange('goals')}
         >
           <Target size={16} />
           Goals & Preferences
         </button>
-        <button 
+        <button
           className={`tab ${currentSection === 'program' ? 'active' : ''}`}
           onClick={() => handleSectionChange('program')}
         >
@@ -698,8 +915,8 @@ const ClientOnboarding = () => {
           <Save size={16} />
           Save Draft
         </button>
-        <button className="complete-onboarding-btn" onClick={handleSubmit}>
-          Complete Onboarding
+        <button className="submit-btn" onClick={handleSubmit}>
+          Submit
         </button>
       </div>
     </div>
