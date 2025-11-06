@@ -337,18 +337,22 @@ const ClientOnboarding = () => {
 
         console.log('📝 Updating user_profiles with:', profileUpdates);
 
-        // Update the user_profiles table
-        const { error: updateError } = await supabase
-          .from('user_profiles')
-          .update(profileUpdates)
-          .eq('id', trimmedUuid);
+        // Update the user_profiles table only if we have a valid UUID
+        if (trimmedUuid) {
+          const { error: updateError } = await supabase
+            .from('user_profiles')
+            .update(profileUpdates)
+            .eq('id', trimmedUuid);
 
-        if (updateError) {
-          console.error('❌ Error updating user profile:', updateError);
-          throw new Error(`Failed to save client data: ${updateError.message}`);
+          if (updateError) {
+            console.error('❌ Error updating user profile:', updateError);
+            throw new Error(`Failed to save client data: ${updateError.message}`);
+          }
+
+          console.log('✅ Client profile updated successfully');
+        } else {
+          console.log('ℹ️ Skipping user_profiles update (no existing client UUID provided)');
         }
-
-        console.log('✅ Client profile updated successfully');
 
         alert('Client successfully onboarded and added to your client list!');
 

@@ -78,9 +78,6 @@ const TrainerMessages = () => {
   /** @type {[string, Function]} Search term for filtering conversations */
   const [_searchTerm, _setSearchTerm] = useState('');
 
-  /** @type {[Object|null, Function]} Real-time message subscription */
-  const [messageSubscription, setMessageSubscription] = useState(null);
-
   /** @type {[Array, Function]} List of all clients for sidebar */
   const [allClients, setAllClients] = useState([]);
 
@@ -95,9 +92,10 @@ const TrainerMessages = () => {
     loadConversations();
     loadAllClients(); // Load clients for sidebar
 
+    let subscription;
     const setupSubscription = async () => {
       try {
-        const subscription = await subscribeToMessages((payload) => {
+        subscription = await subscribeToMessages((payload) => {
           console.log('📨 New message received:', payload);
           loadConversations();
 
@@ -107,10 +105,6 @@ const TrainerMessages = () => {
             loadMessages(selectedConversation.user_id);
           }
         });
-
-        if (subscription) {
-          setMessageSubscription(subscription);
-        }
       } catch (error) {
         console.error('Failed to setup message subscription:', error);
       }
@@ -119,9 +113,7 @@ const TrainerMessages = () => {
     setupSubscription();
 
     return () => {
-      if (messageSubscription) {
-        messageSubscription.unsubscribe();
-      }
+      subscription?.unsubscribe();
     };
   }, [selectedConversation]);
 
@@ -312,10 +304,19 @@ const TrainerMessages = () => {
   /**
    * Get initials from a full name
    */
+  /**
+   * Get initials from a full name
+   * Handles edge cases: empty strings, whitespace-only, emails
+   */
   const getInitials = (fullName) => {
     if (!fullName) return '?';
-    const names = fullName.trim().split(' ');
+    
+    // Filter out empty strings from split (handles multiple spaces)
+    const names = fullName.trim().split(' ').filter(n => n.length > 0);
+    
+    if (names.length === 0) return '?';
     if (names.length === 1) return names[0][0]?.toUpperCase() || '?';
+    
     return (names[0][0] + names[names.length - 1][0]).toUpperCase();
   };
 
