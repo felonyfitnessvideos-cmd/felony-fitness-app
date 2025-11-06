@@ -27,24 +27,22 @@ vi.mock('../../src/AuthContext.jsx', () => ({
   useAuth: () => mockAuthContext
 }));
 
-// Mock Supabase client with factory function to avoid hoisting issues
-const mockSupabaseInstance = {
-  from: vi.fn(function() { return this; }),
-  select: vi.fn(function() { return this; }),
-  eq: vi.fn(function() { return this; }),
-  single: vi.fn(function() { return this; }),
-  upsert: vi.fn(function() { return this; }),
-  insert: vi.fn(function() { return this; }),
-  order: vi.fn(function() { return this; }),
-  limit: vi.fn(function() { return this; })
-};
-
+// Mock Supabase client - use factory function to avoid hoisting
 vi.mock('../../src/supabaseClient.js', () => ({
-  supabase: mockSupabaseInstance
+  supabase: {
+    from: vi.fn(function() { return this; }),
+    select: vi.fn(function() { return this; }),
+    eq: vi.fn(function() { return this; }),
+    single: vi.fn(function() { return this; }),
+    upsert: vi.fn(function() { return this; }),
+    insert: vi.fn(function() { return this; }),
+    order: vi.fn(function() { return this; }),
+    limit: vi.fn(function() { return this; })
+  }
 }));
 
-// Make mockSupabase available in tests
-const mockSupabase = mockSupabaseInstance;
+// Import the mocked supabase after mocking
+const { supabase: mockSupabase } = await import('../../src/supabaseClient.js');
 
 // Mock react-router-dom navigate
 const mockNavigate = vi.fn();
@@ -62,9 +60,12 @@ vi.mock('lucide-react', () => ({
   Calendar: () => <div data-testid="calendar-icon">Calendar Icon</div>,
   HeartPulse: () => <div data-testid="heart-pulse-icon">HeartPulse Icon</div>,
   Edit: () => <div data-testid="edit-icon">Edit Icon</div>,
+  Edit2: () => <div data-testid="edit2-icon">Edit2 Icon</div>,
   Save: () => <div data-testid="save-icon">Save Icon</div>,
   Weight: () => <div data-testid="weight-icon">Weight Icon</div>,
-  Activity: () => <div data-testid="activity-icon">Activity Icon</div>
+  Activity: () => <div data-testid="activity-icon">Activity Icon</div>,
+  Percent: () => <div data-testid="percent-icon">Percent Icon</div>,
+  X: () => <div data-testid="x-icon">X Icon</div>
 }));
 
 // Mock SubPageHeader component

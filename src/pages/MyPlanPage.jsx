@@ -540,7 +540,7 @@ function MyPlanPage() {
         Every plan is built to support your comeback. Choose what fuels you.
       </p>
 
-      <button className="settings-button" onClick={openSettingsModal}>
+      <button className="settings-button" onClick={openSettingsModal} aria-label="Settings">
         <Settings size={24} />
       </button>
 
