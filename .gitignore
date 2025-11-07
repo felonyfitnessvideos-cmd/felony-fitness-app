@@ -45,9 +45,13 @@ OldFiles/
 
 # Testing
 /coverage/
+**/coverage/
 *.lcov
 test-results/
 playwright-report/
+
+# Database migrations (generated locally)
+supabase/migrations/
 
 # Vercel
 .vercel

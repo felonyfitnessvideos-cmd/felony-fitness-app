@@ -6,8 +6,8 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
+import { supabase } from '../supabaseClient.js';
 /**
  * NutritionLogPage — log daily nutrition entries.
  *
@@ -91,16 +91,16 @@ function NutritionLogPage() {
   const fetchLogData = useCallback(async (userId) => {
     setLoading(true);
     try {
-      // **TIMEZONE FIX**: Calculate the start and end of the user's local day.
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
-
-      const startOfTomorrow = new Date(startOfToday);
-      startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+      // **TIMEZONE FIX**: Calculate UTC midnight for today and tomorrow
+      // This ensures we query the correct 24-hour period regardless of timezone
+      const now = new Date();
+      const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+      const startOfTomorrowUTC = new Date(startOfTodayUTC);
+      startOfTomorrowUTC.setUTCDate(startOfTomorrowUTC.getUTCDate() + 1);
 
       // DEBUGGING: Log the exact timestamps being sent to the database (guarded).
       if (import.meta.env?.DEV) {
-        console.debug('Fetching logs between (UTC):', startOfToday.toISOString(), 'and', startOfTomorrow.toISOString());
+        console.debug('Fetching logs between (UTC):', startOfTodayUTC.toISOString(), 'and', startOfTomorrowUTC.toISOString());
       }
 
 
@@ -109,8 +109,8 @@ function NutritionLogPage() {
           .from('nutrition_logs')
           .select('*, food_servings(*)')
           .eq('user_id', userId)
-          .gte('created_at', startOfToday.toISOString())
-          .lt('created_at', startOfTomorrow.toISOString()),
+          .gte('created_at', startOfTodayUTC.toISOString())
+          .lt('created_at', startOfTomorrowUTC.toISOString()),
         supabase
           .from('user_profiles')
           .select('daily_calorie_goal, daily_protein_goal_g, daily_water_goal_oz')
@@ -125,8 +125,24 @@ function NutritionLogPage() {
       // DEBUGGING: Avoid logging full objects in production; only show non-sensitive fields in development.
       if (import.meta.env?.DEV) {
         try {
-          const safePreview = logs.map(l => ({ id: l.id, meal_type: l.meal_type, created_at: l.created_at }));
-          console.debug('Fetched logs (preview):', safePreview);
+          const safePreview = logs.map(l => ({ 
+            id: l.id, 
+            meal_type: l.meal_type, 
+            created_at: l.created_at,
+            food_serving_id: l.food_serving_id,
+            has_food_servings: !!l.food_servings,
+            food_name: l.food_servings?.food_name || 'NULL'
+          }));
+          console.debug('🔍 Fetched logs (preview):', safePreview);
+          // Check for logs with missing food_servings
+          const missingServings = logs.filter(l => !l.food_servings);
+          if (missingServings.length > 0) {
+            console.warn('⚠️ Found logs with missing food_servings:', missingServings.map(l => ({
+              id: l.id,
+              food_serving_id: l.food_serving_id,
+              meal_type: l.meal_type
+            })));
+          }
         } catch {
           console.debug('Fetched logs (count):', Array.isArray(logs) ? logs.length : typeof logs);
         }
@@ -199,35 +215,70 @@ function NutritionLogPage() {
 
       setIsSearching(true);
       try {
-        // TEMPORARY FIX: Direct database search until functions are fixed
-        console.log('🔍 Searching for:', term);
+        // Call the hybrid food-search-v2 Edge Function (enhanced with AI guardrails)
+        const { data: searchData, error: functionError } = await supabase.functions.invoke('food-search-v2', {
+          body: { query: term }
+        });
 
-        const { data: foodServings, error } = await supabase
-          .from('food_servings')
-          .select('*')
-          .ilike('food_name', `%${term}%`)
-          .limit(10);
-
-        if (error) {
-          console.error('Search error:', error);
+        if (functionError) {
+          console.error('Food search error:', functionError);
+          console.error('Search data received:', searchData);
           setSearchResults([]);
           return;
         }
 
-        console.log('🔍 Found food servings:', foodServings);
+        console.log('Food search successful:', { source: searchData?.source, count: searchData?.results?.length });
 
-        const standardizedResults = (foodServings || []).map(serving => ({
-          is_external: false,
-          food_id: null, // No foods table relationship in current structure
-          name: serving.food_name,
-          serving_id: serving.id,
-          serving_description: serving.serving_description,
-          calories: serving.calories,
-          protein_g: serving.protein_g,
-        }));
+        const results = searchData?.results || [];
+        const source = searchData?.source || 'unknown';
+
+        // Standardize results format for both local and external sources
+        // food-search-v2 now returns flat arrays for both local and external
+        const standardizedResults = results.map(item => {
+          const isExternal = source === 'external';
+          
+          return {
+            is_external: isExternal,
+            food_id: item.id || null,
+            name: item.food_name || item.name, // local has food_name, external has name
+            serving_id: isExternal ? null : item.id, // External foods don't have IDs yet
+            serving_description: item.serving_description,
+            // Core macronutrients
+            calories: item.calories || 0,
+            protein_g: item.protein_g || 0,
+            carbs_g: item.carbs_g || 0,
+            fat_g: item.fat_g || 0,
+            fiber_g: item.fiber_g || 0,
+            sugar_g: item.sugar_g || 0,
+            // Micronutrients - all default to 0
+            sodium_mg: item.sodium_mg || 0,
+            calcium_mg: item.calcium_mg || 0,
+            iron_mg: item.iron_mg || 0,
+            vitamin_c_mg: item.vitamin_c_mg || 0,
+            potassium_mg: item.potassium_mg || 0,
+            vitamin_a_mcg: item.vitamin_a_mcg || 0,
+            vitamin_e_mg: item.vitamin_e_mg || 0,
+            vitamin_k_mcg: item.vitamin_k_mcg || 0,
+            thiamin_mg: item.thiamin_mg || 0,
+            riboflavin_mg: item.riboflavin_mg || 0,
+            niacin_mg: item.niacin_mg || 0,
+            vitamin_b6_mg: item.vitamin_b6_mg || 0,
+            folate_mcg: item.folate_mcg || 0,
+            vitamin_b12_mcg: item.vitamin_b12_mcg || 0,
+            magnesium_mg: item.magnesium_mg || 0,
+            phosphorus_mg: item.phosphorus_mg || 0,
+            zinc_mg: item.zinc_mg || 0,
+            copper_mg: item.copper_mg || 0,
+            selenium_mcg: item.selenium_mcg || 0,
+            // Metadata
+            brand: item.brand || null,
+            category: item.category || null,
+            pdcaas_score: item.pdcaas_score || 0,
+            quality_score: item.quality_score || 0,
+          };
+        });
 
         setSearchResults(standardizedResults);
-
       } catch (error) {
         if (error?.name === 'AbortError') {
           // ignore
@@ -299,12 +350,74 @@ function NutritionLogPage() {
     try {
       console.log('🔍 DEBUG: Logging food:', selectedFood);
 
-      // TEMPORARY FIX: Direct database insert until RPC functions are fixed
+      let servingId = selectedFood.serving_id;
+
+      // If this is an external food without a serving_id, create a food_servings record first
+      if (!servingId && selectedFood.is_external) {
+        console.log('🔍 External food detected, creating food_servings record...');
+        
+        const { data: newServing, error: servingError } = await supabase
+          .from('food_servings')
+          .insert({
+            food_name: selectedFood.name,
+            serving_description: selectedFood.serving_description || '1 serving',
+            // Core macronutrients
+            calories: selectedFood.calories || 0,
+            protein_g: selectedFood.protein_g || 0,
+            carbs_g: selectedFood.carbs_g || 0,
+            fat_g: selectedFood.fat_g || 0,
+            fiber_g: selectedFood.fiber_g || 0,
+            sugar_g: selectedFood.sugar_g || 0,
+            // Micronutrients - explicitly set to 0 if not provided
+            sodium_mg: selectedFood.sodium_mg || 0,
+            calcium_mg: selectedFood.calcium_mg || 0,
+            iron_mg: selectedFood.iron_mg || 0,
+            vitamin_c_mg: selectedFood.vitamin_c_mg || 0,
+            potassium_mg: selectedFood.potassium_mg || 0,
+            vitamin_a_mcg: selectedFood.vitamin_a_mcg || 0,
+            vitamin_e_mg: selectedFood.vitamin_e_mg || 0,
+            vitamin_k_mcg: selectedFood.vitamin_k_mcg || 0,
+            thiamin_mg: selectedFood.thiamin_mg || 0,
+            riboflavin_mg: selectedFood.riboflavin_mg || 0,
+            niacin_mg: selectedFood.niacin_mg || 0,
+            vitamin_b6_mg: selectedFood.vitamin_b6_mg || 0,
+            folate_mcg: selectedFood.folate_mcg || 0,
+            vitamin_b12_mcg: selectedFood.vitamin_b12_mcg || 0,
+            magnesium_mg: selectedFood.magnesium_mg || 0,
+            phosphorus_mg: selectedFood.phosphorus_mg || 0,
+            zinc_mg: selectedFood.zinc_mg || 0,
+            copper_mg: selectedFood.copper_mg || 0,
+            selenium_mcg: selectedFood.selenium_mcg || 0,
+            // Metadata
+            brand: selectedFood.brand || null,
+            category: selectedFood.category || null,
+            pdcaas_score: selectedFood.pdcaas_score || 0,
+            data_sources: 'openai',
+            quality_score: selectedFood.quality_score || 70,
+            enrichment_status: 'completed',
+            last_enrichment: new Date().toISOString(),
+            is_verified: false,
+            source: 'external_api'
+          })
+          .select()
+          .single();
+
+        if (servingError) {
+          console.error('❌ Error creating food_servings record:', servingError);
+          alert(`Error saving food: ${servingError.message}`);
+          return;
+        }
+
+        servingId = newServing.id;
+        console.log('✅ Created food_servings record:', servingId);
+      }
+
+      // Now insert the nutrition log
       const { data, error } = await supabase
         .from('nutrition_logs')
         .insert({
           user_id: user.id,
-          food_serving_id: selectedFood.serving_id,
+          food_serving_id: servingId,
           meal_type: activeMeal,
           quantity_consumed: qty
         })
