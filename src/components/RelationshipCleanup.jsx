@@ -5,9 +5,9 @@
  * @version 1.0.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient.js';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../AuthContext.jsx';
+import { supabase } from '../supabaseClient.js';
 
 const RelationshipCleanup = () => {
   const { user } = useAuth();
@@ -20,6 +20,8 @@ const RelationshipCleanup = () => {
     if (user) {
       loadCurrentData();
     }
+    // loadCurrentData changes on every render, so we can't include it safely
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const addResult = (message, isSuccess = true) => {
