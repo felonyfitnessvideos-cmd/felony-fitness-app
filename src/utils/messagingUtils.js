@@ -79,41 +79,14 @@ export async function getConversations() {
   try {
     console.log('📥 Fetching conversations...');
 
-    // Call the Edge Function
-    const { data, error } = await supabase.functions.invoke('get-conversations', {
-      body: {}
-    });
-
-    if (error) {
-      // If Edge Function fails, use fallback
-      console.log('⚠️ Edge Function failed. Using fallback approach...');
-      return await getConversationsFallback();
-    }
-
-    console.log('✅ Fetched', data?.conversations?.length || 0, 'conversations');
-    return data?.conversations || [];
-  } catch (error) {
-    console.error('Error in getConversations:', error);
-    throw error;
-  }
-}
-
-/**
- * Fallback method to get conversations when database functions are not available
- * This creates conversation list using trainer-client relationships
- */
-async function getConversationsFallback() {
-  try {
-    console.log('📥 Using fallback conversation method...');
-
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      console.log('⚠️ No authenticated user for conversations fallback');
+      console.log('⚠️ No authenticated user');
       return [];
     }
 
-    const fallbackConversations = [];
+    const conversations = [];
 
     // Get trainer-client relationships to show potential conversations
     const { data: relationships, error: relationshipsError } = await supabase
@@ -136,25 +109,28 @@ async function getConversationsFallback() {
           .in('id', otherUserIds);
 
         if (!usersError && users) {
-          users.forEach(otherUser => {
-            fallbackConversations.push({
+          // Get unread counts for each user
+          for (const otherUser of users) {
+            const unreadCount = await getConversationUnreadCount(otherUser.id);
+            
+            conversations.push({
               user_id: otherUser.id,
               user_full_name: `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || otherUser.email,
               user_email: otherUser.email,
               last_message_content: 'Start a conversation...',
               last_message_at: new Date().toISOString(),
-              unread_count: 0,
+              unread_count: unreadCount,
               is_last_message_from_me: false
             });
-          });
+          }
         }
       }
     }
 
-    console.log('✅ Fallback: showing', fallbackConversations.length, 'potential conversations from trainer-client relationships');
-    return fallbackConversations;
+    console.log('✅ Fetched', conversations.length, 'conversations');
+    return conversations;
   } catch (error) {
-    console.error('Error in fallback conversations:', error);
+    console.error('Error in getConversations:', error);
     return [];
   }
 }
@@ -182,40 +158,14 @@ export async function getConversationMessages(otherUserId) {
       throw new Error('Other user ID is required');
     }
 
-    // Call the Edge Function
-    const { data, error } = await supabase.functions.invoke('get-conversation-messages', {
-      body: { other_user_id: otherUserId }
-    });
-
-    if (error) {
-      // If Edge Function fails, use fallback
-      console.log('⚠️ Edge Function failed. Using fallback approach...');
-      return await getConversationMessagesFallback(otherUserId);
-    }
-
-    console.log('✅ Fetched', data?.messages?.length || 0, 'messages');
-    return data?.messages || [];
-  } catch (_error) {
-    console.error('Error in getConversationMessages:', _error);
-    throw _error;
-  }
-}
-
-/**
- * Fallback method to get conversation messages when database functions are not available
- */
-async function getConversationMessagesFallback(otherUserId) {
-  try {
-    console.log('📥 Using fallback messages method for user:', otherUserId);
-
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      console.log('⚠️ No authenticated user for messages fallback');
+      console.log('⚠️ No authenticated user');
       return [];
     }
 
-    // Query the direct_messages table directly WITHOUT foreign key relationships
+    // Query the direct_messages table directly
     const { data: messages, error: messagesError } = await supabase
       .from('direct_messages')
       .select('id, sender_id, recipient_id, content, created_at, read_at')
@@ -223,7 +173,7 @@ async function getConversationMessagesFallback(otherUserId) {
       .order('created_at', { ascending: true });
 
     if (messagesError) {
-      console.error('Error in fallback messages query:', messagesError);
+      console.error('Error fetching messages:', messagesError);
       return [];
     }
 
@@ -244,7 +194,7 @@ async function getConversationMessagesFallback(otherUserId) {
     }
 
     // Transform messages to match expected format
-    const fallbackMessages = (messages || []).map(message => ({
+    const formattedMessages = (messages || []).map(message => ({
       id: message.id,
       sender_id: message.sender_id,
       recipient_id: message.recipient_id,
@@ -256,11 +206,97 @@ async function getConversationMessagesFallback(otherUserId) {
       is_read: message.read_at !== null
     }));
 
-    console.log('✅ Fallback: showing', fallbackMessages.length, 'messages from direct query');
-    return fallbackMessages;
-  } catch (error) {
-    console.error('Error in fallback messages:', error);
+    console.log('✅ Fetched', formattedMessages.length, 'messages');
+    return formattedMessages;
+  } catch (_error) {
+    console.error('Error in getConversationMessages:', _error);
     return [];
+  }
+}
+
+/**
+ * Get total count of unread messages for current user
+ * 
+ * For trainers: Counts messages from clients that need a response (needs_response = true)
+ * For clients: Counts unread messages from trainers (read_at is null)
+ * 
+ * @async
+ * @returns {Promise<number>} Total number of unread messages
+ * 
+ * @example
+ * const unreadCount = await getUnreadMessageCount();
+ * console.log('You have', unreadCount, 'unread messages');
+ */
+export async function getUnreadMessageCount() {
+  try {
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return 0;
+    }
+
+    // Count messages where user is recipient and needs_response = true (their turn to respond)
+    const { count, error } = await supabase
+      .from('direct_messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('recipient_id', user.id)
+      .eq('needs_response', true);
+
+    if (error) {
+      console.error('Error getting unread count:', error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error in getUnreadMessageCount:', error);
+    return 0;
+  }
+}
+
+/**
+ * Get unread message count for a specific conversation
+ * 
+ * For trainers: Counts messages from specific client that need a response
+ * For clients: Counts unread messages from specific trainer
+ * 
+ * @async
+ * @param {string} otherUserId - ID of the other user in the conversation
+ * @returns {Promise<number>} Number of unread messages from that user
+ * 
+ * @example
+ * const unreadCount = await getConversationUnreadCount('user-123');
+ * console.log('You have', unreadCount, 'unread messages from this user');
+ */
+export async function getConversationUnreadCount(otherUserId) {
+  try {
+    if (!otherUserId) {
+      return 0;
+    }
+
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return 0;
+    }
+
+    // Count messages from other user where current user is recipient and needs_response = true
+    const { count, error } = await supabase
+      .from('direct_messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('sender_id', otherUserId)
+      .eq('recipient_id', user.id)
+      .eq('needs_response', true);
+
+    if (error) {
+      console.error('Error getting conversation unread count:', error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error in getConversationUnreadCount:', error);
+    return 0;
   }
 }
 
@@ -306,7 +342,15 @@ export async function sendMessage(recipientId, content) {
       throw new Error('Authentication required to send messages');
     }
 
+    // Mark all previous messages in this conversation as NOT needing response
+    // This ensures only the most recent message (from sender) shows as needing response
+    await supabase
+      .from('direct_messages')
+      .update({ needs_response: false })
+      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${user.id})`);
+
     // Insert message directly into database
+    // needs_response = true means the RECIPIENT needs to respond (it's their turn)
     const { data, error } = await supabase
       .from('direct_messages')
       .insert({
@@ -314,6 +358,7 @@ export async function sendMessage(recipientId, content) {
         recipient_id: recipientId,
         content: content.trim(),
         message_type: 'text',
+        needs_response: true, // Recipient needs to respond
         created_at: new Date().toISOString()
       })
       .select('id')
@@ -452,45 +497,6 @@ async function markMessagesAsReadFallback(otherUserId) {
   }
 }
 
-/**
- * Get total unread message count for current user
- * 
- * Returns the total number of unread messages across all conversations
- * for the current user. Useful for displaying notification badges.
- * 
- * @async
- * @returns {Promise<number>} Total number of unread messages
- * @throws {Error} When database query fails
- * 
- * @example
- * const unreadCount = await getUnreadMessageCount();
- * if (unreadCount > 0) {
- *   console.log('You have', unreadCount, 'unread messages');
- * }
- */
-export async function getUnreadMessageCount() {
-  try {
-    console.log('📊 Fetching unread message count...');
-
-    // Call the Edge Function
-    const { data, error } = await supabase.functions.invoke('get-unread-message-count', {
-      body: {}
-    });
-
-    if (error) {
-      console.error('Error fetching unread count:', error);
-      throw new Error(`Failed to fetch unread count: ${error.message}`);
-    }
-
-    const count = data?.count || 0;
-    console.log('✅ Unread message count:', count);
-    return count;
-  } catch (error) {
-    console.error('Error in getUnreadMessageCount:', error);
-    throw error;
-  }
-}
-
 // =====================================================================================
 // REAL-TIME SUBSCRIPTIONS
 // =====================================================================================
@@ -530,7 +536,7 @@ export async function subscribeToMessages(callback) {
     }
 
     const subscription = supabase
-      .channel('direct_messages')
+      .channel('message_changes')
       .on(
         'postgres_changes',
         {
@@ -541,6 +547,19 @@ export async function subscribeToMessages(callback) {
         },
         (payload) => {
           console.log('📨 New message received:', payload);
+          callback(payload);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'direct_messages'
+          // No filter - catch all updates to recalculate badge
+        },
+        (payload) => {
+          console.log('📝 Message updated (needs_response changed):', payload);
           callback(payload);
         }
       )

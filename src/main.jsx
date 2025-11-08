@@ -52,12 +52,25 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import './index.css';
 import Modal from 'react-modal';
-import { ThemeProvider } from './context/ThemeContext';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './AuthContext.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import { ThemeProvider } from './context/ThemeContext';
+import './index.css';
+
+// Suppress Recharts defaultProps deprecation warnings
+// TODO: Remove when Recharts updates to React 19 patterns (tracked in recharts issue #3615)
+const originalError = console.error;
+console.error = (...args) => {
+  if (
+    typeof args[0] === 'string' &&
+    args[0].includes('Support for defaultProps will be removed from function components')
+  ) {
+    return;
+  }
+  originalError.call(console, ...args);
+};
 
 
 // Import all page components

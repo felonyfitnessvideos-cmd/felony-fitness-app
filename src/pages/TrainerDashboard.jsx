@@ -31,6 +31,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import useResponsive from '../hooks/useResponsive.jsx';
+import { getUnreadMessageCount, subscribeToMessages } from '../utils/messagingUtils';
 import ClientOnboarding from './trainer/ClientOnboarding.jsx';
 import IntervalTimer from './trainer/IntervalTimer.jsx';
 import TrainerCalendar from './trainer/TrainerCalendar.jsx';
@@ -84,6 +85,9 @@ const TrainerDashboard = () => {
   /** @type {[boolean, Function]} Show interval timer modal */
   const [showIntervalTimer, setShowIntervalTimer] = useState(false);
 
+  /** @type {[number, Function]} Unread message count */
+  const [unreadCount, setUnreadCount] = useState(0);
+
   // Navigation functions for trainer sections
   const navigateToCalendar = () => navigate('/trainer-dashboard/calendar');
   const navigateToPrograms = () => navigate('/trainer-dashboard/programs');
@@ -130,6 +134,40 @@ const TrainerDashboard = () => {
     // Always try to initialize, function handles user check internally
     initializeDashboard();
   }, [user, initializeDashboard]);
+
+  // Fetch unread message count and subscribe to updates
+  useEffect(() => {
+    if (!user) return;
+
+    let subscription = null;
+
+    const loadUnreadCount = async () => {
+      try {
+        const count = await getUnreadMessageCount();
+        setUnreadCount(count);
+      } catch (error) {
+        console.error('Error loading unread count:', error);
+      }
+    };
+
+    const setupSubscription = async () => {
+      loadUnreadCount();
+
+      // Subscribe to new messages (returns a Promise)
+      subscription = await subscribeToMessages(() => {
+        // Reload count when new message arrives
+        loadUnreadCount();
+      });
+    };
+
+    setupSubscription();
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
+  }, [user]);
 
   // Redirect if not on tablet or larger screen (mobile users get standard dashboard)
   useEffect(() => {
@@ -305,9 +343,27 @@ const TrainerDashboard = () => {
                 className={`tool-item ${location.pathname === '/trainer-dashboard/messages' ? 'active' : ''}`}
                 onClick={navigateToMessages}
                 aria-label="Open Messages"
+                style={{ position: 'relative' }}
               >
                 <MessageSquare size={20} />
                 <span>Messages</span>
+                {unreadCount > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    backgroundColor: '#dc2626',
+                    color: 'white',
+                    borderRadius: '10px',
+                    padding: '2px 6px',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    minWidth: '20px',
+                    textAlign: 'center'
+                  }}>
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </button>
               <button
                 type="button"
