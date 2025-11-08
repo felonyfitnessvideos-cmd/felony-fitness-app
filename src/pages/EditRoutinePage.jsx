@@ -266,7 +266,7 @@ function EditRoutinePage() {
             tertiary_muscle: ex.tertiary_muscle || null,
             equipment_needed: ex.equipment_needed || null,
             difficulty_level: ex.difficulty_level || null,
-            exercise_type: ex.exercise_type || ex.type || 'Strength',
+            exercise_type: ex.exercise_type || ex.type || 'strength', // Lowercase default
             thumbnail_url: ex.thumbnail_url || null,
             video_url: ex.video_url || null
           })
