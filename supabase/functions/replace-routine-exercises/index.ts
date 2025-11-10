@@ -140,7 +140,9 @@ serve(async (req) => {
         routine_id: p_routine_id,
         exercise_id: item.exercise_id,
         target_sets: item.target_sets,
+        target_reps: item.target_reps || '8-12',
         exercise_order: item.exercise_order,
+        is_warmup: item.is_warmup || false
       }));
       const { error: insertError } = await supabase
         .from("routine_exercises")

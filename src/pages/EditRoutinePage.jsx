@@ -104,7 +104,7 @@ function EditRoutinePage() {
             // Guard nested relation; some DB/RLS setups may omit nested `exercises`.
             ...(item.exercises || {}),
             sets: item.target_sets,
-            reps: '8-12',
+            reps: item.target_reps || '8-12',
             is_warmup: item.is_warmup || false
           }));
           setRoutineExercises(formattedExercises.filter(Boolean));
@@ -319,6 +319,7 @@ function EditRoutinePage() {
     const exercisesToInsert = resolvedExercises.map((ex, index) => ({
       exercise_id: ex.id,
       target_sets: Math.max(1, Number(ex.sets) || 1),
+      target_reps: ex.reps || '8-12',
       exercise_order: index,
       is_warmup: ex.is_warmup || false
     }));
