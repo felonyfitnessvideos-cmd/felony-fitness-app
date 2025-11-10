@@ -41,7 +41,7 @@ import React, { useState, useEffect } from 'react';
  */
 const BREAKPOINTS = {
   mobile: 0,
-  tablet: 699, // Set to 699px to ensure 700px width triggers tablet mode
+  tablet: 604, // Set to 604px to ensure tablet devices can access sidebar features
   desktop: 1024,
   wide: 1440
 };
