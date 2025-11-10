@@ -384,6 +384,16 @@ function EditRoutinePage() {
     }
   };
 
+  // Guard against missing or invalid routineId
+  if (!routineId) {
+    return (
+      <div className="loading-container" style={{ color: 'white', padding: '2rem' }}>
+        <Loader2 className="spinner" />
+        <p>Loading routine...</p>
+      </div>
+    );
+  }
+
   if (loading) return <div style={{ color: 'white', padding: '2rem' }}>Loading routine...</div>;
 
   return (
