@@ -243,37 +243,33 @@ function EditRoutinePage() {
         }
 
         // Insert new exercise with all fields from AI-generated data
-        console.log('Inserting new exercise with data:', {
+        const exerciseData = {
           name: ex.name,
-          description: ex.description,
-          instructions: ex.instructions,
-          primary_muscle: ex.primary_muscle,
-          secondary_muscle: ex.secondary_muscle,
-          tertiary_muscle: ex.tertiary_muscle,
-          equipment_needed: ex.equipment_needed,
-          difficulty_level: ex.difficulty_level,
-          exercise_type: ex.exercise_type,
-        });
+          description: ex.description || null,
+          instructions: ex.instructions || null,
+          primary_muscle: ex.primary_muscle || null,
+          secondary_muscle: ex.secondary_muscle || null,
+          tertiary_muscle: ex.tertiary_muscle || null,
+          equipment_needed: ex.equipment_needed || null,
+          difficulty_level: ex.difficulty_level || null,
+          exercise_type: (ex.exercise_type || ex.type || 'strength').toLowerCase(), // Force lowercase
+          thumbnail_url: ex.thumbnail_url || null,
+          video_url: ex.video_url || null
+        };
+
+        console.log('Inserting new exercise with data:', exerciseData);
 
         const { data: newExercise, error: insertError } = await supabase
           .from('exercises')
-          .insert({
-            name: ex.name,
-            description: ex.description || null,
-            instructions: ex.instructions || null,
-            primary_muscle: ex.primary_muscle || null,
-            secondary_muscle: ex.secondary_muscle || null,
-            tertiary_muscle: ex.tertiary_muscle || null,
-            equipment_needed: ex.equipment_needed || null,
-            difficulty_level: ex.difficulty_level || null,
-            exercise_type: ex.exercise_type || ex.type || 'strength', // Lowercase default
-            thumbnail_url: ex.thumbnail_url || null,
-            video_url: ex.video_url || null
-          })
+          .insert(exerciseData)
           .select('id')
           .single();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Exercise insert error:', insertError);
+          console.error('Failed exercise data:', exerciseData);
+          throw insertError;
+        }
 
         return { ...ex, id: newExercise.id };
       })
