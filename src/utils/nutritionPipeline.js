@@ -80,9 +80,12 @@ class NutritionPipeline {
    * @example
    * // Search specific sources
    * const results = await pipeline.searchMultiAPI('chicken', ['usda']);
+   * console.log(`Quality: ${results.metadata.quality_score}`);
    */
   async searchMultiAPI(query, sources = ['usda', 'nutritionx']) {
     try {
+      console.log(`🔍 Multi-API search: "${query}" across ${sources.join(', ')}`);
+      
       const response = await fetch(`${this.baseUrl}/nutrition-aggregator`, {
         method: 'POST',
         headers: {
@@ -97,6 +100,9 @@ class NutritionPipeline {
       }
 
       const data = await response.json();
+      
+      console.log(`✅ Found ${data.foods?.length || 0} foods from ${data.sources_searched?.length || 0} sources`);
+      console.log(`📊 Deduplication: ${data.total_found} → ${data.after_deduplication} foods`);
       
       return {
         success: true,
@@ -154,6 +160,8 @@ class NutritionPipeline {
    */
   async enrichFood(foodId, enrichmentType = 'full') {
     try {
+      console.log(`🔬 Enriching food ID ${foodId} (type: ${enrichmentType})`);
+      
       const response = await fetch(`${this.baseUrl}/nutrition-enrichment`, {
         method: 'POST',
         headers: {
@@ -171,6 +179,9 @@ class NutritionPipeline {
       }
 
       const data = await response.json();
+      
+      console.log(`✅ Enrichment complete: ${data.changes_made?.length || 0} changes made`);
+      console.log(`📊 Quality score: ${data.quality_score}% (confidence: ${data.confidence}%)`);
       
       return {
         success: true,
@@ -261,6 +272,8 @@ class NutritionPipeline {
    */
   async triggerBulkEnrichment(qualityThreshold = 70, limit = 50) {
     try {
+      console.log(`🚀 Triggering bulk enrichment for foods with quality < ${qualityThreshold}%`);
+      
       // Get foods needing enrichment
       const { data: foods, error } = await supabase
         .from('foods')
@@ -294,6 +307,8 @@ class NutritionPipeline {
       const results = await Promise.all(enrichmentPromises);
       const successful = results.filter(r => r.success);
       const failed = results.filter(r => !r.success);
+
+      console.log(`✅ Bulk enrichment complete: ${successful.length} success, ${failed.length} failed`);
 
       return {
         success: true,
@@ -334,6 +349,7 @@ class NutritionPipeline {
       let externalResults = [];
       
       if (needsExternalSearch) {
+        console.log('🌐 Local results insufficient, searching external APIs...');
         const multiApiResult = await this.searchMultiAPI(query);
         externalResults = multiApiResult.foods || [];
       }

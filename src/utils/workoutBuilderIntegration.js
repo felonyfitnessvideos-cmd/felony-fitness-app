@@ -538,6 +538,13 @@ export const initializeWorkoutBuilderPlatform = async (config = {}) => {
 
     initResults.initialized = true;
     
+    console.log('Workout Builder Platform initialized:', {
+      exercisesLoaded: initResults.exercises.length,
+      muscleGroupsLoaded: initResults.muscleGroups.length,
+      availableMuscles: initResults.availableMuscles.length,
+      errors: initResults.errors.length
+    });
+
     return initResults;
   } catch (error) {
     console.error('Failed to initialize Workout Builder Platform:', error);
