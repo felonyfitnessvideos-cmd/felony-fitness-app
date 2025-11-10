@@ -242,16 +242,32 @@ function EditRoutinePage() {
           return { ...ex, id: existingExercise.id };
         }
 
-        // Validate and sanitize exercise_type to match database constraint
-        // Database likely allows: strength, cardio, flexibility, stretching, etc.
-        const validExerciseTypes = ['strength', 'cardio', 'flexibility', 'stretching', 'balance', 'olympic', 'powerlifting', 'strongman', 'plyometric'];
-        let exerciseType = (ex.exercise_type || ex.type || 'strength').toLowerCase().trim();
+        // Database constraint allows: 'Free Weight', 'Machine', 'Bodyweight'
+        // Map various input types to these three valid values
+        const validExerciseTypes = {
+          'free weight': 'Free Weight',
+          'freeweight': 'Free Weight',
+          'free-weight': 'Free Weight',
+          'weight': 'Free Weight',
+          'weights': 'Free Weight',
+          'dumbbell': 'Free Weight',
+          'barbell': 'Free Weight',
+          'machine': 'Machine',
+          'bodyweight': 'Bodyweight',
+          'body weight': 'Bodyweight',
+          'calisthenics': 'Bodyweight',
+          'strength': 'Free Weight', // Default strength to Free Weight
+          'cardio': 'Machine', // Default cardio to Machine
+          'olympic': 'Free Weight',
+          'powerlifting': 'Free Weight',
+        };
+
+        let exerciseType = (ex.exercise_type || ex.type || 'bodyweight').toLowerCase().trim();
         
-        // If the type isn't in our valid list, default to 'strength'
-        if (!validExerciseTypes.includes(exerciseType)) {
-          console.warn(`Invalid exercise_type "${exerciseType}" for ${ex.name}, defaulting to "strength"`);
-          exerciseType = 'strength';
-        }
+        // Map to valid database value, default to 'Bodyweight'
+        exerciseType = validExerciseTypes[exerciseType] || 'Bodyweight';
+
+        console.log(`Mapped exercise_type: "${ex.exercise_type || ex.type}" -> "${exerciseType}"`);
 
         // Insert new exercise with all fields from AI-generated data
         const exerciseData = {
