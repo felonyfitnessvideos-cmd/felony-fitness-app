@@ -105,6 +105,7 @@ function EditRoutinePage() {
             ...(item.exercises || {}),
             sets: item.target_sets,
             reps: '8-12',
+            is_warmup: item.is_warmup || false
           }));
           setRoutineExercises(formattedExercises.filter(Boolean));
         }
@@ -201,7 +202,7 @@ function EditRoutinePage() {
 
   const handleAddExercise = (exerciseToAdd) => {
     console.log('Adding exercise to routine:', exerciseToAdd);
-    const newExercise = { ...exerciseToAdd, sets: '', reps: '' };
+    const newExercise = { ...exerciseToAdd, sets: '', reps: '', is_warmup: false };
     setRoutineExercises([...routineExercises, newExercise]);
     setSearchTerm('');
     setSearchResults([]);
@@ -318,7 +319,8 @@ function EditRoutinePage() {
     const exercisesToInsert = resolvedExercises.map((ex, index) => ({
       exercise_id: ex.id,
       target_sets: Math.max(1, Number(ex.sets) || 1),
-      exercise_order: index
+      exercise_order: index,
+      is_warmup: ex.is_warmup || false
     }));
 
     try {
@@ -477,6 +479,16 @@ function EditRoutinePage() {
                   required
                 />
                 <span>reps</span>
+              </div>
+              <div className="exercise-warmup-toggle">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={ex.is_warmup || false}
+                    onChange={(e) => handleExerciseChange(index, 'is_warmup', e.target.checked)}
+                  />
+                  <span>Warmup Exercise</span>
+                </label>
               </div>
             </div>
             <button onClick={() => handleRemoveExercise(index)} className="remove-exercise-button"><Trash2 size={20} /></button>

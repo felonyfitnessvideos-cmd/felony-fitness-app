@@ -54,12 +54,6 @@ CREATE INDEX IF NOT EXISTS exercises_secondary_muscle_idx
 ON exercises (secondary_muscle)
 WHERE secondary_muscle IS NOT NULL;
 
--- Index for user-created custom exercises
--- Helps trainers find their own custom exercises quickly
-CREATE INDEX IF NOT EXISTS exercises_created_by_idx 
-ON exercises (created_by)
-WHERE created_by IS NOT NULL;
-
 -- Composite index for filtering by muscle + equipment
 -- Example: "Show me all dumbbell chest exercises"
 CREATE INDEX IF NOT EXISTS exercises_muscle_equipment_idx 

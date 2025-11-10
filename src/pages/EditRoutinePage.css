@@ -193,6 +193,31 @@
   color: #a0aec0;
 }
 
+.exercise-warmup-toggle {
+  margin-top: 0.5rem;
+}
+
+.exercise-warmup-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #a0aec0;
+  user-select: none;
+}
+
+.exercise-warmup-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent-color, #4299e1);
+}
+
+.exercise-warmup-toggle label:hover span {
+  color: #cbd5e0;
+}
+
 .remove-exercise-button {
   background: none;
   border: none;
