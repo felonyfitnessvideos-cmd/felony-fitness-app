@@ -128,12 +128,9 @@ import { supabase } from '../supabaseClient';
  */
 export async function getConversations() {
   try {
-    console.log('📥 Fetching conversations...');
-
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      console.log('⚠️ No authenticated user');
       return [];
     }
 
@@ -178,7 +175,6 @@ export async function getConversations() {
       }
     }
 
-    console.log('✅ Fetched', conversations.length, 'conversations');
     return conversations;
   } catch (error) {
     console.error('Error in getConversations:', error);
@@ -203,8 +199,6 @@ export async function getConversations() {
  */
 export async function getConversationMessages(otherUserId) {
   try {
-    console.log('📥 Fetching messages for conversation with:', otherUserId);
-
     if (!otherUserId) {
       throw new Error('Other user ID is required');
     }
@@ -212,7 +206,6 @@ export async function getConversationMessages(otherUserId) {
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      console.log('⚠️ No authenticated user');
       return [];
     }
 

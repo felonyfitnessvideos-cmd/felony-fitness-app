@@ -16,11 +16,10 @@ const DebugOverlay = () => {
     isTabletOrLarger
   } = useResponsive();
 
-  // Temporarily show in production for tablet debugging
-  // TODO: Remove this after tablet issue is resolved
-  // if (!import.meta.env?.DEV) {
-  //   return null;
-  // }
+  // Only show in development mode
+  if (!import.meta.env?.DEV) {
+    return null;
+  }
 
   return (
     <div style={{
