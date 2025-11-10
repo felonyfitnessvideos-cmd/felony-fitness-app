@@ -68,15 +68,19 @@
 }
 
 /* Container for the timer control buttons. */
-.timer-controls {
+.rest-timer-container .timer-controls {
+  position: relative; /* Override any absolute positioning from other components */
   display: flex;
   justify-content: space-between; /* Distributes buttons evenly with space in between. */
   align-items: center;
   width: 100%;
+  top: auto; /* Reset any top positioning */
+  right: auto; /* Reset any right positioning */
+  z-index: auto; /* Reset z-index */
 }
 
 /* General styling for all buttons in the controls area. */
-.timer-controls button {
+.rest-timer-container .timer-controls button {
   background: none;
   border: 1px solid #4a5568;
   color: #a0aec0;
@@ -92,20 +96,20 @@
 }
 
 /* General hover effect for control buttons. */
-.timer-controls button:hover {
+.rest-timer-container .timer-controls button:hover {
     border-color: #63b3ed; /* Changes border to a light blue on hover. */
     color: #63b3ed; /* Changes text color to match. */
 }
 
 /* Specific styling for the primary "Skip" button. */
-.skip-btn {
+.rest-timer-container .skip-btn {
   background-color: #f97316; /* Primary brand orange. */
   color: white;
   border: none; /* Removes the border as it has a solid background. */
 }
 
 /* Hover effect for the "Skip" button. */
-.skip-btn:hover {
+.rest-timer-container .skip-btn:hover {
     background-color: #ea580c; /* A slightly darker orange for hover. */
     color: white; /* Ensures text color remains white. */
 }

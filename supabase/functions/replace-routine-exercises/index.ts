@@ -142,11 +142,14 @@ serve(async (req) => {
         exercise_order: item.exercise_order + 1000
       }));
       
+      console.log(`Inserting ${tempItems.length} exercises with temp orders:`, tempItems);
+      
       const { error: insertError } = await supabase
         .from("routine_exercises")
         .insert(tempItems);
       
       if (insertError) {
+        console.error("Insert error:", insertError);
         // CRITICAL: If insert fails, don't delete old exercises
         // User keeps their existing routine intact
         return new Response(
@@ -154,10 +157,14 @@ serve(async (req) => {
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+      
+      console.log("Insert successful, proceeding to delete old exercises");
     }
 
     // Step 4: Delete OLD exercises (only after new ones are safely inserted)
     // This ensures we always have exercises in the routine
+    console.log(`Deleting old exercises for routine ${p_routine_id} with order < 1000`);
+    
     const { error: deleteError } = await supabase
       .from("routine_exercises")
       .delete()
@@ -165,6 +172,7 @@ serve(async (req) => {
       .lt("exercise_order", 1000); // Only delete exercises with original order numbers
     
     if (deleteError) {
+      console.error("Delete error:", deleteError);
       // Rollback: Delete the newly inserted exercises since delete of old ones failed
       await supabase
         .from("routine_exercises")
@@ -177,6 +185,8 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    
+    console.log("Delete successful, proceeding to update orders");
 
     // Step 5: Fetch all newly inserted exercises and update their orders one by one
     // We need to use the database ID to uniquely identify each row since exercise_id can repeat
@@ -188,13 +198,22 @@ serve(async (req) => {
         .gte("exercise_order", 1000)
         .order("exercise_order", { ascending: true });
       
+      console.log(`Fetched ${insertedExercises?.length || 0} exercises to update orders`);
+      
       if (fetchError) {
         console.error("Failed to fetch inserted exercises:", fetchError);
-        // Don't fail - exercises are inserted, just order might be wrong
-      } else if (insertedExercises) {
+        return new Response(
+          JSON.stringify({ error: `Failed to fetch inserted exercises: ${fetchError.message}` }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      if (insertedExercises && insertedExercises.length > 0) {
         // Update each exercise's order using its unique database ID
         for (let i = 0; i < insertedExercises.length; i++) {
           const dbRow = insertedExercises[i];
+          console.log(`Updating row ${dbRow.id}: order ${dbRow.exercise_order} -> ${i}`);
+          
           const { error: updateError } = await supabase
             .from("routine_exercises")
             .update({ exercise_order: i }) // Use array index as the correct order
@@ -202,8 +221,13 @@ serve(async (req) => {
           
           if (updateError) {
             console.error(`Failed to update order for row ${dbRow.id}:`, updateError);
+            return new Response(
+              JSON.stringify({ error: `Failed to update exercise order: ${updateError.message}` }),
+              { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
           }
         }
+        console.log("All orders updated successfully");
       }
     }
 
