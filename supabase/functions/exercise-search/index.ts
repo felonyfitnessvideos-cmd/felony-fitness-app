@@ -64,11 +64,13 @@ Deno.serve(async (req) => {
 
     // --- Step 1: Search the local database first for performance and cost-saving. ---
     console.log('Searching local database for:', query);
+    // Uses trigram index (exercises_name_trgm_idx) for fast ILIKE queries
     const { data: localResults, error: localError } = await supabaseAdmin
       .from('exercises')
       .select('*')
       .ilike('name', `%${query}%`) // Case-insensitive search
-      .limit(5);
+      .order('name') // Helps PostgreSQL use index more efficiently
+      .limit(10); // Increased limit to show more relevant results
 
     if (localError) {
       console.error('Supabase exercises query error:', localError);
