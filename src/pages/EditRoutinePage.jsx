@@ -242,6 +242,17 @@ function EditRoutinePage() {
           return { ...ex, id: existingExercise.id };
         }
 
+        // Validate and sanitize exercise_type to match database constraint
+        // Database likely allows: strength, cardio, flexibility, stretching, etc.
+        const validExerciseTypes = ['strength', 'cardio', 'flexibility', 'stretching', 'balance', 'olympic', 'powerlifting', 'strongman', 'plyometric'];
+        let exerciseType = (ex.exercise_type || ex.type || 'strength').toLowerCase().trim();
+        
+        // If the type isn't in our valid list, default to 'strength'
+        if (!validExerciseTypes.includes(exerciseType)) {
+          console.warn(`Invalid exercise_type "${exerciseType}" for ${ex.name}, defaulting to "strength"`);
+          exerciseType = 'strength';
+        }
+
         // Insert new exercise with all fields from AI-generated data
         const exerciseData = {
           name: ex.name,
@@ -252,7 +263,7 @@ function EditRoutinePage() {
           tertiary_muscle: ex.tertiary_muscle || null,
           equipment_needed: ex.equipment_needed || null,
           difficulty_level: ex.difficulty_level || null,
-          exercise_type: (ex.exercise_type || ex.type || 'strength').toLowerCase(), // Force lowercase
+          exercise_type: exerciseType,
           thumbnail_url: ex.thumbnail_url || null,
           video_url: ex.video_url || null
         };
