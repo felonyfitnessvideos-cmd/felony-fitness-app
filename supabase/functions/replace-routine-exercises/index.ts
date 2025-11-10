@@ -118,25 +118,11 @@ serve(async (req) => {
       );
     }
 
-    // Step 2: Delete all existing exercises for this routine
-    // This ensures a clean slate before inserting the new exercise list
-    // RLS policy ensures user can only delete exercises from their own routines
-    const { error: deleteError } = await supabase
-      .from("routine_exercises")
-      .delete()
-      .eq("routine_id", p_routine_id);
-    if (deleteError) {
-      return new Response(
-        JSON.stringify({ error: `Delete failed: ${deleteError.message}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Step 3: Insert new exercises with proper order and target sets
-    // Only insert if there are exercises to add (allow empty routines)
-    // RLS policy ensures user can only insert exercises to their own routines
+    // Step 2: Prepare new exercises for insertion
+    // Map items BEFORE deleting to ensure data is valid
+    let itemsToInsert: any[] = [];
     if (p_items.length > 0) {
-      const itemsToInsert = p_items.map((item: any) => ({
+      itemsToInsert = p_items.map((item: any) => ({
         routine_id: p_routine_id,
         exercise_id: item.exercise_id,
         target_sets: item.target_sets,
@@ -144,14 +130,64 @@ serve(async (req) => {
         exercise_order: item.exercise_order,
         is_warmup: item.is_warmup || false
       }));
+    }
+
+    // Step 3: Insert new exercises FIRST (with temporary order offset)
+    // This ensures exercises exist before we delete old ones
+    // Prevents data loss if insert fails due to network/validation errors
+    if (itemsToInsert.length > 0) {
+      // Add 1000 to exercise_order to avoid conflicts with existing exercises
+      const tempItems = itemsToInsert.map(item => ({
+        ...item,
+        exercise_order: item.exercise_order + 1000
+      }));
+      
       const { error: insertError } = await supabase
         .from("routine_exercises")
-        .insert(itemsToInsert);
+        .insert(tempItems);
+      
       if (insertError) {
+        // CRITICAL: If insert fails, don't delete old exercises
+        // User keeps their existing routine intact
         return new Response(
           JSON.stringify({ error: `Insert failed: ${insertError.message}` }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
+    }
+
+    // Step 4: Delete OLD exercises (only after new ones are safely inserted)
+    // This ensures we always have exercises in the routine
+    const { error: deleteError } = await supabase
+      .from("routine_exercises")
+      .delete()
+      .eq("routine_id", p_routine_id)
+      .lt("exercise_order", 1000); // Only delete exercises with original order numbers
+    
+    if (deleteError) {
+      // Rollback: Delete the newly inserted exercises since delete of old ones failed
+      await supabase
+        .from("routine_exercises")
+        .delete()
+        .eq("routine_id", p_routine_id)
+        .gte("exercise_order", 1000);
+      
+      return new Response(
+        JSON.stringify({ error: `Delete failed: ${deleteError.message}` }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Step 5: Update exercise orders back to correct values
+    // Remove the temporary 1000 offset
+    if (itemsToInsert.length > 0) {
+      for (const item of itemsToInsert) {
+        await supabase
+          .from("routine_exercises")
+          .update({ exercise_order: item.exercise_order })
+          .eq("routine_id", p_routine_id)
+          .eq("exercise_id", item.exercise_id)
+          .eq("exercise_order", item.exercise_order + 1000);
       }
     }
 
