@@ -269,6 +269,7 @@ function EditRoutinePage() {
         };
 
         console.log('Inserting new exercise with data:', exerciseData);
+        console.log('exercise_type value:', exerciseType, 'original:', ex.exercise_type, 'type:', ex.type);
 
         const { data: newExercise, error: insertError } = await supabase
           .from('exercises')
@@ -278,7 +279,8 @@ function EditRoutinePage() {
 
         if (insertError) {
           console.error('Exercise insert error:', insertError);
-          console.error('Failed exercise data:', exerciseData);
+          console.error('Failed exercise data:', JSON.stringify(exerciseData, null, 2));
+          console.error('Specifically exercise_type was:', exerciseData.exercise_type);
           throw insertError;
         }
 
