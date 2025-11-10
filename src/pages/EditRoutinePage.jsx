@@ -232,11 +232,16 @@ function EditRoutinePage() {
           return ex;
         }
 
-        const { data: existingExercise } = await supabase
+        const { data: existingExercise, error: checkError } = await supabase
           .from('exercises')
           .select('id')
           .eq('name', ex.name)
-          .single();
+          .maybeSingle(); // Use maybeSingle() instead of single() to handle 0 or 1 results gracefully
+
+        // If check failed for reasons other than "not found", log it
+        if (checkError && checkError.code !== 'PGRST116') {
+          console.warn('Error checking for existing exercise:', checkError);
+        }
 
         if (existingExercise) {
           return { ...ex, id: existingExercise.id };
