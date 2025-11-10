@@ -600,23 +600,20 @@ function NutritionLogPage() {
                 <label htmlFor="quantity">Quantity</label>
                 <input
                   id="quantity"
-                  type="text"
+                  type="number"
                   inputMode="decimal"
-                  pattern="[0-9]*\.?[0-9]*"
+                  step="0.25"
+                  min="0.01"
+                  max="999"
                   value={quantity}
                   onChange={(e) => {
-                    const raw = e.target.value;
-                    if (raw === '') {
-                      setQuantity('');
-                      return;
+                    const value = e.target.value;
+                    // Allow empty string or valid decimal numbers
+                    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                      setQuantity(value);
                     }
-                    // Allow only digits and a single decimal point
-                    const sanitized = raw.replace(/[^0-9.]/g, '');
-                    const parts = sanitized.split('.');
-                    const normalized = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : sanitized;
-                    const parsed = parseFloat(normalized);
-                    setQuantity(Number.isNaN(parsed) ? '' : String(normalized));
                   }}
+                  placeholder="1"
                 />
               </div>
             </div>
