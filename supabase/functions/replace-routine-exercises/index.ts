@@ -178,16 +178,32 @@ serve(async (req) => {
       );
     }
 
-    // Step 5: Update exercise orders back to correct values
-    // Remove the temporary 1000 offset
+    // Step 5: Fetch all newly inserted exercises and update their orders one by one
+    // We need to use the database ID to uniquely identify each row since exercise_id can repeat
     if (itemsToInsert.length > 0) {
-      for (const item of itemsToInsert) {
-        await supabase
-          .from("routine_exercises")
-          .update({ exercise_order: item.exercise_order })
-          .eq("routine_id", p_routine_id)
-          .eq("exercise_id", item.exercise_id)
-          .eq("exercise_order", item.exercise_order + 1000);
+      const { data: insertedExercises, error: fetchError } = await supabase
+        .from("routine_exercises")
+        .select("id, exercise_id, exercise_order")
+        .eq("routine_id", p_routine_id)
+        .gte("exercise_order", 1000)
+        .order("exercise_order", { ascending: true });
+      
+      if (fetchError) {
+        console.error("Failed to fetch inserted exercises:", fetchError);
+        // Don't fail - exercises are inserted, just order might be wrong
+      } else if (insertedExercises) {
+        // Update each exercise's order using its unique database ID
+        for (let i = 0; i < insertedExercises.length; i++) {
+          const dbRow = insertedExercises[i];
+          const { error: updateError } = await supabase
+            .from("routine_exercises")
+            .update({ exercise_order: i }) // Use array index as the correct order
+            .eq("id", dbRow.id); // Use database ID (primary key) for exact match
+          
+          if (updateError) {
+            console.error(`Failed to update order for row ${dbRow.id}:`, updateError);
+          }
+        }
       }
     }
 
