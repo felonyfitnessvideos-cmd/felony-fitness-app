@@ -201,7 +201,7 @@ function EditRoutinePage() {
 
   const handleAddExercise = (exerciseToAdd) => {
     console.log('Adding exercise to routine:', exerciseToAdd);
-    const newExercise = { ...exerciseToAdd, sets: 3, reps: '8-12' };
+    const newExercise = { ...exerciseToAdd, sets: '', reps: '' };
     setRoutineExercises([...routineExercises, newExercise]);
     setSearchTerm('');
     setSearchResults([]);
@@ -209,9 +209,9 @@ function EditRoutinePage() {
 
   const handleExerciseChange = (index, field, value) => {
     const updatedExercises = [...routineExercises];
-    // Coerce numeric fields to numbers to avoid type issues (sets should be a number)
+    // Allow empty sets field so users must input a value
     if (field === 'sets') {
-      updatedExercises[index][field] = Math.max(1, Number(value) || 1);
+      updatedExercises[index][field] = value === '' ? '' : Number(value);
     } else {
       updatedExercises[index][field] = value;
     }
@@ -225,6 +225,12 @@ function EditRoutinePage() {
 
   const handleSaveRoutine = async () => {
     if (!user) return alert("You must be logged in to save a routine.");
+
+    // Validate that all exercises have sets and reps filled in
+    const incompleteExercises = routineExercises.filter(ex => !ex.sets || !ex.reps || ex.sets === '' || ex.reps === '');
+    if (incompleteExercises.length > 0) {
+      return alert("Please fill in sets and reps for all exercises before saving.");
+    }
 
     const resolvedExercises = await Promise.all(
       routineExercises.map(async (ex) => {
@@ -453,9 +459,23 @@ function EditRoutinePage() {
             <div className="exercise-details">
               <h4>{ex.name}</h4>
               <div className="exercise-inputs">
-                <input type="number" min="1" step="1" value={ex.sets} onChange={(e) => handleExerciseChange(index, 'sets', e.target.value)} />
+                <input 
+                  type="number" 
+                  min="1" 
+                  step="1" 
+                  value={ex.sets} 
+                  onChange={(e) => handleExerciseChange(index, 'sets', e.target.value)}
+                  placeholder="Sets"
+                  required
+                />
                 <span>sets</span>
-                <input type="text" value={ex.reps} onChange={(e) => handleExerciseChange(index, 'reps', e.target.value)} />
+                <input 
+                  type="text" 
+                  value={ex.reps} 
+                  onChange={(e) => handleExerciseChange(index, 'reps', e.target.value)}
+                  placeholder="e.g., 8-12"
+                  required
+                />
                 <span>reps</span>
               </div>
             </div>
