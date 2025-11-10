@@ -30,7 +30,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
-import { Dumbbell, PlusCircle, Trash2, Edit, ToggleLeft, ToggleRight, Zap } from 'lucide-react';
+import { Dumbbell, PlusCircle, Trash2, Edit, ToggleLeft, ToggleRight, Zap, Copy } from 'lucide-react';
 import { useAuth } from '../AuthContext.jsx';
 import './WorkoutRoutinePage.css';
 
@@ -134,6 +134,64 @@ function WorkoutRoutinePage() {
     }
   };
 
+  /**
+   * Duplicates a workout routine with all its exercises
+   * @param {Routine} routine - The routine object to be duplicated
+   * @async
+   */
+  const handleDuplicateRoutine = async (routine) => {
+    if (!userId) return;
+
+    try {
+      // Step 1: Fetch the full routine with exercises
+      const { data: fullRoutine, error: fetchError } = await supabase
+        .from('workout_routines')
+        .select('*, routine_exercises(*, exercises(*))')
+        .eq('id', routine.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Step 2: Create new routine with "(Copy)" appended to name
+      const newRoutineName = `${fullRoutine.routine_name} (Copy)`;
+      const { data: newRoutine, error: createError } = await supabase
+        .from('workout_routines')
+        .insert({
+          routine_name: newRoutineName,
+          user_id: userId,
+          is_active: false // Duplicates start as inactive
+        })
+        .select('id')
+        .single();
+
+      if (createError) throw createError;
+
+      // Step 3: Copy all exercises with their settings
+      if (fullRoutine.routine_exercises && fullRoutine.routine_exercises.length > 0) {
+        const exercisesToInsert = fullRoutine.routine_exercises.map(ex => ({
+          routine_id: newRoutine.id,
+          exercise_id: ex.exercise_id,
+          target_sets: ex.target_sets,
+          exercise_order: ex.exercise_order,
+          is_warmup: ex.is_warmup || false
+        }));
+
+        const { error: insertError } = await supabase
+          .from('routine_exercises')
+          .insert(exercisesToInsert);
+
+        if (insertError) throw insertError;
+      }
+
+      // Step 4: Refresh the routine list
+      fetchRoutines(userId);
+      alert(`Routine duplicated successfully as "${newRoutineName}"`);
+    } catch (error) {
+      console.error('Error duplicating routine:', error);
+      alert(`Error duplicating routine: ${error.message}`);
+    }
+  };
+
   return (
     <div className="workout-routines-container">
       <SubPageHeader 
@@ -172,6 +230,9 @@ function WorkoutRoutinePage() {
             <div className="routine-actions">
               <button onClick={() => handleToggleActive(routine)} title={routine.is_active ? 'Deactivate' : 'Activate'}>
                 {routine.is_active ? <ToggleRight size={24} color="#22c55e" /> : <ToggleLeft size={24} color="#a0aec0" />}
+              </button>
+              <button onClick={() => handleDuplicateRoutine(routine)} className="action-button" title="Duplicate">
+                <Copy size={20} />
               </button>
               <Link to={`/workouts/routines/${routine.id}`} className="action-button" title="Edit">
                 <Edit size={20} />
