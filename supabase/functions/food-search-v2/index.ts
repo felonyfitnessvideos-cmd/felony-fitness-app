@@ -293,12 +293,14 @@ Deno.serve(async (req: Request) => {
 
     // CRITICAL FIX: food_servings table is denormalized - food_name is a text field, not a foreign key!
     // Search food_servings directly (similar to exercise-search pattern)
-    console.log('Starting database search on food_servings...');
+    // Uses trigram index (food_servings_name_trgm_idx) for fast ILIKE queries
+    console.log('Starting database search on food_servings with trigram index...');
     const { data: allMatches, error: localError } = await supabaseAdmin
       .from('food_servings')
       .select('*')
       .ilike('food_name', `%${cleanedQuery}%`)
-      .limit(20); // Get more results to rank them
+      .order('food_name') // Helps PostgreSQL use index more efficiently
+      .limit(50); // Increased limit to get more serving size options
 
     console.log('Database search complete:', { matchCount: allMatches?.length || 0, error: localError });
 
@@ -354,11 +356,31 @@ Deno.serve(async (req: Request) => {
       })
       .filter((food: any) => food.relevanceScore > 0)
       .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
-      .slice(0, 5);
+      .slice(0, 15); // Return up to 15 results to show multiple serving options
 
-    if (rankedResults.length > 0) {
+    // Group results by food name to show multiple serving sizes for same food
+    // Example: "Chicken Breast" might have "100g", "4 oz", "1 breast" servings
+    const groupedResults: any = {};
+    rankedResults.forEach((food: any) => {
+      const foodName = (food.food_name || food.name || '').toLowerCase();
+      if (!groupedResults[foodName]) {
+        groupedResults[foodName] = [];
+      }
+      groupedResults[foodName].push(food);
+    });
+
+    // Return top matches with multiple serving options when available
+    const finalResults = Object.values(groupedResults)
+      .slice(0, 5) // Top 5 unique foods
+      .flatMap((servings: any) => {
+        // For each food, return up to 3 most relevant serving sizes
+        return servings.slice(0, 3);
+      });
+
+    if (finalResults.length > 0) {
+      console.log(`Returning ${finalResults.length} results with multiple serving options`);
       return new Response(JSON.stringify({
-        results: rankedResults,
+        results: finalResults,
         source: 'local',
         quality_score: 'verified'
       }), {
