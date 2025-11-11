@@ -357,17 +357,23 @@ const MealBuilder = ({
    * @param {number} quantity - Quantity to add
    */
   const addFoodToMeal = (food, quantity = 1) => {
+    console.log('[MealBuilder] addFoodToMeal called with:', { food, quantity });
+    
     const servingId = food.serving_id || food.id;
 
     if (!servingId) {
+      console.error('[MealBuilder] Missing serving ID for food:', food);
       alert('Unable to add food - missing serving information');
       return;
     }
+
+    console.log('[MealBuilder] Using serving ID:', servingId);
 
     const existingIndex = mealFoods.findIndex(item => item.food_servings_id === servingId);
 
     if (existingIndex >= 0) {
       // Increase quantity if food already exists
+      console.log('[MealBuilder] Food already exists at index', existingIndex, '- increasing quantity');
       const updated = [...mealFoods];
       updated[existingIndex].quantity += quantity;
       setMealFoods(updated);
@@ -383,6 +389,8 @@ const MealBuilder = ({
         fat_g: food.fat_g || food.fat || 0
       };
 
+      console.log('[MealBuilder] Adding new food with data:', foodServingData);
+
       // Add new food
       const newMealFood = {
         id: null, // New item, no ID yet
@@ -392,6 +400,7 @@ const MealBuilder = ({
         food_servings: foodServingData
       };
       setMealFoods(prev => [...prev, newMealFood]);
+      console.log('[MealBuilder] Food added to meal');
     }
 
     closeFoodModal();
@@ -821,9 +830,12 @@ const MealBuilder = ({
             <button
               className="log-food-btn"
               onClick={() => {
+                console.log('[MealBuilder] Add to Meal button clicked. Food:', selectedFood, 'Quantity:', foodQuantity);
                 const qty = parseFloat(foodQuantity) || 1;
                 if (qty > 0) {
                   addFoodToMeal(selectedFood, qty);
+                } else {
+                  console.warn('[MealBuilder] Invalid quantity:', qty);
                 }
               }}
             >
