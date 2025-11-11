@@ -992,7 +992,7 @@ const ProgramLibrary = () => {
     if (!user?.id) return;
 
     try {
-      // Query trainer_clients directly - full_name is synced from user_profiles via trigger
+      // Query trainer_clients - full_name is auto-synced from user_profiles via trigger
       const { data, error } = await supabase
         .from('trainer_clients')
         .select('client_id, full_name')
@@ -1002,7 +1002,7 @@ const ProgramLibrary = () => {
 
       if (error) throw error;
 
-      // Simple mapping - just need UUID and name for the dropdown
+      // Map to simple structure for dropdown
       const clientsList = data.map(tc => ({
         id: tc.client_id,
         name: tc.full_name || 'Unknown Client'
