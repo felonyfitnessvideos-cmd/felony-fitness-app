@@ -496,13 +496,7 @@ const MealBuilder = ({
         if (mealError) throw mealError;
         mealId = editingMeal.id;
 
-        // Delete existing meal foods
-        const { error: deleteError } = await supabase
-          .from('meal_foods')
-          .delete()
-          .eq('meal_id', mealId);
-
-        if (deleteError) throw deleteError;
+        // DO NOT DELETE EXISTING FOODS YET - wait until new ones are ready
       } else {
         // Create new meal
         const { data: mealResult, error: mealError } = await supabase
@@ -571,12 +565,31 @@ const MealBuilder = ({
         });
       }
 
+      // CRITICAL: Only after ALL foods are processed successfully, delete old foods and insert new ones
+      if (editingMeal?.id) {
+        // Delete existing meal foods NOW that we know new ones are ready
+        console.log('[MealBuilder] Deleting old meal foods for meal:', mealId);
+        const { error: deleteError } = await supabase
+          .from('meal_foods')
+          .delete()
+          .eq('meal_id', mealId);
+
+        if (deleteError) {
+          console.error('[MealBuilder] Error deleting old foods:', deleteError);
+          throw deleteError;
+        }
+      }
+
       // Insert meal foods with proper integer IDs
+      console.log('[MealBuilder] Inserting', processedMealFoods.length, 'meal foods');
       const { error: foodsError } = await supabase
         .from('meal_foods')
         .insert(processedMealFoods);
 
-      if (foodsError) throw foodsError;
+      if (foodsError) {
+        console.error('[MealBuilder] Error inserting meal foods:', foodsError);
+        throw foodsError;
+      }
 
       // Add meal to user_meals table so it shows up in MyMealsPage
       if (!editingMeal?.id) {
