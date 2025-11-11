@@ -347,25 +347,14 @@ Deno.serve(async (req: Request) => {
         const scoringQuery = searchResults === allMatches ? fullQuery : query.toLowerCase();
         const scoringTerms = searchResults === allMatches ? searchTerms : query.toLowerCase().split(' ');
 
-        console.log(`[SCORING] "${name}" - query: "${scoringQuery}", terms: ${JSON.stringify(scoringTerms)}`);
-
         // Exact match gets highest score
-        if (name === scoringQuery) {
-          score += 100;
-          console.log(`  [+100] Exact match`);
-        }
+        if (name === scoringQuery) score += 100;
 
         // Name starts with query gets high score
-        if (name.startsWith(scoringQuery)) {
-          score += 50;
-          console.log(`  [+50] Starts with query`);
-        }
+        if (name.startsWith(scoringQuery)) score += 50;
         
         // Name starts with any search term gets bonus
-        if (scoringTerms.some((term: string) => name.startsWith(term))) {
-          score += 30;
-          console.log(`  [+30] Starts with a term`);
-        }
+        if (scoringTerms.some((term: string) => name.startsWith(term))) score += 30;
 
         // Contains all search terms as complete words (not substrings) gets good score
         const containsAllWords = scoringTerms.every((term: string) => {
@@ -373,37 +362,22 @@ Deno.serve(async (req: Request) => {
           const wordRegex = new RegExp(`\\b${term}\\b`, 'i');
           return wordRegex.test(name);
         });
-        if (containsAllWords) {
-          score += 40;
-          console.log(`  [+40] Contains all words`);
-        }
+        if (containsAllWords) score += 40;
 
         // Contains all search terms as substrings (less points than word matches)
-        if (scoringTerms.every((term: string) => name.includes(term))) {
-          score += 20;
-          console.log(`  [+20] Contains all substrings`);
-        }
+        if (scoringTerms.every((term: string) => name.includes(term))) score += 20;
 
         // Contains primary term as complete word
         const primaryScoringTerm = scoringTerms[0];
         const primaryWordMatch = new RegExp(`\\b${primaryScoringTerm}\\b`, 'i').test(name);
-        if (primaryWordMatch) {
-          score += 15;
-          console.log(`  [+15] Primary term as word`);
-        }
+        if (primaryWordMatch) score += 15;
         
         // Contains primary term as substring (less points)
-        if (name.includes(primaryScoringTerm)) {
-          score += 5;
-          console.log(`  [+5] Primary term as substring`);
-        }
+        if (name.includes(primaryScoringTerm)) score += 5;
 
         // Penalty for very different length (likely irrelevant)
         const lengthDiff = Math.abs(name.length - scoringQuery.length);
-        if (lengthDiff > scoringQuery.length * 2) {
-          score -= 20;
-          console.log(`  [-20] Length mismatch (${lengthDiff} vs ${scoringQuery.length})`);
-        }
+        if (lengthDiff > scoringQuery.length * 2) score -= 20;
         
         // Penalty for partial word matches (like "coffee" matching "broccoli")
         // Check if any character sequence matches but not as complete words
@@ -411,19 +385,11 @@ Deno.serve(async (req: Request) => {
           const wordRegex = new RegExp(`\\b${term}\\b`, 'i');
           return !wordRegex.test(name) && name.includes(term);
         });
-        if (hasPartialMatch) {
-          score -= 30;
-          console.log(`  [-30] Partial match penalty`);
-        }
+        if (hasPartialMatch) score -= 30;
 
-        console.log(`  [FINAL SCORE] ${score}`);
         return { ...food, relevanceScore: score };
       })
-      .filter((food: any) => {
-        const kept = food.relevanceScore > 0;
-        if (!kept) console.log(`[FILTERED OUT] "${food.food_name}" with score ${food.relevanceScore}`);
-        return kept;
-      })
+      .filter((food: any) => food.relevanceScore > 0)
       .sort((a: any, b: any) => b.relevanceScore - a.relevanceScore)
       .slice(0, 15); // Return up to 15 results to show multiple serving options
 
