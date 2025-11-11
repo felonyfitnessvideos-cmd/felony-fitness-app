@@ -393,6 +393,7 @@ const MealBuilder = ({
       };
 
       console.log('[MealBuilder] Adding new food with data:', foodServingData);
+      console.log('[MealBuilder] Original serving_description:', food.serving_description);
 
       // Add new food
       const newMealFood = {
@@ -739,9 +740,13 @@ const MealBuilder = ({
                       // Get the base serving description (strip quantity prefix like "1 cup" -> "cup")
                       let servingDesc = item.food_servings.serving_description || '';
                       
+                      console.log('[MealBuilder Display] Original serving_description:', servingDesc, 'for food:', foodName);
+                      
                       // Remove any leading quantity (e.g., "1 cup" -> "cup", "2 oz" -> "oz")
                       // This regex removes numbers, decimals, and the space after
                       servingDesc = servingDesc.replace(/^[\d.]+\s+/, '');
+                      
+                      console.log('[MealBuilder Display] After stripping quantity:', servingDesc);
 
                       // Build the display string with quantity from the input
                       if (servingDesc) {
