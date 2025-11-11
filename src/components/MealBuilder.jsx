@@ -250,25 +250,24 @@ const MealBuilder = ({
 
         let standardizedResults = [];
         if (data?.source === 'local') {
-          // Database results - convert to consistent format
-          standardizedResults = (data.results || []).flatMap(food =>
-            (food.food_servings || []).map(serving => ({
-              id: serving.id,
-              food_name: food.name,
-              serving_size: serving.serving_size,
-              serving_unit: serving.serving_unit,
-              calories: serving.calories,
-              protein: serving.protein_g,
-              carbs: serving.carbs_g,
-              fat: serving.fat_g,
-              fiber: serving.fiber_g,
-              sugar: serving.sugar_g,
-              is_external: false,
-              food_id: food.id,
-              serving_id: serving.id,
-              serving_description: serving.serving_description
-            }))
-          );
+          // Database results - already in flat format from food-search-v2
+          // Each result is a food_servings object with all necessary fields
+          standardizedResults = (data.results || []).map(serving => ({
+            id: serving.id,
+            food_name: serving.food_name,
+            serving_size: serving.serving_size,
+            serving_unit: serving.serving_unit,
+            calories: serving.calories,
+            protein: serving.protein_g || serving.protein,
+            carbs: serving.carbs_g || serving.carbs,
+            fat: serving.fat_g || serving.fat,
+            fiber: serving.fiber_g || serving.fiber,
+            sugar: serving.sugar_g || serving.sugar,
+            is_external: false,
+            food_id: serving.food_id,
+            serving_id: serving.id,
+            serving_description: serving.serving_description
+          }));
         } else if (data?.source === 'external') {
           // OpenAI API results - need to generate serving_id for external results
           standardizedResults = (data.results || []).map((item, index) => {
