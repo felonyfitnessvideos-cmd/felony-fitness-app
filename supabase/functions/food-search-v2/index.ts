@@ -295,10 +295,22 @@ Deno.serve(async (req: Request) => {
     // Search food_servings directly (similar to exercise-search pattern)
     // Uses trigram index (food_servings_name_trgm_idx) for fast ILIKE queries
     console.log('Starting database search on food_servings with trigram index...');
+    
+    // Build word-boundary aware search patterns to prevent false matches
+    // Example: "coffee" should NOT match "broccoli"
+    const searchWords = cleanedQuery.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    
+    // Create pattern that requires each word to match as a complete word
+    // Using regex pattern: \y word \y (word boundaries)
+    // In PostgreSQL SIMILAR TO: (^|[^a-z])word([^a-z]|$)
+    const wordBoundaryPattern = searchWords
+      .map(word => `(^|[^a-z])${word}([^a-z]|$)`)
+      .join('.*'); // Allow any characters between words
+    
     const { data: allMatches, error: localError } = await supabaseAdmin
       .from('food_servings')
       .select('*')
-      .ilike('food_name', `%${cleanedQuery}%`)
+      .or(`food_name.ilike.%${cleanedQuery}%,food_name.ilike.${cleanedQuery}%,food_name.ilike.%${cleanedQuery}`)
       .order('food_name') // Helps PostgreSQL use index more efficiently
       .limit(50); // Increased limit to get more serving size options
 
@@ -325,7 +337,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Rank results by relevance
+    // Rank results by relevance with word-boundary awareness
     const rankedResults = (searchResults || [])
       .map((food: any) => {
         const name = (food.food_name || food.name || '').toLowerCase();
@@ -340,17 +352,40 @@ Deno.serve(async (req: Request) => {
 
         // Name starts with query gets high score
         if (name.startsWith(scoringQuery)) score += 50;
+        
+        // Name starts with any search term gets bonus
+        if (scoringTerms.some((term: string) => name.startsWith(term))) score += 30;
 
-        // Contains all search terms gets good score
-        if (scoringTerms.every((term: string) => name.includes(term))) score += 30;
+        // Contains all search terms as complete words (not substrings) gets good score
+        const containsAllWords = scoringTerms.every((term: string) => {
+          // Check if term appears as a complete word (with word boundaries)
+          const wordRegex = new RegExp(`\\b${term}\\b`, 'i');
+          return wordRegex.test(name);
+        });
+        if (containsAllWords) score += 40;
 
-        // Contains primary term gets base score
+        // Contains all search terms as substrings (less points than word matches)
+        if (scoringTerms.every((term: string) => name.includes(term))) score += 20;
+
+        // Contains primary term as complete word
         const primaryScoringTerm = scoringTerms[0];
-        if (name.includes(primaryScoringTerm)) score += 10;
+        const primaryWordMatch = new RegExp(`\\b${primaryScoringTerm}\\b`, 'i').test(name);
+        if (primaryWordMatch) score += 15;
+        
+        // Contains primary term as substring (less points)
+        if (name.includes(primaryScoringTerm)) score += 5;
 
         // Penalty for very different length (likely irrelevant)
         const lengthDiff = Math.abs(name.length - scoringQuery.length);
         if (lengthDiff > scoringQuery.length * 2) score -= 20;
+        
+        // Penalty for partial word matches (like "coffee" matching "broccoli")
+        // Check if any character sequence matches but not as complete words
+        const hasPartialMatch = scoringTerms.some((term: string) => {
+          const wordRegex = new RegExp(`\\b${term}\\b`, 'i');
+          return !wordRegex.test(name) && name.includes(term);
+        });
+        if (hasPartialMatch) score -= 30;
 
         return { ...food, relevanceScore: score };
       })
