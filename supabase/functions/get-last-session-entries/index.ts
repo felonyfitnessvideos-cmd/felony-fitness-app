@@ -109,12 +109,15 @@ serve(async (req) => {
 
     // Parse request body
     const payload = await req.json();
-    const { user_id, exercise_id, routine_id } = payload;
+    const { user_id, exercise_ids, routine_id } = payload;
 
     // Validate required parameters
-    if (!user_id || !exercise_id) {
+    // Support both single exercise_id (backward compatibility) and multiple exercise_ids (batched)
+    const exerciseIdsArray = exercise_ids || (payload.exercise_id ? [payload.exercise_id] : null);
+    
+    if (!user_id || !exerciseIdsArray || exerciseIdsArray.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: user_id and exercise_id are required" }),
+        JSON.stringify({ error: "Missing required fields: user_id and exercise_ids (or exercise_id) are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -189,12 +192,12 @@ serve(async (req) => {
     const lastLogId = recentLogs[0].id;
     console.log(`[get-last-session-entries] Found previous session: log_id=${lastLogId}, date=${recentLogs[0].created_at}`);
 
-    // Get all entries for the specified exercise from that workout log
+    // Get all entries for the specified exercises from that workout log (batched query)
     const { data: entries, error: entriesError } = await supabase
       .from("workout_log_entries")
       .select("*")
       .eq("log_id", lastLogId)
-      .eq("exercise_id", exercise_id)
+      .in("exercise_id", exerciseIdsArray) // Query multiple exercises at once
       .order("set_number", { ascending: true });
 
     if (entriesError) {
@@ -205,13 +208,32 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[get-last-session-entries] Found ${entries?.length || 0} sets for exercise ${exercise_id}`);
+    console.log(`[get-last-session-entries] Found ${entries?.length || 0} total sets for ${exerciseIdsArray.length} exercises`);
 
-    // Return the entries (may be empty array if no entries found)
-    return new Response(
-      JSON.stringify({ entries: entries || [] }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // Group entries by exercise_id for easy lookup on client
+    const groupedByExercise = (entries || []).reduce((acc: any, entry: any) => {
+      if (!acc[entry.exercise_id]) {
+        acc[entry.exercise_id] = [];
+      }
+      acc[entry.exercise_id].push(entry);
+      return acc;
+    }, {});
+
+    // Return grouped entries (backward compatible: if single exercise, return entries array)
+    // If multiple exercises requested, return object keyed by exercise_id
+    if (exerciseIdsArray.length === 1) {
+      // Backward compatibility: single exercise returns entries array
+      return new Response(
+        JSON.stringify({ entries: groupedByExercise[exerciseIdsArray[0]] || [] }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    } else {
+      // Batched request: return object with exercise_id keys
+      return new Response(
+        JSON.stringify({ entriesByExercise: groupedByExercise }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
   } catch (err: any) {
     // Catch-all error handler for unexpected errors
     return new Response(

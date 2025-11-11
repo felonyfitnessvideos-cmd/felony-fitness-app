@@ -291,65 +291,51 @@ function WorkoutLogPage() {
 
       let currentLogId;
       if (activeLog) {
+        // Only use existing active log if it has entries (user actually started working out)
         currentLogId = activeLog.id;
+        console.log('[WorkoutLog] Using existing active log:', currentLogId);
       } else {
-        // Create a new log for that scheduled day. We set created_at to the
-        // scheduled date so this log is associated with the mesocycle session.
-        const payload = {
-          user_id: userId,
-          routine_id: currentRoutineId,
-          is_complete: false,
-          // NOTE: Do NOT set `created_at` to the scheduled day's midnight. That
-          // was causing incorrect duration calculations because the workout's
-          // real start time (now) would be compared against a midnight timestamp
-          // resulting in multi-hour durations. Let the DB set `created_at` to
-          // the current timestamp (or omit it) and link to the scheduled
-          // session via `cycle_session_id` when available.
-        };
-        // Try to see if there's a cycle_session for this user/routine/date so we can link the log
-        const { data: matchingSession } = await supabase.from('cycle_sessions').select('id,mesocycle_id').eq('user_id', userId).eq('routine_id', currentRoutineId).eq('scheduled_date', startOfDay.toISOString().slice(0, 10)).maybeSingle();
-        if (matchingSession && matchingSession.id) payload.cycle_session_id = matchingSession.id;
-
-        // Avoid selecting 'cycle_session_id' here in case the DB migration hasn't been applied yet.
-        // We'll attach the session id separately if needed.
-        const { data: newLog, error: newLogError } = await supabase.from('workout_logs').insert(payload).select('id').single();
-        if (newLogError) throw newLogError;
-        currentLogId = newLog.id;
-        // if we linked a session, expose session meta so finish handler can use it
-        if (matchingSession && matchingSession.id) {
-          setSessionMeta(prev => ({ ...(prev || {}), id: matchingSession.id, mesocycle_id: matchingSession.mesocycle_id }));
-        }
+        // DON'T create a log yet - wait until user saves their first set
+        // This prevents empty logs from being created when user just views the page
+        console.log('[WorkoutLog] No active log found. Will create on first set save.');
+        currentLogId = null;
       }
       setWorkoutLogId(currentLogId);
 
-      // CRITICAL: Fetch "Last Time" data AFTER we have current log ID
-      // This ensures we exclude the current session from "Last Time" display
-      if (routineData?.routine_exercises && currentLogId) {
+      // Fetch "Last Time" data regardless of whether we have a current log
+      // User can view previous performance even if they haven't started today's workout yet
+      if (routineData?.routine_exercises && routineData.routine_exercises.length > 0) {
         console.log("[WorkoutLog] Fetching 'Last Time' data for routine:", routineId);
-        const prevLogPromises = routineData.routine_exercises.map(item => {
-          const params = {
+        
+        // PERFORMANCE OPTIMIZATION: Batch all exercise IDs into ONE Edge Function call
+        const exerciseIds = routineData.routine_exercises.map(item => item.exercises.id);
+        
+        const { data: batchResult, error: batchError } = await supabase.functions.invoke('get-last-session-entries', { 
+          body: {
             user_id: userId,
-            exercise_id: item.exercises.id,
+            exercise_ids: exerciseIds, // ALL exercises at once
             routine_id: routineId
-            // Edge Function now uses date comparison (before today) to exclude current session
-          };
-          console.log(`[WorkoutLog] Calling 'get-last-session-entries' with params:`, params);
-          return supabase.functions.invoke('get-last-session-entries', { body: params });
-        });
-
-        const prevLogResults = await Promise.all(prevLogPromises);
-        console.log("[WorkoutLog] 'Last Time' results:", prevLogResults);
-
-        const prevLogMap = {};
-        prevLogResults.forEach((res, index) => {
-          if (res.error) {
-            console.error(`[WorkoutLog] Error fetching last session for exercise ${routineData.routine_exercises[index].exercises.id}:`, res.error);
           }
-          const exerciseId = routineData.routine_exercises[index].exercises.id;
-          prevLogMap[exerciseId] = res.data?.entries || [];
-          console.log(`[WorkoutLog] Exercise ${exerciseId} last time:`, prevLogMap[exerciseId].length, "sets");
         });
-        setPreviousLog(prevLogMap);
+        
+        if (batchError) {
+          console.error("[WorkoutLog] Error fetching batched 'Last Time' data:", batchError);
+        } else {
+          console.log("[WorkoutLog] Batched 'Last Time' results:", batchResult);
+          
+          // Extract the grouped data (entriesByExercise object)
+          const prevLogMap = batchResult.entriesByExercise || {};
+          
+          // Ensure all exercises have an entry (even if empty array)
+          exerciseIds.forEach(exerciseId => {
+            if (!prevLogMap[exerciseId]) {
+              prevLogMap[exerciseId] = [];
+            }
+            console.log(`[WorkoutLog] Exercise ${exerciseId} last time:`, prevLogMap[exerciseId].length, "sets");
+          });
+          
+          setPreviousLog(prevLogMap);
+        }
       }
 
       // If we found an existing active log but it didn't have cycle_session_id set,
@@ -466,62 +452,121 @@ function WorkoutLogPage() {
   }, [activeView, chartMetric, selectedExercise, fetchChartDataForExercise]);
 
   const handleSaveSet = async () => {
-    if (!currentSet.reps || !currentSet.weight || !workoutLogId || !selectedExercise) return;
+    if (!currentSet.reps || !currentSet.weight || !selectedExercise) return;
     if (saveSetLoading) return; // prevent double submits
     setSaveSetLoading(true);
     
-    // If this is the first set of the workout, set started_at
-    const isFirstSetOfWorkout = Object.keys(todaysLog).every(key => !todaysLog[key] || todaysLog[key].length === 0);
-    if (isFirstSetOfWorkout) {
-      const { error: updateError } = await supabase
-        .from('workout_logs')
-        .update({ started_at: new Date().toISOString() })
-        .eq('id', workoutLogId)
-        .is('started_at', null); // Only set if not already set
+    try {
+      // If we don't have a workout log yet, create one NOW (when user actually saves first set)
+      let logIdToUse = workoutLogId;
       
-      if (updateError) {
-        console.warn('Could not set started_at:', updateError);
-      }
-    }
-    
-    const newSetPayload = {
-      log_id: workoutLogId,
-      exercise_id: selectedExercise.id,
-      set_number: (todaysLog[selectedExercise.id]?.length || 0) + 1,
-      reps_completed: parseInt(currentSet.reps, 10),
-      weight_lbs: parseInt(currentSet.weight, 10), // Using weight_lbs (compatibility field) for pounds
-    };
-    const { data: newEntry, error } = await supabase.from('workout_log_entries').insert(newSetPayload).select().single();
-    if (error) {
-      console.error('[WorkoutLog] Failed to save set:', error);
-      alert("Could not save set. Please try again." + (error?.message ? ` (${error.message})` : ''));
-      setSaveSetLoading(false);
-      return;
-    }
-
-    console.log('[WorkoutLog] Set saved successfully:', newEntry);
-    const newTodaysLog = { ...todaysLog, [selectedExercise.id]: [...(todaysLog[selectedExercise.id] || []), newEntry] };
-    console.log('[WorkoutLog] Updated today\'s log:', newTodaysLog);
-    setTodaysLog(newTodaysLog);
-
-    const targetSets = routine.routine_exercises[selectedExerciseIndex]?.target_sets;
-    const completedSets = newTodaysLog[selectedExercise.id].length;
-    const adjusted = Math.max(1, Math.round((Number(targetSets) || 0) * (sessionMeta?.planned_volume_multiplier ?? 1)));
-    const isLastExercise = selectedExerciseIndex === routine.routine_exercises.length - 1;
-
-    if (adjusted && completedSets >= adjusted) {
-      if (isLastExercise) {
-        setIsWorkoutCompletable(true);
+      if (!logIdToUse) {
+        console.log('[WorkoutLog] Creating workout log on first set save (started_at will be set now)');
+        
+        // Determine the date for this workout (today or scheduled date)
+        let startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const payload = {
+          user_id: userId,
+          routine_id: routine.id,
+          is_complete: false,
+          started_at: new Date().toISOString(), // Set started_at immediately when first set is saved
+        };
+        
+        // Try to link to cycle_session if available
+        const { data: matchingSession } = await supabase
+          .from('cycle_sessions')
+          .select('id,mesocycle_id')
+          .eq('user_id', userId)
+          .eq('routine_id', routine.id)
+          .eq('scheduled_date', startOfDay.toISOString().slice(0, 10))
+          .maybeSingle();
+          
+        if (matchingSession && matchingSession.id) {
+          payload.cycle_session_id = matchingSession.id;
+        }
+        
+        const { data: newLog, error: newLogError } = await supabase
+          .from('workout_logs')
+          .insert(payload)
+          .select('id')
+          .single();
+          
+        if (newLogError) {
+          console.error('[WorkoutLog] Failed to create log:', newLogError);
+          alert("Could not create workout log. Please try again.");
+          setSaveSetLoading(false);
+          return;
+        }
+        
+        logIdToUse = newLog.id;
+        setWorkoutLogId(logIdToUse);
+        
+        if (matchingSession && matchingSession.id) {
+          setSessionMeta(prev => ({ ...(prev || {}), id: matchingSession.id, mesocycle_id: matchingSession.mesocycle_id }));
+        }
+        
+        console.log('[WorkoutLog] Created new workout log:', logIdToUse);
       } else {
-        setShouldAdvance(true);
+        // If this is the first set of an existing workout, set started_at if not already set
+        const isFirstSetOfWorkout = Object.keys(todaysLog).every(key => !todaysLog[key] || todaysLog[key].length === 0);
+        if (isFirstSetOfWorkout) {
+          const { error: updateError } = await supabase
+            .from('workout_logs')
+            .update({ started_at: new Date().toISOString() })
+            .eq('id', workoutLogId)
+            .is('started_at', null); // Only set if not already set
+          
+          if (updateError) {
+            console.warn('Could not set started_at:', updateError);
+          }
+        }
       }
-    }
+    
+      const newSetPayload = {
+        log_id: logIdToUse,
+        exercise_id: selectedExercise.id,
+        set_number: (todaysLog[selectedExercise.id]?.length || 0) + 1,
+        reps_completed: parseInt(currentSet.reps, 10),
+        weight_lbs: parseInt(currentSet.weight, 10), // Using weight_lbs (compatibility field) for pounds
+      };
+      const { data: newEntry, error } = await supabase.from('workout_log_entries').insert(newSetPayload).select().single();
+      if (error) {
+        console.error('[WorkoutLog] Failed to save set:', error);
+        alert("Could not save set. Please try again." + (error?.message ? ` (${error.message})` : ''));
+        setSaveSetLoading(false);
+        return;
+      }
 
-    // CRITICAL: Show RPE modal first, THEN rest timer
-    // Store the set entry so we can update it with RPE rating
-    setPendingSetForRpe(newEntry);
-    setIsRpeModalOpen(true);
-    setSaveSetLoading(false);
+      console.log('[WorkoutLog] Set saved successfully:', newEntry);
+      const newTodaysLog = { ...todaysLog, [selectedExercise.id]: [...(todaysLog[selectedExercise.id] || []), newEntry] };
+      console.log('[WorkoutLog] Updated today\'s log:', newTodaysLog);
+      setTodaysLog(newTodaysLog);
+
+      const targetSets = routine.routine_exercises[selectedExerciseIndex]?.target_sets;
+      const completedSets = newTodaysLog[selectedExercise.id].length;
+      const adjusted = Math.max(1, Math.round((Number(targetSets) || 0) * (sessionMeta?.planned_volume_multiplier ?? 1)));
+      const isLastExercise = selectedExerciseIndex === routine.routine_exercises.length - 1;
+
+      if (adjusted && completedSets >= adjusted) {
+        if (isLastExercise) {
+          setIsWorkoutCompletable(true);
+        } else {
+          setShouldAdvance(true);
+        }
+      }
+
+      // CRITICAL: Show RPE modal first, THEN rest timer
+      // Store the set entry so we can update it with RPE rating
+      setPendingSetForRpe(newEntry);
+      setIsRpeModalOpen(true);
+      setSaveSetLoading(false);
+    } catch (err) {
+      console.error('[WorkoutLog] Error in handleSaveSet:', err);
+      alert("Could not save set. Please try again.");
+      setSaveSetLoading(false);
+    }
   };
 
   /**
@@ -656,8 +701,18 @@ function WorkoutLogPage() {
         console.error("Secure delete failed:", error);
         return alert("Could not delete set." + (error?.message ? ` (${error.message})` : ''));
       }
-      // Refetch to ensure UI consistency, only if still mounted.
-      if (userId && isMountedRef.current) await fetchAndStartWorkout(userId);
+      
+      // Update local state instead of refetching entire page
+      setTodaysLog(prevLog => {
+        const updatedLog = { ...prevLog };
+        // Find and remove the deleted entry from the appropriate exercise
+        Object.keys(updatedLog).forEach(exerciseId => {
+          updatedLog[exerciseId] = updatedLog[exerciseId].filter(entry => entry.id !== entryId);
+        });
+        return updatedLog;
+      });
+      
+      console.log('[WorkoutLog] Set deleted, local state updated');
     } finally {
       if (isMountedRef.current) setRpcLoading(false);
     }
