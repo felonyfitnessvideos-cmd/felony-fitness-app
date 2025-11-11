@@ -244,6 +244,16 @@ function WorkoutLogPage() {
 
       if (todaysLogsError) throw todaysLogsError;
 
+      console.log('[WorkoutLog] Found', todaysLogsData?.length || 0, 'workout logs for today');
+      todaysLogsData?.forEach((log, idx) => {
+        console.log(`[WorkoutLog] Log ${idx + 1}:`, {
+          id: log.id,
+          is_complete: log.is_complete,
+          entries_count: log.workout_log_entries?.length || 0,
+          created_at: log.created_at
+        });
+      });
+
       const todaysEntriesMap = {};
       let activeLog = todaysLogsData.find(log => !log.is_complete);
 
