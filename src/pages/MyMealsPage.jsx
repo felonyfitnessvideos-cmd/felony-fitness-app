@@ -305,6 +305,8 @@ const MyMealsPage = () => {
    */
   const duplicateMeal = async (meal) => {
     try {
+      console.log('[MyMealsPage] Duplicating meal:', meal);
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -325,23 +327,39 @@ const MyMealsPage = () => {
         is_premade: false
       };
 
+      console.log('[MyMealsPage] Creating meal copy:', mealCopy);
+
       const { data: newMeal, error: mealError } = await supabase
         .from('meals')
         .insert([mealCopy])
         .select()
         .single();
 
-      if (mealError) throw mealError;
+      if (mealError) {
+        console.error('[MyMealsPage] Error creating meal:', mealError);
+        throw mealError;
+      }
+
+      console.log('[MyMealsPage] Created meal:', newMeal);
 
       // Copy meal foods
       if (meal.meal_foods && meal.meal_foods.length > 0) {
-        // Filter out any foods that still have missing food_servings_id (shouldn't happen now)
-        const validFoods = meal.meal_foods.filter(food => 
-          food.food_servings_id
-        );
+        console.log('[MyMealsPage] Copying meal foods:', meal.meal_foods);
+        
+        // Filter out any foods that still have missing food_servings_id
+        const validFoods = meal.meal_foods.filter(food => {
+          const isValid = food.food_servings_id && food.food_servings_id !== null;
+          if (!isValid) {
+            console.warn('[MyMealsPage] Skipping food with missing food_servings_id:', food);
+          }
+          return isValid;
+        });
+        
+        console.log('[MyMealsPage] Valid foods to copy:', validFoods);
         
         if (validFoods.length === 0) {
-          // No valid foods to copy - all foods have missing food_servings_id
+          // No valid foods to copy
+          console.warn('[MyMealsPage] No valid foods to copy - all foods missing food_servings_id');
         } else {
           const mealFoodsCopy = validFoods.map(food => ({
             meal_id: newMeal.id,
@@ -350,11 +368,14 @@ const MyMealsPage = () => {
             notes: food.notes || ''
           }));
           
+          console.log('[MyMealsPage] Inserting meal foods:', mealFoodsCopy);
+          
           const { error: foodsError } = await supabase
             .from('meal_foods')
             .insert(mealFoodsCopy);
 
           if (foodsError) {
+            console.error('[MyMealsPage] Error inserting meal foods:', foodsError);
             // Clean up the orphaned meal record
             await supabase
               .from('meals')
@@ -362,10 +383,13 @@ const MyMealsPage = () => {
               .eq('id', newMeal.id);
             throw foodsError;
           }
+          
+          console.log('[MyMealsPage] Successfully copied meal foods');
         }
       }
 
       // Add to user meals
+      console.log('[MyMealsPage] Adding to user_meals');
       const { error: userMealError } = await supabase
         .from('user_meals')
         .insert([{
@@ -375,6 +399,7 @@ const MyMealsPage = () => {
         }]);
 
       if (userMealError) {
+        console.error('[MyMealsPage] Error adding to user_meals:', userMealError);
         // Clean up the orphaned meal record and its foods
         await supabase
           .from('meals')
@@ -383,6 +408,7 @@ const MyMealsPage = () => {
         throw userMealError;
       }
 
+      console.log('[MyMealsPage] Duplicate meal completed successfully');
       await loadMeals();
     } catch (error) {
       if (import.meta.env?.DEV) {

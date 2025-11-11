@@ -172,36 +172,45 @@ const MealBuilder = ({
    */
   const loadMealFoods = async (mealId) => {
     try {
+      console.log('[MealBuilder] Loading foods for meal ID:', mealId);
       const { data, error } = await supabase
         .from('meal_foods')
         .select(`
           *,
           food_servings (
             id,
+            food_name,
             calories,
             protein_g,
             carbs_g,
             fat_g,
-            serving_description,
-            foods (
-              name
-            )
+            serving_description
           )
         `)
         .eq('meal_id', mealId);
 
       if (error) throw error;
 
-      setMealFoods(data.map(item => ({
+      console.log('[MealBuilder] Loaded meal foods:', data);
+
+      // Map the data to match the expected structure
+      const mappedFoods = data.map(item => ({
         id: item.id,
         food_servings_id: item.food_servings_id,
         quantity: item.quantity,
         notes: item.notes,
-        food_servings: item.food_servings
-      })));
+        food_servings: {
+          ...item.food_servings,
+          // Ensure food_name is available from the food_servings table directly
+          name: item.food_servings.food_name
+        }
+      }));
+
+      console.log('[MealBuilder] Mapped foods:', mappedFoods);
+      setMealFoods(mappedFoods);
     } catch (error) {
       // Error loading meal foods - log for debugging
-      console.error('Error loading meal foods:', error);
+      console.error('[MealBuilder] Error loading meal foods:', error);
     }
   };
 
@@ -692,9 +701,8 @@ const MealBuilder = ({
                     />
                     {/* Show serving description with food name */}
                     {(() => {
-                      // Get food name from multiple possible sources
-                      const foodName = item.food_servings.foods?.name ||
-                        item.food_servings.food_name ||
+                      // Get food name from food_servings (has food_name column)
+                      const foodName = item.food_servings.food_name ||
                         item.food_servings.name ||
                         'Unknown Food';
 
