@@ -234,9 +234,11 @@ function WorkoutLogPage() {
       const startOfTomorrow = new Date(startOfDay);
       startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
+      // CRITICAL FIX: Query workout_logs and entries separately
+      // Nested query with workout_log_entries(*) is failing due to RLS policies
       const { data: todaysLogsData, error: todaysLogsError } = await supabase
         .from('workout_logs')
-        .select('id, is_complete, created_at, workout_log_entries(*)')
+        .select('id, is_complete, created_at')
         .eq('user_id', userId)
         .eq('routine_id', currentRoutineId)
         .gte('created_at', startOfDay.toISOString())
@@ -245,11 +247,32 @@ function WorkoutLogPage() {
       if (todaysLogsError) throw todaysLogsError;
 
       console.log('[WorkoutLog] Found', todaysLogsData?.length || 0, 'workout logs for today');
+      
+      // Fetch ALL entries for today's logs separately
+      const logIds = todaysLogsData?.map(log => log.id) || [];
+      let allTodaysEntries = [];
+      
+      if (logIds.length > 0) {
+        const { data: entriesData, error: entriesError } = await supabase
+          .from('workout_log_entries')
+          .select('*')
+          .in('log_id', logIds)
+          .order('set_number', { ascending: true });
+        
+        if (entriesError) {
+          console.error('[WorkoutLog] Failed to fetch entries:', entriesError);
+        } else {
+          allTodaysEntries = entriesData || [];
+          console.log('[WorkoutLog] Fetched', allTodaysEntries.length, 'total entries for today');
+        }
+      }
+
       todaysLogsData?.forEach((log, idx) => {
+        const logEntries = allTodaysEntries.filter(e => e.log_id === log.id);
         console.log(`[WorkoutLog] Log ${idx + 1}:`, {
           id: log.id,
           is_complete: log.is_complete,
-          entries_count: log.workout_log_entries?.length || 0,
+          entries_count: logEntries.length,
           created_at: log.created_at
         });
       });
@@ -257,13 +280,12 @@ function WorkoutLogPage() {
       const todaysEntriesMap = {};
       let activeLog = todaysLogsData.find(log => !log.is_complete);
 
-      todaysLogsData.forEach(log => {
-        log.workout_log_entries.sort((a, b) => a.set_number - b.set_number);
-        log.workout_log_entries.forEach(entry => {
-          if (!todaysEntriesMap[entry.exercise_id]) todaysEntriesMap[entry.exercise_id] = [];
-          todaysEntriesMap[entry.exercise_id].push(entry);
-        });
+      // Build entries map from the separately fetched entries
+      allTodaysEntries.forEach(entry => {
+        if (!todaysEntriesMap[entry.exercise_id]) todaysEntriesMap[entry.exercise_id] = [];
+        todaysEntriesMap[entry.exercise_id].push(entry);
       });
+      
       console.log('[WorkoutLog] Today\'s log entries loaded:', todaysEntriesMap);
       setTodaysLog(todaysEntriesMap);
 
