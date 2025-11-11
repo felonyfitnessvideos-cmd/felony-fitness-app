@@ -585,7 +585,8 @@ const MealBuilder = ({
   if (!isOpen) return null;
 
   return (
-    <div className="meal-builder-overlay">
+    <>
+      <div className="meal-builder-overlay">
       <div className="meal-builder-modal">
         <div className="meal-builder-header">
           <h2>
@@ -822,6 +823,7 @@ const MealBuilder = ({
         </div>
       )}
     </Modal>
+    </>
   );
 };
 
