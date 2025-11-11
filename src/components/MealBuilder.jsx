@@ -319,9 +319,11 @@ const MealBuilder = ({
    * @param {Object} food - Food item from search results
    */
   const openFoodModal = (food) => {
+    console.log('[MealBuilder] Opening food modal for:', food);
     setSelectedFood(food);
     setFoodQuantity('1');
     setIsFoodModalOpen(true);
+    console.log('[MealBuilder] Modal state set - isFoodModalOpen should be true');
   };
 
   /**
