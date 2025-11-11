@@ -297,7 +297,7 @@ const MealBuilder = ({
               sugar: item.sugar_g
             };
             return result;
-          }));
+          });
         }
 
         setSearchResults(standardizedResults);
