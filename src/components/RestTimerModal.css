@@ -69,18 +69,23 @@
 
 /* Container for the timer control buttons. */
 .rest-timer-container .timer-controls {
-  position: relative; /* Override any absolute positioning from other components */
+  position: relative !important; /* Override any absolute positioning from other components */
   display: flex;
   justify-content: space-between; /* Distributes buttons evenly with space in between. */
   align-items: center;
   width: 100%;
-  top: auto; /* Reset any top positioning */
-  right: auto; /* Reset any right positioning */
-  z-index: auto; /* Reset z-index */
+  top: auto !important; /* Reset any top positioning */
+  right: auto !important; /* Reset any right positioning */
+  left: auto !important; /* Reset any left positioning */
+  bottom: auto !important; /* Reset any bottom positioning */
+  z-index: auto !important; /* Reset z-index */
+  margin-top: 0;
+  padding: 0;
 }
 
 /* General styling for all buttons in the controls area. */
 .rest-timer-container .timer-controls button {
+  position: relative !important; /* Ensure buttons are positioned normally in flow */
   background: none;
   border: 1px solid #4a5568;
   color: #a0aec0;
@@ -93,6 +98,10 @@
   font-size: 0.9rem;
   font-weight: 600;
   transition: all 0.2s; /* Smooth transition for hover effects. */
+  top: auto !important; /* Reset positioning */
+  right: auto !important;
+  left: auto !important;
+  bottom: auto !important;
 }
 
 /* General hover effect for control buttons. */
@@ -103,15 +112,29 @@
 
 /* Specific styling for the primary "Skip" button. */
 .rest-timer-container .skip-btn {
+  position: relative !important;
   background-color: #f97316; /* Primary brand orange. */
   color: white;
   border: none; /* Removes the border as it has a solid background. */
+  top: auto !important;
+  right: auto !important;
+  left: auto !important;
+  bottom: auto !important;
 }
 
 /* Hover effect for the "Skip" button. */
 .rest-timer-container .skip-btn:hover {
     background-color: #ea580c; /* A slightly darker orange for hover. */
     color: white; /* Ensures text color remains white. */
+}
+
+/* Specific styling for adjust time buttons */
+.rest-timer-container .adjust-btn {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  left: auto !important;
+  bottom: auto !important;
 }
 
 /* Modal overlay/content classes for the rest timer modal */

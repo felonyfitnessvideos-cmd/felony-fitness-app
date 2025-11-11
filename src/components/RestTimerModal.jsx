@@ -35,6 +35,9 @@ import React, { useEffect, useState } from 'react';
 import Modal from 'react-modal';
 import './RestTimerModal.css';
 
+// Set the app element for accessibility and proper modal interaction
+Modal.setAppElement('#root');
+
 /**
  * @constant {object} customModalStyles
  * @description Custom styles for the react-modal component to match the app's theme.
