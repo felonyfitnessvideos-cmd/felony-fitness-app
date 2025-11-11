@@ -25,6 +25,7 @@
  * This element is "stuck" to the bottom of the viewport, just above the main navbar.
  * - `bottom` must be equal to the exact height of the main navbar below it.
  * - `z-index` ensures it stacks visually on top of other elements.
+ * - Accounts for sidebar on tablet/desktop layouts
  */
 .calorie-status-footer {
   position: fixed;
@@ -40,6 +41,23 @@
   border-top: 1px solid var(--border-color);
   z-index: 40; /* Ensures it's above the navbar but below modals */
   box-sizing: border-box;
+}
+
+/* Tablet/Desktop: Account for sidebar and bottom navbar */
+@media (min-width: 604px) {
+  .calorie-status-footer {
+    left: 220px; /* Sidebar width */
+    width: calc(100% - 220px - 2rem); /* Subtract sidebar width and padding */
+    bottom: 0; /* No bottom navbar on desktop, so sit at bottom */
+  }
+}
+
+/* Larger desktop: Wider sidebar */
+@media (min-width: 1024px) {
+  .calorie-status-footer {
+    left: 280px; /* Wider sidebar */
+    width: calc(100% - 280px - 2rem);
+  }
 }
 
 /* --- Component-Specific Styles --- */
