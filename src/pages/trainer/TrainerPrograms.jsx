@@ -29,6 +29,7 @@ import {
 import { useEffect, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
+import ProgramBuilderModal from '../../components/trainer/ProgramBuilderModal';
 import ProgramEditorModal from '../../components/trainer/ProgramEditorModal';
 import AnatomicalMuscleMap from '../../components/workout-builder/AnatomicalMuscleMap';
 import InteractiveMuscleMap from '../../components/workout-builder/InteractiveMuscleMap';
@@ -719,6 +720,7 @@ const ProgramLibrary = () => {
   const [selectedCategory, setSelectedCategory] = useState('Strength');
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [editingProgram, setEditingProgram] = useState(null);
+  const [showProgramBuilder, setShowProgramBuilder] = useState(false);
   const [clients, setClients] = useState([]);
   const [selectedClientForProgram, setSelectedClientForProgram] = useState({}); // programId -> clientId mapping
   const [assigningToClient, setAssigningToClient] = useState(false);
@@ -1128,6 +1130,8 @@ const ProgramLibrary = () => {
   useEffect(() => {
     fetchPrograms();
     fetchClients();
+    // fetchPrograms and fetchClients are stable functions
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Generate default routines for all programs on initial load
@@ -1204,7 +1208,10 @@ const ProgramLibrary = () => {
             <option value="advanced">🔴 Advanced</option>
           </select>
 
-          <button className="create-program-button">
+          <button 
+            className="create-program-button"
+            onClick={() => setShowProgramBuilder(true)}
+          >
             <Plus size={18} />
             New Program
           </button>
@@ -1401,6 +1408,20 @@ const ProgramLibrary = () => {
             
             // Close the modal
             setEditingProgram(null);
+          }}
+        />
+      )}
+
+      {/* Program Builder Modal */}
+      {showProgramBuilder && (
+        <ProgramBuilderModal
+          onClose={() => setShowProgramBuilder(false)}
+          onSave={async (_newProgram) => {
+            // Refresh programs list to include the new program
+            await fetchPrograms();
+            
+            // Close the modal
+            setShowProgramBuilder(false);
           }}
         />
       )}
