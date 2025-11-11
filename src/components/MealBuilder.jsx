@@ -1,5 +1,6 @@
 import { ChefHat, Plus, Save, Search, X } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import Modal from 'react-modal';
 import { supabase } from '../supabaseClient';
 import './MealBuilder.css';
 
@@ -72,6 +73,15 @@ const MealBuilder = ({
 
   /** @type {[boolean, Function]} State for meal save operation loading */
   const [isSaving, setIsSaving] = useState(false);
+
+  /** @type {[boolean, Function]} State for food selection modal */
+  const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
+
+  /** @type {[Object|null, Function]} State for selected food in modal */
+  const [selectedFood, setSelectedFood] = useState(null);
+
+  /** @type {[string, Function]} State for food quantity input */
+  const [foodQuantity, setFoodQuantity] = useState('1');
 
   /**
    * Initialize component state when editing meal changes or modal opens
@@ -305,6 +315,27 @@ const MealBuilder = ({
   }, []);
 
   /**
+   * Open modal to select quantity for a food item
+   * @param {Object} food - Food item from search results
+   */
+  const openFoodModal = (food) => {
+    setSelectedFood(food);
+    setFoodQuantity('1');
+    setIsFoodModalOpen(true);
+  };
+
+  /**
+   * Close the food selection modal and reset state
+   */
+  const closeFoodModal = () => {
+    setIsFoodModalOpen(false);
+    setSelectedFood(null);
+    setFoodQuantity('1');
+    setFoodSearch('');
+    setSearchResults([]);
+  };
+
+  /**
    * Add a food item to the meal or increase quantity if already present
    * Handles both database and external API food results
    * 
@@ -312,8 +343,9 @@ const MealBuilder = ({
    * @param {number} food.id - Unique food serving ID
    * @param {string} food.food_name - Name of the food
    * @param {number} food.calories - Calories per serving
+   * @param {number} quantity - Quantity to add
    */
-  const addFoodToMeal = (food) => {
+  const addFoodToMeal = (food, quantity = 1) => {
     const servingId = food.serving_id || food.id;
 
     if (!servingId) {
@@ -326,7 +358,7 @@ const MealBuilder = ({
     if (existingIndex >= 0) {
       // Increase quantity if food already exists
       const updated = [...mealFoods];
-      updated[existingIndex].quantity += 1;
+      updated[existingIndex].quantity += quantity;
       setMealFoods(updated);
     } else {
       // Convert search result to meal food format
@@ -344,15 +376,14 @@ const MealBuilder = ({
       const newMealFood = {
         id: null, // New item, no ID yet
         food_servings_id: servingId,
-        quantity: 1,
+        quantity: quantity,
         notes: '',
         food_servings: foodServingData
       };
       setMealFoods(prev => [...prev, newMealFood]);
     }
 
-    setFoodSearch('');
-    setSearchResults([]);
+    closeFoodModal();
   };
 
   /**
@@ -628,7 +659,7 @@ const MealBuilder = ({
                     <div
                       key={`${food.id || food.serving_id}-${index}-${food.food_name || food.name}`}
                       className="search-result-item"
-                      onClick={() => addFoodToMeal(food)}
+                      onClick={() => openFoodModal(food)}
                     >
                       <div className="food-info">
                         <span className="food-name">{food.food_name || food.name}</span>
@@ -733,6 +764,64 @@ const MealBuilder = ({
         </div>
       </div>
     </div>
+
+    {/* Food Selection Modal */}
+    <Modal
+      isOpen={isFoodModalOpen}
+      onRequestClose={closeFoodModal}
+      contentLabel="Select Food Quantity"
+      overlayClassName="custom-modal-overlay"
+      className="custom-modal-content log-food-modal"
+    >
+      {selectedFood && (
+        <div className="log-food-modal">
+          <div className="modal-header">
+            <h3>{selectedFood.food_name || selectedFood.name}</h3>
+            <button onClick={closeFoodModal} className="close-modal-btn">
+              <X size={24} />
+            </button>
+          </div>
+          <div className="modal-body">
+            <p>
+              Serving: {selectedFood.serving_description} ({Math.round(selectedFood.calories)} cal)
+            </p>
+            <div className="quantity-input">
+              <label htmlFor="food-quantity">Quantity</label>
+              <input
+                id="food-quantity"
+                type="number"
+                inputMode="decimal"
+                step="0.25"
+                min="0.01"
+                max="999"
+                value={foodQuantity}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Allow empty string or valid decimal numbers
+                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    setFoodQuantity(value);
+                  }
+                }}
+                placeholder="1"
+              />
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button
+              className="log-food-btn"
+              onClick={() => {
+                const qty = parseFloat(foodQuantity) || 1;
+                if (qty > 0) {
+                  addFoodToMeal(selectedFood, qty);
+                }
+              }}
+            >
+              Add to Meal
+            </button>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 };
 
