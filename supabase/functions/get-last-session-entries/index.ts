@@ -28,7 +28,6 @@
  * @param {string} body.user_id - UUID of the user (must match authenticated user)
  * @param {string} body.exercise_id - UUID of the exercise to get entries for
  * @param {string} [body.routine_id] - Optional UUID of the routine to filter by
- * @param {string} [body.current_log_id] - Optional UUID of the current workout log to exclude
  * 
  * @returns {Response} JSON response with workout entries or error
  * @returns {Object} response.body - Response body
@@ -110,7 +109,7 @@ serve(async (req) => {
 
     // Parse request body
     const payload = await req.json();
-    const { user_id, exercise_id, routine_id, current_log_id } = payload;
+    const { user_id, exercise_id, routine_id } = payload;
 
     // Validate required parameters
     if (!user_id || !exercise_id) {
@@ -145,13 +144,21 @@ serve(async (req) => {
       );
     }
 
-    // Build query for most recent workout log
+    // Get today's date at midnight for comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayISO = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+    console.log(`[get-last-session-entries] Looking for last session before today (${todayISO})`);
+
+    // Build query for most recent workout log BEFORE today
+    // This ensures we only get previous sessions, not today's workout
     let workoutQuery = supabase
       .from("workout_logs")
       .select("id, log_date, created_at")
       .eq("user_id", user_id)
       .eq("is_complete", true)
-      .order("log_date", { ascending: false })
+      .lt("created_at", today.toISOString()) // Only get workouts before today
       .order("created_at", { ascending: false });
 
     // Optionally filter by routine if provided
@@ -159,16 +166,11 @@ serve(async (req) => {
       workoutQuery = workoutQuery.eq("routine_id", routine_id);
     }
 
-    // CRITICAL: Exclude the current workout log to prevent showing today's sets as "Last Time"
-    // This ensures we only show data from previous sessions, not the current one
-    if (current_log_id) {
-      workoutQuery = workoutQuery.neq("id", current_log_id);
-    }
-
-    // Get the most recent workout log
+    // Get the most recent workout log before today
     const { data: recentLogs, error: logError } = await workoutQuery.limit(1);
 
     if (logError) {
+      console.error(`[get-last-session-entries] Error fetching logs:`, logError);
       return new Response(
         JSON.stringify({ error: `Failed to fetch workout logs: ${logError.message}` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -177,6 +179,7 @@ serve(async (req) => {
 
     // If no previous workout found, return empty array
     if (!recentLogs || recentLogs.length === 0) {
+      console.log(`[get-last-session-entries] No previous sessions found for routine ${routine_id}`);
       return new Response(
         JSON.stringify({ entries: [] }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -184,6 +187,7 @@ serve(async (req) => {
     }
 
     const lastLogId = recentLogs[0].id;
+    console.log(`[get-last-session-entries] Found previous session: log_id=${lastLogId}, date=${recentLogs[0].created_at}`);
 
     // Get all entries for the specified exercise from that workout log
     const { data: entries, error: entriesError } = await supabase
@@ -194,11 +198,14 @@ serve(async (req) => {
       .order("set_number", { ascending: true });
 
     if (entriesError) {
+      console.error(`[get-last-session-entries] Error fetching entries:`, entriesError);
       return new Response(
         JSON.stringify({ error: `Failed to fetch entries: ${entriesError.message}` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log(`[get-last-session-entries] Found ${entries?.length || 0} sets for exercise ${exercise_id}`);
 
     // Return the entries (may be empty array if no entries found)
     return new Response(

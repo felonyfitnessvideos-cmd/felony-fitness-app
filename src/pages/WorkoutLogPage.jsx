@@ -289,13 +289,13 @@ function WorkoutLogPage() {
       // CRITICAL: Fetch "Last Time" data AFTER we have current log ID
       // This ensures we exclude the current session from "Last Time" display
       if (routineData?.routine_exercises && currentLogId) {
-        console.log("[WorkoutLog] Fetching 'Last Time' data for routine:", routineId, "excluding current log:", currentLogId);
+        console.log("[WorkoutLog] Fetching 'Last Time' data for routine:", routineId);
         const prevLogPromises = routineData.routine_exercises.map(item => {
           const params = {
             user_id: userId,
             exercise_id: item.exercises.id,
-            routine_id: routineId,
-            current_log_id: currentLogId // Exclude current workout from "Last Time"
+            routine_id: routineId
+            // Edge Function now uses date comparison (before today) to exclude current session
           };
           console.log(`[WorkoutLog] Calling 'get-last-session-entries' with params:`, params);
           return supabase.functions.invoke('get-last-session-entries', { body: params });
