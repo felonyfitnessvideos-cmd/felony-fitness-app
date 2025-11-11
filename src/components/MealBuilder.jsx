@@ -172,7 +172,7 @@ const MealBuilder = ({
    */
   const loadMealFoods = async (mealId) => {
     try {
-      console.log('[MealBuilder] Loading foods for meal ID:', mealId);
+      console.log('[MealBuilder v2.0] Loading foods for meal ID:', mealId);
       const { data, error } = await supabase
         .from('meal_foods')
         .select(`
