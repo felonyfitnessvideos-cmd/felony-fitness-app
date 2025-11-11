@@ -794,7 +794,7 @@ const MealBuilder = ({
       onRequestClose={closeFoodModal}
       contentLabel="Select Food Quantity"
       overlayClassName="custom-modal-overlay"
-      className="custom-modal-content log-food-modal"
+      className="custom-modal-content"
     >
       {selectedFood && (
         <div className="log-food-modal">
