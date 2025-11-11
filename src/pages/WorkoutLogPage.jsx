@@ -140,6 +140,17 @@ function WorkoutLogPage() {
   const location = useLocation();
 
   const fetchAndStartWorkout = useCallback(async (userId, opts = {}) => {
+    console.log('[WorkoutLog] fetchAndStartWorkout called', { userId, opts });
+    
+    // Save existing state in case we need to restore on error
+    const existingState = {
+      routine,
+      previousLog,
+      todaysLog,
+      workoutLogId,
+      sessionMeta
+    };
+    
     setLoading(true);
     try {
       // If a mesocycle_session_id was provided in the URL, prefer the
@@ -339,10 +350,30 @@ function WorkoutLogPage() {
       if (!opts.mesocycleSessionId) setSessionMeta(null);
 
     } catch (error) {
-      console.error("A critical error occurred while fetching workout data:", error);
+      console.error("[WorkoutLog] CRITICAL ERROR while fetching workout data:", error);
+      console.error("[WorkoutLog] Error details:", {
+        message: error?.message,
+        code: error?.code,
+        hint: error?.hint,
+        details: error?.details
+      });
+      
+      // Restore previous state so UI doesn't go blank
+      if (existingState.routine) {
+        console.log('[WorkoutLog] Restoring previous state after error');
+        setRoutine(existingState.routine);
+        setPreviousLog(existingState.previousLog);
+        setTodaysLog(existingState.todaysLog);
+        setWorkoutLogId(existingState.workoutLogId);
+        setSessionMeta(existingState.sessionMeta);
+      }
+      
+      // Show user-friendly error
+      alert('Failed to refresh workout data. Your changes were saved. Please refresh the page to continue.');
     } finally {
       if (isMountedRef.current) setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routineId, location.search]);
 
   useEffect(() => {
@@ -550,6 +581,8 @@ function WorkoutLogPage() {
     if (rpcLoading) return;
     setRpcLoading(true);
     try {
+      console.log('[WorkoutLog] Updating set:', editingSet.entryId, 'with:', editSetValue);
+      
       // SECURITY FIX: Call the secure Edge Function.
       const { error } = await supabase.functions.invoke('update-workout-set', {
         body: {
@@ -563,8 +596,21 @@ function WorkoutLogPage() {
         console.error("Secure update failed:", error);
         return alert("Could not update set." + (error?.message ? ` (${error.message})` : ''));
       }
+      
+      console.log('[WorkoutLog] Set updated successfully, refreshing workout data...');
       if (isMountedRef.current) setEditingSet(null);
-      if (userId && isMountedRef.current) await fetchAndStartWorkout(userId);
+      
+      // CRITICAL: Only refresh if update succeeded
+      // If refresh fails, user can manually refresh page - data is safe in DB
+      if (userId && isMountedRef.current) {
+        try {
+          await fetchAndStartWorkout(userId);
+          console.log('[WorkoutLog] Workout data refreshed successfully');
+        } catch (refreshError) {
+          console.error('[WorkoutLog] Failed to refresh workout data after update:', refreshError);
+          alert('Set updated successfully, but failed to refresh the display. Please refresh the page manually.');
+        }
+      }
     } finally {
       if (isMountedRef.current) setRpcLoading(false);
     }
