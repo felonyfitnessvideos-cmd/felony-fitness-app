@@ -737,18 +737,14 @@ const MealBuilder = ({
                         item.food_servings.name ||
                         'Unknown Food';
 
-                      // Get the base serving description (strip quantity prefix like "1 cup" -> "cup")
-                      let servingDesc = item.food_servings.serving_description || '';
+                      // Get the serving description as-is (don't strip anything)
+                      // The quantity field represents "how many servings"
+                      const servingDesc = item.food_servings.serving_description || '';
                       
-                      console.log('[MealBuilder Display] Original serving_description:', servingDesc, 'for food:', foodName);
-                      
-                      // Remove any leading quantity (e.g., "1 cup" -> "cup", "2 oz" -> "oz")
-                      // This regex removes numbers, decimals, and the space after
-                      servingDesc = servingDesc.replace(/^[\d.]+\s+/, '');
-                      
-                      console.log('[MealBuilder Display] After stripping quantity:', servingDesc);
+                      console.log('[MealBuilder Display] Quantity:', item.quantity, 'Serving:', servingDesc, 'Food:', foodName);
 
-                      // Build the display string with quantity from the input
+                      // Build the display string: serving description + food name
+                      // The quantity input shows how many of these servings
                       if (servingDesc) {
                         return foodName !== 'Unknown Food' ?
                           `${servingDesc} ${foodName}` :
