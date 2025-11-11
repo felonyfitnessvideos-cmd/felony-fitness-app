@@ -736,12 +736,18 @@ const MealBuilder = ({
                         item.food_servings.name ||
                         'Unknown Food';
 
-                      // Handle foods without names silently
+                      // Get the base serving description (strip quantity prefix like "1 cup" -> "cup")
+                      let servingDesc = item.food_servings.serving_description || '';
+                      
+                      // Remove any leading quantity (e.g., "1 cup" -> "cup", "2 oz" -> "oz")
+                      // This regex removes numbers, decimals, and the space after
+                      servingDesc = servingDesc.replace(/^[\d.]+\s+/, '');
 
-                      if (item.food_servings.serving_description) {
+                      // Build the display string with quantity from the input
+                      if (servingDesc) {
                         return foodName !== 'Unknown Food' ?
-                          `${item.food_servings.serving_description.replace(/^\d+(\.\d+)?\s*/, '')} ${foodName}` :
-                          item.food_servings.serving_description;
+                          `${servingDesc} ${foodName}` :
+                          servingDesc;
                       } else {
                         return foodName;
                       }
