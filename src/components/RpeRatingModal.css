@@ -1,0 +1,225 @@
+/*
+ * @file RpeRatingModal.css
+ * @description Styles for the RPE (Rate of Perceived Exertion) rating modal
+ * Features a grid layout with emoji-based rating buttons for quick selection
+ * @author Felony Fitness Development Team
+ * @date 2025-11-11
+ */
+
+/* Modal overlay */
+.rpe-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 2500; /* Higher than rest timer modal (2000) and meal builder modal (2000) */
+  animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Modal content container */
+.rpe-modal-content {
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  background: #2d3748;
+  color: #f7fafc;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Main container */
+.rpe-modal-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* Header section */
+.rpe-header {
+  margin-bottom: 1.5rem;
+}
+
+.rpe-header h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f7fafc;
+}
+
+.rpe-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #a0aec0;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* Grid layout for RPE options */
+.rpe-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+/* Individual RPE option button */
+.rpe-option {
+  position: relative !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0.5rem;
+  background: #1a202c;
+  border: 2px solid #4a5568;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 120px;
+  top: auto !important;
+  right: auto !important;
+  left: auto !important;
+  bottom: auto !important;
+}
+
+.rpe-option:hover {
+  background: #2d3748;
+  border-color: #f97316;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+.rpe-option:active {
+  transform: translateY(0);
+}
+
+/* Emoji display */
+.rpe-emoji {
+  font-size: 2.5rem;
+  margin-bottom: 0.25rem;
+  display: block;
+  line-height: 1;
+}
+
+/* RPE numeric value */
+.rpe-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fde68a;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+/* RPE label (e.g., "Hard", "Easy") */
+.rpe-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #f7fafc;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+/* RPE description (e.g., "2-3 reps left") */
+.rpe-description {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  display: block;
+  line-height: 1.2;
+}
+
+/* Skip button */
+.rpe-skip-btn {
+  position: relative !important;
+  width: 100%;
+  padding: 0.875rem;
+  background: transparent;
+  border: 1px solid #4a5568;
+  color: #a0aec0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  top: auto !important;
+  right: auto !important;
+  left: auto !important;
+  bottom: auto !important;
+}
+
+.rpe-skip-btn:hover {
+  border-color: #63b3ed;
+  color: #63b3ed;
+  background: rgba(99, 179, 237, 0.1);
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 480px) {
+  .rpe-modal-content {
+    max-width: 100%;
+    padding: 1rem;
+  }
+
+  .rpe-header h3 {
+    font-size: 1.25rem;
+  }
+
+  .rpe-grid {
+    gap: 0.5rem;
+  }
+
+  .rpe-option {
+    min-height: 100px;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .rpe-emoji {
+    font-size: 2rem;
+  }
+
+  .rpe-value {
+    font-size: 1.125rem;
+  }
+
+  .rpe-label {
+    font-size: 0.8125rem;
+  }
+
+  .rpe-description {
+    font-size: 0.6875rem;
+  }
+}
+
+/* Extra large screens - make grid 5 columns */
+@media (min-width: 768px) {
+  .rpe-modal-content {
+    max-width: 700px;
+  }
+
+  .rpe-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}

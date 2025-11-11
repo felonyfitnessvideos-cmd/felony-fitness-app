@@ -245,6 +245,27 @@
 }
 
 /**
+ * RPE rating badge displayed next to set information
+ */
+.rpe-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  background-color: rgba(249, 115, 22, 0.2);
+  color: #fde68a;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 12px;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+}
+
+.rpe-badge.rpe-previous {
+  background-color: rgba(99, 179, 237, 0.2);
+  border-color: rgba(99, 179, 237, 0.4);
+  color: #90cdf4;
+}
+
+/**
  * The "Finish Workout" button (used inside the rest timer modal).
  */
 .finish-button {

@@ -14,6 +14,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
 import LazyRecharts from '../components/LazyRecharts.jsx';
 import RestTimerModal from '../components/RestTimerModal.jsx';
+import RpeRatingModal from '../components/RpeRatingModal.jsx';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import SuccessModal from '../components/SuccessModal.jsx';
 import { supabase } from '../supabaseClient.js';
@@ -73,6 +74,8 @@ function WorkoutLogPage() {
   /** @type {[LogMap, React.Dispatch<React.SetStateAction<LogMap>>]} */
   const [previousLog, setPreviousLog] = useState({});
   const [isTimerOpen, setIsTimerOpen] = useState(false);
+  const [isRpeModalOpen, setIsRpeModalOpen] = useState(false);
+  const [pendingSetForRpe, setPendingSetForRpe] = useState(null);
   const [activeView, setActiveView] = useState('log');
   /** @type {[ChartDataPoint[], React.Dispatch<React.SetStateAction<ChartDataPoint[]>>]} */
   const [chartData, setChartData] = useState([]);
@@ -478,8 +481,61 @@ function WorkoutLogPage() {
       }
     }
 
-    setIsTimerOpen(true);
+    // CRITICAL: Show RPE modal first, THEN rest timer
+    // Store the set entry so we can update it with RPE rating
+    setPendingSetForRpe(newEntry);
+    setIsRpeModalOpen(true);
     setSaveSetLoading(false);
+  };
+
+  /**
+   * Handles RPE rating selection
+   * Updates the set with the selected RPE rating, then shows rest timer
+   */
+  const handleRpeRating = async (rating) => {
+    console.log('[WorkoutLog] RPE rating selected:', rating, 'for entry:', pendingSetForRpe?.id);
+    
+    if (pendingSetForRpe && rating) {
+      // Update the set entry with RPE rating
+      const { error } = await supabase
+        .from('workout_log_entries')
+        .update({ rpe_rating: rating })
+        .eq('id', pendingSetForRpe.id);
+      
+      if (error) {
+        console.error('[WorkoutLog] Failed to save RPE rating:', error);
+      } else {
+        console.log('[WorkoutLog] RPE rating saved successfully');
+        // Update local state
+        setTodaysLog(prev => {
+          const updated = { ...prev };
+          if (updated[selectedExercise.id]) {
+            updated[selectedExercise.id] = updated[selectedExercise.id].map(entry => 
+              entry.id === pendingSetForRpe.id 
+                ? { ...entry, rpe_rating: rating }
+                : entry
+            );
+          }
+          return updated;
+        });
+      }
+    }
+    
+    // Close RPE modal and open rest timer
+    setIsRpeModalOpen(false);
+    setPendingSetForRpe(null);
+    setIsTimerOpen(true);
+  };
+
+  /**
+   * Handles skipping RPE rating
+   * User chose not to rate this set, proceed directly to rest timer
+   */
+  const handleSkipRpe = () => {
+    console.log('[WorkoutLog] User skipped RPE rating');
+    setIsRpeModalOpen(false);
+    setPendingSetForRpe(null);
+    setIsTimerOpen(true);
   };
 
   const handleTimerClose = () => {
@@ -718,7 +774,10 @@ function WorkoutLogPage() {
                       </div>
                     ) : (
                       <>
-                        <span>{set.weight_lbs} lbs x {set.reps_completed}</span>
+                        <span>
+                          {set.weight_lbs} lbs x {set.reps_completed}
+                          {set.rpe_rating && <span className="rpe-badge">RPE {set.rpe_rating}</span>}
+                        </span>
                         <div className="set-actions">
                           <button onClick={() => handleEditSetClick(set)} disabled={rpcLoading}><Edit2 size={14} /></button>
                           <button onClick={() => handleDeleteSet(set.id)} disabled={rpcLoading}><Trash2 size={14} /></button>
@@ -733,7 +792,12 @@ function WorkoutLogPage() {
               <h3>Last Time</h3>
               <ul>
                 {(previousLog[selectedExercise?.id] || []).map((set, index) => (
-                  <li key={index}><span>{set.weight_lbs} lbs x {set.reps_completed}</span></li>
+                  <li key={index}>
+                    <span>
+                      {set.weight_lbs} lbs x {set.reps_completed}
+                      {set.rpe_rating && <span className="rpe-badge rpe-previous">RPE {set.rpe_rating}</span>}
+                    </span>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -771,6 +835,12 @@ function WorkoutLogPage() {
           </div>
         </div>
       )}
+
+      <RpeRatingModal
+        isOpen={isRpeModalOpen}
+        onRatingSelect={handleRpeRating}
+        onSkip={handleSkipRpe}
+      />
 
       <RestTimerModal
         isOpen={isTimerOpen}
