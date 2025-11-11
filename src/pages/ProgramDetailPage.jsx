@@ -307,7 +307,7 @@ const ProgramDetailPage = () => {
 
           <div className="stat-item">
             <span className="stat-label">🎯 Target Areas</span>
-            <span className="stat-value">{program.target_muscle_groups.join(', ')}</span>
+            <span className="stat-value">{(program.target_muscle_groups || []).join(', ')}</span>
           </div>
 
           <div className="stat-item">

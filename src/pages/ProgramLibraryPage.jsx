@@ -136,7 +136,7 @@ const ProgramLibraryPage = () => {
         const matchesSearch =
           program.name.toLowerCase().includes(searchTerm) ||
           program.description.toLowerCase().includes(searchTerm) ||
-          program.target_muscle_groups.some(muscle =>
+          (program.target_muscle_groups || []).some(muscle =>
             muscle.toLowerCase().includes(searchTerm)
           );
         if (!matchesSearch) return false;
@@ -148,7 +148,7 @@ const ProgramLibraryPage = () => {
       }
 
       // Muscle group filter
-      if (filters.muscleGroup && !program.target_muscle_groups.includes(filters.muscleGroup)) {
+      if (filters.muscleGroup && !(program.target_muscle_groups || []).includes(filters.muscleGroup)) {
         return false;
       }
 
@@ -420,7 +420,7 @@ const ProgramLibraryPage = () => {
 
                   <div className="detail-item">
                     <span className="detail-label">🎯 Target:</span>
-                    <span className="detail-value">{program.target_muscle_groups.join(', ')}</span>
+                    <span className="detail-value">{(program.target_muscle_groups || []).join(', ')}</span>
                   </div>
 
                   <div className="detail-item">

@@ -462,7 +462,7 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
                 <div className="program-stats">
                   <span>📊 {program.difficulty_level}</span>
                   <span>⏱️ {program.estimated_weeks} weeks</span>
-                  <span>🎯 {program.target_muscle_groups.join(', ')}</span>
+                    <span>🎯 {(program.target_muscle_groups || []).join(', ')}</span>
                   <span>📝 {routines.length} total workouts</span>
                 </div>
               </div>
