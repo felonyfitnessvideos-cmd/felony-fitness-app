@@ -527,34 +527,39 @@ const MealBuilder = ({
 
         // Check if this is an external food (string ID starting with "ext_")
         if (typeof item.food_servings_id === 'string' && item.food_servings_id.startsWith('ext_')) {
-          // Create food record first
-          const { data: foodData, error: foodError } = await supabase
-            .from('foods')
-            .insert([{
-              name: item.food_servings.food_name || item.food_servings.name,
-              category: null
-            }])
-            .select()
-            .single();
-
-          if (foodError) throw foodError;
-
-          // Create food_servings record
+          console.log('[MealBuilder] Processing external food:', item.food_servings.food_name);
+          
+          // Create food_servings record directly (no foods table needed)
           const { data: servingData, error: servingError } = await supabase
             .from('food_servings')
             .insert([{
-              food_id: foodData.id,
+              food_name: item.food_servings.food_name || item.food_servings.name,
               serving_description: item.food_servings.serving_description,
-              calories: item.food_servings.calories,
-              protein_g: item.food_servings.protein_g,
-              carbs_g: item.food_servings.carbs_g,
-              fat_g: item.food_servings.fat_g
+              calories: item.food_servings.calories || 0,
+              protein_g: item.food_servings.protein_g || 0,
+              carbs_g: item.food_servings.carbs_g || 0,
+              fat_g: item.food_servings.fat_g || 0,
+              fiber_g: item.food_servings.fiber_g || 0,
+              sugar_g: item.food_servings.sugar_g || 0,
+              // Metadata
+              brand: item.food_servings.brand || null,
+              category: item.food_servings.category || null,
+              data_sources: 'openai',
+              quality_score: 70,
+              enrichment_status: 'completed',
+              last_enrichment: new Date().toISOString(),
+              is_verified: false,
+              source: 'external_api'
             }])
             .select()
             .single();
 
-          if (servingError) throw servingError;
+          if (servingError) {
+            console.error('[MealBuilder] Error creating food_servings:', servingError);
+            throw servingError;
+          }
 
+          console.log('[MealBuilder] Created food_servings with ID:', servingData.id);
           finalFoodServingsId = servingData.id;
         }
 
@@ -562,7 +567,7 @@ const MealBuilder = ({
           meal_id: mealId,
           food_servings_id: finalFoodServingsId,
           quantity: item.quantity,
-          notes: item.notes
+          notes: item.notes || ''
         });
       }
 
