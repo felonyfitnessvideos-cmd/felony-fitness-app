@@ -4,6 +4,9 @@ import Modal from 'react-modal';
 import { supabase } from '../supabaseClient';
 import './MealBuilder.css';
 
+// Set the app element for react-modal to prevent accessibility issues
+Modal.setAppElement('#root');
+
 /**
  * MealBuilder component for creating and editing meals with nutrition tracking
  * 

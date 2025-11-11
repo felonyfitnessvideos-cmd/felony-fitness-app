@@ -547,3 +547,118 @@
     justify-content: center;
   }
 }
+
+/* ========================================
+   FOOD SELECTION MODAL (react-modal)
+   ======================================== */
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000; /* Higher than meal builder modal */
+}
+
+.custom-modal-content {
+  position: relative;
+  background: var(--card-color);
+  border-radius: 12px;
+  padding: 0;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  outline: none;
+}
+
+.log-food-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--card-bg);
+}
+
+.log-food-modal .modal-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+}
+
+.log-food-modal .close-modal-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.log-food-modal .close-modal-btn:hover {
+  color: var(--text-primary);
+}
+
+.log-food-modal .modal-body {
+  padding: 20px;
+}
+
+.log-food-modal .modal-body p {
+  margin: 0 0 20px 0;
+  color: var(--text-secondary);
+}
+
+.log-food-modal .quantity-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.log-food-modal .quantity-input label {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.log-food-modal .quantity-input input {
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1rem;
+  background: var(--input-bg);
+  color: var(--text-primary);
+}
+
+.log-food-modal .modal-footer {
+  padding: 20px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.log-food-modal .log-food-btn {
+  padding: 10px 20px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.log-food-modal .log-food-btn:hover {
+  background: var(--primary-hover);
+}
+
+.log-food-modal .log-food-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
