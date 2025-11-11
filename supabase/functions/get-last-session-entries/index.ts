@@ -28,6 +28,7 @@
  * @param {string} body.user_id - UUID of the user (must match authenticated user)
  * @param {string} body.exercise_id - UUID of the exercise to get entries for
  * @param {string} [body.routine_id] - Optional UUID of the routine to filter by
+ * @param {string} [body.current_log_id] - Optional UUID of the current workout log to exclude
  * 
  * @returns {Response} JSON response with workout entries or error
  * @returns {Object} response.body - Response body
@@ -109,7 +110,7 @@ serve(async (req) => {
 
     // Parse request body
     const payload = await req.json();
-    const { user_id, exercise_id, routine_id } = payload;
+    const { user_id, exercise_id, routine_id, current_log_id } = payload;
 
     // Validate required parameters
     if (!user_id || !exercise_id) {
@@ -156,6 +157,12 @@ serve(async (req) => {
     // Optionally filter by routine if provided
     if (routine_id) {
       workoutQuery = workoutQuery.eq("routine_id", routine_id);
+    }
+
+    // CRITICAL: Exclude the current workout log to prevent showing today's sets as "Last Time"
+    // This ensures we only show data from previous sessions, not the current one
+    if (current_log_id) {
+      workoutQuery = workoutQuery.neq("id", current_log_id);
     }
 
     // Get the most recent workout log

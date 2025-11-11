@@ -217,35 +217,7 @@ function WorkoutLogPage() {
       }
       setRoutine(routineData);
 
-      // Step 2: Fetch the "Last Time" data using the routineId BEFORE creating today's log.
-      if (routineData?.routine_exercises) {
-        console.log("Fetching 'Last Time' data for routine:", routineId);
-        const prevLogPromises = routineData.routine_exercises.map(item => {
-          const params = {
-            user_id: userId,
-            exercise_id: item.exercises.id,
-            routine_id: routineId
-          };
-          console.log(`Calling Edge Function 'get-last-session-entries' with params:`, params);
-          return supabase.functions.invoke('get-last-session-entries', { body: params });
-        });
-
-        const prevLogResults = await Promise.all(prevLogPromises);
-
-        console.log("Results from Edge Function calls:", prevLogResults);
-
-        const prevLogMap = {};
-        prevLogResults.forEach((res, index) => {
-          if (res.error) {
-            console.error(`Error fetching last session for exercise ${routineData.routine_exercises[index].exercises.id}:`, res.error);
-          }
-          const exerciseId = routineData.routine_exercises[index].exercises.id;
-          prevLogMap[exerciseId] = res.data?.entries || [];
-        });
-        setPreviousLog(prevLogMap);
-      }
-
-      // Step 3: Determine the day range we want to open/create a log for.
+      // Step 2: Determine the day range we want to open/create a log for.
       // If a mesocycle session was specified, use its scheduled_date; otherwise use today.
       let targetDate = scheduledDateFromSession || (new URLSearchParams(location.search).get('date')) || null;
       let startOfDay = new Date();
@@ -313,6 +285,36 @@ function WorkoutLogPage() {
         }
       }
       setWorkoutLogId(currentLogId);
+
+      // CRITICAL: Fetch "Last Time" data AFTER we have current log ID
+      // This ensures we exclude the current session from "Last Time" display
+      if (routineData?.routine_exercises && currentLogId) {
+        console.log("[WorkoutLog] Fetching 'Last Time' data for routine:", routineId, "excluding current log:", currentLogId);
+        const prevLogPromises = routineData.routine_exercises.map(item => {
+          const params = {
+            user_id: userId,
+            exercise_id: item.exercises.id,
+            routine_id: routineId,
+            current_log_id: currentLogId // Exclude current workout from "Last Time"
+          };
+          console.log(`[WorkoutLog] Calling 'get-last-session-entries' with params:`, params);
+          return supabase.functions.invoke('get-last-session-entries', { body: params });
+        });
+
+        const prevLogResults = await Promise.all(prevLogPromises);
+        console.log("[WorkoutLog] 'Last Time' results:", prevLogResults);
+
+        const prevLogMap = {};
+        prevLogResults.forEach((res, index) => {
+          if (res.error) {
+            console.error(`[WorkoutLog] Error fetching last session for exercise ${routineData.routine_exercises[index].exercises.id}:`, res.error);
+          }
+          const exerciseId = routineData.routine_exercises[index].exercises.id;
+          prevLogMap[exerciseId] = res.data?.entries || [];
+          console.log(`[WorkoutLog] Exercise ${exerciseId} last time:`, prevLogMap[exerciseId].length, "sets");
+        });
+        setPreviousLog(prevLogMap);
+      }
 
       // If we found an existing active log but it didn't have cycle_session_id set,
       // attempt to attach it so later finish updates can find the session.
@@ -583,12 +585,15 @@ function WorkoutLogPage() {
     try {
       console.log('[WorkoutLog] Updating set:', editingSet.entryId, 'with:', editSetValue);
       
+      const newWeight = parseInt(editSetValue.weight, 10);
+      const newReps = parseInt(editSetValue.reps, 10);
+      
       // SECURITY FIX: Call the secure Edge Function.
       const { error } = await supabase.functions.invoke('update-workout-set', {
         body: {
           entry_id: editingSet.entryId,
-          weight_lbs: parseInt(editSetValue.weight, 10),
-          reps_completed: parseInt(editSetValue.reps, 10)
+          weight_lbs: newWeight,
+          reps_completed: newReps
         }
       });
 
@@ -597,20 +602,33 @@ function WorkoutLogPage() {
         return alert("Could not update set." + (error?.message ? ` (${error.message})` : ''));
       }
       
-      console.log('[WorkoutLog] Set updated successfully, refreshing workout data...');
-      if (isMountedRef.current) setEditingSet(null);
+      console.log('[WorkoutLog] Set updated successfully, updating local state...');
       
-      // CRITICAL: Only refresh if update succeeded
-      // If refresh fails, user can manually refresh page - data is safe in DB
-      if (userId && isMountedRef.current) {
-        try {
-          await fetchAndStartWorkout(userId);
-          console.log('[WorkoutLog] Workout data refreshed successfully');
-        } catch (refreshError) {
-          console.error('[WorkoutLog] Failed to refresh workout data after update:', refreshError);
-          alert('Set updated successfully, but failed to refresh the display. Please refresh the page manually.');
-        }
-      }
+      // CRITICAL FIX: Update local state instead of refetching everything
+      // This prevents UI from clearing and is much faster
+      setTodaysLog(prevLog => {
+        const updatedLog = { ...prevLog };
+        // Find and update the specific entry in all exercises
+        Object.keys(updatedLog).forEach(exerciseId => {
+          updatedLog[exerciseId] = updatedLog[exerciseId].map(entry => {
+            if (entry.id === editingSet.entryId) {
+              return {
+                ...entry,
+                weight_lbs: newWeight,
+                reps_completed: newReps
+              };
+            }
+            return entry;
+          });
+        });
+        return updatedLog;
+      });
+      
+      if (isMountedRef.current) setEditingSet(null);
+      console.log('[WorkoutLog] Local state updated successfully');
+    } catch (refreshError) {
+      console.error('[WorkoutLog] Failed to update set:', refreshError);
+      alert('Failed to update set. Please try again.');
     } finally {
       if (isMountedRef.current) setRpcLoading(false);
     }
