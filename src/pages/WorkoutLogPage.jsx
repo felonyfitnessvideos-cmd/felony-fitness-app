@@ -254,6 +254,7 @@ function WorkoutLogPage() {
           todaysEntriesMap[entry.exercise_id].push(entry);
         });
       });
+      console.log('[WorkoutLog] Today\'s log entries loaded:', todaysEntriesMap);
       setTodaysLog(todaysEntriesMap);
 
       let currentLogId;
@@ -460,12 +461,15 @@ function WorkoutLogPage() {
     };
     const { data: newEntry, error } = await supabase.from('workout_log_entries').insert(newSetPayload).select().single();
     if (error) {
+      console.error('[WorkoutLog] Failed to save set:', error);
       alert("Could not save set. Please try again." + (error?.message ? ` (${error.message})` : ''));
       setSaveSetLoading(false);
       return;
     }
 
+    console.log('[WorkoutLog] Set saved successfully:', newEntry);
     const newTodaysLog = { ...todaysLog, [selectedExercise.id]: [...(todaysLog[selectedExercise.id] || []), newEntry] };
+    console.log('[WorkoutLog] Updated today\'s log:', newTodaysLog);
     setTodaysLog(newTodaysLog);
 
     const targetSets = routine.routine_exercises[selectedExerciseIndex]?.target_sets;
