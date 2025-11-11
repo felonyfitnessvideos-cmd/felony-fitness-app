@@ -248,10 +248,13 @@ const MealBuilder = ({
         if (error) throw error;
         if (controller.signal.aborted) return;
 
+        console.log('[MealBuilder] Search response:', { data, source: data?.source, resultsCount: data?.results?.length });
+
         let standardizedResults = [];
         if (data?.source === 'local') {
           // Database results - already in flat format from food-search-v2
           // Each result is a food_servings object with all necessary fields
+          console.log('[MealBuilder] Processing local results:', data.results);
           standardizedResults = (data.results || []).map(serving => ({
             id: serving.id,
             food_name: serving.food_name,
@@ -287,9 +290,10 @@ const MealBuilder = ({
               sugar: item.sugar_g
             };
             return result;
-          });
+          }));
         }
 
+        console.log('[MealBuilder] Standardized results:', standardizedResults);
         setSearchResults(standardizedResults);
       } catch (error) {
         if (error?.name === 'AbortError') {
