@@ -232,7 +232,7 @@ function NutritionLogPage() {
       
       console.log('🔎 Recent meal plan entries for user:', debugEntries);
       
-      const { data, error } = await supabase
+      const { data, error} = await supabase
         .from('weekly_meal_plan_entries')
         .select(`
           id,
@@ -252,7 +252,7 @@ function NutritionLogPage() {
         .eq('weekly_meal_plans.user_id', userId)
         .eq('weekly_meal_plans.is_active', true)
         .eq('plan_date', today)
-        .eq('meal_type', mealType)
+        .eq('meal_type', mealType.toLowerCase())  // Convert "Breakfast" to "breakfast"
         .maybeSingle();
 
       console.log('📋 Meal plan query result:', { 
