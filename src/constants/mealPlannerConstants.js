@@ -10,11 +10,54 @@
  * @version 1.0.0
  */
 
-/** @constant {string[]} Available meal types for weekly planning grid */
+/** 
+ * @constant {string[]} Available meal types for weekly planning grid
+ * IMPORTANT: Database and all logic should use lowercase values
+ */
 export const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack1', 'snack2'];
 
 /** @constant {string[]} Days of the week for meal planning grid (Monday-first) */
 export const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+/**
+ * Format meal type for display (lowercase → Title Case)
+ * Use this function whenever displaying meal types to users
+ * 
+ * @param {string} mealType - Internal meal type identifier (lowercase)
+ * @returns {string} Human-readable meal type label (Title Case)
+ * 
+ * @example
+ * formatMealType('breakfast'); // Returns "Breakfast"
+ * formatMealType('snack1'); // Returns "Snack 1"
+ */
+export const formatMealType = (mealType) => {
+  const typeMap = {
+    breakfast: 'Breakfast',
+    lunch: 'Lunch',
+    dinner: 'Dinner',
+    snack1: 'Snack 1',
+    snack2: 'Snack 2',
+    snack: 'Snack' // For backward compatibility
+  };
+  return typeMap[mealType] || mealType;
+};
+
+/**
+ * Normalize meal type from display format to database format
+ * Use this when receiving meal type from UI components
+ * 
+ * @param {string} displayValue - Meal type in any case ('Breakfast', 'breakfast', 'BREAKFAST')
+ * @returns {string} Normalized lowercase meal type for database
+ * 
+ * @example
+ * normalizeMealType('Breakfast'); // Returns "breakfast"
+ * normalizeMealType('LUNCH'); // Returns "lunch"
+ * normalizeMealType('breakfast'); // Returns "breakfast"
+ */
+export const normalizeMealType = (displayValue) => {
+  if (!displayValue) return '';
+  return displayValue.toLowerCase().trim();
+};
 
 /** 
  * @constant {Array<Object>} Available meal categories for filtering 

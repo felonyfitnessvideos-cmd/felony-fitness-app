@@ -8,6 +8,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { supabase } from '../supabaseClient.js';
+import { formatMealType } from '../constants/mealPlannerConstants.js';
 /**
  * NutritionLogPage — log daily nutrition entries.
  *
@@ -18,6 +19,8 @@ import { supabase } from '../supabaseClient.js';
  * Notes:
  * - uses text + inputMode for numeric fields to avoid mobile quirks and
  *   sanitizes values before persisting.
+ * - ALWAYS uses lowercase meal types ('breakfast', 'lunch', 'dinner', 'snack')
+ *   for state and database operations. Use formatMealType() for display only.
  */
 import { Apple, Camera, Droplets, Loader2, Search, Trash2, X } from 'lucide-react';
 import Modal from 'react-modal';
@@ -60,7 +63,8 @@ function NutritionLogPage() {
   const userId = user?.id;
   console.log('👤 User ID:', userId);
   
-  const [activeMeal, setActiveMeal] = useState('Breakfast');
+  // IMPORTANT: Always use lowercase meal types for state and database operations
+  const [activeMeal, setActiveMeal] = useState('breakfast');
   /** @type {[NutritionLog[], React.Dispatch<React.SetStateAction<NutritionLog[]>>]} */
   const [todaysLogs, setTodaysLogs] = useState([]);
   const [goals, setGoals] = useState({ daily_calorie_goal: 2000, daily_protein_goal_g: 150, daily_water_goal_oz: 128 });
@@ -252,7 +256,7 @@ function NutritionLogPage() {
         .eq('weekly_meal_plans.user_id', userId)
         .eq('weekly_meal_plans.is_active', true)
         .eq('plan_date', today)
-        .eq('meal_type', mealType.toLowerCase())  // Convert "Breakfast" to "breakfast"
+        .eq('meal_type', mealType)  // Already lowercase from state
         .maybeSingle();
 
       console.log('📋 Meal plan query result:', { 
@@ -681,8 +685,14 @@ function NutritionLogPage() {
       <SubPageHeader title="Log" icon={<Apple size={28} />} iconColor="#f97316" backTo="/nutrition" />
 
       <div className="meal-tabs">
-        {['Breakfast', 'Lunch', 'Dinner', 'Snack'].map(meal => (
-          <button key={meal} className={activeMeal === meal ? 'active' : ''} onClick={() => setActiveMeal(meal)}>{meal}</button>
+        {['breakfast', 'lunch', 'dinner', 'snack'].map(meal => (
+          <button 
+            key={meal} 
+            className={activeMeal === meal ? 'active' : ''} 
+            onClick={() => setActiveMeal(meal)}
+          >
+            {formatMealType(meal)}
+          </button>
         ))}
       </div>
 

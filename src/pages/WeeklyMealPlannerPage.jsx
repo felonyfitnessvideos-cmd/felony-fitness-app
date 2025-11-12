@@ -2,7 +2,7 @@ import { Calendar, ChefHat, Copy, Plus, Share2, ShoppingCart, Target, Trash2, X 
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../AuthContext';
 import MealBuilder from '../components/MealBuilder';
-import { DAYS_OF_WEEK, getWeekDates, MEAL_TYPES } from '../constants/mealPlannerConstants';
+import { DAYS_OF_WEEK, formatMealType, getWeekDates, MEAL_TYPES } from '../constants/mealPlannerConstants';
 import { supabase } from '../supabaseClient';
 import { analyzeWeeklyNutrition } from '../utils/nutritionRecommendations';
 import './WeeklyMealPlannerPage.css';
@@ -870,27 +870,6 @@ const WeeklyMealPlannerPage = () => {
     const newDate = new Date(currentWeek[0]);
     newDate.setDate(newDate.getDate() + (direction * 7));
     setCurrentWeek(getWeekDates(newDate));
-  };
-
-  /**
-   * Convert meal type key to display-friendly label
-   * 
-   * @param {string} mealType - Internal meal type identifier
-   * @returns {string} Human-readable meal type label
-   * 
-   * @example
-   * formatMealType('snack1'); // Returns "Snack 1"
-   * formatMealType('breakfast'); // Returns "Breakfast"
-   */
-  const formatMealType = (mealType) => {
-    const typeMap = {
-      breakfast: 'Breakfast',
-      lunch: 'Lunch',
-      dinner: 'Dinner',
-      snack1: 'Snack 1',
-      snack2: 'Snack 2'
-    };
-    return typeMap[mealType] || mealType;
   };
 
   /**
