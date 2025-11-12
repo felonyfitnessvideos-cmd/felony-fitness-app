@@ -238,9 +238,9 @@ const TrainerResources = () => {
      */
     const getFileIcon = (type) => {
         if (type === 'pdf') {
-            return <FileText size={24} className="file-icon pdf" />;
+            return <FileText size={18} className="file-icon pdf" />;
         }
-        return <FileText size={24} className="file-icon default" />;
+        return <FileText size={18} className="file-icon default" />;
     };
 
     // Filter resources based on search query

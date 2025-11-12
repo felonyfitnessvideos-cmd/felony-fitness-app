@@ -10,6 +10,17 @@
   flex-direction: column;
   background: var(--background-primary);
   padding: 1.5rem;
+  overflow: hidden; /* Hide any scrollbars */
+}
+
+/* Hide scrollbars globally for this component */
+.trainer-resources-container * {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.trainer-resources-container *::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 /* Header Section */
@@ -116,7 +127,7 @@
 /* Resources Grid */
 .resources-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 0.75rem;
   margin-top: 1rem;
 }
@@ -126,7 +137,7 @@
   background: var(--background-secondary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 0.75rem;
+  padding: 0.6rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -164,14 +175,14 @@
 
 .card-header {
   display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .file-icon {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .file-icon.pdf {
@@ -196,22 +207,23 @@
 
 .card-header h3 {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: var(--text-primary);
   word-break: break-word;
-  line-height: 1.3;
+  line-height: 1.2;
+  font-weight: 500;
 }
 
 .card-meta {
   display: flex;
   justify-content: space-between;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-secondary);
 }
 
 .card-actions {
   display: flex;
-  gap: 0.4rem;
+  gap: 0.3rem;
   margin-top: auto;
 }
 
@@ -220,20 +232,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.6rem;
+  gap: 0.25rem;
+  padding: 0.35rem 0.4rem;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 5px;
   background: var(--background-primary);
   color: var(--text-primary);
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .action-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
 }
 
 .action-btn:disabled {
