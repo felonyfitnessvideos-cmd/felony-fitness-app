@@ -2276,8 +2276,8 @@
   opacity: 0.9;
 }
 
-/* Responsive fullscreen modal */
-@media screen and (max-width: 768px) {
+/* Responsive fullscreen modal - only stack on very small screens */
+@media screen and (max-width: 640px) {
   .fullscreen-muscle-maps {
     flex-direction: column;
     gap: 24px;
