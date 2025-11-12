@@ -222,6 +222,16 @@ function NutritionLogPage() {
       
       console.log('🔍 Fetching scheduled meal for:', { userId, mealType, today });
       
+      // Debug: Check what entries exist for this user around this date
+      const { data: debugEntries } = await supabase
+        .from('weekly_meal_plan_entries')
+        .select('plan_date, meal_type, meals(name), weekly_meal_plans(is_active, user_id)')
+        .eq('weekly_meal_plans.user_id', userId)
+        .order('plan_date', { ascending: false })
+        .limit(10);
+      
+      console.log('🔎 Recent meal plan entries for user:', debugEntries);
+      
       const { data, error } = await supabase
         .from('weekly_meal_plan_entries')
         .select(`
@@ -245,7 +255,16 @@ function NutritionLogPage() {
         .eq('meal_type', mealType)
         .maybeSingle();
 
-      console.log('📋 Meal plan query result:', { data, error });
+      console.log('📋 Meal plan query result:', { 
+        data, 
+        error,
+        filters: {
+          userId,
+          is_active: true,
+          plan_date: today,
+          meal_type: mealType
+        }
+      });
 
       if (error) {
         console.error('Error fetching scheduled meal:', error);
