@@ -813,19 +813,23 @@ const WeeklyMealPlannerPage = () => {
 
   const removeMealFromSlot = async (entryId) => {
     try {
+      console.log('🗑️ Deleting meal plan entry:', entryId);
+      
       const { error } = await supabase
         .from('weekly_meal_plan_entries')
         .delete()
         .eq('id', entryId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Delete error:', error);
+        throw error;
+      }
 
+      console.log('✅ Meal deleted successfully');
       await loadPlanEntries();
     } catch (error) {
-      if (import.meta.env?.DEV) {
-
-        console.warn('WeeklyMealPlannerPage - Error removing meal from plan:', error);
-      }
+      console.error('WeeklyMealPlannerPage - Error removing meal from plan:', error);
+      alert(`Error removing meal: ${error.message}`);
     }
   };
 
