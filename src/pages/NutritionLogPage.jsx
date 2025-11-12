@@ -58,6 +58,8 @@ import './NutritionLogPage.css';
 function NutritionLogPage() {
   const { user } = useAuth();
   const userId = user?.id;
+  console.log('👤 User ID:', userId);
+  
   const [activeMeal, setActiveMeal] = useState('Breakfast');
   /** @type {[NutritionLog[], React.Dispatch<React.SetStateAction<NutritionLog[]>>]} */
   const [todaysLogs, setTodaysLogs] = useState([]);
@@ -82,6 +84,10 @@ function NutritionLogPage() {
   const [isAddingMealPlan, setIsAddingMealPlan] = useState(false);
 
   const mealLogs = todaysLogs.filter(log => log.meal_type === activeMeal);
+  console.log('🍽️ Meal Logs for', activeMeal, ':', mealLogs.length, 'items');
+  console.log('📋 All today logs:', todaysLogs.length, 'items');
+  console.log('⚙️ Loading state:', loading);
+  
   const calorieProgress = goals.daily_calorie_goal > 0 ? (dailyTotals.calories / goals.daily_calorie_goal) * 100 : 0;
 
   /**
