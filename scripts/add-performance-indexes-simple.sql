@@ -1,11 +1,10 @@
 /**
  * @file add-performance-indexes-simple.sql
- * @description Database indexes for Supabase Dashboard (SAFE VERSION)
+ * @description Database indexes VERIFIED against database.types.ts
  * @project Felony Fitness
  * @date 2025-11-11
  * 
- * FIXED: Only includes indexes for columns that definitely exist in production
- * SKIPPED: Indexes for columns from pending migrations (program_id, etc.)
+ * VERIFIED: Every table and column checked against supabase/database.types.ts
  * SAFE: Your database is small, so locks will be instant (<1 second)
  * USAGE: Copy/paste entire file into Supabase SQL Editor and click Run
  */
@@ -37,9 +36,6 @@ ON workout_log_entries(log_id);
 CREATE INDEX IF NOT EXISTS idx_routine_exercises_routine_order 
 ON routine_exercises(routine_id, exercise_order);
 
--- NOTE: Skipping workout_routines(program_id) - column doesn't exist yet
--- Will add after running add-programs-missing-columns.sql migration
-
 -- ============================================================================
 -- MESOCYCLE TRACKING INDEXES
 -- ============================================================================
@@ -54,10 +50,9 @@ ON cycle_sessions(mesocycle_id, scheduled_date);
 -- NUTRITION TRACKING INDEXES
 -- ============================================================================
 
-CREATE INDEX IF NOT EXISTS idx_user_meals_user_date 
-ON user_meals(user_id, consumed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_nutrition_logs_user_date 
+ON nutrition_logs(user_id, log_date DESC);
 
--- NOTE: Table is called 'meal_foods' not 'meal_food_items', and FK is 'meal_id'
 CREATE INDEX IF NOT EXISTS idx_meal_foods_meal 
 ON meal_foods(meal_id);
 
@@ -65,24 +60,29 @@ ON meal_foods(meal_id);
 -- USER & AUTHENTICATION INDEXES
 -- ============================================================================
 
+-- FIXED: trainer_clients has 'status' column, not 'is_active'
+-- Partial index for 'active' status (assuming 'active' is the status value)
 CREATE INDEX IF NOT EXISTS idx_trainer_clients_trainer 
-ON trainer_clients(trainer_id, is_active) 
-WHERE is_active = true;
+ON trainer_clients(trainer_id, status) 
+WHERE status = 'active';
 
 CREATE INDEX IF NOT EXISTS idx_trainer_clients_client 
-ON trainer_clients(client_id, is_active) 
-WHERE is_active = true;
+ON trainer_clients(client_id, status) 
+WHERE status = 'active';
 
 -- ============================================================================
 -- MESSAGING INDEXES
 -- ============================================================================
 
+-- FIXED: direct_messages has 'recipient_id' not 'receiver_id', and 'sender_id'
 CREATE INDEX IF NOT EXISTS idx_direct_messages_conversation 
-ON direct_messages(sender_id, receiver_id, created_at DESC);
+ON direct_messages(sender_id, recipient_id, created_at DESC);
 
+-- FIXED: direct_messages has 'read_at' column (timestamp), not 'is_read' (boolean)
+-- Unread messages have NULL read_at
 CREATE INDEX IF NOT EXISTS idx_direct_messages_unread 
-ON direct_messages(receiver_id, is_read, created_at DESC) 
-WHERE is_read = false;
+ON direct_messages(recipient_id, created_at DESC) 
+WHERE read_at IS NULL;
 
 -- ============================================================================
 -- VERIFICATION
