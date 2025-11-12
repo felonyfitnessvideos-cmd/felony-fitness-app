@@ -2261,7 +2261,7 @@
 
 .muscle-map-fullscreen {
   width: 100%;
-  max-width: 400px;
+  max-width: 320px; /* Reduced so two fit side-by-side in 699px container */
   height: auto;
 }
 

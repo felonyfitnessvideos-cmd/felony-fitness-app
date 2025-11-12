@@ -98,46 +98,33 @@ const AnatomicalMuscleMap = ({
   const FRONT_VIEW_MUSCLES = ['chest', 'abs', 'obliques', 'quadriceps', 'front-deltoids', 'biceps', 'forearm', 'calves'];
   const BACK_VIEW_MUSCLES = ['upper-back', 'lower-back', 'trapezius', 'back-deltoids', 'triceps', 'gluteal', 'hamstring', 'calves'];
   
-  /**
-   * Convert our muscle names to react-body-highlighter format
-   * Filter by variant to show only appropriate muscles on each view
-   * @returns {Array} Array of muscle objects for highlighting
-   */
-  const getMusclesForHighlighting = () => {
-    const muscleSet = new Set();
-    
-    // Determine which muscles are allowed for this view
-    const allowedMuscles = variant === 'front' ? FRONT_VIEW_MUSCLES : BACK_VIEW_MUSCLES;
-    
-    highlightedMuscles.forEach(muscleEntry => {
-      // Handle both old format (string) and new format (object with name/priority)
-      const muscleName = typeof muscleEntry === 'string' ? muscleEntry : muscleEntry.name;
-      
-      const mappedMuscles = MUSCLE_MAP[muscleName];
-      if (mappedMuscles) {
-        // Filter by allowed muscles for this view
-        const filteredMuscles = mappedMuscles.filter(m => allowedMuscles.includes(m));
-        filteredMuscles.forEach(m => muscleSet.add(m));
-      }
-    });
-    
-    const muscles = Array.from(muscleSet);
-    return muscles.map(name => ({ name, muscles: [name] }));
-  };
-
-  const data = getMusclesForHighlighting();
+  const muscles = Array.from(new Set(
+    highlightedMuscles
+      .map(muscleEntry => {
+        const muscleName = typeof muscleEntry === 'string' ? muscleEntry : muscleEntry.name;
+        const mappedMuscles = MUSCLE_MAP[muscleName];
+        if (mappedMuscles) {
+          const allowedMuscles = variant === 'front' ? FRONT_VIEW_MUSCLES : BACK_VIEW_MUSCLES;
+          return mappedMuscles.filter(m => allowedMuscles.includes(m));
+        }
+        return [];
+      })
+      .flat()
+  ));
+  
+  const data = muscles.map(name => ({ 
+    name, 
+    muscles: [name]
+  }));
 
   // Debug logging
-  console.log('AnatomicalMuscleMap render:', {
+  console.log('🎨 AnatomicalMuscleMap:', {
     variant,
-    inputMuscles: highlightedMuscles,
-    outputData: data,
-    allowedMuscles: variant === 'front' ? FRONT_VIEW_MUSCLES : BACK_VIEW_MUSCLES
+    inputCount: highlightedMuscles.length,
+    outputCount: muscles.length,
+    muscles: muscles,
+    dataStructure: data
   });
-  
-  // Detailed muscle name logging
-  console.log(`  Input: ${highlightedMuscles.map(m => typeof m === 'string' ? m : m.name).join(', ')}`);
-  console.log(`  Output: ${data.map(d => d.name).join(', ')}`);
 
   return (
     <div className={`anatomical-muscle-map ${className}`}>
@@ -145,7 +132,7 @@ const AnatomicalMuscleMap = ({
         data={data}
         style={{ width: '100%', padding: '0' }}
         type={variant}
-        highlightedColors={['#f97316']} // Orange highlight color
+        highlightedColors={['#f97316']}
       />
     </div>
   );
