@@ -585,7 +585,7 @@ function NutritionLogPage() {
    * 
    * @returns {Promise<void>} Adds meal foods to nutrition log and refreshes UI
    * 
-   * @throws {Error} If meal_foods fetch fails or bulk insert fails
+   * @note Errors are caught and displayed via alert dialogs, not thrown to caller
    * 
    * @example
    * // User clicks "Add Breakfast" button
