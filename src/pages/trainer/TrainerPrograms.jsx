@@ -1487,6 +1487,7 @@ const ProgramLibrary = () => {
                 <div className="fullscreen-map-front">
                   <h3>Front</h3>
                   <CustomMuscleMap
+                    key={`fullscreen-front-${fullscreenMuscleMap.programName}`}
                     highlightedMuscles={fullscreenMuscleMap.muscles}
                     variant="front"
                     className="muscle-map-fullscreen"
@@ -1495,6 +1496,7 @@ const ProgramLibrary = () => {
                 <div className="fullscreen-map-back">
                   <h3>Back</h3>
                   <CustomMuscleMap
+                    key={`fullscreen-back-${fullscreenMuscleMap.programName}`}
                     highlightedMuscles={fullscreenMuscleMap.muscles}
                     variant="back"
                     className="muscle-map-fullscreen"

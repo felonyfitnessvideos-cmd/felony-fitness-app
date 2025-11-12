@@ -5,15 +5,75 @@
  * 
  * Features:
  * - Professional anatomical SVG from Adobe Stock
- * - Dynamic muscle highlighting based on exercises
- * - Front and back views with accurate anatomy
- * - React-controlled color updates via refs
+ * - Separate front and back view SVG files
+ * - Dynamic muscle highlighting via DOM manipulation
+ * - Background anatomy for visual context
  */
 
 import PropTypes from 'prop-types';
-import { useEffect, useRef } from 'react';
-import bodyMapSvg from '../../assets/muscles/Body Map.svg';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import './CustomMuscleMap.css';
+import frontBodyMapSvg from '../../assets/muscles/FrontViewBodyMap-Male.svg';
+import backBodyMapSvg from '../../assets/muscles/BackViewBodyMap-Male.svg';
+
+// Color constants
+const HIGHLIGHT_COLOR = '#f97316'; // Orange
+const DEFAULT_COLOR = '#575756';   // Gray (matches SVG default)
+
+// Map database muscle names to SVG group IDs
+const getMuscleToSvgId = (variant) => ({
+  // Front view muscles
+  'Chest': 'Chest',
+  'Upper Chest': 'Chest',
+  'Middle Chest': 'Chest',
+  'Lower Chest': 'Chest',
+  'Pecs': 'Chest',
+  'Pectorals': 'Chest',
+  
+  'Shoulders': variant === 'front' ? 'Delts' : 'Rear_Delts',
+  'Front Delts': 'Delts',
+  'Side Delts': 'Delts',
+  'Rear Delts': 'Rear_Delts',
+  'Deltoids': variant === 'front' ? 'Delts' : 'Rear_Delts',
+  
+  'Biceps': 'Biceps',
+  'Bicep': 'Biceps',
+  
+  'Triceps': 'Triceps',
+  'Tricep': 'Triceps',
+  
+  'Forearms': 'Forearms',
+  'Forearm': 'Forearms',
+  
+  'Abs': 'Abbs', // Note: SVG has typo "Abbs"
+  'Abdominals': 'Abbs',
+  'Core': 'Abbs',
+  'Obliques': 'Abbs',
+  
+  'Quads': 'Quads',
+  'Quadriceps': 'Quads',
+  'Front Thighs': 'Quads',
+  
+  'Hamstrings': 'Hamstrings',
+  'Hams': 'Hamstrings',
+  'Back Thighs': 'Hamstrings',
+  
+  'Glutes': 'Glutes',
+  'Glute': 'Glutes',
+  'Butt': 'Glutes',
+  
+  'Calves': 'Calfs', // Note: SVG has typo "Calfs"
+  'Calf': 'Calfs',
+  
+  'Back': 'Lats',
+  'Lats': 'Lats',
+  'Latissimus Dorsi': 'Lats',
+  'Upper Back': 'Lats',
+  
+  'Traps': 'Traps',
+  'Trapezius': 'Traps',
+  'Upper Traps': 'Traps'
+});
 
 const CustomMuscleMap = ({ 
   highlightedMuscles = [],
@@ -21,117 +81,115 @@ const CustomMuscleMap = ({
   className = ''
 }) => {
   const containerRef = useRef(null);
+  const [svgLoaded, setSvgLoaded] = useState(false);
+  const [svgContent, setSvgContent] = useState('');
   
-  const HIGHLIGHT_COLOR = '#f97316'; // Orange
-  const DEFAULT_COLOR = '#575756'; // Dark gray (original SVG color)
+  const muscleToSvgId = useMemo(() => getMuscleToSvgId(variant), [variant]);
   
-  /**
-   * Map our database muscle names to SVG group IDs from Body Map.svg
-   * 
-   * Available SVG groups:
-   * - Delts (front shoulders)
-   * - Biceps
-   * - Triceps
-   * - Forearms
-   * - Chest (pectorals)
-   * - Abbs (abs - note typo)
-   * - Quads (quadriceps)
-   * - Calfs (calves - note typo)
-   * - Hamstrings
-   * - Glutes
-   * - Traps (trapezius)
-   * - Lats (latissimus dorsi)
-   * - Rear_Delts (rear shoulders)
-   */
-  const muscleToSvgId = {
-    // Chest/Pectorals
-    'Chest': 'Chest',
-    'Upper Chest': 'Chest',
-    'Middle Chest': 'Chest',
-    'Lower Chest': 'Chest',
-    'Pecs': 'Chest',
-    'Pectorals': 'Chest',
-    
-    // Biceps
-    'Biceps': 'Biceps',
-    
-    // Triceps
-    'Triceps': 'Triceps',
-    
-    // Shoulders - context-aware based on view
-    'Shoulders': variant === 'front' ? 'Delts' : 'Rear_Delts',
-    'Deltoids': variant === 'front' ? 'Delts' : 'Rear_Delts',
-    'Front Delts': 'Delts',
-    'Front Deltoids': 'Delts',
-    'Rear Delts': 'Rear_Delts',
-    'Rear Deltoids': 'Rear_Delts',
-    
-    // Abs
-    'Abs': 'Abbs',
-    'Abdominals': 'Abbs',
-    'Obliques': 'Abbs',
-    
-    // Quads
-    'Quads': 'Quads',
-    'Quadriceps': 'Quads',
-    
-    // Hamstrings
-    'Hamstrings': 'Hamstrings',
-    
-    // Glutes
-    'Glutes': 'Glutes',
-    'Gluteus': 'Glutes',
-    
-    // Calves
-    'Calves': 'Calfs',
-    
-    // Forearms
-    'Forearms': 'Forearms',
-    
-    // Lats
-    'Lats': 'Lats',
-    'Latissimus Dorsi': 'Lats',
-    'Upper Back': 'Lats',
-    
-    // Traps
-    'Traps': 'Traps',
-    'Trapezius': 'Traps',
-    
-    // Lower Back
-    'Lower Back': 'Lats',
-  };
+  // Build set of SVG IDs to highlight (memoized to prevent useEffect re-runs)
+  const svgIdsToHighlight = useMemo(() => {
+    const ids = new Set();
+    highlightedMuscles.forEach(muscle => {
+      const muscleName = typeof muscle === 'string' ? muscle : muscle.name;
+      const svgId = muscleToSvgId[muscleName];
+      if (svgId) {
+        ids.add(svgId);
+      }
+    });
+    return ids;
+  }, [highlightedMuscles, muscleToSvgId]);
   
-  // Build set of SVG group IDs to highlight
-  const svgIdsToHighlight = new Set();
-  highlightedMuscles.forEach(muscle => {
-    const muscleName = typeof muscle === 'string' ? muscle : muscle.name;
-    const svgId = muscleToSvgId[muscleName];
-    if (svgId) {
-      svgIdsToHighlight.add(svgId);
-    }
-  });
+  // Load and inject SVG
+  useEffect(() => {
+    const svgPath = variant === 'front' ? frontBodyMapSvg : backBodyMapSvg;
+    const container = containerRef.current;
+    
+    // Reset loaded state when variant changes
+    setSvgLoaded(false);
+    
+    fetch(svgPath)
+      .then(response => response.text())
+      .then(svgContent => {
+        if (container) {
+          // Remove the <style> tag that contains .st0 and .st1 classes
+          const cleanedSvg = svgContent.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+          container.innerHTML = cleanedSvg;
+          
+          // Wait a tick for DOM to update before setting loaded
+          setTimeout(() => {
+            setSvgLoaded(true);
+          }, 0);
+        }
+      })
+      .catch(error => {
+        console.error('Failed to load SVG:', error);
+      });
+    
+    // Cleanup on unmount
+    return () => {
+      if (container) {
+        container.innerHTML = '';
+      }
+    };
+  }, [variant]);
   
-  // Determine which muscles are visible in this view
-  const frontMuscles = ['Delts', 'Biceps', 'Forearms', 'Chest', 'Abbs', 'Quads', 'Calfs'];
-  const backMuscles = ['Rear_Delts', 'Triceps', 'Forearms', 'Traps', 'Lats', 'Glutes', 'Hamstrings', 'Calfs'];
-  const visibleMuscles = variant === 'front' ? frontMuscles : backMuscles;
+  // Apply colors to muscle groups
+  useEffect(() => {
+    if (!svgLoaded || !containerRef.current) return;
+    
+    // Small delay to ensure SVG is fully rendered in DOM
+    const applyColors = () => {
+      const svgElement = containerRef.current?.querySelector('svg');
+      if (!svgElement) return;
+      
+      // Remove any style tags that might interfere
+      const styleTags = svgElement.querySelectorAll('style');
+      styleTags.forEach(tag => tag.remove());
+      
+      // Get all groups with IDs (muscle groups)
+      const groups = svgElement.querySelectorAll('g[id]');
+      
+      groups.forEach(group => {
+        const groupId = group.getAttribute('id');
+        
+        // Skip background group
+        if (groupId === 'Background') {
+          // Keep background at default color
+          const paths = group.querySelectorAll('path');
+          paths.forEach(path => {
+            path.setAttribute('fill', DEFAULT_COLOR);
+            path.removeAttribute('class');
+            path.style.fill = DEFAULT_COLOR;
+          });
+          return;
+        }
+        
+        // Apply color based on highlight status
+        const shouldHighlight = svgIdsToHighlight.has(groupId);
+        const color = shouldHighlight ? HIGHLIGHT_COLOR : DEFAULT_COLOR;
+        
+        const paths = group.querySelectorAll('path');
+        paths.forEach(path => {
+          path.setAttribute('fill', color);
+          path.removeAttribute('class');
+          path.style.fill = color;
+        });
+      });
+    };
+    
+    // Apply immediately and then again after a short delay to ensure it sticks
+    applyColors();
+    const timeoutId = setTimeout(applyColors, 50);
+    
+    return () => clearTimeout(timeoutId);
+  }, [svgLoaded, svgIdsToHighlight, highlightedMuscles]);
   
-  // For now, show a simple placeholder
-  // TODO: Integrate actual Body Map.svg paths
   return (
-    <div className={`custom-muscle-map ${className}`}>
-      <svg 
-        viewBox="0 0 800 800" 
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <text x="400" y="400" textAnchor="middle" fontSize="20" fill="#666">
-          Professional muscle map integration in progress...
-        </text>
-        <text x="400" y="430" textAnchor="middle" fontSize="14" fill="#999">
-          View: {variant} | Highlighting: {svgIdsToHighlight.size} muscles
-        </text>
-      </svg>
-    </div>
+    <div 
+      ref={containerRef}
+      className={`custom-muscle-map ${className}`}
+      aria-label={`${variant} view muscle map`}
+    />
   );
 };
 
@@ -141,7 +199,7 @@ CustomMuscleMap.propTypes = {
       PropTypes.string,
       PropTypes.shape({
         name: PropTypes.string.isRequired,
-        priority: PropTypes.string
+        priority: PropTypes.oneOf(['primary', 'secondary'])
       })
     ])
   ),
