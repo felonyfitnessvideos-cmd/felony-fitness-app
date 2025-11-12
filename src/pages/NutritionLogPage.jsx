@@ -78,6 +78,8 @@ function NutritionLogPage() {
   const [dailyTotals, setDailyTotals] = useState({
     calories: 0, protein: 0, water: 0
   });
+  const [scheduledMeal, setScheduledMeal] = useState(null);
+  const [isAddingMealPlan, setIsAddingMealPlan] = useState(false);
 
   const mealLogs = todaysLogs.filter(log => log.meal_type === activeMeal);
   const calorieProgress = goals.daily_calorie_goal > 0 ? (dailyTotals.calories / goals.daily_calorie_goal) * 100 : 0;
@@ -122,6 +124,9 @@ function NutritionLogPage() {
       if (profileResponse.error && profileResponse.error.code !== 'PGRST116') throw profileResponse.error;
 
       const logs = logsResponse.data || [];
+      
+      console.log('📊 Nutrition logs fetched:', logs.length, 'entries');
+      
       // DEBUGGING: Avoid logging full objects in production; only show non-sensitive fields in development.
       if (import.meta.env?.DEV) {
         try {
@@ -175,6 +180,71 @@ function NutritionLogPage() {
     }
   }, []);
 
+  /**
+   * Fetches the scheduled meal from weekly_meal_plan_entries for current date and meal type.
+   * @param {string} userId - The UUID of the authenticated user.
+   * @param {string} mealType - The meal type (Breakfast, Lunch, Dinner, Snack).
+   * @async
+   */
+  const fetchScheduledMeal = useCallback(async (userId, mealType) => {
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      if (import.meta.env?.DEV) {
+        console.log('🔍 Fetching scheduled meal for:', { userId, mealType, today });
+      }
+      
+      const { data, error } = await supabase
+        .from('weekly_meal_plan_entries')
+        .select(`
+          id,
+          meal_id,
+          meal_type,
+          plan_date,
+          servings,
+          meals (
+            id,
+            name
+          ),
+          weekly_meal_plans!inner (
+            user_id,
+            is_active
+          )
+        `)
+        .eq('weekly_meal_plans.user_id', userId)
+        .eq('weekly_meal_plans.is_active', true)
+        .eq('plan_date', today)
+        .eq('meal_type', mealType)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching scheduled meal:', error);
+        setScheduledMeal(null);
+        return;
+      }
+
+      if (data && data.meals) {
+        if (import.meta.env?.DEV) {
+          console.log('✅ Found scheduled meal:', data.meals.name);
+        }
+        setScheduledMeal({
+          entryId: data.id,
+          mealId: data.meal_id,
+          mealName: data.meals.name,
+          servings: data.servings || 1
+        });
+      } else {
+        if (import.meta.env?.DEV) {
+          console.log('ℹ️ No scheduled meal found for', mealType);
+        }
+        setScheduledMeal(null);
+      }
+    } catch (error) {
+      console.error('Error in fetchScheduledMeal:', error);
+      setScheduledMeal(null);
+    }
+  }, []);
+
   // Depend only on the user's id and the stable fetchLogData callback. We
   // intentionally avoid depending on the full `user` object to prevent
   // re-fetches caused by non-essential reference changes.
@@ -186,6 +256,13 @@ function NutritionLogPage() {
       setLoading(false);
     }
   }, [userId, fetchLogData]);
+
+  // Fetch scheduled meal whenever user or activeMeal changes
+  useEffect(() => {
+    if (userId && activeMeal) {
+      fetchScheduledMeal(userId, activeMeal);
+    }
+  }, [userId, activeMeal, fetchScheduledMeal]);
 
   const handleSearch = useCallback((term) => {
     setSearchTerm(term);
@@ -437,6 +514,64 @@ function NutritionLogPage() {
     }
   };
 
+  /**
+   * Adds all foods from the scheduled meal plan to the nutrition log.
+   * @async
+   */
+  const handleAddMealPlanToLog = async () => {
+    if (!user || !scheduledMeal) return;
+    
+    setIsAddingMealPlan(true);
+    try {
+      // Fetch all meal_foods for this meal
+      const { data: mealFoods, error: mealFoodsError } = await supabase
+        .from('meal_foods')
+        .select('food_servings_id, quantity')
+        .eq('meal_id', scheduledMeal.mealId);
+
+      if (mealFoodsError) {
+        console.error('Error fetching meal foods:', mealFoodsError);
+        alert(`Error fetching meal foods: ${mealFoodsError.message}`);
+        return;
+      }
+
+      if (!mealFoods || mealFoods.length === 0) {
+        alert('This meal has no foods assigned.');
+        return;
+      }
+
+      // Prepare bulk insert data
+      const nutritionLogs = mealFoods.map(mealFood => ({
+        user_id: user.id,
+        food_serving_id: mealFood.food_servings_id,
+        meal_type: activeMeal,
+        quantity_consumed: mealFood.quantity * (scheduledMeal.servings || 1)
+      }));
+
+      // Bulk insert all nutrition logs
+      const { error: insertError } = await supabase
+        .from('nutrition_logs')
+        .insert(nutritionLogs);
+
+      if (insertError) {
+        console.error('Error logging meal plan:', insertError);
+        alert(`Error logging meal plan: ${insertError.message}`);
+        return;
+      }
+
+      console.log(`✅ Successfully added ${mealFoods.length} items from meal plan`);
+      
+      // Refresh data to show new logs
+      await fetchLogData(user.id);
+      setScheduledMeal(null); // Hide button after adding
+    } catch (error) {
+      console.error('Unexpected error adding meal plan:', error);
+      alert(`Error adding meal plan: ${error.message}`);
+    } finally {
+      setIsAddingMealPlan(false);
+    }
+  };
+
   const handleLogWater = async (ounces) => {
     if (!user) return;
     const { error } = await supabase.from('nutrition_logs').insert({
@@ -505,6 +640,18 @@ function NutritionLogPage() {
           <button key={meal} className={activeMeal === meal ? 'active' : ''} onClick={() => setActiveMeal(meal)}>{meal}</button>
         ))}
       </div>
+
+      {scheduledMeal && (
+        <div className="meal-plan-add-section">
+          <button 
+            className="add-meal-plan-btn" 
+            onClick={handleAddMealPlanToLog}
+            disabled={isAddingMealPlan || !user}
+          >
+            {isAddingMealPlan ? 'Adding...' : `➕ Add "${scheduledMeal.mealName}"`}
+          </button>
+        </div>
+      )}
 
       <div className="search-bar-wrapper">
         <Search className="search-icon" size={20} />

@@ -298,13 +298,13 @@ function DashboardPage() {
         </div>
         <div className="progress-bars-container">
           <div className="progress-bar-wrapper">
-            <div className="progress-bar" style={{ width: `${calorieProgress}%` }}></div>
+            <div className="progress-bar calories-bar" style={{ width: `${calorieProgress}%` }}></div>
           </div>
           <div className="progress-bar-wrapper">
-            <div className="progress-bar" style={{ width: `${proteinProgress}%` }}></div>
+            <div className="progress-bar protein-bar" style={{ width: `${proteinProgress}%` }}></div>
           </div>
           <div className="progress-bar-wrapper">
-            <div className="progress-bar" style={{ width: `${waterProgress}%` }}></div>
+            <div className="progress-bar water-bar" style={{ width: `${waterProgress}%` }}></div>
           </div>
         </div>
       </Link>
