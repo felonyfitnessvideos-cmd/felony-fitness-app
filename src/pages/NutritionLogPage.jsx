@@ -99,16 +99,16 @@ function NutritionLogPage() {
   const fetchLogData = useCallback(async (userId) => {
     setLoading(true);
     try {
-      // **TIMEZONE FIX**: Calculate UTC midnight for today and tomorrow
-      // This ensures we query the correct 24-hour period regardless of timezone
-      const now = new Date();
-      const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
-      const startOfTomorrowUTC = new Date(startOfTodayUTC);
-      startOfTomorrowUTC.setUTCDate(startOfTomorrowUTC.getUTCDate() + 1);
+      // **TIMEZONE FIX**: Use local timezone (same as dashboard)
+      // This ensures consistency between dashboard and nutrition log page
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const startOfTomorrow = new Date(startOfToday);
+      startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
       // DEBUGGING: Log the exact timestamps being sent to the database (guarded).
       if (import.meta.env?.DEV) {
-        console.debug('Fetching logs between (UTC):', startOfTodayUTC.toISOString(), 'and', startOfTomorrowUTC.toISOString());
+        console.debug('Fetching logs between:', startOfToday.toISOString(), 'and', startOfTomorrow.toISOString());
       }
 
 
@@ -117,8 +117,8 @@ function NutritionLogPage() {
           .from('nutrition_logs')
           .select('*, food_servings(*)')
           .eq('user_id', userId)
-          .gte('created_at', startOfTodayUTC.toISOString())
-          .lt('created_at', startOfTomorrowUTC.toISOString()),
+          .gte('created_at', startOfToday.toISOString())
+          .lt('created_at', startOfTomorrow.toISOString()),
         supabase
           .from('user_profiles')
           .select('daily_calorie_goal, daily_protein_goal_g, daily_water_goal_oz')
