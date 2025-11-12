@@ -310,11 +310,9 @@ const MyMealsPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Create a copy of the meal - only include actual database columns
+      // Step 1: Create a copy in the meals table
       const mealCopy = {
         name: `${meal.name} (Copy)`,
-        user_id: user.id,
-        category: meal.category,
         tags: meal.tags,
         description: meal.description,
         instructions: meal.instructions,
@@ -326,10 +324,10 @@ const MyMealsPage = () => {
         is_premade: false
       };
 
-      console.log('[MyMealsPage] Creating meal copy:', mealCopy);
+      console.log('[MyMealsPage] Creating meal copy in meals table:', mealCopy);
 
       const { data: newMeal, error: mealError } = await supabase
-        .from('user_meals')
+        .from('meals')
         .insert([mealCopy])
         .select()
         .single();
@@ -341,7 +339,26 @@ const MyMealsPage = () => {
 
       console.log('[MyMealsPage] Created meal:', newMeal);
 
-      // Copy meal foods
+      // Step 2: Link the meal to the user in user_meals
+      const { error: userMealError } = await supabase
+        .from('user_meals')
+        .insert([{
+          user_id: user.id,
+          meal_id: newMeal.id,
+          is_favorite: false
+        }]);
+
+      if (userMealError) {
+        console.error('[MyMealsPage] Error linking meal to user:', userMealError);
+        // Clean up the orphaned meal record
+        await supabase
+          .from('meals')
+          .delete()
+          .eq('id', newMeal.id);
+        throw userMealError;
+      }
+
+      // Step 3: Copy meal foods
       if (meal.meal_foods && meal.meal_foods.length > 0) {
         console.log('[MyMealsPage] Copying meal foods:', meal.meal_foods);
         
@@ -385,26 +402,6 @@ const MyMealsPage = () => {
           
           console.log('[MyMealsPage] Successfully copied meal foods');
         }
-      }
-
-      // Add to user meals
-      console.log('[MyMealsPage] Adding to user_meals');
-      const { error: userMealError } = await supabase
-        .from('user_meals')
-        .insert([{
-          user_id: user.id,
-          meal_id: newMeal.id,
-          is_favorite: false
-        }]);
-
-      if (userMealError) {
-        console.error('[MyMealsPage] Error adding to user_meals:', userMealError);
-        // Clean up the orphaned meal record and its foods
-        await supabase
-          .from('meals')
-          .delete()
-          .eq('id', newMeal.id);
-        throw userMealError;
       }
 
       console.log('[MyMealsPage] Duplicate meal completed successfully');
