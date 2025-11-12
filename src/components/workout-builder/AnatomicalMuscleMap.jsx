@@ -91,7 +91,16 @@ const AnatomicalMuscleMap = ({
 }) => {
   
   /**
+   * Determine which muscles should be visible on this view
+   * Front view: chest, abs, obliques, quadriceps, front-deltoids, biceps, forearm, calves
+   * Back view: upper-back, lower-back, trapezius, back-deltoids, triceps, gluteal, hamstring, calves
+   */
+  const FRONT_VIEW_MUSCLES = ['chest', 'abs', 'obliques', 'quadriceps', 'front-deltoids', 'biceps', 'forearm', 'calves'];
+  const BACK_VIEW_MUSCLES = ['upper-back', 'lower-back', 'trapezius', 'back-deltoids', 'triceps', 'gluteal', 'hamstring', 'calves'];
+  
+  /**
    * Convert our muscle names to react-body-highlighter format
+   * Filter by variant to show only appropriate muscles on each view
    * @returns {Array} Array of muscle objects for highlighting
    */
   const getMusclesForHighlighting = () => {
@@ -110,7 +119,9 @@ const AnatomicalMuscleMap = ({
       }
     });
     
-    const muscles = Array.from(muscleSet);
+    // Filter muscles based on variant
+    const allowedMuscles = variant === 'front' ? FRONT_VIEW_MUSCLES : BACK_VIEW_MUSCLES;
+    const muscles = Array.from(muscleSet).filter(muscle => allowedMuscles.includes(muscle));
     
     // Debug: Log unmapped muscles
     if (unmappedMuscles.length > 0) {
@@ -118,7 +129,7 @@ const AnatomicalMuscleMap = ({
     }
     
     // Debug: Log final mapped muscles
-    console.log(`[AnatomicalMuscleMap ${variant}] Mapped muscles:`, muscles);
+    console.log(`[AnatomicalMuscleMap ${variant}] Mapped muscles (filtered):`, muscles);
     
     return muscles.map(name => ({ name, muscles: [name] }));
   };
