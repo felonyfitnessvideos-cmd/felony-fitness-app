@@ -1357,14 +1357,14 @@ const ProgramLibrary = () => {
                       <div className="muscle-map-front">
                         <AnatomicalMuscleMap
                           highlightedMuscles={(program.target_muscle_groups || []).filter(m => m.priority === 'primary')}
-                          variant="front"
+                          variant="back"
                           className="muscle-map-compact"
                         />
                       </div>
                       <div className="muscle-map-back">
                         <AnatomicalMuscleMap
                           highlightedMuscles={(program.target_muscle_groups || []).filter(m => m.priority === 'primary')}
-                          variant="back"
+                          variant="front"
                           className="muscle-map-compact"
                         />
                       </div>
@@ -1488,7 +1488,7 @@ const ProgramLibrary = () => {
                   <h3>Front</h3>
                   <AnatomicalMuscleMap
                     highlightedMuscles={fullscreenMuscleMap.muscles}
-                    variant="front"
+                    variant="back"
                     className="muscle-map-fullscreen"
                   />
                 </div>
@@ -1496,7 +1496,7 @@ const ProgramLibrary = () => {
                   <h3>Back</h3>
                   <AnatomicalMuscleMap
                     highlightedMuscles={fullscreenMuscleMap.muscles}
-                    variant="back"
+                    variant="front"
                     className="muscle-map-fullscreen"
                   />
                 </div>

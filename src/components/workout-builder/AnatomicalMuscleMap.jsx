@@ -112,19 +112,27 @@ const AnatomicalMuscleMap = ({
       .flat()
   ));
   
+  // Test: Try simpler data format
   const data = muscles.map(name => ({ 
     name, 
     muscles: [name]
   }));
 
-  // Debug logging
-  console.log('🎨 AnatomicalMuscleMap:', {
+  // Debug logging - show what we're trying to highlight
+  console.log('🎨 Muscle Map Debug:', {
     variant,
-    inputCount: highlightedMuscles.length,
-    outputCount: muscles.length,
-    muscles: muscles,
-    dataStructure: data
+    musclesToHighlight: muscles,
+    totalMuscles: muscles.length
   });
+  
+  // TEST: Let's try highlighting ALL possible muscles to see which ones work
+  if (variant === 'front') {
+    console.log('🧪 FRONT muscles we want:', muscles);
+    console.log('🧪 Allowed FRONT muscles:', FRONT_VIEW_MUSCLES);
+  } else {
+    console.log('🧪 BACK muscles we want:', muscles);
+    console.log('🧪 Allowed BACK muscles:', BACK_VIEW_MUSCLES);
+  }
 
   return (
     <div className={`anatomical-muscle-map ${className}`}>
