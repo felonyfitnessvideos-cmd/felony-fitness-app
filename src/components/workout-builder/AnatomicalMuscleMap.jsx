@@ -16,9 +16,11 @@ import './AnatomicalMuscleMap.css';
 
 /**
  * Map our muscle names to react-body-highlighter muscle keys
+ * Front view shows: chest, abs, obliques, quadriceps, front-deltoids, biceps, forearm, calves
+ * Back view shows: upper-back, lower-back, trapezius, back-deltoids, triceps, gluteal, hamstring, calves
  */
 const MUSCLE_MAP = {
-  // Chest
+  // Chest (FRONT ONLY)
   'Chest': ['chest'],
   'Upper Chest': ['chest'],
   'Middle Chest': ['chest'],
@@ -26,7 +28,7 @@ const MUSCLE_MAP = {
   'Pectorals': ['chest'],
   'Pecs': ['chest'],
   
-  // Back
+  // Back (BACK ONLY)
   'Lats': ['upper-back'],
   'Latissimus Dorsi': ['upper-back'],
   'Upper Back': ['upper-back'],
@@ -34,37 +36,40 @@ const MUSCLE_MAP = {
   'Lower Back': ['lower-back'],
   'Erector Spinae': ['lower-back'],
   'Back': ['upper-back', 'lower-back'],
+  'Traps': ['trapezius'],
+  'Traps (Upper)': ['trapezius'],
+  'Trapezius': ['trapezius'],
   
   // Shoulders
-  'Front Delts': ['front-deltoids'],
-  'Front Deltoids': ['front-deltoids'],
-  'Side Delts': ['back-deltoids'],
-  'Side Deltoids': ['back-deltoids'],
-  'Lateral Delts': ['back-deltoids'],
-  'Rear Delts': ['back-deltoids'],
-  'Rear Deltoids': ['back-deltoids'],
-  'Deltoids': ['front-deltoids', 'back-deltoids'],
-  'Shoulders': ['front-deltoids', 'back-deltoids'],
+  'Front Delts': ['front-deltoids'], // Front view
+  'Front Deltoids': ['front-deltoids'], // Front view
+  'Side Delts': ['back-deltoids'], // Back view (side delts show on back)
+  'Side Deltoids': ['back-deltoids'], // Back view
+  'Lateral Delts': ['back-deltoids'], // Back view
+  'Rear Delts': ['back-deltoids'], // Back view
+  'Rear Deltoids': ['back-deltoids'], // Back view
+  'Deltoids': ['front-deltoids', 'back-deltoids'], // Both views
+  'Shoulders': ['front-deltoids', 'back-deltoids'], // Both views
   
   // Arms
-  'Biceps': ['biceps'],
-  'Triceps': ['triceps'],
-  'Forearms': ['forearm'],
-  'Forearm': ['forearm'],
-  'Brachialis': ['biceps'], // Part of upper arm flexors
+  'Biceps': ['biceps'], // Front view
+  'Triceps': ['triceps'], // Back view
+  'Forearms': ['forearm'], // Front view
+  'Forearm': ['forearm'], // Front view
+  'Brachialis': ['biceps'], // Part of upper arm flexors (front)
   
   // Legs
-  'Quads': ['quadriceps'],
-  'Quadriceps': ['quadriceps'],
-  'Hamstrings': ['hamstring'],
-  'Glutes': ['gluteal'],
-  'Gluteus': ['gluteal'],
-  'Calves': ['calves'],
-  'Legs': ['quadriceps', 'hamstring', 'calves'],
-  'Hip Flexors': ['quadriceps'], // Often shown as part of quads area
-  'Hip Abductors': ['gluteal'], // Side glutes
+  'Quads': ['quadriceps'], // Front view
+  'Quadriceps': ['quadriceps'], // Front view
+  'Hamstrings': ['hamstring'], // Back view
+  'Glutes': ['gluteal'], // Back view
+  'Gluteus': ['gluteal'], // Back view
+  'Calves': ['calves'], // Both views
+  'Legs': ['quadriceps', 'hamstring', 'calves'], // Both views
+  'Hip Flexors': ['quadriceps'], // Front view
+  'Hip Abductors': ['gluteal'], // Back view
   
-  // Core
+  // Core (FRONT ONLY)
   'Abs': ['abs'],
   'Abdominals': ['abs'],
   'Upper Abdominals': ['abs'],
@@ -73,11 +78,6 @@ const MUSCLE_MAP = {
   'Obliques': ['obliques'],
   'Core': ['abs', 'obliques'],
   'Serratus Anterior': ['abs'], // Rib muscles, often shown with abs
-  
-  // Traps
-  'Traps': ['trapezius'],
-  'Traps (Upper)': ['trapezius'],
-  'Trapezius': ['trapezius'],
 };
 
 /**
@@ -98,6 +98,9 @@ const AnatomicalMuscleMap = ({
     const muscleSet = new Set();
     const unmappedMuscles = [];
     
+    // Debug: Log what muscles we're trying to highlight
+    console.log(`[AnatomicalMuscleMap ${variant}] Input muscles:`, highlightedMuscles);
+    
     highlightedMuscles.forEach(muscleName => {
       const mappedMuscles = MUSCLE_MAP[muscleName];
       if (mappedMuscles) {
@@ -108,6 +111,14 @@ const AnatomicalMuscleMap = ({
     });
     
     const muscles = Array.from(muscleSet);
+    
+    // Debug: Log unmapped muscles
+    if (unmappedMuscles.length > 0) {
+      console.warn(`[AnatomicalMuscleMap ${variant}] Unmapped muscles:`, unmappedMuscles);
+    }
+    
+    // Debug: Log final mapped muscles
+    console.log(`[AnatomicalMuscleMap ${variant}] Mapped muscles:`, muscles);
     
     return muscles.map(name => ({ name, muscles: [name] }));
   };
