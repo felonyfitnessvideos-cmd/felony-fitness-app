@@ -723,7 +723,7 @@ function NutritionLogPage() {
       <SubPageHeader title="Log" icon={<Apple size={28} />} iconColor="#f97316" backTo="/nutrition" />
 
       <div className="meal-tabs">
-        {['breakfast', 'lunch', 'dinner', 'snack'].map(meal => (
+        {['breakfast', 'lunch', 'dinner', 'snack1'].map(meal => (
           <button 
             key={meal} 
             className={activeMeal === meal ? 'active' : ''} 
