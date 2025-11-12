@@ -25,7 +25,8 @@ import {
   Edit,
   Home,
   Plus,
-  TrendingUp
+  TrendingUp,
+  X
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
@@ -725,6 +726,7 @@ const ProgramLibrary = () => {
   const [clients, setClients] = useState([]);
   const [selectedClientForProgram, setSelectedClientForProgram] = useState({}); // programId -> clientId mapping
   const [assigningToClient, setAssigningToClient] = useState(false);
+  const [fullscreenMuscleMap, setFullscreenMuscleMap] = useState(null); // { muscles: [], programName: '' }
 
   const categories = [
     { name: 'Strength', icon: '💪' },
@@ -1314,7 +1316,14 @@ const ProgramLibrary = () => {
 
                   {/* Muscle Map Preview - Shows coverage gaps */}
                   <div className="muscle-map-section">
-                    <div className="muscle-map-container">
+                    <div 
+                      className="muscle-map-container clickable"
+                      onClick={() => setFullscreenMuscleMap({ 
+                        muscles: program.target_muscle_groups || [], 
+                        programName: program.name 
+                      })}
+                      title="Click to enlarge"
+                    >
                       <div className="muscle-map-front">
                         <AnatomicalMuscleMap
                           highlightedMuscles={program.target_muscle_groups || []}
@@ -1427,6 +1436,43 @@ const ProgramLibrary = () => {
             setShowProgramBuilder(false);
           }}
         />
+      )}
+
+      {/* Fullscreen Muscle Map Modal */}
+      {fullscreenMuscleMap && (
+        <div className="fullscreen-muscle-modal" onClick={() => setFullscreenMuscleMap(null)}>
+          <div className="modal-overlay">
+            <div className="modal-content-muscle" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>{fullscreenMuscleMap.programName} - Target Muscles</h2>
+                <button 
+                  className="close-modal-btn"
+                  onClick={() => setFullscreenMuscleMap(null)}
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="fullscreen-muscle-maps">
+                <div className="fullscreen-map-front">
+                  <h3>Front</h3>
+                  <AnatomicalMuscleMap
+                    highlightedMuscles={fullscreenMuscleMap.muscles}
+                    variant="front"
+                    className="muscle-map-fullscreen"
+                  />
+                </div>
+                <div className="fullscreen-map-back">
+                  <h3>Back</h3>
+                  <AnatomicalMuscleMap
+                    highlightedMuscles={fullscreenMuscleMap.muscles}
+                    variant="back"
+                    className="muscle-map-fullscreen"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
