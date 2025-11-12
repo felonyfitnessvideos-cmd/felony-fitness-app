@@ -329,7 +329,7 @@ const MyMealsPage = () => {
       console.log('[MyMealsPage] Creating meal copy:', mealCopy);
 
       const { data: newMeal, error: mealError } = await supabase
-        .from('meals')
+        .from('user_meals')
         .insert([mealCopy])
         .select()
         .single();
