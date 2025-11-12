@@ -213,9 +213,7 @@ function NutritionLogPage() {
     try {
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
       
-      if (import.meta.env?.DEV) {
-        console.log('🔍 Fetching scheduled meal for:', { userId, mealType, today });
-      }
+      console.log('🔍 Fetching scheduled meal for:', { userId, mealType, today });
       
       const { data, error } = await supabase
         .from('weekly_meal_plan_entries')
@@ -240,6 +238,8 @@ function NutritionLogPage() {
         .eq('meal_type', mealType)
         .maybeSingle();
 
+      console.log('📋 Meal plan query result:', { data, error });
+
       if (error) {
         console.error('Error fetching scheduled meal:', error);
         setScheduledMeal(null);
@@ -247,9 +247,7 @@ function NutritionLogPage() {
       }
 
       if (data && data.meals) {
-        if (import.meta.env?.DEV) {
-          console.log('✅ Found scheduled meal:', data.meals.name);
-        }
+        console.log('✅ Found scheduled meal:', data.meals.name);
         setScheduledMeal({
           entryId: data.id,
           mealId: data.meal_id,
@@ -257,9 +255,7 @@ function NutritionLogPage() {
           servings: data.servings || 1
         });
       } else {
-        if (import.meta.env?.DEV) {
-          console.log('ℹ️ No scheduled meal found for', mealType);
-        }
+        console.log('ℹ️ No scheduled meal found for', mealType, 'on', today);
         setScheduledMeal(null);
       }
     } catch (error) {
