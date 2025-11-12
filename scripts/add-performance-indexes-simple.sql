@@ -91,10 +91,10 @@ WHERE read_at IS NULL;
 -- Verify indexes were created:
 SELECT 
     schemaname,
-    tablename, 
-    indexname,
-    pg_size_pretty(pg_relation_size(indexrelid::regclass)) as size
+    relname as tablename, 
+    indexrelname as indexname,
+    pg_size_pretty(pg_relation_size(indexrelid)) as size
 FROM pg_stat_user_indexes
 WHERE schemaname = 'public'
-  AND indexname LIKE 'idx_%'
-ORDER BY tablename, indexname;
+  AND indexrelname LIKE 'idx_%'
+ORDER BY relname, indexrelname;
