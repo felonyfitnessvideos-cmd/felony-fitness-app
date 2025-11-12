@@ -392,6 +392,15 @@ const TrainerDashboard = () => {
                 <UserPlus size={20} />
                 <span>New Client</span>
               </button>
+              <button
+                type="button"
+                className="tool-item home-btn"
+                onClick={handleBackToDashboard}
+                aria-label="Back to Main Dashboard"
+              >
+                <ArrowLeft size={20} />
+                <span>Main Dashboard</span>
+              </button>
             </aside>
 
             {/* Right Content Container */}

@@ -23,6 +23,7 @@ import {
   BookOpen,
   Calendar,
   Edit,
+  Home,
   Plus,
   TrendingUp
 } from 'lucide-react';
@@ -1184,6 +1185,7 @@ const ProgramLibrary = () => {
     <div className="trainer-programs-container">
       {/* Header */}
       <div className="programs-header">
+        {/* Category Buttons - Single scrollable row */}
         <div className="category-buttons">
           {categories.map(category => (
             <button
@@ -1197,6 +1199,7 @@ const ProgramLibrary = () => {
           ))}
         </div>
 
+        {/* Controls Row - Dropdown and New Program button */}
         <div className="header-controls">
           <select
             value={difficultyFilter}
