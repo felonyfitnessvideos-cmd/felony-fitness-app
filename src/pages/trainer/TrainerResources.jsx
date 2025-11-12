@@ -202,19 +202,32 @@ const TrainerResources = () => {
     const [searchQuery, setSearchQuery] = useState('');
 
     /**
-     * Handle download by creating a link
+     * Handle download by fetching the file and creating a blob
+     * This forces a download instead of opening in the browser
      * 
      * @param {string} url - URL of the file to download
      * @param {string} fileName - Name of the file
      */
-    const handleDownload = (url, fileName) => {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+    const handleDownload = async (url, fileName) => {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            // Clean up the blob URL
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            console.error('Download failed:', error);
+            // Fallback to opening in new tab if download fails
+            window.open(url, '_blank');
+        }
     };
 
     /**
