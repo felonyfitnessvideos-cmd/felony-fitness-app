@@ -1474,22 +1474,6 @@ const ProgramLibrary = () => {
                 </button>
               </div>
               
-              {/* Color Legend */}
-              <div className="muscle-map-legend">
-                <div className="legend-item">
-                  <span className="legend-color legend-primary"></span>
-                  <span className="legend-label">Primary Target</span>
-                </div>
-                <div className="legend-item">
-                  <span className="legend-color legend-secondary"></span>
-                  <span className="legend-label">Secondary</span>
-                </div>
-                <div className="legend-item">
-                  <span className="legend-color legend-tertiary"></span>
-                  <span className="legend-label">Tertiary (Stabilizers)</span>
-                </div>
-              </div>
-              
               <div className="fullscreen-muscle-maps">
                 <div className="fullscreen-map-front">
                   <h3>Front</h3>

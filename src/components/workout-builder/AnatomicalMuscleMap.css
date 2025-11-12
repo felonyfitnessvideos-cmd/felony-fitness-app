@@ -1,7 +1,6 @@
 /**
  * Anatomical Muscle Map Styles
  * Styling for the professional muscle map visualization
- * Supports layered muscle rendering with priority-based colors
  */
 
 .anatomical-muscle-map {
@@ -10,17 +9,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  position: relative; /* Enable layering */
-}
-
-/* Muscle layers for priority-based coloring */
-.muscle-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* Allow clicks to pass through layers */
 }
 
 /* Override library styles for compact display */

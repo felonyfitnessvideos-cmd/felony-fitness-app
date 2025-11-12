@@ -92,6 +92,8 @@ const ProgramBuilderModal = ({ onClose, onSave }) => {
       reps: '10-12',
       rest_seconds: 90,
       notes: '',
+      is_warmup: false, // Default to working set
+      target_intensity_pct: 80, // Default to 80% 1RM (working set intensity)
       muscle_groups: {
         primary: exercise.primary_muscle ? [exercise.primary_muscle] : [],
         secondary: exercise.secondary_muscle ? [exercise.secondary_muscle] : [],

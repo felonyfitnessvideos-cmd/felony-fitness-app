@@ -83,7 +83,6 @@ const MUSCLE_MAP = {
 /**
  * Anatomical Muscle Map Component
  * Uses react-body-highlighter for professional muscle visualization
- * Color-codes muscles by priority: Primary (Orange) > Secondary (Yellow) > Tertiary (Grey)
  */
 const AnatomicalMuscleMap = ({ 
   highlightedMuscles = [],
@@ -100,125 +99,42 @@ const AnatomicalMuscleMap = ({
   const BACK_VIEW_MUSCLES = ['upper-back', 'lower-back', 'trapezius', 'back-deltoids', 'triceps', 'gluteal', 'hamstring', 'calves'];
   
   /**
-   * Color mapping for muscle priorities
-   * Primary: Bright Orange (#f97316) - Main target muscles
-   * Secondary: Yellow (#fbbf24) - Supporting muscles
-   * Tertiary: Grey (#9ca3af) - Stabilizers (don't count as volume)
-   */
-  const PRIORITY_COLORS = {
-    primary: '#f97316',    // Bright orange
-    secondary: '#fbbf24',  // Yellow
-    tertiary: '#9ca3af'    // Grey
-  };
-  
-  /**
    * Convert our muscle names to react-body-highlighter format
-   * Filter by variant and group by priority for color-coding
-   * @returns {Object} Object with arrays for each priority level
+   * Filter by variant to show only appropriate muscles on each view
+   * @returns {Array} Array of muscle objects for highlighting
    */
   const getMusclesForHighlighting = () => {
-    const musclesByPriority = {
-      primary: [],
-      secondary: [],
-      tertiary: []
-    };
-    const unmappedMuscles = [];
-    
-    // Debug: Log what muscles we're trying to highlight
-    console.log(`[AnatomicalMuscleMap ${variant}] Input muscles:`, highlightedMuscles);
+    const muscleSet = new Set();
     
     // Determine which muscles are allowed for this view
     const allowedMuscles = variant === 'front' ? FRONT_VIEW_MUSCLES : BACK_VIEW_MUSCLES;
     
-    // Process each muscle with its priority
     highlightedMuscles.forEach(muscleEntry => {
       // Handle both old format (string) and new format (object with name/priority)
       const muscleName = typeof muscleEntry === 'string' ? muscleEntry : muscleEntry.name;
-      const priority = typeof muscleEntry === 'string' ? 'primary' : muscleEntry.priority;
       
       const mappedMuscles = MUSCLE_MAP[muscleName];
-      
       if (mappedMuscles) {
         // Filter by allowed muscles for this view
         const filteredMuscles = mappedMuscles.filter(m => allowedMuscles.includes(m));
-        filteredMuscles.forEach(m => {
-          // Avoid duplicates
-          if (!musclesByPriority.primary.includes(m) && 
-              !musclesByPriority.secondary.includes(m) && 
-              !musclesByPriority.tertiary.includes(m)) {
-            musclesByPriority[priority].push(m);
-          }
-        });
-      } else {
-        unmappedMuscles.push(muscleName);
+        filteredMuscles.forEach(m => muscleSet.add(m));
       }
     });
     
-    // Debug: Log unmapped muscles
-    if (unmappedMuscles.length > 0) {
-      console.warn(`[AnatomicalMuscleMap ${variant}] Unmapped muscles:`, unmappedMuscles);
-    }
-    
-    // Debug: Log final mapped muscles by priority
-    console.log(`[AnatomicalMuscleMap ${variant}] Muscles by priority:`, musclesByPriority);
-    
-    return musclesByPriority;
+    const muscles = Array.from(muscleSet);
+    return muscles.map(name => ({ name, muscles: [name] }));
   };
 
-  const musclesByPriority = getMusclesForHighlighting();
-  
-  // Create data arrays for each priority level
-  const primaryData = musclesByPriority.primary.map(name => ({ name, muscles: [name] }));
-  const secondaryData = musclesByPriority.secondary.map(name => ({ name, muscles: [name] }));
-  const tertiaryData = musclesByPriority.tertiary.map(name => ({ name, muscles: [name] }));
+  const data = getMusclesForHighlighting();
 
   return (
     <div className={`anatomical-muscle-map ${className}`}>
-      {/* Render tertiary muscles first (bottom layer) */}
-      {tertiaryData.length > 0 && (
-        <div className="muscle-layer muscle-layer-tertiary">
-          <Model
-            data={tertiaryData}
-            style={{ width: '100%', padding: '0', position: 'absolute' }}
-            type={variant}
-            highlightedColors={[PRIORITY_COLORS.tertiary]}
-          />
-        </div>
-      )}
-      
-      {/* Render secondary muscles (middle layer) */}
-      {secondaryData.length > 0 && (
-        <div className="muscle-layer muscle-layer-secondary">
-          <Model
-            data={secondaryData}
-            style={{ width: '100%', padding: '0', position: 'absolute' }}
-            type={variant}
-            highlightedColors={[PRIORITY_COLORS.secondary]}
-          />
-        </div>
-      )}
-      
-      {/* Render primary muscles last (top layer) */}
-      {primaryData.length > 0 && (
-        <div className="muscle-layer muscle-layer-primary">
-          <Model
-            data={primaryData}
-            style={{ width: '100%', padding: '0', position: 'absolute' }}
-            type={variant}
-            highlightedColors={[PRIORITY_COLORS.primary]}
-          />
-        </div>
-      )}
-      
-      {/* Base body outline (no highlighting) */}
-      {primaryData.length === 0 && secondaryData.length === 0 && tertiaryData.length === 0 && (
-        <Model
-          data={[]}
-          style={{ width: '100%', padding: '0' }}
-          type={variant}
-          highlightedColors={[]}
-        />
-      )}
+      <Model
+        data={data}
+        style={{ width: '100%', padding: '0' }}
+        type={variant}
+        highlightedColors={['#f97316']} // Orange highlight color
+      />
     </div>
   );
 };
