@@ -21,7 +21,10 @@ export const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 
 /**
  * Format meal type for display (lowercase → Title Case)
- * Use this function whenever displaying meal types to users
+ * 
+ * @description Converts internal lowercase meal type identifiers to human-readable
+ * Title Case labels for UI display. This is the ONLY place meal types should be
+ * converted to Title Case - all logic should use lowercase values.
  * 
  * @param {string} mealType - Internal meal type identifier (lowercase)
  * @returns {string} Human-readable meal type label (Title Case)
@@ -29,6 +32,10 @@ export const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
  * @example
  * formatMealType('breakfast'); // Returns "Breakfast"
  * formatMealType('snack1'); // Returns "Snack 1"
+ * formatMealType('invalid'); // Returns "invalid" (fallback)
+ * 
+ * @see {@link normalizeMealType} - Reverse operation (Title Case → lowercase)
+ * @see {@link MEAL_TYPES} - Valid lowercase meal type values
  */
 export const formatMealType = (mealType) => {
   const typeMap = {
@@ -44,15 +51,25 @@ export const formatMealType = (mealType) => {
 
 /**
  * Normalize meal type from display format to database format
- * Use this when receiving meal type from UI components
+ * 
+ * @description Converts meal type strings from any case (Title Case, UPPERCASE, etc.)
+ * to lowercase for consistent database operations. Use this when receiving meal types
+ * from UI components or external sources before database queries.
  * 
  * @param {string} displayValue - Meal type in any case ('Breakfast', 'breakfast', 'BREAKFAST')
- * @returns {string} Normalized lowercase meal type for database
+ * @returns {string} Normalized lowercase meal type for database, or empty string if falsy
  * 
  * @example
  * normalizeMealType('Breakfast'); // Returns "breakfast"
  * normalizeMealType('LUNCH'); // Returns "lunch"
  * normalizeMealType('breakfast'); // Returns "breakfast"
+ * normalizeMealType('  Dinner  '); // Returns "dinner" (trimmed)
+ * normalizeMealType(null); // Returns ""
+ * 
+ * @see {@link formatMealType} - Reverse operation (lowercase → Title Case)
+ * @see {@link MEAL_TYPES} - Valid meal type values in lowercase
+ * 
+ * @note Should rarely be needed since state should already use lowercase
  */
 export const normalizeMealType = (displayValue) => {
   if (!displayValue) return '';

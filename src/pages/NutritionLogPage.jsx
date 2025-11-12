@@ -211,9 +211,22 @@ function NutritionLogPage() {
 
   /**
    * Fetches the scheduled meal from weekly_meal_plan_entries for current date and meal type.
-   * @param {string} userId - The UUID of the authenticated user.
-   * @param {string} mealType - The meal type (Breakfast, Lunch, Dinner, Snack).
+   * 
+   * @description Queries the database for an active meal plan entry matching the current date
+   * and selected meal type. Uses local timezone to avoid date mismatch issues. If a meal is found,
+   * updates the scheduledMeal state to display the "Add Meal Plan" button in the UI.
+   * 
+   * @param {string} userId - The UUID of the authenticated user
+   * @param {string} mealType - The meal type in lowercase ('breakfast', 'lunch', 'dinner', 'snack')
+   * 
+   * @returns {Promise<void>} Updates scheduledMeal state with meal data or null
+   * 
+   * @example
+   * fetchScheduledMeal('user-uuid-123', 'breakfast');
+   * // Sets scheduledMeal to { entryId, mealId, mealName, servings } or null
+   * 
    * @async
+   * @see {@link handleAddMealPlanToLog} - Called when user clicks the button
    */
   const fetchScheduledMeal = useCallback(async (userId, mealType) => {
     try {
@@ -565,7 +578,32 @@ function NutritionLogPage() {
 
   /**
    * Adds all foods from the scheduled meal plan to the nutrition log.
+   * 
+   * @description Fetches all meal_foods associated with the scheduled meal, calculates
+   * quantities based on meal servings, and bulk inserts them into nutrition_logs table.
+   * Refreshes the log data and hides the button after successful addition.
+   * 
+   * @returns {Promise<void>} Adds meal foods to nutrition log and refreshes UI
+   * 
+   * @throws {Error} If meal_foods fetch fails or bulk insert fails
+   * 
+   * @example
+   * // User clicks "Add Breakfast" button
+   * await handleAddMealPlanToLog();
+   * // All foods from scheduled meal are logged with correct quantities
+   * 
    * @async
+   * @requires scheduledMeal - Must be set by fetchScheduledMeal
+   * @requires user - Must be authenticated
+   * @requires activeMeal - Current meal type tab ('breakfast', 'lunch', etc.)
+   * 
+   * @sideEffects
+   * - Inserts multiple rows into nutrition_logs table
+   * - Updates todaysLogs state via fetchLogData
+   * - Clears scheduledMeal state (hides button)
+   * - Shows alert on error
+   * 
+   * @performance Bulk insert operation, scales with meal_foods count
    */
   const handleAddMealPlanToLog = async () => {
     if (!user || !scheduledMeal) return;
