@@ -111,6 +111,18 @@ function NutritionLogPage() {
         console.debug('Fetching logs between:', startOfToday.toISOString(), 'and', startOfTomorrow.toISOString());
       }
 
+      // Debug: Check if ANY logs exist for this user
+      const { data: allLogs } = await supabase
+        .from('nutrition_logs')
+        .select('id, created_at, meal_type')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      console.log('🔍 Last 5 nutrition logs for user:', allLogs?.length || 0, 'found');
+      if (allLogs && allLogs.length > 0) {
+        console.log('📅 Most recent log:', allLogs[0]);
+      }
 
       const [logsResponse, profileResponse] = await Promise.all([
         supabase
@@ -132,6 +144,19 @@ function NutritionLogPage() {
       const logs = logsResponse.data || [];
       
       console.log('📊 Nutrition logs fetched:', logs.length, 'entries');
+      console.log('🔍 Query timestamps:', {
+        start: startOfToday.toISOString(),
+        end: startOfTomorrow.toISOString(),
+        localStart: startOfToday.toLocaleString(),
+        localEnd: startOfTomorrow.toLocaleString()
+      });
+      if (logs.length > 0) {
+        console.log('📋 Sample log:', {
+          id: logs[0].id,
+          created_at: logs[0].created_at,
+          meal_type: logs[0].meal_type
+        });
+      }
       
       // DEBUGGING: Avoid logging full objects in production; only show non-sensitive fields in development.
       if (import.meta.env?.DEV) {
