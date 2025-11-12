@@ -82,7 +82,6 @@ const CustomMuscleMap = ({
 }) => {
   const containerRef = useRef(null);
   const [svgLoaded, setSvgLoaded] = useState(false);
-  const [svgContent, setSvgContent] = useState('');
   
   const muscleToSvgId = useMemo(() => getMuscleToSvgId(variant), [variant]);
   
@@ -103,6 +102,8 @@ const CustomMuscleMap = ({
   useEffect(() => {
     const svgPath = variant === 'front' ? frontBodyMapSvg : backBodyMapSvg;
     const container = containerRef.current;
+    let isMounted = true;
+    let timeoutId = null;
     
     // Reset loaded state when variant changes
     setSvgLoaded(false);
@@ -110,23 +111,31 @@ const CustomMuscleMap = ({
     fetch(svgPath)
       .then(response => response.text())
       .then(svgContent => {
-        if (container) {
+        if (container && isMounted) {
           // Remove the <style> tag that contains .st0 and .st1 classes
           const cleanedSvg = svgContent.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
           container.innerHTML = cleanedSvg;
           
           // Wait a tick for DOM to update before setting loaded
-          setTimeout(() => {
-            setSvgLoaded(true);
+          timeoutId = setTimeout(() => {
+            if (isMounted) {
+              setSvgLoaded(true);
+            }
           }, 0);
         }
       })
       .catch(error => {
-        console.error('Failed to load SVG:', error);
+        if (isMounted) {
+          console.error('Failed to load SVG:', error);
+        }
       });
     
     // Cleanup on unmount
     return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       if (container) {
         container.innerHTML = '';
       }
