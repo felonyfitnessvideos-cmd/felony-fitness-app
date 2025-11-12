@@ -29,7 +29,11 @@ const WeeklyMealPlannerPage = () => {
   const { user } = useAuth();
 
   /** @type {[Date[], Function]} Current week's date array for meal planning */
-  const [currentWeek, setCurrentWeek] = useState(() => getWeekDates(new Date()));
+  const [currentWeek, setCurrentWeek] = useState(() => {
+    const week = getWeekDates(new Date());
+    console.log('🗓️ Initial currentWeek:', week.map(d => d.toLocaleDateString() + ' (' + d.toISOString().split('T')[0] + ')'));
+    return week;
+  });
 
   /** @type {[Object|null, Function]} Currently active meal plan */
   const [activePlan, setActivePlan] = useState(null);
@@ -182,6 +186,12 @@ const WeeklyMealPlannerPage = () => {
         .lte('plan_date', endDate);
 
       if (error) throw error;
+      
+      console.log(`📊 Loaded ${data?.length || 0} meal plan entries for date range ${startDate} to ${endDate}`);
+      if (data && data.length > 0) {
+        console.log('Sample entries:', data.slice(0, 3).map(e => ({ date: e.plan_date, type: e.meal_type, meal: e.meals.name })));
+      }
+      
       setPlanEntries(data || []);
     } catch (error) {
       if (import.meta.env?.DEV) {
@@ -895,9 +905,18 @@ const WeeklyMealPlannerPage = () => {
    */
   const getMealsByTypeAndDate = (date, mealType) => {
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    return planEntries.filter(entry =>
+    const matches = planEntries.filter(entry =>
       entry.plan_date === dateStr && entry.meal_type === mealType
     );
+    
+    // Debug logging
+    if (matches.length > 0) {
+      console.log(`📅 Found ${matches.length} meal(s) for ${date.toLocaleDateString()} (${dateStr}) ${mealType}:`, 
+        matches.map(m => ({ name: m.meals.name, plan_date: m.plan_date }))
+      );
+    }
+    
+    return matches;
   };
 
   /**
