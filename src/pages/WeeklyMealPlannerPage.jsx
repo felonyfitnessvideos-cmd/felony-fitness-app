@@ -580,6 +580,19 @@ const WeeklyMealPlannerPage = () => {
       const endDate = currentWeek[6].toISOString().split('T')[0];
       const planName = `Meal Plan - Week of ${currentWeek[0].toLocaleDateString()}`;
 
+      // First, deactivate all existing active plans for this user
+      const { error: deactivateError } = await supabase
+        .from('weekly_meal_plans')
+        .update({ is_active: false })
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
+      if (deactivateError) {
+        console.warn('Error deactivating old plans:', deactivateError);
+        // Continue anyway - not critical
+      }
+
+      // Now create the new plan as active
       const { data, error } = await supabase
         .from('weekly_meal_plans')
         .insert([{
