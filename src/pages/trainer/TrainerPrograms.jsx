@@ -33,7 +33,7 @@ import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
 import ProgramBuilderModal from '../../components/trainer/ProgramBuilderModal';
 import ProgramEditorModal from '../../components/trainer/ProgramEditorModal';
-import AnatomicalMuscleMap from '../../components/workout-builder/AnatomicalMuscleMap';
+import CustomMuscleMap from '../../components/workout-builder/CustomMuscleMap';
 import InteractiveMuscleMap from '../../components/workout-builder/InteractiveMuscleMap';
 import { supabase } from '../../supabaseClient';
 import { calculateProgramEngagement, generateHeatmapData } from '../../utils/programAnalytics';
@@ -1355,16 +1355,16 @@ const ProgramLibrary = () => {
                       title="Click to enlarge"
                     >
                       <div className="muscle-map-front">
-                        <AnatomicalMuscleMap
+                        <CustomMuscleMap
                           highlightedMuscles={(program.target_muscle_groups || []).filter(m => m.priority === 'primary')}
-                          variant="back"
+                          variant="front"
                           className="muscle-map-compact"
                         />
                       </div>
                       <div className="muscle-map-back">
-                        <AnatomicalMuscleMap
+                        <CustomMuscleMap
                           highlightedMuscles={(program.target_muscle_groups || []).filter(m => m.priority === 'primary')}
-                          variant="front"
+                          variant="back"
                           className="muscle-map-compact"
                         />
                       </div>
@@ -1486,17 +1486,19 @@ const ProgramLibrary = () => {
               <div className="fullscreen-muscle-maps">
                 <div className="fullscreen-map-front">
                   <h3>Front</h3>
-                  <AnatomicalMuscleMap
+                  <CustomMuscleMap
+                    key={`fullscreen-front-${fullscreenMuscleMap.programName}`}
                     highlightedMuscles={fullscreenMuscleMap.muscles}
-                    variant="back"
+                    variant="front"
                     className="muscle-map-fullscreen"
                   />
                 </div>
                 <div className="fullscreen-map-back">
                   <h3>Back</h3>
-                  <AnatomicalMuscleMap
+                  <CustomMuscleMap
+                    key={`fullscreen-back-${fullscreenMuscleMap.programName}`}
                     highlightedMuscles={fullscreenMuscleMap.muscles}
-                    variant="front"
+                    variant="back"
                     className="muscle-map-fullscreen"
                   />
                 </div>

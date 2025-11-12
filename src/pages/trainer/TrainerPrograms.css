@@ -2261,7 +2261,7 @@
 
 .muscle-map-fullscreen {
   width: 100%;
-  max-width: 300px; /* Reduced from 320px to fit better */
+  max-width: 500px; /* Increased for better visibility */
   height: auto;
 }
 
