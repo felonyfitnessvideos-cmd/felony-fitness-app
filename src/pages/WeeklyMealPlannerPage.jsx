@@ -126,8 +126,12 @@ const WeeklyMealPlannerPage = () => {
     if (!activePlan) return;
 
     try {
-      const startDate = currentWeek[0].toISOString().split('T')[0];
-      const endDate = currentWeek[6].toISOString().split('T')[0];
+      // Use local dates, not UTC
+      const startDateObj = currentWeek[0];
+      const startDate = `${startDateObj.getFullYear()}-${String(startDateObj.getMonth() + 1).padStart(2, '0')}-${String(startDateObj.getDate()).padStart(2, '0')}`;
+      
+      const endDateObj = currentWeek[6];
+      const endDate = `${endDateObj.getFullYear()}-${String(endDateObj.getMonth() + 1).padStart(2, '0')}-${String(endDateObj.getDate()).padStart(2, '0')}`;
 
       const { data, error } = await supabase
         .from('weekly_meal_plan_entries')
@@ -195,9 +199,9 @@ const WeeklyMealPlannerPage = () => {
   const calculateWeeklyNutrition = useCallback(() => {
     const dailyNutrition = {};
 
-    // Initialize each day
+    // Initialize each day with local dates (not UTC)
     currentWeek.forEach(date => {
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       dailyNutrition[dateStr] = {
         calories: 0,
         protein: 0,
@@ -576,8 +580,13 @@ const WeeklyMealPlannerPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const startDate = currentWeek[0].toISOString().split('T')[0];
-      const endDate = currentWeek[6].toISOString().split('T')[0];
+      // Use local dates, not UTC
+      const startDateObj = currentWeek[0];
+      const startDate = `${startDateObj.getFullYear()}-${String(startDateObj.getMonth() + 1).padStart(2, '0')}-${String(startDateObj.getDate()).padStart(2, '0')}`;
+      
+      const endDateObj = currentWeek[6];
+      const endDate = `${endDateObj.getFullYear()}-${String(endDateObj.getMonth() + 1).padStart(2, '0')}-${String(endDateObj.getDate()).padStart(2, '0')}`;
+      
       const planName = `Meal Plan - Week of ${currentWeek[0].toLocaleDateString()}`;
 
       // First, deactivate all existing active plans for this user
@@ -646,14 +655,14 @@ const WeeklyMealPlannerPage = () => {
     }
 
     try {
-      // Calculate last week's date range
+      // Calculate last week's date range using local dates
       const lastWeekStart = new Date(currentWeek[0]);
       lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+      const lastWeekStartStr = `${lastWeekStart.getFullYear()}-${String(lastWeekStart.getMonth() + 1).padStart(2, '0')}-${String(lastWeekStart.getDate()).padStart(2, '0')}`;
+      
       const lastWeekEnd = new Date(currentWeek[6]);
       lastWeekEnd.setDate(lastWeekEnd.getDate() - 7);
-
-      const lastWeekStartStr = lastWeekStart.toISOString().split('T')[0];
-      const lastWeekEndStr = lastWeekEnd.toISOString().split('T')[0];
+      const lastWeekEndStr = `${lastWeekEnd.getFullYear()}-${String(lastWeekEnd.getMonth() + 1).padStart(2, '0')}-${String(lastWeekEnd.getDate()).padStart(2, '0')}`;
 
       // Fetch last week's meal entries
       const { data: lastWeekEntries, error: fetchError } = await supabase
@@ -672,14 +681,15 @@ const WeeklyMealPlannerPage = () => {
 
       // Create new entries with dates shifted forward by 7 days
       const newEntries = lastWeekEntries.map(entry => {
-        const oldDate = new Date(entry.plan_date);
+        const oldDate = new Date(entry.plan_date + 'T00:00:00'); // Parse as local date
         const newDate = new Date(oldDate);
         newDate.setDate(newDate.getDate() + 7);
+        const newDateStr = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${String(newDate.getDate()).padStart(2, '0')}`;
 
         return {
           plan_id: activePlan.id,
           meal_id: entry.meal_id,
-          plan_date: newDate.toISOString().split('T')[0],
+          plan_date: newDateStr,
           meal_type: entry.meal_type,
           servings: entry.servings,
           notes: entry.notes
@@ -884,7 +894,7 @@ const WeeklyMealPlannerPage = () => {
    * const breakfastMeals = getMealsByTypeAndDate(new Date(), 'breakfast');
    */
   const getMealsByTypeAndDate = (date, mealType) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     return planEntries.filter(entry =>
       entry.plan_date === dateStr && entry.meal_type === mealType
     );
@@ -901,7 +911,7 @@ const WeeklyMealPlannerPage = () => {
    * // Access nutrition values: todayNutrition.calories, todayNutrition.protein, etc.
    */
   const getDayNutrition = (date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     return weeklyNutrition[dateStr] || {
       calories: 0,
       protein: 0,
