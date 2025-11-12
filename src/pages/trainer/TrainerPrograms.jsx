@@ -810,23 +810,27 @@ const ProgramLibrary = () => {
           };
 
           // Track muscle groups with priority (primary > secondary > tertiary)
-          // If a muscle is already marked as primary, don't downgrade it
+          // Always upgrade to higher priority if muscle appears in multiple exercises
           muscles.primary?.forEach(m => {
-            if (m && !muscleGroupsMap.has(m)) {
+            if (m) {
+              // Always set as primary (upgrade from secondary/tertiary if needed)
               muscleGroupsMap.set(m, 'primary');
             }
           });
           
           muscles.secondary?.forEach(m => {
-            if (m && !muscleGroupsMap.has(m)) {
-              muscleGroupsMap.set(m, 'secondary');
-            } else if (m && muscleGroupsMap.get(m) === 'tertiary') {
-              muscleGroupsMap.set(m, 'secondary'); // Upgrade from tertiary
+            if (m) {
+              const currentPriority = muscleGroupsMap.get(m);
+              // Only set as secondary if not already primary
+              if (!currentPriority || currentPriority === 'tertiary') {
+                muscleGroupsMap.set(m, 'secondary');
+              }
             }
           });
           
           muscles.tertiary?.forEach(m => {
             if (m && !muscleGroupsMap.has(m)) {
+              // Only set as tertiary if not already in map
               muscleGroupsMap.set(m, 'tertiary');
             }
           });
@@ -1339,22 +1343,27 @@ const ProgramLibrary = () => {
                   <div className="muscle-map-section">
                     <div 
                       className="muscle-map-container clickable"
-                      onClick={() => setFullscreenMuscleMap({ 
-                        muscles: program.target_muscle_groups || [], 
-                        programName: program.name 
-                      })}
+                      onClick={() => {
+                        console.log('🎯 Program muscle groups:', program.target_muscle_groups);
+                        const primaryMuscles = (program.target_muscle_groups || []).filter(m => m.priority === 'primary');
+                        console.log('💪 Primary muscles only:', primaryMuscles);
+                        setFullscreenMuscleMap({ 
+                          muscles: primaryMuscles, 
+                          programName: program.name 
+                        });
+                      }}
                       title="Click to enlarge"
                     >
                       <div className="muscle-map-front">
                         <AnatomicalMuscleMap
-                          highlightedMuscles={program.target_muscle_groups || []}
+                          highlightedMuscles={(program.target_muscle_groups || []).filter(m => m.priority === 'primary')}
                           variant="front"
                           className="muscle-map-compact"
                         />
                       </div>
                       <div className="muscle-map-back">
                         <AnatomicalMuscleMap
-                          highlightedMuscles={program.target_muscle_groups || []}
+                          highlightedMuscles={(program.target_muscle_groups || []).filter(m => m.priority === 'primary')}
                           variant="back"
                           className="muscle-map-compact"
                         />

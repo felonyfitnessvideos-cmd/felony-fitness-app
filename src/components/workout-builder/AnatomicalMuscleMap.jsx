@@ -127,6 +127,18 @@ const AnatomicalMuscleMap = ({
 
   const data = getMusclesForHighlighting();
 
+  // Debug logging
+  console.log('AnatomicalMuscleMap render:', {
+    variant,
+    inputMuscles: highlightedMuscles,
+    outputData: data,
+    allowedMuscles: variant === 'front' ? FRONT_VIEW_MUSCLES : BACK_VIEW_MUSCLES
+  });
+  
+  // Detailed muscle name logging
+  console.log(`  Input: ${highlightedMuscles.map(m => typeof m === 'string' ? m : m.name).join(', ')}`);
+  console.log(`  Output: ${data.map(d => d.name).join(', ')}`);
+
   return (
     <div className={`anatomical-muscle-map ${className}`}>
       <Model
@@ -140,7 +152,15 @@ const AnatomicalMuscleMap = ({
 };
 
 AnatomicalMuscleMap.propTypes = {
-  highlightedMuscles: PropTypes.arrayOf(PropTypes.string),
+  highlightedMuscles: PropTypes.arrayOf(
+    PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.shape({
+        name: PropTypes.string,
+        priority: PropTypes.string
+      })
+    ])
+  ),
   variant: PropTypes.oneOf(['front', 'back']),
   className: PropTypes.string
 };
