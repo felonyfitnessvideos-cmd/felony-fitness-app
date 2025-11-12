@@ -46,6 +46,25 @@ beforeAll(() => {
     disconnect: vi.fn(),
   }));
 
+  // Mock fetch for components that fetch resources (like SVGs)
+  global.fetch = vi.fn((url) => {
+    // Mock SVG responses for CustomMuscleMap component
+    if (url.includes('.svg')) {
+      return Promise.resolve({
+        text: () => Promise.resolve('<svg><g id="Background"></g><g id="Biceps"></g></svg>'),
+        ok: true,
+        status: 200
+      });
+    }
+    // Default mock response
+    return Promise.resolve({
+      json: () => Promise.resolve({}),
+      text: () => Promise.resolve(''),
+      ok: true,
+      status: 200
+    });
+  });
+
   // Setup React Modal app element to prevent warnings
   const modalRoot = document.createElement('div');
   modalRoot.setAttribute('id', 'modal-root');
