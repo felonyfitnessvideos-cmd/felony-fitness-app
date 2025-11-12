@@ -99,22 +99,20 @@ function NutritionLogPage() {
   const fetchLogData = useCallback(async (userId) => {
     setLoading(true);
     try {
-      // **TIMEZONE FIX**: Use local timezone (same as dashboard)
-      // This ensures consistency between dashboard and nutrition log page
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
-      const startOfTomorrow = new Date(startOfToday);
-      startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+      // **TIMEZONE FIX**: Query by log_date (date-only column) instead of created_at timestamp
+      // This avoids timezone issues since log_date is stored as YYYY-MM-DD
+      const today = new Date();
+      const todayDateString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
 
-      // DEBUGGING: Log the exact timestamps being sent to the database (guarded).
+      // DEBUGGING: Log the date being queried
       if (import.meta.env?.DEV) {
-        console.debug('Fetching logs between:', startOfToday.toISOString(), 'and', startOfTomorrow.toISOString());
+        console.debug('Fetching logs for date:', todayDateString);
       }
 
       // Debug: Check if ANY logs exist for this user
       const { data: allLogs } = await supabase
         .from('nutrition_logs')
-        .select('id, created_at, meal_type')
+        .select('id, created_at, meal_type, log_date')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -129,8 +127,7 @@ function NutritionLogPage() {
           .from('nutrition_logs')
           .select('*, food_servings(*)')
           .eq('user_id', userId)
-          .gte('created_at', startOfToday.toISOString())
-          .lt('created_at', startOfTomorrow.toISOString()),
+          .eq('log_date', todayDateString),
         supabase
           .from('user_profiles')
           .select('daily_calorie_goal, daily_protein_goal_g, daily_water_goal_oz')
@@ -143,18 +140,13 @@ function NutritionLogPage() {
 
       const logs = logsResponse.data || [];
       
-      console.log('📊 Nutrition logs fetched:', logs.length, 'entries');
-      console.log('🔍 Query timestamps:', {
-        start: startOfToday.toISOString(),
-        end: startOfTomorrow.toISOString(),
-        localStart: startOfToday.toLocaleString(),
-        localEnd: startOfTomorrow.toLocaleString()
-      });
+      console.log('📊 Nutrition logs fetched:', logs.length, 'entries for', todayDateString);
       if (logs.length > 0) {
         console.log('📋 Sample log:', {
           id: logs[0].id,
           created_at: logs[0].created_at,
-          meal_type: logs[0].meal_type
+          meal_type: logs[0].meal_type,
+          log_date: logs[0].log_date
         });
       }
       
