@@ -940,8 +940,7 @@ const WeeklyMealPlannerPage = () => {
       {activePlan && (
         <div className="active-plan-info">
           <div className="plan-details">
-            <h3>{activePlan.name}</h3>
-            <p>{activePlan.start_date} to {activePlan.end_date}</p>
+            <h3>Meal Plan - Week of {currentWeek[0].toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' })}</h3>
           </div>
           <div className="plan-actions">
             <button className="shopping-list-btn" onClick={() => setShowShoppingList(true)}>
