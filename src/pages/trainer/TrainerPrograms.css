@@ -2235,8 +2235,8 @@
 
 .fullscreen-muscle-maps {
   display: flex;
-  gap: 40px;
-  padding: 40px;
+  gap: 20px; /* Reduced from 40px */
+  padding: 20px; /* Reduced from 40px */
   justify-content: center;
   align-items: flex-start;
 }
@@ -2247,13 +2247,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 8px; /* Reduced from 16px */
 }
 
 .fullscreen-map-front h3,
 .fullscreen-map-back h3 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1rem; /* Reduced from 1.2rem */
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -2261,7 +2261,7 @@
 
 .muscle-map-fullscreen {
   width: 100%;
-  max-width: 320px; /* Reduced so two fit side-by-side in 699px container */
+  max-width: 300px; /* Reduced from 320px to fit better */
   height: auto;
 }
 
