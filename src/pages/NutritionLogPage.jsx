@@ -99,10 +99,12 @@ function NutritionLogPage() {
   const fetchLogData = useCallback(async (userId) => {
     setLoading(true);
     try {
-      // **TIMEZONE FIX**: Query by log_date (date-only column) instead of created_at timestamp
-      // This avoids timezone issues since log_date is stored as YYYY-MM-DD
+      // **TIMEZONE FIX**: Use local date, not UTC date
       const today = new Date();
-      const todayDateString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayDateString = `${year}-${month}-${day}`; // YYYY-MM-DD in LOCAL timezone
 
       // DEBUGGING: Log the date being queried
       if (import.meta.env?.DEV) {
@@ -211,7 +213,12 @@ function NutritionLogPage() {
    */
   const fetchScheduledMeal = useCallback(async (userId, mealType) => {
     try {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      // **TIMEZONE FIX**: Use local date, not UTC date
+      const todayDate = new Date();
+      const year = todayDate.getFullYear();
+      const month = String(todayDate.getMonth() + 1).padStart(2, '0');
+      const day = String(todayDate.getDate()).padStart(2, '0');
+      const today = `${year}-${month}-${day}`; // YYYY-MM-DD in LOCAL timezone
       
       console.log('🔍 Fetching scheduled meal for:', { userId, mealType, today });
       
