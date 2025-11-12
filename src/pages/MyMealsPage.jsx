@@ -319,7 +319,6 @@ const MyMealsPage = () => {
         description: meal.description,
         instructions: meal.instructions,
         prep_time: meal.prep_time,
-        cook_time: meal.cook_time,
         serving_size: meal.serving_size,
         serving_unit: meal.serving_unit,
         difficulty_level: meal.difficulty_level,
@@ -786,14 +785,10 @@ const MyMealsPage = () => {
 
               {/* Meal Meta */}
               <div className="meal-meta">
-                {(meal.prep_time || meal.cook_time) && (
+                {meal.prep_time && (
                   <div className="meal-time">
                     <Clock className="icon" />
-                    <span>
-                      {meal.prep_time && `${formatTime(meal.prep_time)} prep`}
-                      {meal.prep_time && meal.cook_time && ' • '}
-                      {meal.cook_time && `${formatTime(meal.cook_time)} cook`}
-                    </span>
+                    <span>{formatTime(meal.prep_time)} prep</span>
                   </div>
                 )}
 
