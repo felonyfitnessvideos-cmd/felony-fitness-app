@@ -104,28 +104,24 @@ const MyMealsPage = () => {
         return;
       }
 
-      // Get user's saved meals from user_meals table
+      // Get user's saved meals from user_meals table (now self-contained)
       const { data: userSavedMeals, error: userMealsError } = await supabase
         .from('user_meals')
         .select(`
-          is_favorite,
-          custom_name,
-          meals (
-            *,
-            meal_foods (
+          *,
+          user_meal_foods (
+            id,
+            food_servings_id,
+            quantity,
+            notes,
+            food_servings (
               id,
-              food_servings_id,
-              quantity,
-              notes,
-              food_servings (
-                id,
-                food_name,
-                calories,
-                protein_g,
-                carbs_g,
-                fat_g,
-                serving_description
-              )
+              food_name,
+              calories,
+              protein_g,
+              carbs_g,
+              fat_g,
+              serving_description
             )
           )
         `)
@@ -134,39 +130,32 @@ const MyMealsPage = () => {
 
       if (userMealsError) throw userMealsError;
 
-      // Process user saved meals only
-      const userMealsData = userSavedMeals?.map(um => ({
-        ...um.meals,
-        user_meals: [{
-          is_favorite: um.is_favorite,
-          custom_name: um.custom_name
-        }]
-      })) || [];
+      // user_meals is now self-contained, no processing needed
+      const userMealsData = userSavedMeals || [];
 
       // Check each meal's structure for broken nutrition data
       userMealsData.forEach((meal) => {
-        if (meal.meal_foods && meal.meal_foods.some(mf => !mf.food_servings)) {
+        if (meal.user_meal_foods && meal.user_meal_foods.some(mf => !mf.food_servings)) {
           // Meal has broken food data - missing nutrition information
         }
       });
 
       const data = userMealsData;
 
-      // Calculate nutrition for each meal and extract tags
+      // Calculate nutrition for each meal
       const mealsWithNutrition = data.map(meal => {
-        const userMeal = meal.user_meals && meal.user_meals.length > 0 ? meal.user_meals[0] : null;
-        const nutrition = calculateMealNutrition(meal.meal_foods);
+        const nutrition = calculateMealNutrition(meal.user_meal_foods);
         
         // Check nutrition calculation for meals with zero values
-        if (nutrition.calories === 0 && meal.meal_foods && meal.meal_foods.length > 0) {
+        if (nutrition.calories === 0 && meal.user_meal_foods && meal.user_meal_foods.length > 0) {
           // Meal with zero calories detected - handle silently
         }
         
         return {
           ...meal,
           nutrition,
-          display_name: userMeal?.custom_name || meal.name,
-          is_favorite: userMeal?.is_favorite || false
+          display_name: meal.custom_name || meal.name,
+          is_favorite: meal.is_favorite || false
         };
       });
 
@@ -311,23 +300,28 @@ const MyMealsPage = () => {
       if (!user) return;
 
       // Step 1: Create a copy in the meals table
+      // Create a copy of the meal directly in user_meals (self-contained)
       const mealCopy = {
+        user_id: user.id,
         name: `${meal.name} (Copy)`,
-        tags: meal.tags,
         description: meal.description,
         instructions: meal.instructions,
-        prep_time: meal.prep_time,
+        tags: meal.tags,
+        category: meal.category,
+        prep_time_minutes: meal.prep_time_minutes,
+        cook_time_minutes: meal.cook_time_minutes,
         serving_size: meal.serving_size,
-        serving_unit: meal.serving_unit,
         difficulty_level: meal.difficulty_level,
         image_url: meal.image_url,
-        is_premade: false
+        is_favorite: false,
+        custom_name: null,
+        meal_id: null // No reference to meals table for user-created meals
       };
 
-      console.log('[MyMealsPage] Creating meal copy in meals table:', mealCopy);
+      console.log('[MyMealsPage] Creating meal copy in user_meals table:', mealCopy);
 
       const { data: newMeal, error: mealError } = await supabase
-        .from('meals')
+        .from('user_meals')
         .insert([mealCopy])
         .select()
         .single();
@@ -339,26 +333,7 @@ const MyMealsPage = () => {
 
       console.log('[MyMealsPage] Created meal:', newMeal);
 
-      // Step 2: Link the meal to the user in user_meals
-      const { error: userMealError } = await supabase
-        .from('user_meals')
-        .insert([{
-          user_id: user.id,
-          meal_id: newMeal.id,
-          is_favorite: false
-        }]);
-
-      if (userMealError) {
-        console.error('[MyMealsPage] Error linking meal to user:', userMealError);
-        // Clean up the orphaned meal record
-        await supabase
-          .from('meals')
-          .delete()
-          .eq('id', newMeal.id);
-        throw userMealError;
-      }
-
-      // Step 3: Copy meal foods
+      // Step 2: Copy meal foods to user_meal_foods table
       if (meal.meal_foods && meal.meal_foods.length > 0) {
         console.log('[MyMealsPage] Copying meal foods:', meal.meal_foods);
         
@@ -378,16 +353,16 @@ const MyMealsPage = () => {
           console.warn('[MyMealsPage] No valid foods to copy - all foods missing food_servings_id');
         } else {
           const mealFoodsCopy = validFoods.map(food => ({
-            meal_id: newMeal.id,
+            user_meal_id: newMeal.id, // Link to user_meals table
             food_servings_id: food.food_servings_id,
             quantity: food.quantity,
             notes: food.notes || ''
           }));
           
-          console.log('[MyMealsPage] Inserting meal foods:', mealFoodsCopy);
+          console.log('[MyMealsPage] Inserting user meal foods:', mealFoodsCopy);
           
           const { error: foodsError } = await supabase
-            .from('meal_foods')
+            .from('user_meal_foods')
             .insert(mealFoodsCopy);
 
           if (foodsError) {

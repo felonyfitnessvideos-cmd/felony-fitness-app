@@ -482,12 +482,12 @@ const MealBuilder = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Save or update meal
+      // Save or update meal directly in user_meals (self-contained)
       let mealId;
       if (editingMeal?.id) {
-        // Update existing meal
+        // Update existing meal in user_meals
         const { error: mealError } = await supabase
-          .from('meals')
+          .from('user_meals')
           .update({
             ...mealData,
             updated_at: new Date().toISOString()
@@ -499,13 +499,14 @@ const MealBuilder = ({
 
         // DO NOT DELETE EXISTING FOODS YET - wait until new ones are ready
       } else {
-        // Create new meal
+        // Create new meal in user_meals
         const { data: mealResult, error: mealError } = await supabase
-          .from('meals')
+          .from('user_meals')
           .insert([{
             ...mealData,
             user_id: user.id,
-            is_premade: false
+            is_favorite: false,
+            meal_id: null // Not linked to premade meals
           }])
           .select()
           .single();
@@ -559,7 +560,7 @@ const MealBuilder = ({
         }
 
         processedMealFoods.push({
-          meal_id: mealId,
+          user_meal_id: mealId,  // Changed from meal_id to user_meal_id
           food_servings_id: finalFoodServingsId,
           quantity: item.quantity,
           notes: item.notes || ''
@@ -571,9 +572,9 @@ const MealBuilder = ({
         // Delete existing meal foods NOW that we know new ones are ready
         console.log('[MealBuilder] Deleting old meal foods for meal:', mealId);
         const { error: deleteError } = await supabase
-          .from('meal_foods')
+          .from('user_meal_foods')  // Changed from meal_foods to user_meal_foods
           .delete()
-          .eq('meal_id', mealId);
+          .eq('user_meal_id', mealId);  // Changed from meal_id to user_meal_id
 
         if (deleteError) {
           console.error('[MealBuilder] Error deleting old foods:', deleteError);
@@ -584,7 +585,7 @@ const MealBuilder = ({
       // Insert meal foods with proper integer IDs
       console.log('[MealBuilder] Inserting', processedMealFoods.length, 'meal foods');
       const { error: foodsError } = await supabase
-        .from('meal_foods')
+        .from('user_meal_foods')  // Changed from meal_foods to user_meal_foods
         .insert(processedMealFoods);
 
       if (foodsError) {
@@ -592,18 +593,7 @@ const MealBuilder = ({
         throw foodsError;
       }
 
-      // Add meal to user_meals table so it shows up in MyMealsPage
-      if (!editingMeal?.id) {
-        const { error: userMealError } = await supabase
-          .from('user_meals')
-          .insert([{
-            user_id: user.id,
-            meal_id: mealId,
-            is_favorite: false
-          }]);
-
-        if (userMealError) throw userMealError;
-      }
+      // No need to add to user_meals - we're already saving directly there!
 
       // Call onSave callback
       if (onSave) {
