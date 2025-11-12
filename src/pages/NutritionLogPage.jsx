@@ -87,7 +87,9 @@ function NutritionLogPage() {
   const [scheduledMeal, setScheduledMeal] = useState(null);
   const [isAddingMealPlan, setIsAddingMealPlan] = useState(false);
 
-  const mealLogs = todaysLogs.filter(log => log.meal_type === activeMeal);
+  const mealLogs = todaysLogs.filter(log => 
+    log.meal_type?.toLowerCase() === activeMeal.toLowerCase()
+  );
   console.log('🍽️ Meal Logs for', activeMeal, ':', mealLogs.length, 'items');
   console.log('📋 All today logs:', todaysLogs.length, 'items');
   console.log('⚙️ Loading state:', loading);
@@ -663,7 +665,7 @@ function NutritionLogPage() {
     if (!user) return;
     const { error } = await supabase.from('nutrition_logs').insert({
       user_id: user.id,
-      meal_type: 'Water',
+      meal_type: 'water', // Use lowercase to match schema constraint
       water_oz_consumed: ounces,
       // We no longer need to set log_date; created_at is handled automatically
     });
