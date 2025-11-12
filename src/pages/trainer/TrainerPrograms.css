@@ -2177,7 +2177,7 @@
 .modal-content-muscle {
   background: var(--card-background);
   border-radius: 16px;
-  max-width: 1200px;
+  max-width: 699px; /* Optimized for tablet screens */
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
@@ -2231,6 +2231,47 @@
 .close-modal-btn:hover {
   background: rgba(249, 115, 22, 0.1);
   color: var(--accent-color);
+}
+
+/* Muscle Map Legend */
+.muscle-map-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 16px 24px;
+  background: rgba(249, 115, 22, 0.05);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.legend-primary {
+  background: #f97316; /* Bright orange */
+}
+
+.legend-secondary {
+  background: #fbbf24; /* Yellow */
+}
+
+.legend-tertiary {
+  background: #9ca3af; /* Grey */
+}
+
+.legend-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .fullscreen-muscle-maps {

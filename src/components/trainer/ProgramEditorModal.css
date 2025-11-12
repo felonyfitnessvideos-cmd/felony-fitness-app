@@ -29,6 +29,7 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(249, 115, 22, 0.2);
   overflow: hidden;
+  box-sizing: border-box; /* Ensure border is included in width */
 }
 
 .modal-header {
@@ -61,6 +62,7 @@
   border-radius: 10px;
   border: 1px solid rgba(74, 85, 104, 0.5);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-sizing: border-box; /* Ensure padding/border included in width */
 }
 
 .form-section h3 {
@@ -77,6 +79,7 @@
 
 .form-group {
   margin-bottom: 16px;
+  box-sizing: border-box; /* Ensure all children respect container width */
 }
 
 .form-group label {
@@ -99,6 +102,7 @@
   color: var(--text-primary, #f7fafc);
   background: rgba(26, 32, 44, 0.5);
   transition: all 0.2s;
+  box-sizing: border-box; /* Ensure padding is included in width */
 }
 
 .form-group input:focus,

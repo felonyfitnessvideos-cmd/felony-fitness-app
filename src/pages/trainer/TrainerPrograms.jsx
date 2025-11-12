@@ -465,7 +465,7 @@ const ProgramConfigModal = ({ program, onClose, user }) => {
                 <div className="program-stats">
                   <span>📊 {program.difficulty_level}</span>
                   <span>⏱️ {program.estimated_weeks} weeks</span>
-                    <span>🎯 {(program.target_muscle_groups || []).join(', ')}</span>
+                    <span>🎯 {(program.target_muscle_groups || []).map(m => typeof m === 'string' ? m : m.name).join(', ')}</span>
                   <span>📝 {routines.length} total workouts</span>
                 </div>
               </div>
@@ -796,7 +796,7 @@ const ProgramLibrary = () => {
       // Process programs and hydrate exercise data
       const processedPrograms = programsData.map(program => {
         const exercisePool = program.exercise_pool || [];
-        const muscleGroups = new Set();
+        const muscleGroupsMap = new Map(); // Track muscle priority: { muscleName: 'primary' | 'secondary' | 'tertiary' }
         
         // Hydrate exercise pool with full exercise data
         const hydratedExercises = exercisePool.map(poolEntry => {
@@ -809,10 +809,27 @@ const ProgramLibrary = () => {
             tertiary: exercise?.tertiary_muscle ? [exercise.tertiary_muscle] : []
           };
 
-          // Add ALL muscle groups (primary, secondary, tertiary) to the set
-          muscles.primary?.forEach(m => m && muscleGroups.add(m));
-          muscles.secondary?.forEach(m => m && muscleGroups.add(m));
-          muscles.tertiary?.forEach(m => m && muscleGroups.add(m));
+          // Track muscle groups with priority (primary > secondary > tertiary)
+          // If a muscle is already marked as primary, don't downgrade it
+          muscles.primary?.forEach(m => {
+            if (m && !muscleGroupsMap.has(m)) {
+              muscleGroupsMap.set(m, 'primary');
+            }
+          });
+          
+          muscles.secondary?.forEach(m => {
+            if (m && !muscleGroupsMap.has(m)) {
+              muscleGroupsMap.set(m, 'secondary');
+            } else if (m && muscleGroupsMap.get(m) === 'tertiary') {
+              muscleGroupsMap.set(m, 'secondary'); // Upgrade from tertiary
+            }
+          });
+          
+          muscles.tertiary?.forEach(m => {
+            if (m && !muscleGroupsMap.has(m)) {
+              muscleGroupsMap.set(m, 'tertiary');
+            }
+          });
 
           return {
             ...poolEntry,
@@ -822,12 +839,16 @@ const ProgramLibrary = () => {
           };
         });
 
-        const targetMuscles = Array.from(muscleGroups);
+        // Convert map to array of objects with priority info
+        const targetMusclesWithPriority = Array.from(muscleGroupsMap.entries()).map(([name, priority]) => ({
+          name,
+          priority
+        }));
 
         return {
           ...program,
           exercise_pool: hydratedExercises,
-          target_muscle_groups: targetMuscles,
+          target_muscle_groups: targetMusclesWithPriority,
           routine_count: hydratedExercises.length
         };
       });
@@ -1452,6 +1473,23 @@ const ProgramLibrary = () => {
                   <X size={24} />
                 </button>
               </div>
+              
+              {/* Color Legend */}
+              <div className="muscle-map-legend">
+                <div className="legend-item">
+                  <span className="legend-color legend-primary"></span>
+                  <span className="legend-label">Primary Target</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-color legend-secondary"></span>
+                  <span className="legend-label">Secondary</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-color legend-tertiary"></span>
+                  <span className="legend-label">Tertiary (Stabilizers)</span>
+                </div>
+              </div>
+              
               <div className="fullscreen-muscle-maps">
                 <div className="fullscreen-map-front">
                   <h3>Front</h3>
