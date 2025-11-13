@@ -468,28 +468,14 @@ const MyMealsPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Check if it's a user's own meal or just removing from saved meals
-      const meal = meals.find(m => m.id === mealId);
-      
-      if (meal.user_id === user.id) {
-        // Delete the meal entirely (will cascade to meal_foods and user_meals)
-        const { error } = await supabase
-          .from('meals')
-          .delete()
-          .eq('id', mealId)
-          .eq('user_id', user.id);
+      // Delete the meal from user_meals (will cascade to user_meal_foods due to ON DELETE CASCADE)
+      const { error } = await supabase
+        .from('user_meals')
+        .delete()
+        .eq('id', mealId)
+        .eq('user_id', user.id);
 
-        if (error) throw error;
-      } else {
-        // Just remove from user's saved meals
-        const { error } = await supabase
-          .from('user_meals')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('meal_id', mealId);
-
-        if (error) throw error;
-      }
+      if (error) throw error;
 
       await loadMeals();
     } catch (error) {
