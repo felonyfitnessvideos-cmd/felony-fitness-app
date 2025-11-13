@@ -177,7 +177,7 @@ const MealBuilder = ({
     try {
       console.log('[MealBuilder v2.0] Loading foods for meal ID:', mealId);
       const { data, error } = await supabase
-        .from('meal_foods')
+        .from('user_meal_foods')  // Changed from meal_foods to user_meal_foods
         .select(`
           *,
           food_servings (
@@ -190,7 +190,7 @@ const MealBuilder = ({
             serving_description
           )
         `)
-        .eq('meal_id', mealId);
+        .eq('user_meal_id', mealId);  // Changed from meal_id to user_meal_id
 
       if (error) throw error;
 
