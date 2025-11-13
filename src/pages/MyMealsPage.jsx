@@ -334,11 +334,11 @@ const MyMealsPage = () => {
       console.log('[MyMealsPage] Created meal:', newMeal);
 
       // Step 2: Copy meal foods to user_meal_foods table
-      if (meal.meal_foods && meal.meal_foods.length > 0) {
-        console.log('[MyMealsPage] Copying meal foods:', meal.meal_foods);
+      if (meal.user_meal_foods && meal.user_meal_foods.length > 0) {
+        console.log('[MyMealsPage] Copying meal foods:', meal.user_meal_foods);
         
         // Filter out any foods that still have missing food_servings_id
-        const validFoods = meal.meal_foods.filter(food => {
+        const validFoods = meal.user_meal_foods.filter(food => {
           const isValid = food.food_servings_id && food.food_servings_id !== null;
           if (!isValid) {
             console.warn('[MyMealsPage] Skipping food with missing food_servings_id:', food);
@@ -369,7 +369,7 @@ const MyMealsPage = () => {
             console.error('[MyMealsPage] Error inserting meal foods:', foodsError);
             // Clean up the orphaned meal record
             await supabase
-              .from('meals')
+              .from('user_meals')
               .delete()
               .eq('id', newMeal.id);
             throw foodsError;
