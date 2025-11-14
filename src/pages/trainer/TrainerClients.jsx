@@ -35,10 +35,12 @@ import './TrainerClients.css';
  * all core trainer tools.
  * 
  * @component
+ * @param {Object} props
+ * @param {Function} props.onClientSelect - Callback when a client is selected/expanded
  * @returns {JSX.Element} The complete client management interface
  * 
  * @example
- * <TrainerClients />
+ * <TrainerClients onClientSelect={(client) => console.log(client)} />
  * 
  * State Management:
  * @state {Array} clients - Complete list of client objects with detailed information
@@ -46,7 +48,7 @@ import './TrainerClients.css';
  * @state {Object|null} selectedClient - Currently selected client for detailed view
  * @state {boolean} showClientModal - Controls visibility of client detail modal
  */
-const TrainerClients = () => {
+const TrainerClients = ({ onClientSelect }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -182,7 +184,14 @@ const TrainerClients = () => {
             <div
               key={client.id}
               className="client-card"
-              onClick={() => setExpandedClient(expandedClient === client.id ? null : client.id)}
+              onClick={() => {
+                const newExpandedId = expandedClient === client.id ? null : client.id;
+                setExpandedClient(newExpandedId);
+                // Notify parent component when client is selected
+                if (onClientSelect) {
+                  onClientSelect(newExpandedId ? client : null);
+                }
+              }}
             >
               <div className="client-card-header">
                 <h3>{client.name}</h3>

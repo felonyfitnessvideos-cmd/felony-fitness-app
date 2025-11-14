@@ -89,6 +89,9 @@ const TrainerDashboard = () => {
   /** @type {[number, Function]} Unread message count */
   const [unreadCount, setUnreadCount] = useState(0);
 
+  /** @type {[Object|null, Function]} Selected client for workspace tools */
+  const [selectedClient, setSelectedClient] = useState(null);
+
   // Navigation functions for trainer sections
   const navigateToCalendar = () => navigate('/trainer-dashboard/calendar');
   const navigateToPrograms = () => navigate('/trainer-dashboard/programs');
@@ -245,7 +248,7 @@ const TrainerDashboard = () => {
 
     switch (activeWorkspaceTool) {
       case 'scheduling':
-        return <SmartScheduling />;
+        return <SmartScheduling selectedClient={selectedClient} />;
 
       case 'progress':
         return renderToolCards('Progress Tracking');
@@ -412,7 +415,7 @@ const TrainerDashboard = () => {
                   <Route path="/" element={<TrainerCalendar />} />
                   <Route path="/calendar" element={<TrainerCalendar />} />
                   <Route path="/programs/*" element={<TrainerPrograms />} />
-                  <Route path="/clients" element={<TrainerClients />} />
+                  <Route path="/clients" element={<TrainerClients onClientSelect={setSelectedClient} />} />
                   <Route path="/messages" element={<TrainerMessages />} />
                   <Route path="/resources" element={<TrainerResources />} />
                   <Route path="/onboarding" element={<ClientOnboarding />} />

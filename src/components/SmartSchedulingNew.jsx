@@ -77,24 +77,13 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
       // Get client's trainer_clients record to find assigned program
       const { data: trainerClient, error: tcError } = await supabase
         .from('trainer_clients')
-        .select('assigned_program_id, generated_routine_ids, notes')
+        .select('assigned_program_id, generated_routine_ids')
         .eq('client_id', selectedClient.id)
         .single();
 
       if (tcError || !trainerClient?.assigned_program_id) {
         setStatusMessage('No program assigned to this client yet');
         return;
-      }
-
-      // Parse workout days from intake notes if available
-      let workoutDays = [];
-      if (trainerClient.notes) {
-        try {
-          const intakeData = JSON.parse(trainerClient.notes);
-          workoutDays = intakeData?.goalsPreferences?.workoutDays || [];
-        } catch {
-          // Notes not in JSON format, skip
-        }
       }
 
       // Get program details
@@ -106,8 +95,7 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
 
       if (progError) throw progError;
 
-      // Add workoutDays to program data
-      setClientProgram({ ...program, workoutDays });
+      setClientProgram(program);
 
       // Get generated routines for this client
       if (trainerClient.generated_routine_ids && trainerClient.generated_routine_ids.length > 0) {
@@ -253,13 +241,13 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
       <div className="smart-scheduling-empty">
         <Dumbbell size={48} className="empty-icon" />
         <h3>No Program Assigned</h3>
-        <p>{selectedClient.name || `${selectedClient.first_name || ''} ${selectedClient.last_name || ''}`} doesn't have a program yet</p>
+        <p>{selectedClient.first_name} {selectedClient.last_name} doesn't have a program yet</p>
         <p className="help-text">Assign a program from the Programs tab first</p>
       </div>
     );
   }
 
-  const sessionsPerWeek = clientProgram?.workoutDays?.length || programRoutines.length;
+  const sessionsPerWeek = selectedClient.sessions_per_week || programRoutines.length;
   const scheduledCount = Object.keys(weeklySchedule).length;
 
   return (
@@ -268,7 +256,7 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
       <div className="client-info-card">
         <div className="client-header">
           <User size={20} />
-          <h3>{selectedClient.name || `${selectedClient.first_name} ${selectedClient.last_name}`}</h3>
+          <h3>{selectedClient.first_name} {selectedClient.last_name}</h3>
         </div>
         <div className="client-essentials">
           <div className="essential-item">
