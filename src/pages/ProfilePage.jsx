@@ -34,7 +34,7 @@
  * <Link to="/profile">View Profile</Link>
  */
 
-import { Calendar, Edit2 as EditIcon, HeartPulse, MapPin, Phone, User, X } from 'lucide-react';
+import { Edit2 as EditIcon, HeartPulse, User, X } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import Modal from 'react-modal';
 import { Link } from 'react-router-dom';
@@ -1121,10 +1121,14 @@ function ProfilePage() {
             {/* Form fields for Date of Birth and Sex */}
             <div className="form-group">
               <label htmlFor="dob">Date of Birth {age && `(Age: ${age})`}</label>
-              <div className="input-with-icon">
-                <Calendar size={18} />
-                <input id="dob" name="dob" type="date" value={profile.dob} onChange={handleProfileChange} />
-              </div>
+              <input 
+                id="dob" 
+                name="dob" 
+                type="text" 
+                value={profile.dob} 
+                onChange={handleProfileChange}
+                placeholder="YYYY-MM-DD"
+              />
             </div>
             <div className="form-group">
               <label htmlFor="sex">Sex</label>
@@ -1142,7 +1146,6 @@ function ProfilePage() {
               <label>Height</label>
               <div className="height-inputs">
                 <div className="input-with-icon">
-                  <User size={18} />
                   <input
                     id="heightFeet"
                     name="heightFeet"
@@ -1294,109 +1297,88 @@ function ProfilePage() {
           <form onSubmit={handleProfileUpdate}>
             <div className="form-group">
               <label htmlFor="contact_first_name">First Name</label>
-              <div className="input-with-icon">
-                <User size={18} />
-                <input
-                  id="contact_first_name"
-                  name="first_name"
-                  type="text"
-                  value={profile.first_name}
-                  onChange={handleProfileChange}
-                  placeholder="First Name"
-                />
-              </div>
+              <input
+                id="contact_first_name"
+                name="first_name"
+                type="text"
+                value={profile.first_name}
+                onChange={handleProfileChange}
+                placeholder="First Name"
+              />
             </div>
 
             <div className="form-group">
               <label htmlFor="contact_last_name">Last Name</label>
-              <div className="input-with-icon">
-                <User size={18} />
-                <input
-                  id="contact_last_name"
-                  name="last_name"
-                  type="text"
-                  value={profile.last_name}
-                  onChange={handleProfileChange}
-                  placeholder="Last Name"
-                />
-              </div>
+              <input
+                id="contact_last_name"
+                name="last_name"
+                type="text"
+                value={profile.last_name}
+                onChange={handleProfileChange}
+                placeholder="Last Name"
+              />
             </div>
 
             <div className="form-group">
               <label htmlFor="contact_phone">Phone</label>
-              <div className="input-with-icon">
-                <Phone size={18} />
-                <input
-                  id="contact_phone"
-                  name="phone"
-                  type="tel"
-                  value={profile.phone}
-                  onChange={handleProfileChange}
-                  placeholder="(555) 555-5555"
-                />
-              </div>
+              <input
+                id="contact_phone"
+                name="phone"
+                type="tel"
+                value={profile.phone}
+                onChange={handleProfileChange}
+                placeholder="(555) 555-5555"
+              />
             </div>
 
             <div className="form-group">
               <label htmlFor="contact_address">Address</label>
-              <div className="input-with-icon">
-                <MapPin size={18} />
-                <input
-                  id="contact_address"
-                  name="address"
-                  type="text"
-                  value={profile.address}
-                  onChange={handleProfileChange}
-                  placeholder="Street Address"
-                />
-              </div>
+              <input
+                id="contact_address"
+                name="address"
+                type="text"
+                value={profile.address}
+                onChange={handleProfileChange}
+                placeholder="Street Address"
+              />
             </div>
 
             <div className="form-group">
               <label htmlFor="contact_city">City</label>
-              <div className="input-with-icon">
-                <MapPin size={18} />
-                <input
-                  id="contact_city"
-                  name="city"
-                  type="text"
-                  value={profile.city}
-                  onChange={handleProfileChange}
-                  placeholder="City"
-                />
-              </div>
+              <input
+                id="contact_city"
+                name="city"
+                type="text"
+                value={profile.city}
+                onChange={handleProfileChange}
+                placeholder="City"
+              />
             </div>
 
             <div className="form-group">
               <label htmlFor="contact_state">State</label>
-              <div className="input-with-icon">
-                <MapPin size={18} />
-                <input
-                  id="contact_state"
-                  name="state"
-                  type="text"
-                  value={profile.state}
-                  onChange={handleProfileChange}
-                  placeholder="State"
-                  maxLength="2"
-                />
-              </div>
+              <input
+                id="contact_state"
+                name="state"
+                type="text"
+                value={profile.state}
+                onChange={handleProfileChange}
+                placeholder="State"
+                maxLength="2"
+              />
             </div>
 
             <div className="form-group">
               <label htmlFor="contact_zip_code">ZIP Code</label>
-              <div className="input-with-icon">
-                <MapPin size={18} />
-                <input
-                  id="contact_zip_code"
-                  name="zip_code"
-                  type="text"
-                  value={profile.zip_code}
-                  onChange={handleProfileChange}
-                  placeholder="12345"
-                  maxLength="10"
-                />
-              </div>
+              <input
+                id="contact_zip_code"
+                name="zip_code"
+                type="text"
+                value={profile.zip_code}
+                onChange={handleProfileChange}
+                placeholder="12345"
+                maxLength="10"
+              />
             </div>
 
             <div className="form-message" role="status" aria-live="polite" aria-atomic="true">{profileMessage || ''}</div>
