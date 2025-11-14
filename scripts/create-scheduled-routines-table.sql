@@ -11,13 +11,16 @@
  * - Allows notifications and reminders
  */
 
+-- Drop table if it exists (clean slate)
+DROP TABLE IF EXISTS scheduled_routines CASCADE;
+
 -- Create scheduled_routines table
-CREATE TABLE IF NOT EXISTS scheduled_routines (
+CREATE TABLE scheduled_routines (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   routine_id UUID NOT NULL REFERENCES workout_routines(id) ON DELETE CASCADE,
   scheduled_date DATE NOT NULL,
-  completed BOOLEAN DEFAULT FALSE,
+  is_completed BOOLEAN DEFAULT FALSE,
   completed_at TIMESTAMPTZ,
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -101,7 +104,7 @@ COMMENT ON TABLE scheduled_routines IS 'Weekly workout schedules created by trai
 COMMENT ON COLUMN scheduled_routines.user_id IS 'Client who will perform this workout';
 COMMENT ON COLUMN scheduled_routines.routine_id IS 'Workout routine to be performed';
 COMMENT ON COLUMN scheduled_routines.scheduled_date IS 'Date this routine is scheduled for';
-COMMENT ON COLUMN scheduled_routines.completed IS 'Whether client has completed this session';
+COMMENT ON COLUMN scheduled_routines.is_completed IS 'Whether client has completed this session';
 COMMENT ON COLUMN scheduled_routines.completed_at IS 'Timestamp when session was marked complete';
 COMMENT ON COLUMN scheduled_routines.notes IS 'Optional notes from trainer or client';
 
