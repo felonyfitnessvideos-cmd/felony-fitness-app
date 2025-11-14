@@ -163,6 +163,12 @@ const ClientOnboarding = () => {
         .limit(1)
         .single();
 
+      // Convert height_cm back to inches for the form
+      let heightInInches = '';
+      if (profile.height_cm) {
+        heightInInches = Math.round(profile.height_cm / 2.54).toString();
+      }
+
       // Auto-fill form with existing data
       setFormData(prev => ({
         ...prev,
@@ -176,7 +182,7 @@ const ClientOnboarding = () => {
         city: profile.city || '',
         state: profile.state || '',
         zipCode: profile.zip_code || '',
-        height: profile.height_cm ? profile.height_cm.toString() : '',
+        height: heightInInches,
         weight: profile.current_weight_lbs ? profile.current_weight_lbs.toString() : (metrics?.weight_lbs ? metrics.weight_lbs.toString() : ''),
         bodyFatPercentage: metrics?.body_fat_percentage ? metrics.body_fat_percentage.toString() : ''
       }));
