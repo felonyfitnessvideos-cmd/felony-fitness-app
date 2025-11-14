@@ -154,6 +154,15 @@ const ClientOnboarding = () => {
         return;
       }
 
+      // Query body_metrics for most recent body fat percentage
+      const { data: metrics } = await supabase
+        .from('body_metrics')
+        .select('body_fat_percentage, weight_lbs')
+        .eq('user_id', clientUuid.trim())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
       // Auto-fill form with existing data
       setFormData(prev => ({
         ...prev,
@@ -162,13 +171,14 @@ const ClientOnboarding = () => {
         email: profile.email || '',
         phone: profile.phone || '',
         dateOfBirth: profile.date_of_birth || '',
-        gender: profile.gender || '',
+        gender: profile.sex || '',
         address: profile.address || '',
         city: profile.city || '',
         state: profile.state || '',
         zipCode: profile.zip_code || '',
-        height: profile.height || '',
-        weight: profile.weight || ''
+        height: profile.height_cm ? profile.height_cm.toString() : '',
+        weight: profile.current_weight_lbs ? profile.current_weight_lbs.toString() : (metrics?.weight_lbs ? metrics.weight_lbs.toString() : ''),
+        bodyFatPercentage: metrics?.body_fat_percentage ? metrics.body_fat_percentage.toString() : ''
       }));
 
       // Create user display name

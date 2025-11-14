@@ -841,6 +841,7 @@ export type Database = {
       programs: {
         Row: {
           created_at: string | null
+          created_by: string | null
           description: string | null
           difficulty_level: string | null
           estimated_weeks: number | null
@@ -848,13 +849,15 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_template: boolean | null
-          name: string
+          name: string | null
           program_type: string | null
+          target_muscle_groups: string[] | null
           trainer_id: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           difficulty_level?: string | null
           estimated_weeks?: number | null
@@ -862,13 +865,15 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_template?: boolean | null
-          name: string
+          name?: string | null
           program_type?: string | null
+          target_muscle_groups?: string[] | null
           trainer_id?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           difficulty_level?: string | null
           estimated_weeks?: number | null
@@ -876,8 +881,9 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_template?: boolean | null
-          name?: string
+          name?: string | null
           program_type?: string | null
+          target_muscle_groups?: string[] | null
           trainer_id?: string | null
           updated_at?: string | null
         }
@@ -895,6 +901,8 @@ export type Database = {
           rest_seconds: number | null
           routine_id: string | null
           sets: number | null
+          target_intensity_pct: number | null
+          target_reps: string | null
           target_sets: number
           weight_kg: number | null
         }
@@ -909,6 +917,8 @@ export type Database = {
           rest_seconds?: number | null
           routine_id?: string | null
           sets?: number | null
+          target_intensity_pct?: number | null
+          target_reps?: string | null
           target_sets?: number
           weight_kg?: number | null
         }
@@ -923,6 +933,8 @@ export type Database = {
           rest_seconds?: number | null
           routine_id?: string | null
           sets?: number | null
+          target_intensity_pct?: number | null
+          target_reps?: string | null
           target_sets?: number
           weight_kg?: number | null
         }
@@ -945,48 +957,24 @@ export type Database = {
       }
       scheduled_routines: {
         Row: {
-          client_id: string | null
           created_at: string | null
-          deep_link_url: string | null
-          google_event_id: string | null
           id: string
-          reminder_sent: boolean | null
           routine_id: string | null
           scheduled_date: string | null
-          source_program_id: string | null
-          status: string | null
-          trainer_client_id: string | null
-          trainer_id: string | null
           user_id: string | null
         }
         Insert: {
-          client_id?: string | null
           created_at?: string | null
-          deep_link_url?: string | null
-          google_event_id?: string | null
           id?: string
-          reminder_sent?: boolean | null
           routine_id?: string | null
           scheduled_date?: string | null
-          source_program_id?: string | null
-          status?: string | null
-          trainer_client_id?: string | null
-          trainer_id?: string | null
           user_id?: string | null
         }
         Update: {
-          client_id?: string | null
           created_at?: string | null
-          deep_link_url?: string | null
-          google_event_id?: string | null
           id?: string
-          reminder_sent?: boolean | null
           routine_id?: string | null
           scheduled_date?: string | null
-          source_program_id?: string | null
-          status?: string | null
-          trainer_client_id?: string | null
-          trainer_id?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -995,20 +983,6 @@ export type Database = {
             columns: ["routine_id"]
             isOneToOne: false
             referencedRelation: "workout_routines"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scheduled_routines_source_program_id_fkey"
-            columns: ["source_program_id"]
-            isOneToOne: false
-            referencedRelation: "programs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scheduled_routines_trainer_client_id_fkey"
-            columns: ["trainer_client_id"]
-            isOneToOne: false
-            referencedRelation: "trainer_clients"
             referencedColumns: ["id"]
           },
         ]
@@ -1039,73 +1013,36 @@ export type Database = {
       }
       trainer_clients: {
         Row: {
-          assigned_program_id: string | null
           client_id: string | null
           created_at: string | null
-          current_week: number | null
-          generated_routine_ids: string[] | null
+          full_name: string | null
           id: string
-          last_workout_date: string | null
           notes: string | null
-          program_end_date: string | null
-          program_notes: string | null
-          program_start_date: string | null
-          program_status: string | null
-          progress_percentage: number | null
           status: string | null
-          total_workouts_completed: number | null
           trainer_id: string | null
           updated_at: string | null
-          weekly_frequency: number | null
         }
         Insert: {
-          assigned_program_id?: string | null
           client_id?: string | null
           created_at?: string | null
-          current_week?: number | null
-          generated_routine_ids?: string[] | null
+          full_name?: string | null
           id?: string
-          last_workout_date?: string | null
           notes?: string | null
-          program_end_date?: string | null
-          program_notes?: string | null
-          program_start_date?: string | null
-          program_status?: string | null
-          progress_percentage?: number | null
           status?: string | null
-          total_workouts_completed?: number | null
           trainer_id?: string | null
           updated_at?: string | null
-          weekly_frequency?: number | null
         }
         Update: {
-          assigned_program_id?: string | null
           client_id?: string | null
           created_at?: string | null
-          current_week?: number | null
-          generated_routine_ids?: string[] | null
+          full_name?: string | null
           id?: string
-          last_workout_date?: string | null
           notes?: string | null
-          program_end_date?: string | null
-          program_notes?: string | null
-          program_start_date?: string | null
-          program_status?: string | null
-          progress_percentage?: number | null
           status?: string | null
-          total_workouts_completed?: number | null
           trainer_id?: string | null
           updated_at?: string | null
-          weekly_frequency?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "trainer_clients_assigned_program_id_fkey"
-            columns: ["assigned_program_id"]
-            isOneToOne: false
-            referencedRelation: "programs"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "trainer_clients_client_id_fkey"
             columns: ["client_id"]
@@ -1122,40 +1059,107 @@ export type Database = {
           },
         ]
       }
-      user_meals: {
+      user_meal_foods: {
         Row: {
           created_at: string | null
-          custom_name: string | null
+          food_servings_id: string | null
           id: string
-          is_favorite: boolean | null
-          meal_id: string | null
-          user_id: string | null
+          notes: string | null
+          quantity: number
+          user_meal_id: string
         }
         Insert: {
           created_at?: string | null
-          custom_name?: string | null
+          food_servings_id?: string | null
           id?: string
-          is_favorite?: boolean | null
-          meal_id?: string | null
-          user_id?: string | null
+          notes?: string | null
+          quantity?: number
+          user_meal_id: string
         }
         Update: {
           created_at?: string | null
-          custom_name?: string | null
+          food_servings_id?: string | null
           id?: string
-          is_favorite?: boolean | null
-          meal_id?: string | null
-          user_id?: string | null
+          notes?: string | null
+          quantity?: number
+          user_meal_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "user_meals_meal_id_fkey"
-            columns: ["meal_id"]
+            foreignKeyName: "user_meal_foods_food_servings_id_fkey"
+            columns: ["food_servings_id"]
             isOneToOne: false
-            referencedRelation: "meals"
+            referencedRelation: "food_servings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_meal_foods_user_meal_id_fkey"
+            columns: ["user_meal_id"]
+            isOneToOne: false
+            referencedRelation: "user_meals"
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_meals: {
+        Row: {
+          category: string | null
+          cook_time_minutes: number | null
+          created_at: string | null
+          custom_name: string | null
+          description: string | null
+          difficulty_level: number | null
+          id: string
+          image_url: string | null
+          instructions: string | null
+          is_favorite: boolean | null
+          meal_id: string | null
+          name: string
+          prep_time_minutes: number | null
+          serving_size: number | null
+          tags: string[] | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          cook_time_minutes?: number | null
+          created_at?: string | null
+          custom_name?: string | null
+          description?: string | null
+          difficulty_level?: number | null
+          id?: string
+          image_url?: string | null
+          instructions?: string | null
+          is_favorite?: boolean | null
+          meal_id?: string | null
+          name?: string
+          prep_time_minutes?: number | null
+          serving_size?: number | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          cook_time_minutes?: number | null
+          created_at?: string | null
+          custom_name?: string | null
+          description?: string | null
+          difficulty_level?: number | null
+          id?: string
+          image_url?: string | null
+          instructions?: string | null
+          is_favorite?: boolean | null
+          meal_id?: string | null
+          name?: string
+          prep_time_minutes?: number | null
+          serving_size?: number | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       user_profiles: {
         Row: {
@@ -1589,10 +1593,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      calculate_program_end_date: {
-        Args: { p_estimated_weeks: number; p_start_date: string }
-        Returns: string
-      }
       get_conversations: {
         Args: never
         Returns: {
