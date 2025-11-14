@@ -34,7 +34,7 @@
  * <Link to="/profile">View Profile</Link>
  */
 
-import { Calendar, Edit2 as EditIcon, HeartPulse, MapPin, Percent, Phone, User, Weight, X } from 'lucide-react';
+import { Calendar, Edit2 as EditIcon, HeartPulse, MapPin, Phone, User, X } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import Modal from 'react-modal';
 import { Link } from 'react-router-dom';
@@ -1253,10 +1253,7 @@ function ProfilePage() {
         <h2>Log Today's Measurements</h2>
         <div className="form-group">
           <label htmlFor="weight">Weight (lbs)</label>
-          <div className="input-with-icon">
-            <Weight size={18} />
-            <input id="weight" type="number" placeholder="e.g., 185.5" value={weight} onChange={(e) => setWeight(e.target.value)} step="0.1" />
-          </div>
+          <input id="weight" type="number" placeholder="e.g., 185.5" value={weight} onChange={(e) => setWeight(e.target.value)} step="0.1" />
         </div>
         <div className="form-group">
           <div className="label-with-link">
@@ -1265,10 +1262,7 @@ function ProfilePage() {
               How can I tell?
             </button>
           </div>
-          <div className="input-with-icon">
-            <Percent size={18} />
-            <input id="bodyFat" type="number" placeholder="e.g., 15.2" value={bodyFat} onChange={(e) => setBodyFat(e.target.value)} step="0.1" />
-          </div>
+          <input id="bodyFat" type="number" placeholder="e.g., 15.2" value={bodyFat} onChange={(e) => setBodyFat(e.target.value)} step="0.1" />
         </div>
         {/* Live region for metric save messages */}
         <div className="form-message" role="status" aria-live="polite" aria-atomic="true">{message || ''}</div>
