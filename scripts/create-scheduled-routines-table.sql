@@ -20,9 +20,18 @@ CREATE TABLE scheduled_routines (
   user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   routine_id UUID NOT NULL REFERENCES workout_routines(id) ON DELETE CASCADE,
   scheduled_date DATE NOT NULL,
+  scheduled_time TIME DEFAULT '08:00:00',
+  duration_minutes INTEGER DEFAULT 60,
   is_completed BOOLEAN DEFAULT FALSE,
   completed_at TIMESTAMPTZ,
   notes TEXT,
+  -- Google Calendar integration fields
+  google_event_id TEXT,
+  client_email TEXT,
+  recurrence_rule TEXT, -- RRULE format (e.g., 'FREQ=WEEKLY;COUNT=12')
+  recurrence_end_date DATE,
+  is_recurring BOOLEAN DEFAULT FALSE,
+  -- Metadata
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -104,9 +113,16 @@ COMMENT ON TABLE scheduled_routines IS 'Weekly workout schedules created by trai
 COMMENT ON COLUMN scheduled_routines.user_id IS 'Client who will perform this workout';
 COMMENT ON COLUMN scheduled_routines.routine_id IS 'Workout routine to be performed';
 COMMENT ON COLUMN scheduled_routines.scheduled_date IS 'Date this routine is scheduled for';
+COMMENT ON COLUMN scheduled_routines.scheduled_time IS 'Time of day for the workout (default 8:00 AM)';
+COMMENT ON COLUMN scheduled_routines.duration_minutes IS 'Expected duration in minutes (default 60)';
 COMMENT ON COLUMN scheduled_routines.is_completed IS 'Whether client has completed this session';
 COMMENT ON COLUMN scheduled_routines.completed_at IS 'Timestamp when session was marked complete';
 COMMENT ON COLUMN scheduled_routines.notes IS 'Optional notes from trainer or client';
+COMMENT ON COLUMN scheduled_routines.google_event_id IS 'Google Calendar event ID for syncing';
+COMMENT ON COLUMN scheduled_routines.client_email IS 'Client email for calendar invitations';
+COMMENT ON COLUMN scheduled_routines.recurrence_rule IS 'iCalendar RRULE format for recurring events';
+COMMENT ON COLUMN scheduled_routines.recurrence_end_date IS 'End date for recurring series';
+COMMENT ON COLUMN scheduled_routines.is_recurring IS 'Whether this is a recurring event';
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_scheduled_routines_updated_at()
