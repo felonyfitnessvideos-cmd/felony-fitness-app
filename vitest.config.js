@@ -39,14 +39,8 @@ export default defineConfig({
     // Global variables available in tests
     globals: true,
 
-    // Pool configuration to prevent timeouts
+    // Pool configuration for parallel test execution
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        singleThread: true,
-        isolate: true
-      }
-    },
 
     // Coverage configuration
     coverage: {
@@ -67,6 +61,7 @@ export default defineConfig({
       ],
       thresholds: {
         global: {
+          // TODO: Incrementally improve coverage back to 80%+ (tracking issue needed)
           branches: 60,
           functions: 60,
           lines: 60,
@@ -76,9 +71,9 @@ export default defineConfig({
       all: true
     },
 
-    // Test timeout configuration (increased for slower CI environments)
-    testTimeout: 30000,
-    hookTimeout: 30000,
+    // Test timeout configuration
+    testTimeout: 5000,
+    hookTimeout: 10000,
 
     // Reporters for test output
     reporter: ['verbose', 'json'],
