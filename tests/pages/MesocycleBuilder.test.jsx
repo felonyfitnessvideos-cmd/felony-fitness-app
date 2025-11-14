@@ -95,10 +95,10 @@ describe('MesocycleBuilder', () => {
         it('should render the mesocycle builder form', () => {
             renderComponent();
 
-            expect(screen.getByText(/Create Mesocycle|Edit Mesocycle/)).toBeInTheDocument();
-            expect(screen.getByLabelText(/Mesocycle Name/i)).toBeInTheDocument();
-            expect(screen.getByLabelText(/Training Focus/i)).toBeInTheDocument();
-            expect(screen.getByLabelText(/Number of Weeks/i)).toBeInTheDocument();
+            expect(screen.getByText(/New Mesocycle|Edit Mesocycle/)).toBeInTheDocument();
+            expect(screen.getByLabelText(/^Name$/i)).toBeInTheDocument();
+            expect(screen.getByLabelText(/^Focus$/i)).toBeInTheDocument();
+            expect(screen.getByLabelText(/^Weeks$/i)).toBeInTheDocument();
         });
 
         it('should render CycleWeekEditor component', () => {
@@ -110,7 +110,7 @@ describe('MesocycleBuilder', () => {
         it('should show Create title when not editing', () => {
             renderComponent();
 
-            expect(screen.getByText('Create Mesocycle')).toBeInTheDocument();
+            expect(screen.getByText('New Mesocycle')).toBeInTheDocument();
         });
     });
 
@@ -119,7 +119,7 @@ describe('MesocycleBuilder', () => {
             const user = userEvent.setup();
             renderComponent();
 
-            const nameInput = screen.getByLabelText(/Mesocycle Name/i);
+            const nameInput = screen.getByLabelText(/^Name$/i);
             await user.type(nameInput, 'Summer Shred');
 
             expect(nameInput.value).toBe('Summer Shred');
@@ -129,7 +129,7 @@ describe('MesocycleBuilder', () => {
             const user = userEvent.setup();
             renderComponent();
 
-            const focusSelect = screen.getByLabelText(/Training Focus/i);
+            const focusSelect = screen.getByLabelText(/^Focus$/i);
             await user.selectOptions(focusSelect, 'Strength');
 
             expect(focusSelect.value).toBe('Strength');
@@ -139,7 +139,7 @@ describe('MesocycleBuilder', () => {
             const user = userEvent.setup();
             renderComponent();
 
-            const weeksInput = screen.getByLabelText(/Number of Weeks/i);
+            const weeksInput = screen.getByLabelText(/^Weeks$/i);
             await user.clear(weeksInput);
             await user.type(weeksInput, '8');
 
@@ -175,10 +175,10 @@ describe('MesocycleBuilder', () => {
             const user = userEvent.setup();
             renderComponent();
 
-            const nameInput = screen.getByLabelText(/Mesocycle Name/i);
+            const nameInput = screen.getByLabelText(/^Name$/i);
             await user.type(nameInput, 'Test Cycle');
 
-            const weeksInput = screen.getByLabelText(/Number of Weeks/i);
+            const weeksInput = screen.getByLabelText(/^Weeks$/i);
             await user.clear(weeksInput);
             await user.type(weeksInput, '0');
 
@@ -201,13 +201,13 @@ describe('MesocycleBuilder', () => {
 
             renderComponent();
 
-            const nameInput = screen.getByLabelText(/Mesocycle Name/i);
+            const nameInput = screen.getByLabelText(/^Name$/i);
             await user.type(nameInput, 'Bulk Phase');
 
-            const focusSelect = screen.getByLabelText(/Training Focus/i);
+            const focusSelect = screen.getByLabelText(/^Focus$/i);
             await user.selectOptions(focusSelect, 'Hypertrophy');
 
-            const weeksInput = screen.getByLabelText(/Number of Weeks/i);
+            const weeksInput = screen.getByLabelText(/^Weeks$/i);
             await user.clear(weeksInput);
             await user.type(weeksInput, '12');
 
@@ -251,10 +251,10 @@ describe('MesocycleBuilder', () => {
                 expect(screen.getByDisplayValue('Existing Cycle')).toBeInTheDocument();
             });
 
-            const focusSelect = screen.getByLabelText(/Training Focus/i);
+            const focusSelect = screen.getByLabelText(/^Focus$/i);
             expect(focusSelect.value).toBe('Strength');
 
-            const weeksInput = screen.getByLabelText(/Number of Weeks/i);
+            const weeksInput = screen.getByLabelText(/^Weeks$/i);
             expect(weeksInput.value).toBe('6');
         });
 
@@ -279,7 +279,7 @@ describe('MesocycleBuilder', () => {
                 expect(screen.getByDisplayValue('Existing Cycle')).toBeInTheDocument();
             });
 
-            const nameInput = screen.getByLabelText(/Mesocycle Name/i);
+            const nameInput = screen.getByLabelText(/^Name$/i);
             await user.clear(nameInput);
             await user.type(nameInput, 'Updated Cycle');
 
@@ -324,7 +324,7 @@ describe('MesocycleBuilder', () => {
 
             renderComponent();
 
-            const nameInput = screen.getByLabelText(/Mesocycle Name/i);
+            const nameInput = screen.getByLabelText(/^Name$/i);
             await user.type(nameInput, 'Test Cycle');
 
             const saveButton = screen.getByText(/Save/i);
@@ -346,7 +346,7 @@ describe('MesocycleBuilder', () => {
 
             renderComponent();
 
-            const nameInput = screen.getByLabelText(/Mesocycle Name/i);
+            const nameInput = screen.getByLabelText(/^Name$/i);
             await user.type(nameInput, 'Test Cycle');
 
             const saveButton = screen.getByText(/Save/i);
@@ -372,7 +372,7 @@ describe('MesocycleBuilder', () => {
 
             renderComponent();
 
-            const nameInput = screen.getByLabelText(/Mesocycle Name/i);
+            const nameInput = screen.getByLabelText(/^Name$/i);
             await user.type(nameInput, 'Test Cycle');
 
             const saveButton = screen.getByText(/Save/i);
@@ -411,7 +411,7 @@ describe('MesocycleBuilder', () => {
 
             renderComponent();
 
-            const nameInput = screen.getByLabelText(/Mesocycle Name/i);
+            const nameInput = screen.getByLabelText(/^Name$/i);
             await user.type(nameInput, 'Test Cycle');
 
             const saveButton = screen.getByText(/Save/i);
