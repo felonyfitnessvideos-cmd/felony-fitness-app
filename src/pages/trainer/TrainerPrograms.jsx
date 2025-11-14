@@ -1107,12 +1107,17 @@ const ProgramLibrary = () => {
 
       try {
         // Insert routine_exercises if any exist
+        // NOTE: This requires RLS policy to allow trainers to insert exercises for client routines
+        // Policy needed: Allow INSERT on routine_exercises where routine_id's user_id is in trainer_clients
         if (routineExercises.length > 0) {
           const { error: exercisesError } = await supabase
             .from('routine_exercises')
             .insert(routineExercises);
 
-          if (exercisesError) throw exercisesError;
+          if (exercisesError) {
+            console.error('RLS Error inserting routine_exercises:', exercisesError);
+            throw new Error(`Unable to add exercises to routines. This may be a permissions issue. Error: ${exercisesError.message}`);
+          }
         }
 
         // Update trainer_clients with the routine IDs
