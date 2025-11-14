@@ -787,6 +787,8 @@
 
 .time-column .time-slot {
   height: 50px;
+  min-height: 50px;
+  max-height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -794,6 +796,8 @@
   color: var(--text-secondary);
   border-bottom: 1px solid var(--border-color);
   background: var(--background-color);
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .days-grid {
@@ -891,10 +895,15 @@
 
 .day-slots .time-slot {
   height: 50px;
+  min-height: 50px;
+  max-height: 50px;
   border-bottom: 1px solid var(--border-color);
   position: relative;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  overflow: visible;
 }
 
 .day-slots .time-slot:hover {
