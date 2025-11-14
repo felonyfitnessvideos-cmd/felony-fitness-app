@@ -197,10 +197,10 @@
   text-overflow: ellipsis;
 }
 
-/* Weekly Grid - 7 day boxes */
+/* Weekly Grid - 5 day boxes (Mon-Fri) */
 .weekly-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 0.4rem;
   position: relative;
 }
@@ -353,7 +353,7 @@
   }
 
   .weekly-grid {
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(5, 1fr);
   }
 }
 
@@ -369,6 +369,6 @@
   }
 
   .weekly-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 }

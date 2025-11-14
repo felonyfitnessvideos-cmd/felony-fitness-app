@@ -25,7 +25,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient.js';
 import './SmartScheduling.css';
 
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 /**
  * SmartScheduling component for client program scheduling
@@ -279,8 +279,8 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
           onClick={handleSaveToCalendar}
           disabled={isSaving || scheduledCount === 0}
         >
-          {isSaving ? <Clock size={14} className="spinner" /> : <Save size={14} />}
-          {isSaving ? 'Saving...' : 'Save'}
+          {isSaving ? <Clock size={14} className="spinner" /> : <Calendar size={14} />}
+          {isSaving ? 'Adding...' : 'Add to Calendar'}
         </button>
       </div>
 
