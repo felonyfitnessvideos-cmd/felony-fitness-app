@@ -31,7 +31,7 @@ export const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
  * 
  * @example
  * formatMealType('breakfast'); // Returns "Breakfast"
- * formatMealType('snack1'); // Returns "Snack 1"
+ * formatMealType('snack1'); // Returns "Snack"
  * formatMealType('invalid'); // Returns "invalid" (fallback)
  * 
  * @see {@link normalizeMealType} - Reverse operation (Title Case → lowercase)
@@ -42,7 +42,7 @@ export const formatMealType = (mealType) => {
     breakfast: 'Breakfast',
     lunch: 'Lunch',
     dinner: 'Dinner',
-    snack1: 'Snack 1',
+    snack1: 'Snack',
     snack2: 'Snack 2',
     snack: 'Snack' // For backward compatibility
   };
