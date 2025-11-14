@@ -8,13 +8,27 @@
     "build": "vite build",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --cache",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:run": "vitest run",
     "test:coverage": "vitest --coverage",
     "test:ci": "vitest run --coverage",
     "preview": "vite preview",
+    "prepare": "husky",
+    "precommit": "lint-staged",
     "seed:foods": "node scripts/bulk-food-import.js",
     "seed:foods:quick": "node scripts/direct-food-seeder.js",
     "seed:foods:test": "node scripts/bulk-food-import.js --categories Proteins --max-per-category 5"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "vitest related --run"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -43,7 +57,9 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.4.0",
+    "husky": "^9.1.7",
     "jsdom": "^27.0.1",
+    "lint-staged": "^16.2.6",
     "rollup-plugin-visualizer": "^5.14.0",
     "supabase": "^2.51.0",
     "typescript": "^5.9.3",
