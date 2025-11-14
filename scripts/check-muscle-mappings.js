@@ -56,7 +56,7 @@ async function checkMuscleMappings() {
   }
 
   // Check if programs need the new columns
-  const { data: programs, error: progError } = await supabase
+  const { data: _programs, error: progError } = await supabase
     .from('programs')
     .select('id, name')
     .limit(1);

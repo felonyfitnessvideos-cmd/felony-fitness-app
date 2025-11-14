@@ -13,6 +13,88 @@ import { cleanup } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 
 /**
+ * Mock lucide-react icons globally to prevent import errors
+ * This must be at the top level for proper hoisting
+ */
+vi.mock('lucide-react', async () => {
+  const actual = await vi.importActual('lucide-react');
+  const mockIcon = (props) => <svg data-lucide {...props} />;
+  
+  // Create mock for all common icons used in the app
+  return {
+    ...actual,
+    // Common icons
+    User: mockIcon,
+    Mail: mockIcon,
+    Lock: mockIcon,
+    Eye: mockIcon,
+    EyeOff: mockIcon,
+    ChevronLeft: mockIcon,
+    ChevronRight: mockIcon,
+    Plus: mockIcon,
+    Minus: mockIcon,
+    Edit: mockIcon,
+    Edit2: mockIcon,
+    Trash: mockIcon,
+    Trash2: mockIcon,
+    Save: mockIcon,
+    X: mockIcon,
+    Check: mockIcon,
+    Search: mockIcon,
+    Calendar: mockIcon,
+    Clock: mockIcon,
+    Dumbbell: mockIcon,
+    TrendingUp: mockIcon,
+    TrendingDown: mockIcon,
+    Settings: mockIcon,
+    LogOut: mockIcon,
+    Home: mockIcon,
+    Menu: mockIcon,
+    MoreVertical: mockIcon,
+    Info: mockIcon,
+    AlertCircle: mockIcon,
+    CheckCircle: mockIcon,
+    XCircle: mockIcon,
+    ArrowLeft: mockIcon,
+    ArrowRight: mockIcon,
+    Upload: mockIcon,
+    Download: mockIcon,
+    Copy: mockIcon,
+    ExternalLink: mockIcon,
+    Loader: mockIcon,
+    RefreshCw: mockIcon,
+    Filter: mockIcon,
+    SortAsc: mockIcon,
+    SortDesc: mockIcon,
+    Star: mockIcon,
+    Heart: mockIcon,
+    HeartPulse: mockIcon,
+    MessageCircle: mockIcon,
+    Bell: mockIcon,
+    Phone: mockIcon,
+    MapPin: mockIcon,
+    Camera: mockIcon,
+    Image: mockIcon,
+    File: mockIcon,
+    Folder: mockIcon,
+    Printer: mockIcon,
+    Share: mockIcon,
+    Send: mockIcon,
+    Archive: mockIcon,
+    BookOpen: mockIcon,
+    Award: mockIcon,
+    Target: mockIcon,
+    Activity: mockIcon,
+    BarChart: mockIcon,
+    PieChart: mockIcon,
+    Zap: mockIcon,
+    Flame: mockIcon,
+    Weight: mockIcon,
+    Percent: mockIcon
+  };
+});
+
+/**
  * Global setup before all tests
  * Configures environment and global mocks
  */

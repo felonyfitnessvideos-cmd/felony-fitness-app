@@ -49,6 +49,7 @@ OldFiles/
 *.lcov
 test-results/
 playwright-report/
+tests/reports/
 
 # Database migrations (generated locally)
 supabase/migrations/
