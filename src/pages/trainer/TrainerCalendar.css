@@ -906,29 +906,75 @@
 }
 
 .event-block {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  right: 2px;
-  bottom: 2px;
+  position: relative;
   background: var(--primary-color);
   color: white;
   border-radius: 4px;
-  padding: 0.25rem;
+  padding: 0.35rem;
   font-size: 0.75rem;
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.2s ease;
+  margin-bottom: 0.25rem;
+}
+
+.event-block:last-child {
+  margin-bottom: 0;
 }
 
 .event-block:hover {
   transform: scale(1.02);
 }
 
+/* Scheduled routine events - distinct styling */
+.event-block.routine-event {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-left: 3px solid #48bb78;
+}
+
+/* Google Calendar events */
+.event-block.calendar-event {
+  background: var(--primary-color);
+  border-left: 3px solid #667eea;
+}
+
+/* Completed routines */
+.event-block.completed {
+  opacity: 0.6;
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+}
+
+.event-block.completed::after {
+  content: '✓';
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+/* Multiple events in one slot */
+.time-slot.multiple-events {
+  padding: 0.25rem;
+  overflow-y: auto;
+}
+
 .event-title {
   font-weight: 600;
   line-height: 1.2;
   margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-description {
+  font-size: 0.65rem;
+  opacity: 0.9;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .event-time {

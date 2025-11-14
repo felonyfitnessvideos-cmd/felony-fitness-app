@@ -23,6 +23,8 @@
 
 import { AlertCircle, Calendar, CheckCircle, RefreshCw } from 'lucide-react';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAuth } from '../../AuthContext';
+import { supabase } from '../../supabaseClient';
 import useGoogleCalendar from '../../hooks/useGoogleCalendar.jsx';
 import './TrainerCalendar.css';
 
@@ -85,6 +87,9 @@ const TrainerCalendar = memo(() => {
   /** @type {[Array, Function]} Events converted from Google Calendar */
   const [localEvents, setLocalEvents] = useState([]);
 
+  /** @type {[Array, Function]} Scheduled workout routines from database */
+  const [scheduledRoutines, setScheduledRoutines] = useState([]);
+
   /** @type {[Date, Function]} Current week being displayed */
   const [currentWeek, setCurrentWeek] = useState(new Date());
 
@@ -101,6 +106,9 @@ const TrainerCalendar = memo(() => {
 
   /** @type {React.MutableRefObject<HTMLDivElement|null>} Reference to headers scroll container */
   const headersScrollRef = useRef(null);
+
+  // Auth context
+  const { user } = useAuth();
 
   // Google Calendar integration
   const {
@@ -176,6 +184,59 @@ const TrainerCalendar = memo(() => {
   }, [currentWeek, weeksToShow, getWeekDates]);
 
   /**
+   * @function loadScheduledRoutines
+   * @description Fetches scheduled workout routines from database for the displayed weeks
+   * 
+   * @returns {Promise<void>}
+   */
+  const loadScheduledRoutines = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      console.log('📅 Loading scheduled routines for trainer:', user.id);
+
+      // Get date range for all displayed weeks
+      const allDates = getAllWeekDates();
+      const startDate = allDates[0].toISOString().split('T')[0];
+      const endDate = allDates[allDates.length - 1].toISOString().split('T')[0];
+
+      console.log('📅 Date range:', { startDate, endDate });
+
+      // Fetch scheduled routines for trainer's clients
+      const { data, error } = await supabase
+        .from('scheduled_routines')
+        .select(`
+          id,
+          scheduled_date,
+          is_completed,
+          user_id,
+          routine_id,
+          workout_routines (
+            id,
+            routine_name
+          ),
+          user_profiles (
+            id,
+            full_name
+          )
+        `)
+        .gte('scheduled_date', startDate)
+        .lte('scheduled_date', endDate)
+        .order('scheduled_date', { ascending: true });
+
+      if (error) {
+        console.error('❌ Error loading scheduled routines:', error);
+        return;
+      }
+
+      console.log(`✅ Loaded ${data?.length || 0} scheduled routines`);
+      setScheduledRoutines(data || []);
+    } catch (error) {
+      console.error('❌ Error in loadScheduledRoutines:', error);
+    }
+  }, [user?.id, getAllWeekDates]);
+
+  /**
    * @function handleContentScroll
    * @description Synchronizes horizontal scroll between headers and content
    * 
@@ -207,6 +268,13 @@ const TrainerCalendar = memo(() => {
     // getWeekDates is stable from useCallback
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, currentWeek, loadEvents]);
+
+  // Load scheduled routines when user or week changes
+  useEffect(() => {
+    if (user?.id) {
+      loadScheduledRoutines();
+    }
+  }, [user?.id, currentWeek, loadScheduledRoutines]);
 
   // Convert Google Calendar events to appointment format
   useEffect(() => {
@@ -461,21 +529,15 @@ const TrainerCalendar = memo(() => {
   }, []);
 
   /**
-   * Find event for specific time slot
+   * Find event for specific time slot (Google Calendar + Scheduled Routines)
    * 
    * @function getEventForTimeSlot
-   * @description Finds the Google Calendar event that occurs in the specified time slot.
-   * Handles both timed events and all-day events with comprehensive error handling.
+   * @description Finds events from both Google Calendar and scheduled routines database.
+   * Scheduled routines appear as all-day events at 8 AM slot.
    * 
    * @param {Date} date - The date to check
    * @param {number} hour - The hour to check (0-23)
-   * @returns {Object|null} The event object if found, null otherwise
-   * 
-   * @example
-   * const event = getEventForTimeSlot(new Date(), 14);
-   * if (event) {
-   *   console.log('Event found:', event.summary);
-   * }
+   * @returns {Object|Array|null} The event object, array of events, or null
    */
   const getEventForTimeSlot = useCallback((date, hour) => {
     try {
@@ -489,51 +551,82 @@ const TrainerCalendar = memo(() => {
         return null;
       }
 
-      if (!events || !Array.isArray(events)) {
-        return null;
+      const dateStr = date.toISOString().split('T')[0];
+      const eventsForSlot = [];
+
+      // Check scheduled routines (show at 8 AM)
+      if (hour === 8) {
+        const routinesForDate = scheduledRoutines.filter(routine => 
+          routine.scheduled_date === dateStr
+        );
+        
+        if (routinesForDate.length > 0) {
+          routinesForDate.forEach(routine => {
+            eventsForSlot.push({
+              id: `routine-${routine.id}`,
+              summary: `💪 ${routine.workout_routines?.routine_name || 'Workout'}`,
+              description: `Client: ${routine.user_profiles?.full_name || 'Unknown'}`,
+              start: { dateTime: null, date: dateStr },
+              source: 'scheduled_routine',
+              isCompleted: routine.is_completed,
+              clientName: routine.user_profiles?.full_name
+            });
+          });
+        }
       }
 
-      return events.find(event => {
-        try {
-          if (!event || (!event.start?.dateTime && !event.start?.date)) {
+      // Check Google Calendar events
+      if (events && Array.isArray(events)) {
+        const googleEvent = events.find(event => {
+          try {
+            if (!event || (!event.start?.dateTime && !event.start?.date)) {
+              return false;
+            }
+
+            let eventStart;
+            if (event.start.dateTime) {
+              // Timed event
+              eventStart = new Date(event.start.dateTime);
+              if (isNaN(eventStart.getTime())) {
+                return false;
+              }
+
+              const eventDate = eventStart.toDateString();
+              const eventHour = eventStart.getHours();
+              return eventDate === date.toDateString() && eventHour === hour;
+            } else if (event.start.date) {
+              // All-day event - show in 8 AM slot
+              eventStart = new Date(event.start.date);
+              if (isNaN(eventStart.getTime())) {
+                return false;
+              }
+
+              const eventDate = eventStart.toDateString();
+              return eventDate === date.toDateString() && hour === 8;
+            }
+
+            return false;
+          } catch (error) {
+            console.error('❌ Error processing event in time slot check:', error);
             return false;
           }
+        });
 
-          let eventStart;
-          if (event.start.dateTime) {
-            // Timed event
-            eventStart = new Date(event.start.dateTime);
-            if (isNaN(eventStart.getTime())) {
-              console.warn('⚠️ Invalid event start time:', event.start.dateTime);
-              return false;
-            }
-
-            const eventDate = eventStart.toDateString();
-            const eventHour = eventStart.getHours();
-            return eventDate === date.toDateString() && eventHour === hour;
-          } else if (event.start.date) {
-            // All-day event - show in first hour slot (midnight)
-            eventStart = new Date(event.start.date);
-            if (isNaN(eventStart.getTime())) {
-              console.warn('⚠️ Invalid event start date:', event.start.date);
-              return false;
-            }
-
-            const eventDate = eventStart.toDateString();
-            return eventDate === date.toDateString() && hour === 0;
-          }
-
-          return false;
-        } catch (error) {
-          console.error('❌ Error processing event in time slot check:', error);
-          return false;
+        if (googleEvent) {
+          eventsForSlot.push(googleEvent);
         }
-      });
+      }
+
+      // Return single event or array
+      if (eventsForSlot.length === 0) return null;
+      if (eventsForSlot.length === 1) return eventsForSlot[0];
+      return eventsForSlot;
+
     } catch (error) {
       console.error('❌ Error finding event for time slot:', error);
       return null;
     }
-  }, [events]);
+  }, [events, scheduledRoutines]);
 
   /**
    * Handle creating a test event
@@ -882,30 +975,27 @@ const TrainerCalendar = memo(() => {
                             {/* Day Time Slots */}
                             <div className="day-slots">
                               {hours.map((hour) => {
-                                const event = getEventForTimeSlot(date, hour);
+                                const eventData = getEventForTimeSlot(date, hour);
+                                const events = Array.isArray(eventData) ? eventData : (eventData ? [eventData] : []);
                                 const slotId = `slot-${dayIndex}-${hour}`;
 
                                 return (
                                   <div
                                     key={hour}
                                     id={slotId}
-                                    className={`time-slot ${event ? 'has-event' : ''}`}
+                                    className={`time-slot ${events.length > 0 ? 'has-event' : ''} ${events.length > 1 ? 'multiple-events' : ''}`}
                                     role="gridcell"
-                                    tabIndex={event ? 0 : -1}
+                                    tabIndex={events.length > 0 ? 0 : -1}
                                     aria-label={
-                                      event
-                                        ? `${formatTime(hour)} - ${event.summary} ${event.start?.dateTime ?
-                                          `at ${new Date(event.start.dateTime).toLocaleTimeString('en-US', {
-                                            hour: 'numeric',
-                                            minute: '2-digit'
-                                          })}` : 'All Day'
-                                        }`
+                                      events.length > 0
+                                        ? `${formatTime(hour)} - ${events.length} event${events.length > 1 ? 's' : ''}`
                                         : `${formatTime(hour)} - No events`
                                     }
                                   >
-                                    {event && (
+                                    {events.map((event, idx) => (
                                       <div
-                                        className="event-block"
+                                        key={event.id || idx}
+                                        className={`event-block ${event.source === 'scheduled_routine' ? 'routine-event' : 'calendar-event'} ${event.isCompleted ? 'completed' : ''}`}
                                         role="button"
                                         tabIndex={0}
                                         aria-label={`Event: ${event.summary}`}
@@ -913,6 +1003,11 @@ const TrainerCalendar = memo(() => {
                                         <div className="event-title">
                                           {event.summary}
                                         </div>
+                                        {event.description && (
+                                          <div className="event-description" aria-hidden="true">
+                                            {event.description}
+                                          </div>
+                                        )}
                                         <div className="event-time" aria-hidden="true">
                                           {event.start?.dateTime ?
                                             new Date(event.start.dateTime).toLocaleTimeString('en-US', {
@@ -922,7 +1017,7 @@ const TrainerCalendar = memo(() => {
                                           }
                                         </div>
                                       </div>
-                                    )}
+                                    ))}
                                   </div>
                                 );
                               })}

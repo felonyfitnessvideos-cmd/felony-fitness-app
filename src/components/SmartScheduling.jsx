@@ -12,14 +12,9 @@
 
 import {
   Calendar,
-  Check,
   Clock,
   Dumbbell,
-  GripVertical,
-  Mail,
-  Save,
-  User,
-  X
+  User
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient.js';
@@ -143,14 +138,15 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
   };
 
   /**
-   * Handle drop routine onto day
+   * Handle drop routine onto day (now also used by dropdown)
    */
-  const handleDrop = (day) => {
-    if (!draggedRoutine) return;
+  const handleDrop = (day, routine = null) => {
+    const routineToAdd = routine || draggedRoutine;
+    if (!routineToAdd) return;
 
     setWeeklySchedule(prev => ({
       ...prev,
-      [day]: draggedRoutine
+      [day]: routineToAdd
     }));
 
     setDraggedRoutine(null);
@@ -264,81 +260,71 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
 
   return (
     <div className="smart-scheduling-container">
-      {/* Compact Header */}
-      <div className="compact-header">
-        <div className="client-info">
-          <User size={14} />
+      {/* Compact Top Bar */}
+      <div className="scheduling-topbar">
+        <div className="client-info-inline">
+          <User size={12} />
           <span className="client-name">{selectedClient.name || `${selectedClient.first_name} ${selectedClient.last_name}`}</span>
           <span className="separator">•</span>
           <span className="program-name">{clientProgram.name}</span>
-          <span className="separator">•</span>
-          <span className="session-count">{sessionsPerWeek}x/week</span>
         </div>
         <button
-          className="save-btn-compact"
+          className="add-btn"
           onClick={handleSaveToCalendar}
           disabled={isSaving || scheduledCount === 0}
         >
-          {isSaving ? <Clock size={14} className="spinner" /> : <Calendar size={14} />}
+          {isSaving ? <Clock size={12} className="spinner" /> : <Calendar size={12} />}
           {isSaving ? 'Adding...' : 'Add to Calendar'}
         </button>
       </div>
 
-      {/* Main Workspace */}
-      <div className="compact-workspace">
-        {/* Routines Bank */}
-        <div className="routines-bank">
-          <div className="bank-label">
-            <Dumbbell size={12} />
-            <span>Drag Routines</span>
-          </div>
+      {/* Main Layout with absolute positioning */}
+      <div className="scheduling-layout">
+        {/* Sidebar */}
+        <div className="routines-sidebar">
+          <div className="sidebar-label">Routines</div>
           {programRoutines.length === 0 ? (
-            <p className="no-routines-compact">No routines</p>
+            <p className="no-routines-msg">None</p>
           ) : (
             programRoutines.map(routine => (
-              <div
-                key={routine.id}
-                className="routine-chip"
-                draggable
-                onDragStart={() => handleDragStart(routine)}
-              >
-                <GripVertical size={12} />
-                <span>{routine.name}</span>
+              <div key={routine.id} className="routine-item">
+                {routine.name}
               </div>
             ))
           )}
         </div>
 
-        {/* Weekly Grid */}
-        <div className="weekly-grid">
+        {/* Weekly Grid with Dropdowns */}
+        <div className="days-grid">
           {DAYS_OF_WEEK.map(day => (
-            <div
-              key={day}
-              className={`day-box ${weeklySchedule[day] ? 'filled' : 'empty'}`}
-              onDragOver={handleDragOver}
-              onDrop={() => handleDrop(day)}
-            >
-              <div className="day-name">{day.substring(0, 3)}</div>
-              {weeklySchedule[day] ? (
-                <div className="routine-assigned">
-                  <span className="routine-text">{weeklySchedule[day].name}</span>
-                  <button
-                    className="remove-x"
-                    onClick={() => handleRemoveFromDay(day)}
-                  >
-                    <X size={10} />
-                  </button>
-                </div>
-              ) : (
-                <div className="drop-zone">+</div>
-              )}
+            <div key={day} className="day-cell">
+              <label className="day-label">{day.substring(0, 3)}</label>
+              <select
+                className="routine-select"
+                value={weeklySchedule[day]?.id || ''}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    const routine = programRoutines.find(r => r.id === e.target.value);
+                    handleDrop(day, routine);
+                  } else {
+                    handleRemoveFromDay(day);
+                  }
+                }}
+              >
+                <option value="">None</option>
+                {programRoutines.map(routine => (
+                  <option key={routine.id} value={routine.id}>
+                    {routine.name}
+                  </option>
+                ))}
+              </select>
             </div>
           ))}
         </div>
 
-        {/* Status */}
+        {/* Status Overlay */}
         {statusMessage && (
-          <div className={`status-compact ${statusMessage.includes('✅') ? 'success' : statusMessage.includes('❌') ? 'error' : 'info'}`}>
+          <div className={`status-overlay ${statusMessage.includes('✅') ? 'success' : statusMessage.includes('❌') ? 'error' : 'info'}`}>
             {statusMessage}
           </div>
         )}
