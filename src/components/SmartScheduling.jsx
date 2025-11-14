@@ -17,6 +17,8 @@ import {
   User
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import useGoogleCalendar from '../hooks/useGoogleCalendar.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import { supabase } from '../supabaseClient.js';
 import './SmartScheduling.css';
 
@@ -47,6 +49,16 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
 
   /** @type {[string, Function]} Status message */
   const [statusMessage, setStatusMessage] = useState('');
+
+  /** @type {[string, Function]} Scheduled time (default 8 AM) */
+  const [scheduledTime, setScheduledTime] = useState('08:00:00');
+
+  /** @type {[number, Function]} Workout duration in minutes */
+  const [durationMinutes, setDurationMinutes] = useState(60);
+
+  // Google Calendar integration
+  const { createEvent, isAuthenticated: isGoogleAuthenticated } = useGoogleCalendar();
+  const { user } = useAuth();
 
   /**
    * Load client program and routines when client selected
@@ -164,7 +176,8 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
   };
 
   /**
-   * Save schedule to calendar and create recurring sessions
+   * Save schedule to calendar and create recurring Google Calendar events
+   * Creates separate events for each day with weekly recurrence
    */
   const handleSaveToCalendar = async () => {
     if (!selectedClient || !clientProgram || Object.keys(weeklySchedule).length === 0) {
@@ -172,61 +185,137 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
       return;
     }
 
+    if (!isGoogleAuthenticated) {
+      setStatusMessage('❌ Please sign in to Google Calendar first');
+      return;
+    }
+
     setIsSaving(true);
     setStatusMessage('Creating recurring sessions...');
 
     try {
-      const startDate = new Date(selectedClient.startDate || new Date());
-      const programDurationWeeks = clientProgram.duration_weeks || 12;
-      const scheduledSessions = [];
+      const startDate = new Date();
+      const programDurationWeeks = clientProgram.estimated_weeks || clientProgram.duration_weeks || 12;
+      const totalSessions = programDurationWeeks; // One session per week per day
+      
+      // Get client email from user_profiles
+      const { data: clientProfile } = await supabase
+        .from('user_profiles')
+        .select('email, full_name')
+        .eq('id', selectedClient.id)
+        .single();
 
-      // Create recurring sessions for each assigned day
+      const clientEmail = clientProfile?.email || selectedClient.email;
+      const clientName = clientProfile?.full_name || selectedClient.name || `${selectedClient.first_name} ${selectedClient.last_name}`;
+
+      // Day of week mapping for RRULE
+      const dayCodeMap = {
+        'Monday': 'MO',
+        'Tuesday': 'TU',
+        'Wednesday': 'WE',
+        'Thursday': 'TH',
+        'Friday': 'FR'
+      };
+
+      const createdEvents = [];
+
+      // Create a separate Google Calendar event for EACH day
       for (const [day, routine] of Object.entries(weeklySchedule)) {
+        const dayCode = dayCodeMap[day];
         const dayIndex = DAYS_OF_WEEK.indexOf(day);
         
         // Calculate first occurrence of this day
         const firstOccurrence = new Date(startDate);
-        const daysUntilFirst = (dayIndex - firstOccurrence.getDay() + 7) % 7;
+        const currentDayIndex = firstOccurrence.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const targetDayIndex = dayIndex + 1; // Convert to Sunday-based indexing
+        let daysUntilFirst = targetDayIndex - currentDayIndex;
+        if (daysUntilFirst < 0) daysUntilFirst += 7;
         firstOccurrence.setDate(firstOccurrence.getDate() + daysUntilFirst);
 
-        // Create sessions for each week in the program
-        for (let week = 0; week < programDurationWeeks; week++) {
-          const sessionDate = new Date(firstOccurrence);
-          sessionDate.setDate(sessionDate.getDate() + (week * 7));
+        // Format start and end times
+        const [hours, minutes] = scheduledTime.split(':');
+        const startDateTime = new Date(firstOccurrence);
+        startDateTime.setHours(parseInt(hours), parseInt(minutes), 0);
+        
+        const endDateTime = new Date(startDateTime);
+        endDateTime.setMinutes(endDateTime.getMinutes() + durationMinutes);
 
-          scheduledSessions.push({
-            user_id: selectedClient.id,
-            routine_id: routine.id,
-            scheduled_date: sessionDate.toISOString().split('T')[0]
-          });
+        // Generate RRULE for weekly recurrence
+        const rrule = `FREQ=WEEKLY;BYDAY=${dayCode};COUNT=${totalSessions}`;
+
+        // Create Google Calendar event
+        const eventData = {
+          summary: `💪 ${routine.name} - ${clientName}`,
+          description: `Program: ${clientProgram.name}\nWeekly workout session\n\nClient: ${clientName}`,
+          start: {
+            dateTime: startDateTime.toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          },
+          end: {
+            dateTime: endDateTime.toISOString(),
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          },
+          recurrence: [rrule],
+          attendees: clientEmail ? [{ email: clientEmail }] : [],
+          reminders: {
+            useDefault: false,
+            overrides: [
+              { method: 'email', minutes: 1440 }, // 24 hours before
+              { method: 'popup', minutes: 30 }    // 30 minutes before
+            ]
+          }
+        };
+
+        try {
+          const createdEvent = await createEvent(eventData, 'primary', { refreshEvents: false });
+          const googleEventId = createdEvent.id;
+
+          // Insert into database with google_event_id
+          const { error: dbError } = await supabase
+            .from('scheduled_routines')
+            .insert({
+              user_id: selectedClient.id,
+              routine_id: routine.id,
+              scheduled_date: firstOccurrence.toISOString().split('T')[0],
+              scheduled_time: scheduledTime,
+              duration_minutes: durationMinutes,
+              client_email: clientEmail,
+              recurrence_rule: rrule,
+              is_recurring: true,
+              google_event_id: googleEventId
+            });
+
+          if (dbError) {
+            console.error('Database insert error:', dbError);
+            // Event created in Google Calendar but not in DB - log for manual cleanup
+          }
+
+          createdEvents.push({ day, routine: routine.name, eventId: googleEventId });
+        } catch (eventError) {
+          console.error(`Failed to create event for ${day}:`, eventError);
+          setStatusMessage(`⚠️ Failed to create event for ${day}: ${eventError.message}`);
         }
       }
 
-      // Insert all scheduled sessions
-      const { error: insertError } = await supabase
-        .from('scheduled_routines')
-        .insert(scheduledSessions);
+      if (createdEvents.length > 0) {
+        setStatusMessage(`✅ Created ${createdEvents.length} recurring events in Google Calendar!`);
+        
+        if (onScheduleCreated) {
+          onScheduleCreated(createdEvents);
+        }
 
-      if (insertError) throw insertError;
-
-      // TODO: Send email notifications to client
-      // This would integrate with your email service
-
-      setStatusMessage(`✅ Created ${scheduledSessions.length} recurring sessions!`);
-      
-      if (onScheduleCreated) {
-        onScheduleCreated(scheduledSessions);
+        // Clear schedule after 3 seconds
+        setTimeout(() => {
+          setWeeklySchedule({});
+          setStatusMessage('');
+        }, 3000);
+      } else {
+        setStatusMessage('❌ No events were created. Please try again.');
       }
-
-      // Clear schedule after 3 seconds
-      setTimeout(() => {
-        setWeeklySchedule({});
-        setStatusMessage('');
-      }, 3000);
 
     } catch (error) {
       console.error('Error saving schedule:', error);
-      setStatusMessage('❌ Error creating sessions. Please try again.');
+      setStatusMessage(`❌ Error: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
@@ -260,7 +349,7 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
 
   return (
     <div className="smart-scheduling-container">
-      {/* Compact Top Bar */}
+      {/* Compact Top Bar with Time/Duration Controls */}
       <div className="scheduling-topbar">
         <div className="client-info-inline">
           <User size={12} />
@@ -268,14 +357,62 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
           <span className="separator">•</span>
           <span className="program-name">{clientProgram.name}</span>
         </div>
-        <button
-          className="add-btn"
-          onClick={handleSaveToCalendar}
-          disabled={isSaving || scheduledCount === 0}
-        >
-          {isSaving ? <Clock size={12} className="spinner" /> : <Calendar size={12} />}
-          {isSaving ? 'Adding...' : 'Add to Calendar'}
-        </button>
+
+        <div className="schedule-controls">
+          {/* Time Picker */}
+          <div className="control-group">
+            <Clock size={10} />
+            <select 
+              className="time-select"
+              value={scheduledTime}
+              onChange={(e) => setScheduledTime(e.target.value)}
+            >
+              <option value="06:00:00">6:00 AM</option>
+              <option value="06:30:00">6:30 AM</option>
+              <option value="07:00:00">7:00 AM</option>
+              <option value="07:30:00">7:30 AM</option>
+              <option value="08:00:00">8:00 AM</option>
+              <option value="08:30:00">8:30 AM</option>
+              <option value="09:00:00">9:00 AM</option>
+              <option value="09:30:00">9:30 AM</option>
+              <option value="10:00:00">10:00 AM</option>
+              <option value="12:00:00">12:00 PM</option>
+              <option value="14:00:00">2:00 PM</option>
+              <option value="15:00:00">3:00 PM</option>
+              <option value="16:00:00">4:00 PM</option>
+              <option value="17:00:00">5:00 PM</option>
+              <option value="18:00:00">6:00 PM</option>
+              <option value="19:00:00">7:00 PM</option>
+              <option value="20:00:00">8:00 PM</option>
+            </select>
+          </div>
+
+          {/* Duration Dropdown */}
+          <div className="control-group">
+            <Dumbbell size={10} />
+            <select
+              className="duration-select"
+              value={durationMinutes}
+              onChange={(e) => setDurationMinutes(parseInt(e.target.value))}
+            >
+              <option value={30}>30 min</option>
+              <option value={45}>45 min</option>
+              <option value={60}>60 min</option>
+              <option value={90}>90 min</option>
+              <option value={120}>120 min</option>
+            </select>
+          </div>
+
+          {/* Add to Calendar Button */}
+          <button
+            className="add-btn"
+            onClick={handleSaveToCalendar}
+            disabled={isSaving || scheduledCount === 0}
+          >
+            {isSaving ? <Clock size={12} className="spinner" /> : <Calendar size={12} />}
+            {isSaving ? 'Adding...' : 'Add to Calendar'}
+          </button>
+        </div>
       </div>
 
       {/* Main Layout with absolute positioning */}

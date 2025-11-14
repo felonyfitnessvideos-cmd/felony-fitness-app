@@ -43,82 +43,127 @@
   text-align: center;
 }
 
-/* Top Bar - fixed height */
+/* Top Bar - fixed height with controls */
 .scheduling-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0.4rem 0.5rem;
-  background: #2d3748;
-  border-bottom: 1px solid #4a5568;
-  flex-shrink: 0;
   height: 32px;
+  border-bottom: 1px solid #2d3748;
+  background: #1a202c;
+  flex-shrink: 0;
+  gap: 0.5rem;
 }
 
 .client-info-inline {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.7rem;
-  color: #cbd5e0;
-  flex: 1;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  color: #e2e8f0;
+  flex-shrink: 1;
   min-width: 0;
-}
-
-.client-info-inline svg {
-  flex-shrink: 0;
 }
 
 .client-name {
   font-weight: 600;
-  color: #f7fafc;
+  color: #63b3ed;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.program-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: #a0aec0;
 }
 
 .separator {
   color: #4a5568;
+}
+
+.program-name {
+  color: #a0aec0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Schedule Controls Container */
+.schedule-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   flex-shrink: 0;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: #a0aec0;
+}
+
+.control-group svg {
+  flex-shrink: 0;
+}
+
+.time-select,
+.duration-select {
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 0.65rem;
+  padding: 0.2rem 0.3rem;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+  min-width: 60px;
+}
+
+.time-select:hover,
+.duration-select:hover {
+  background: #374151;
+  border-color: #63b3ed;
+}
+
+.time-select:focus,
+.duration-select:focus {
+  border-color: #63b3ed;
+  box-shadow: 0 0 0 1px #63b3ed;
 }
 
 .add-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.65rem;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  padding: 0.3rem 0.5rem;
-  border-radius: 3px;
-  font-size: 0.65rem;
-  font-weight: 600;
-  cursor: pointer;
+  gap: 0.2rem;
   white-space: nowrap;
+  transition: all 0.2s;
+  font-weight: 500;
   flex-shrink: 0;
-  transition: background 0.2s;
-  height: 24px;
 }
 
 .add-btn:hover:not(:disabled) {
-  background: #5568d3;
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }
 
 .add-btn:disabled {
-  background: #4a5568;
-  color: #a0aec0;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .add-btn .spinner {
   animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Main Layout - absolute positioning */
