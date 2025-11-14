@@ -325,6 +325,7 @@ body.ReactModal__Body--open { overflow: hidden; }
 
 .compact-stats .stat-item {
   white-space: nowrap;
+  color: #f7fafc;
 }
 
 .compact-stats .stat-item strong {
