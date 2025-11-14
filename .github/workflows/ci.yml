@@ -107,11 +107,13 @@ jobs:
         cache: 'npm'
     
     - name: Run npm audit
-      run: npm audit --audit-level=high
+      run: npm audit --audit-level=moderate
     
     - name: Check for known vulnerabilities
-      run: |
-        npx snyk test || echo "Snyk check completed"
+      run: npx snyk test
+      continue-on-error: true
+      # TODO: Remove continue-on-error once Snyk is configured with API token
+      # Tracking: Configure SNYK_TOKEN in GitHub secrets
 
   deploy-preview:
     name: Deploy Preview (Vercel)
