@@ -32,6 +32,7 @@ import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import useResponsive from '../hooks/useResponsive.jsx';
 import { getUnreadMessageCount, subscribeToMessages } from '../utils/messagingUtils';
+import SmartScheduling from '../components/SmartScheduling.jsx';
 import ClientOnboarding from './trainer/ClientOnboarding.jsx';
 import IntervalTimer from './trainer/IntervalTimer.jsx';
 import TrainerCalendar from './trainer/TrainerCalendar.jsx';
@@ -244,7 +245,7 @@ const TrainerDashboard = () => {
 
     switch (activeWorkspaceTool) {
       case 'scheduling':
-        return renderToolCards('Smart Scheduling');
+        return <SmartScheduling />;
 
       case 'progress':
         return renderToolCards('Progress Tracking');
