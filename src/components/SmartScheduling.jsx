@@ -264,137 +264,84 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
 
   return (
     <div className="smart-scheduling-container">
-      {/* Client Info Card */}
-      <div className="client-info-card">
-        <div className="client-header">
-          <User size={20} />
-          <h3>{selectedClient.name || `${selectedClient.first_name} ${selectedClient.last_name}`}</h3>
+      {/* Compact Header */}
+      <div className="compact-header">
+        <div className="client-info">
+          <User size={14} />
+          <span className="client-name">{selectedClient.name || `${selectedClient.first_name} ${selectedClient.last_name}`}</span>
+          <span className="separator">•</span>
+          <span className="program-name">{clientProgram.name}</span>
+          <span className="separator">•</span>
+          <span className="session-count">{sessionsPerWeek}x/week</span>
         </div>
-        <div className="client-essentials">
-          <div className="essential-item">
-            <span className="label">Program:</span>
-            <span className="value">{clientProgram.name}</span>
-          </div>
-          <div className="essential-item">
-            <span className="label">Sessions/Week:</span>
-            <span className="value">{sessionsPerWeek}x per week</span>
-          </div>
-          <div className="essential-item">
-            <span className="label">Start Date:</span>
-            <span className="value">
-              {selectedClient.startDate 
-                ? new Date(selectedClient.startDate).toLocaleDateString() 
-                : 'Not set'}
-            </span>
-          </div>
-          <div className="essential-item">
-            <span className="label">Duration:</span>
-            <span className="value">{clientProgram.duration_weeks || 12} weeks</span>
-          </div>
-        </div>
+        <button
+          className="save-btn-compact"
+          onClick={handleSaveToCalendar}
+          disabled={isSaving || scheduledCount === 0}
+        >
+          {isSaving ? <Clock size={14} className="spinner" /> : <Save size={14} />}
+          {isSaving ? 'Saving...' : 'Save'}
+        </button>
       </div>
 
-      <div className="scheduling-workspace">
-        {/* Available Routines Panel */}
-        <div className="routines-panel">
-          <h4>
-            <Dumbbell size={16} />
-            Program Routines
-          </h4>
-          <div className="routines-list">
-            {programRoutines.length === 0 ? (
-              <p className="no-routines">No routines generated yet</p>
-            ) : (
-              programRoutines.map(routine => (
-                <div
-                  key={routine.id}
-                  className="routine-card draggable"
-                  draggable
-                  onDragStart={() => handleDragStart(routine)}
-                >
-                  <GripVertical size={16} className="drag-handle" />
-                  <span className="routine-name">{routine.name}</span>
-                </div>
-              ))
-            )}
+      {/* Main Workspace */}
+      <div className="compact-workspace">
+        {/* Routines Bank */}
+        <div className="routines-bank">
+          <div className="bank-label">
+            <Dumbbell size={12} />
+            <span>Drag Routines</span>
           </div>
-        </div>
-
-        {/* Weekly Schedule Grid */}
-        <div className="schedule-grid">
-          <div className="schedule-header">
-            <h4>
-              <Calendar size={16} />
-              Weekly Schedule
-            </h4>
-            <span className="schedule-progress">
-              {scheduledCount} of {sessionsPerWeek} sessions assigned
-            </span>
-          </div>
-
-          <div className="day-slots">
-            {DAYS_OF_WEEK.map(day => (
+          {programRoutines.length === 0 ? (
+            <p className="no-routines-compact">No routines</p>
+          ) : (
+            programRoutines.map(routine => (
               <div
-                key={day}
-                className={`day-slot ${weeklySchedule[day] ? 'has-routine' : 'empty'}`}
-                onDragOver={handleDragOver}
-                onDrop={() => handleDrop(day)}
+                key={routine.id}
+                className="routine-chip"
+                draggable
+                onDragStart={() => handleDragStart(routine)}
               >
-                <div className="day-label">{day}</div>
-                {weeklySchedule[day] ? (
-                  <div className="assigned-routine">
-                    <span>{weeklySchedule[day].name}</span>
-                    <button
-                      className="remove-btn"
-                      onClick={() => handleRemoveFromDay(day)}
-                      title="Remove routine"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="empty-slot">
-                    <span>Drop routine here</span>
-                  </div>
-                )}
+                <GripVertical size={12} />
+                <span>{routine.name}</span>
               </div>
-            ))}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="schedule-actions">
-            <button
-              className="save-schedule-btn"
-              onClick={handleSaveToCalendar}
-              disabled={isSaving || scheduledCount === 0}
-            >
-              {isSaving ? (
-                <>
-                  <Clock size={16} className="spinner" />
-                  Creating Sessions...
-                </>
-              ) : (
-                <>
-                  <Save size={16} />
-                  Save to Calendar
-                </>
-              )}
-            </button>
-
-            {statusMessage && (
-              <div className={`status-message ${statusMessage.includes('✅') ? 'success' : statusMessage.includes('❌') ? 'error' : 'info'}`}>
-                {statusMessage}
-              </div>
-            )}
-          </div>
-
-          {/* Helper Text */}
-          <div className="schedule-help">
-            <p>💡 Drag routines from the left panel and drop them onto days to create your client's weekly schedule</p>
-            <p>📅 When saved, this will create recurring sessions for the entire program duration ({clientProgram.duration_weeks || 12} weeks)</p>
-            <p>📧 Your client will receive email reminders before each scheduled session</p>
-          </div>
+            ))
+          )}
         </div>
+
+        {/* Weekly Grid */}
+        <div className="weekly-grid">
+          {DAYS_OF_WEEK.map(day => (
+            <div
+              key={day}
+              className={`day-box ${weeklySchedule[day] ? 'filled' : 'empty'}`}
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop(day)}
+            >
+              <div className="day-name">{day.substring(0, 3)}</div>
+              {weeklySchedule[day] ? (
+                <div className="routine-assigned">
+                  <span className="routine-text">{weeklySchedule[day].name}</span>
+                  <button
+                    className="remove-x"
+                    onClick={() => handleRemoveFromDay(day)}
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+              ) : (
+                <div className="drop-zone">+</div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Status */}
+        {statusMessage && (
+          <div className={`status-compact ${statusMessage.includes('✅') ? 'success' : statusMessage.includes('❌') ? 'error' : 'info'}`}>
+            {statusMessage}
+          </div>
+        )}
       </div>
     </div>
   );
