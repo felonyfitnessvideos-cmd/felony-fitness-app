@@ -1,0 +1,464 @@
+/**
+ * @file NutritionPlanner.css
+ * @description Styles for trainer nutrition planner component
+ */
+
+.nutrition-planner-container {
+  display: flex;
+  flex-direction: row;
+  gap: 0.6rem;
+  height: 100%;
+  padding: 0.5rem;
+  overflow: hidden;
+}
+
+.nutrition-planner-container *::-webkit-scrollbar {
+  display: none;
+}
+
+.nutrition-planner-container * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.nutrition-planner-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 1rem;
+  color: var(--text-secondary);
+}
+
+/* ===== LEFT PANEL: MEAL BUILDER ===== */
+.planner-left-panel {
+  width: 285px;
+  flex-shrink: 0;
+}
+
+.meal-builder {
+  background: var(--card-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.meal-builder h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.meal-foods-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-bottom: 0.5rem;
+  min-height: 0;
+}
+
+.meal-foods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.empty-meal {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 1rem 0.5rem;
+  margin: 0;
+}
+
+.meal-food-card {
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.food-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.food-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.food-quantity-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.food-name {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quantity-input {
+  width: 50px;
+  padding: 0.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.food-serving {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.remove-food-btn {
+  background: transparent;
+  border: none;
+  color: var(--error-color);
+  cursor: pointer;
+  padding: 0.125rem;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.remove-food-btn:hover {
+  opacity: 0.7;
+}
+
+/* ===== MACRO TOTALS ===== */
+.macro-totals {
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+
+.macro-totals h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.totals-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.total-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.total-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.total-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-color);
+}
+
+/* ===== SAVE BUTTON ===== */
+.save-meal-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  padding: 0.375rem;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.save-meal-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.save-meal-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== RIGHT PANEL: FOOD SEARCH ===== */
+.planner-right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--card-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.5rem;
+  width: 323px;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+.planner-right-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.food-search-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.food-search-input svg {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 12px;
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.search-results-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
+.search-loading,
+.no-results,
+.search-prompt {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 2rem 1rem;
+}
+
+.search-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.food-result-card {
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.food-result-card:hover {
+  border-color: var(--primary-color);
+}
+
+.food-result-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.food-result-info h4 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.serving-info {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.food-macros {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.add-food-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  padding: 0.4rem 0.6rem;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.add-food-btn:hover {
+  opacity: 0.9;
+}
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: var(--card-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 500px;
+  overflow: hidden;
+}
+
+.modal-content h3 {
+  margin: 0 0 1rem 0;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.modal-content p {
+  margin: 0 0 1.5rem 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  box-sizing: border-box;
+}
+
+.modal-content input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.modal-content input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  background: transparent !important;
+}
+
+.cancel-btn,
+.save-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background: var(--card-color) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.cancel-btn:hover {
+  background: var(--hover-color) !important;
+}
+
+.save-btn {
+  background: var(--accent-color) !important;
+  color: var(--color-white) !important;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: var(--accent-color-hover) !important;
+}
+
+.save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 600px) {
+  .nutrition-planner-container {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .planner-left-panel,
+  .planner-right-panel {
+    width: 100%;
+    height: auto;
+  }
+}
