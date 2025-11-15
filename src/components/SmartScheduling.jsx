@@ -17,8 +17,8 @@ import {
   User
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import useGoogleCalendar from '../hooks/useGoogleCalendar.jsx';
-import { useAuth } from '../context/AuthContext.jsx';
+import googleCalendarService from '../services/googleCalendar.js';
+import { useAuth } from '../AuthContext.jsx';
 import { supabase } from '../supabaseClient.js';
 import './SmartScheduling.css';
 
@@ -56,8 +56,7 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
   /** @type {[number, Function]} Workout duration in minutes */
   const [durationMinutes, setDurationMinutes] = useState(60);
 
-  // Google Calendar integration
-  const { createEvent, isAuthenticated: isGoogleAuthenticated } = useGoogleCalendar();
+  // Auth for client email lookup
   const { user } = useAuth();
 
   /**
@@ -185,7 +184,8 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
       return;
     }
 
-    if (!isGoogleAuthenticated) {
+    // Check if Google Calendar is authenticated
+    if (!googleCalendarService.isAuthenticated()) {
       setStatusMessage('❌ Please sign in to Google Calendar first');
       return;
     }
@@ -198,15 +198,16 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
       const programDurationWeeks = clientProgram.estimated_weeks || clientProgram.duration_weeks || 12;
       const totalSessions = programDurationWeeks; // One session per week per day
       
-      // Get client email from user_profiles
-      const { data: clientProfile } = await supabase
-        .from('user_profiles')
-        .select('email, full_name')
-        .eq('id', selectedClient.id)
-        .single();
+      // Get client info - email should be directly on selectedClient from trainer_clients table
+      const clientEmail = selectedClient.email;
+      const clientName = selectedClient.full_name || selectedClient.name || `${selectedClient.first_name} ${selectedClient.last_name}`;
 
-      const clientEmail = clientProfile?.email || selectedClient.email;
-      const clientName = clientProfile?.full_name || selectedClient.name || `${selectedClient.first_name} ${selectedClient.last_name}`;
+      // Check if client has email for calendar invitations
+      if (!clientEmail) {
+        setStatusMessage('⚠️ Client has no email address. Please add one to their profile first.');
+        setIsSaving(false);
+        return;
+      }
 
       // Day of week mapping for RRULE
       const dayCodeMap = {
@@ -243,7 +244,7 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
         // Generate RRULE for weekly recurrence
         const rrule = `FREQ=WEEKLY;BYDAY=${dayCode};COUNT=${totalSessions}`;
 
-        // Create Google Calendar event
+        // Create Google Calendar event (raw format)
         const eventData = {
           summary: `💪 ${routine.name} - ${clientName}`,
           description: `Program: ${clientProgram.name}\nWeekly workout session\n\nClient: ${clientName}`,
@@ -256,7 +257,7 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
             timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
           },
           recurrence: [rrule],
-          attendees: clientEmail ? [{ email: clientEmail }] : [],
+          attendees: [{ email: clientEmail }],
           reminders: {
             useDefault: false,
             overrides: [
@@ -267,7 +268,8 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
         };
 
         try {
-          const createdEvent = await createEvent(eventData, 'primary', { refreshEvents: false });
+          // Call service directly with raw event data
+          const createdEvent = await googleCalendarService.createEvent(eventData, 'primary');
           const googleEventId = createdEvent.id;
 
           // Insert into database with google_event_id
