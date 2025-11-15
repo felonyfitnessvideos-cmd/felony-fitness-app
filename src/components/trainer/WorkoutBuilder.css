@@ -1,9 +1,9 @@
 /**
- * @file NutritionPlanner.css
- * @description Styles for trainer nutrition planner component
+ * @file WorkoutBuilder.css
+ * @description Styles for trainer workout builder component
  */
 
-.nutrition-planner-container {
+.workout-builder-container {
   display: flex;
   flex-direction: row;
   gap: 0.6rem;
@@ -12,19 +12,16 @@
   overflow: hidden;
 }
 
-/* Hide scrollbars only for specific scroll containers */
-.meal-foods-scroll-container::-webkit-scrollbar,
-.search-results-container::-webkit-scrollbar {
+.workout-builder-container *::-webkit-scrollbar {
   display: none;
 }
 
-.meal-foods-scroll-container,
-.search-results-container {
+.workout-builder-container * {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
-.nutrition-planner-empty {
+.workout-builder-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -34,71 +31,13 @@
   color: var(--text-secondary);
 }
 
-/* ===== NOTIFICATION BANNERS ===== */
-.notification-banner {
-  position: fixed;
-  top: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  animation: slideDown 0.3s ease-out;
-  max-width: 90%;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -20px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-}
-
-.notification-banner.success {
-  background: var(--success-bg, #10b981);
-  color: white;
-  border: 1px solid var(--success-border, #059669);
-}
-
-.notification-banner.error {
-  background: var(--error-color, #ef4444);
-  color: white;
-  border: 1px solid var(--error-border, #dc2626);
-}
-
-.notification-banner .close-notification {
-  background: transparent;
-  border: none;
-  color: white;
-  cursor: pointer;
-  padding: 0.25rem;
-  display: flex;
-  align-items: center;
-  opacity: 0.8;
-  margin-left: auto;
-}
-
-.notification-banner .close-notification:hover {
-  opacity: 1;
-}
-
-/* ===== LEFT PANEL: MEAL BUILDER ===== */
-.planner-left-panel {
+/* ===== LEFT PANEL ===== */
+.builder-left-panel {
   width: 285px;
   flex-shrink: 0;
 }
 
-.meal-builder {
+.routine-builder {
   background: var(--card-color);
   border: 1px solid var(--border-color);
   border-radius: 4px;
@@ -108,7 +47,7 @@
   height: 100%;
 }
 
-.meal-builder h3 {
+.routine-builder h3 {
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -117,7 +56,7 @@
   flex-shrink: 0;
 }
 
-.meal-foods-scroll-container {
+.routine-exercises-scroll-container {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
@@ -125,52 +64,31 @@
   min-height: 0;
 }
 
-.meal-foods-list {
+.routine-exercises-list {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
 }
 
-.empty-meal {
+.empty-routine {
   text-align: center;
   color: var(--text-secondary);
   font-size: 12px;
   padding: 1rem 0.5rem;
-  margin: 0;
 }
 
-.meal-food-card {
+.routine-exercise-card {
   background: var(--background-color);
   border: 1px solid var(--border-color);
   border-radius: 3px;
   padding: 0.5rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.food-details {
+.routine-exercise-card .exercise-name {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 0;
-}
-
-.food-name-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.food-quantity-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.food-name {
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
@@ -178,22 +96,13 @@
   text-overflow: ellipsis;
 }
 
-.quantity-input {
-  width: 50px;
-  padding: 0.25rem;
-  border: 1px solid var(--border-color);
-  border-radius: 3px;
-  background: var(--input-bg);
-  color: var(--text-primary);
-  font-size: 12px;
-}
-
-.food-serving {
+.exercise-sets-reps {
   font-size: 12px;
   color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
-.remove-food-btn {
+.remove-btn {
   background: transparent;
   border: none;
   color: var(--error-color);
@@ -204,53 +113,11 @@
   flex-shrink: 0;
 }
 
-.remove-food-btn:hover {
+.remove-btn:hover {
   opacity: 0.7;
 }
 
-/* ===== MACRO TOTALS ===== */
-.macro-totals {
-  background: var(--background-color);
-  border: 1px solid var(--border-color);
-  border-radius: 3px;
-  padding: 0.5rem;
-  margin-bottom: 0.5rem;
-  flex-shrink: 0;
-}
-
-.macro-totals h4 {
-  margin: 0 0 0.5rem 0;
-  font-size: 12px;
-  color: var(--text-primary);
-}
-
-.totals-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem;
-}
-
-.total-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-
-.total-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.total-value {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--accent-color);
-}
-
-/* ===== SAVE BUTTON ===== */
-.save-meal-btn {
+.add-to-routine-btn {
   background: var(--primary-color);
   color: white;
   border: none;
@@ -266,17 +133,17 @@
   flex-shrink: 0;
 }
 
-.save-meal-btn:hover:not(:disabled) {
+.add-to-routine-btn:hover:not(:disabled) {
   opacity: 0.9;
 }
 
-.save-meal-btn:disabled {
+.add-to-routine-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* ===== RIGHT PANEL: FOOD SEARCH ===== */
-.planner-right-panel {
+/* ===== RIGHT PANEL ===== */
+.builder-middle-panel {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -289,110 +156,68 @@
   height: 100%;
 }
 
-.planner-right-panel h3 {
+.builder-middle-panel h3 {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  margin: 0 0 0.5rem 0;
+  margin: 0;
   font-size: 12px;
-  flex-shrink: 0;
 }
 
-.food-search-input {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  background: var(--background-color);
+.muscle-select {
+  padding: 0.25rem;
   border: 1px solid var(--border-color);
   border-radius: 3px;
-  flex-shrink: 0;
-}
-
-.food-search-input svg {
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-.search-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
+  background: var(--background-color);
+  color: var(--text-color);
   font-size: 12px;
-  outline: none;
+  cursor: pointer;
 }
 
-.search-input::placeholder {
-  color: var(--text-secondary);
-}
-
-.search-results-container {
+.exercises-list {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
-  min-height: 0;
-}
-
-.search-loading,
-.no-results,
-.search-prompt {
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 12px;
-  padding: 2rem 1rem;
-}
-
-.search-results-list {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
+  min-height: 0;
 }
 
-.food-result-card {
+.no-exercises {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 1rem 0.5rem;
+}
+
+.exercise-card {
   background: var(--background-color);
   border: 1px solid var(--border-color);
   border-radius: 3px;
-  padding: 0.5rem;
+  padding: 0.375rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
 }
 
-.food-result-card:hover {
+.exercise-card:hover {
   border-color: var(--primary-color);
 }
 
-.food-result-info {
+.exercise-info {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
   min-width: 0;
 }
 
-.food-result-info h4 {
+.exercise-info h4 {
   margin: 0;
   font-size: 12px;
-  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.serving-info {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.food-macros {
-  display: flex;
-  gap: 0.5rem;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.add-food-btn {
+.add-exercise-btn {
   background: var(--primary-color);
   color: white;
   border: none;
@@ -401,11 +226,20 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   flex-shrink: 0;
 }
 
-.add-food-btn:hover {
+.add-exercise-btn:hover:not(:disabled) {
   opacity: 0.9;
+}
+
+.add-exercise-btn.added {
+  background: var(--success-color);
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 /* ===== MODAL ===== */
@@ -512,13 +346,13 @@
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 600px) {
-  .nutrition-planner-container {
+  .workout-builder-container {
     flex-direction: column;
     overflow-y: auto;
   }
 
-  .planner-left-panel,
-  .planner-right-panel {
+  .builder-left-panel,
+  .builder-middle-panel {
     width: 100%;
     height: auto;
   }

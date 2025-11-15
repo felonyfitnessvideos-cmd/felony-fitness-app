@@ -203,6 +203,7 @@ const TrainerCalendar = memo(() => {
       console.log('📅 Date range:', { startDate, endDate });
 
       // Fetch scheduled routines for trainer's clients
+      // All client data is self-contained in scheduled_routines (no joins needed)
       const { data, error } = await supabase
         .from('scheduled_routines')
         .select(`
@@ -211,13 +212,11 @@ const TrainerCalendar = memo(() => {
           is_completed,
           user_id,
           routine_id,
+          client_name,
+          client_email,
           workout_routines (
             id,
             routine_name
-          ),
-          user_profiles (
-            id,
-            full_name
           )
         `)
         .gte('scheduled_date', startDate)
@@ -562,14 +561,16 @@ const TrainerCalendar = memo(() => {
         
         if (routinesForDate.length > 0) {
           routinesForDate.forEach(routine => {
+            const clientName = routine.client_name || 'Unknown';
+            
             eventsForSlot.push({
               id: `routine-${routine.id}`,
               summary: `💪 ${routine.workout_routines?.routine_name || 'Workout'}`,
-              description: `Client: ${routine.user_profiles?.full_name || 'Unknown'}`,
+              description: `Client: ${clientName}`,
               start: { dateTime: null, date: dateStr },
               source: 'scheduled_routine',
               isCompleted: routine.is_completed,
-              clientName: routine.user_profiles?.full_name
+              clientName: clientName
             });
           });
         }

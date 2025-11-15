@@ -305,17 +305,19 @@
 
 /* Calendar Layout - Full Width */
 .calendar-layout {
-  flex: 1; /* Take remaining space after header */
+  flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* Allow flexbox to shrink */
+  min-height: 0;
+  height: 100%;
 }
 
 .calendar-main-fullwidth {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* Allow flexbox to shrink */
+  min-height: 0;
+  height: 100%;
 }
 
 /* Sidebar */
@@ -595,13 +597,14 @@
 
 /* ===== WEEKLY CALENDAR VIEW ===== */
 .weekly-calendar {
-  flex: 1; /* Take remaining space */
+  flex: 1;
   display: flex;
   flex-direction: column;
   background: var(--card-background);
-  border-radius: 6px; /* Smaller radius */
+  border-radius: 6px;
   overflow: hidden;
-  min-height: 0; /* Allow flexbox to shrink */
+  min-height: 0;
+  height: 100%;
 }
 
 .nav-button {
@@ -624,11 +627,12 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--border-color); /* Thinner border */
-  border-radius: 4px; /* Smaller radius */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* Smaller shadow */
-  min-height: 0; /* Allow flexbox to shrink */
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  min-height: 0;
+  height: 100%;
+  width: 100%;
 }
 
 /* Fixed Headers Row - stays at top, scrolls horizontally */
@@ -640,14 +644,16 @@
   background: var(--card-background);
   border-bottom: 2px solid var(--border-color);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
 .time-column-header-fixed {
   width: 80px;
+  min-width: 80px;
+  max-width: 80px;
   height: 50px;
   flex-shrink: 0;
   border-right: 1px solid var(--border-color);
-  background: var(--background-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -655,6 +661,9 @@
   font-size: 0.9rem;
   color: var(--text-secondary);
   z-index: 101;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
 }
 
 .days-headers-scroll {
@@ -664,6 +673,12 @@
   overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  scroll-behavior: smooth;
+  min-width: 0;
+}
+
+.days-headers-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .days-headers-scroll::-webkit-scrollbar {
@@ -672,7 +687,8 @@
 
 .day-header-fixed {
   flex: 0 0 auto;
-  min-width: 100px; /* Match day-column width */
+  min-width: 100px;
+  max-width: 100px;
   width: 100px;
   height: 50px;
   display: flex;
@@ -682,7 +698,8 @@
   border-right: 1px solid var(--border-color);
   background: var(--card-background);
   position: relative;
-  font-size: 0.875rem; /* Restore normal text size */
+  font-size: 0.875rem;
+  box-sizing: border-box;
 }
 
 .day-header-fixed:last-child {
@@ -757,10 +774,12 @@
 
 .calendar-scroll-container {
   flex: 1;
-  overflow-y: auto; /* Vertical scrolling for hours */
-  overflow-x: hidden; /* No horizontal scrolling here */
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   min-height: 0;
-  max-height: calc(100vh - 200px); /* Constrain height to prevent main area scrolling */
 }
 
 .calendar-scroll-container::-webkit-scrollbar {
@@ -769,20 +788,32 @@
 
 .calendar-content {
   display: flex;
-  min-height: calc(16 * 50px); /* 16 hours (5am-8pm) - no header since it's fixed above */
+  height: calc(16 * 50px);
+  min-height: calc(16 * 50px);
+  flex: 0 0 auto;
 }
 
 .time-column {
   width: 80px;
+  min-width: 80px;
+  max-width: 80px;
   flex-shrink: 0;
   border-right: 1px solid var(--border-color);
-  background: var(--background-color);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
 }
 
 .time-slots-list {
   flex: 1;
   display: flex;
   flex-direction: column;
+  height: calc(16 * 50px);
+  min-height: calc(16 * 50px);
+  padding: 0;
+  margin: 0;
 }
 
 .time-column .time-slot {
@@ -801,24 +832,30 @@
 }
 
 .days-grid {
-  flex: 1;
   display: flex;
-  overflow-x: auto; /* Horizontal scrolling for days */
-  scrollbar-width: thin;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
   scroll-behavior: smooth;
+  -ms-overflow-style: none;
+  height: 100%;
+  width: 100%;
 }
 
 .days-grid::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
 }
 
 .day-column {
   flex: 0 0 auto;
-  min-width: 100px; /* Reasonable width for 12 weeks horizontal scrolling */
+  min-width: 100px;
+  max-width: 100px;
   width: 100px;
+  height: 100%;
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .day-column:last-child {
@@ -891,6 +928,8 @@
   display: flex;
   flex-direction: column;
   position: relative;
+  height: calc(16 * 50px);
+  min-height: calc(16 * 50px);
 }
 
 .day-slots .time-slot {

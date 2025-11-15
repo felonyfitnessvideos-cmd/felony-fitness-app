@@ -113,14 +113,15 @@
 }
 
 /**
- * A styled box for displaying error messages.
+ * Error state styling.
  */
 .error-message {
-  color: #fc8181;
-  background-color: rgba(252, 129, 129, 0.1);
+  color: var(--error-color, #fc8181);
+  background-color: rgba(var(--error-rgb, 252, 129, 129), 0.1);
   padding: 1rem;
   border-radius: 8px;
-  border: 1px solid #fc8181;
+  border: 1px solid var(--error-color, #fc8181);
+  margin: 1rem 0;
 }
 
 /**

@@ -554,13 +554,18 @@ function NutritionLogPage() {
       }
 
       // Now insert the nutrition log
+      // **TIMEZONE FIX**: Use local date, not UTC
+      const today = new Date();
+      const logDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      
       const { data, error } = await supabase
         .from('nutrition_logs')
         .insert({
           user_id: user.id,
           food_serving_id: servingId,
           meal_type: activeMeal,
-          quantity_consumed: qty
+          quantity_consumed: qty,
+          log_date: logDate
         })
         .select();
 
@@ -630,11 +635,16 @@ function NutritionLogPage() {
       }
 
       // Prepare bulk insert data
+      // **TIMEZONE FIX**: Use local date, not UTC
+      const today = new Date();
+      const logDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      
       const nutritionLogs = mealFoods.map(mealFood => ({
         user_id: user.id,
         food_serving_id: mealFood.food_servings_id,
         meal_type: activeMeal,
-        quantity_consumed: mealFood.quantity * (scheduledMeal.servings || 1)
+        quantity_consumed: mealFood.quantity * (scheduledMeal.servings || 1),
+        log_date: logDate
       }));
 
       // Bulk insert all nutrition logs
@@ -663,11 +673,16 @@ function NutritionLogPage() {
 
   const handleLogWater = async (ounces) => {
     if (!user) return;
+    
+    // **TIMEZONE FIX**: Use local date, not UTC
+    const today = new Date();
+    const logDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
     const { error } = await supabase.from('nutrition_logs').insert({
       user_id: user.id,
       meal_type: 'water', // Use lowercase to match schema constraint
       water_oz_consumed: ounces,
-      // We no longer need to set log_date; created_at is handled automatically
+      log_date: logDate
     });
     if (error) {
       alert(`Error logging water: ${error.message}`);

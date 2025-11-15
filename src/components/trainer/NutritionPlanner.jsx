@@ -4,9 +4,9 @@
  * @project Felony Fitness
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '../../supabaseClient.js';
-import { Save, X, Search, Apple } from 'lucide-react';
+import { Save, X, Search, Apple, AlertCircle, CheckCircle } from 'lucide-react';
 import './NutritionPlanner.css';
 
 /**
@@ -24,6 +24,8 @@ const NutritionPlanner = ({ client }) => {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [mealName, setMealName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   
   // Food search state
   const [foodSearch, setFoodSearch] = useState('');
@@ -31,6 +33,30 @@ const NutritionPlanner = ({ client }) => {
   const [isSearching, setIsSearching] = useState(false);
   const searchDebounceRef = useRef(null);
   const searchAbortControllerRef = useRef(null);
+
+  /**
+   * Reset state when client changes to prevent carryover
+   */
+  useEffect(() => {
+    setMealFoods([]);
+    setMealName('');
+    setShowSaveModal(false);
+    setErrorMessage('');
+    setSuccessMessage('');
+  }, [client?.id]);
+
+  /**
+   * Auto-dismiss success/error messages after 5 seconds
+   */
+  useEffect(() => {
+    if (successMessage || errorMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+        setErrorMessage('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, errorMessage]);
 
   /**
    * Search for foods using food-search-v2 edge function
@@ -130,7 +156,6 @@ const NutritionPlanner = ({ client }) => {
     };
     
     setMealFoods([...mealFoods, newFood]);
-    console.log('✅ Food added to meal:', newFood);
     
     // Clear search after adding
     setFoodSearch('');
@@ -146,13 +171,26 @@ const NutritionPlanner = ({ client }) => {
   };
 
   /**
-   * Update food quantity
+   * Update food quantity with validation
    */
   const handleUpdateQuantity = (index, quantity) => {
+    const numQuantity = parseFloat(quantity);
+    // Validate: must be positive number, max 999 servings
+    if (isNaN(numQuantity) || numQuantity < 0.1 || numQuantity > 999) {
+      return;
+    }
     const updatedMeal = mealFoods.map((food, i) =>
-      i === index ? { ...food, quantity: parseFloat(quantity) || 1 } : food
+      i === index ? { ...food, quantity: numQuantity } : food
     );
     setMealFoods(updatedMeal);
+  };
+
+  /**
+   * Sanitize meal name input
+   */
+  const sanitizeMealName = (name) => {
+    // Remove HTML tags, limit length to 100 chars
+    return name.replace(/<[^>]*>/g, '').slice(0, 100).trim();
   };
 
   /**
@@ -172,22 +210,51 @@ const NutritionPlanner = ({ client }) => {
 
   /**
    * Save meal to client's meals
-   * Handles both local and external foods
+   * Handles both local and external foods with find-or-create pattern
    */
   const handleSaveMeal = async () => {
-    if (!mealName.trim() || mealFoods.length === 0) return;
+    const sanitizedName = sanitizeMealName(mealName);
+    if (!sanitizedName || mealFoods.length === 0) {
+      setErrorMessage('Please provide a meal name and add at least one food.');
+      return;
+    }
 
     setSaving(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+    
     try {
-      console.log('💾 Saving meal for client:', client.id, client);
+      // Validate client ID (authorization check)
+      if (!client?.id) {
+        throw new Error('Invalid client selected');
+      }
       
-      // First, handle external foods by inserting them into food_servings
+      // Handle external foods with find-or-create pattern to prevent duplication
       const foodsWithIds = await Promise.all(
         mealFoods.map(async (food) => {
-          // If it's an external food (temp ID), insert into food_servings first
+          // If it's an external food, try to find existing or create new
           if (food.is_external) {
-            console.log('📝 Inserting external food into food_servings:', food.name);
+            // First, try to find existing food with same name and macros
+            const { data: existingFoods } = await supabase
+              .from('food_servings')
+              .select('id')
+              .eq('food_name', food.name)
+              .eq('calories', food.calories)
+              .eq('protein_g', food.protein)
+              .eq('carbs_g', food.carbs)
+              .eq('fat_g', food.fat)
+              .eq('source', 'external_api')
+              .limit(1);
             
+            // If found, use existing
+            if (existingFoods && existingFoods.length > 0) {
+              return {
+                ...food,
+                id: existingFoods[0].id
+              };
+            }
+            
+            // If not found, create new
             const { data: newServing, error: servingError } = await supabase
               .from('food_servings')
               .insert({
@@ -205,11 +272,9 @@ const NutritionPlanner = ({ client }) => {
 
             if (servingError) throw servingError;
             
-            console.log('✅ External food inserted with ID:', newServing.id);
-            
             return {
               ...food,
-              id: newServing.id // Use the real UUID from database
+              id: newServing.id
             };
           }
           
@@ -223,7 +288,7 @@ const NutritionPlanner = ({ client }) => {
         .from('user_meals')
         .insert({
           user_id: client.id,
-          name: mealName.trim(),
+          name: sanitizedName,
           category: 'trainer_created'
         })
         .select()
@@ -231,35 +296,38 @@ const NutritionPlanner = ({ client }) => {
 
       if (mealError) throw mealError;
 
-      console.log('✅ User meal created:', mealData);
-
       // Insert meal foods into user_meal_foods with real UUIDs
       const mealFoodInserts = foodsWithIds.map(food => ({
         user_meal_id: mealData.id,
-        food_servings_id: food.id, // Now guaranteed to be valid UUID
+        food_servings_id: food.id,
         quantity: food.quantity,
         notes: `${food.name} - ${food.serving_size}`
       }));
-
-      console.log('💾 Inserting user meal foods:', mealFoodInserts);
 
       const { error: foodsError } = await supabase
         .from('user_meal_foods')
         .insert(mealFoodInserts);
 
       if (foodsError) throw foodsError;
-
-      console.log('✅ Meal saved successfully with', mealFoodInserts.length, 'foods');
       
       // Reset form
       setMealFoods([]);
       setMealName('');
       setShowSaveModal(false);
       
-      alert(`Meal "${mealData.name}" added to ${client.first_name || 'client'}'s meals successfully!`);
+      // Show success message
+      setSuccessMessage(`Meal "${mealData.name}" added successfully to ${client.first_name || 'client'}\'s meals!`);
     } catch (error) {
-      console.error('❌ Error saving meal:', error);
-      alert('Failed to save meal. Please try again.');
+      // Show user-friendly error without exposing internals
+      setErrorMessage(
+        error.message === 'Invalid client selected'
+          ? 'Please select a valid client'
+          : 'Failed to save meal. Please try again or contact support if the issue persists.'
+      );
+      // Log full error for debugging (not in production)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error saving meal:', error);
+      }
     } finally {
       setSaving(false);
     }
@@ -278,6 +346,26 @@ const NutritionPlanner = ({ client }) => {
 
   return (
     <div className="nutrition-planner-container">
+      {/* Success/Error Messages */}
+      {successMessage && (
+        <div className="notification-banner success">
+          <CheckCircle size={18} />
+          <span>{successMessage}</span>
+          <button onClick={() => setSuccessMessage('')} className="close-notification">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+      {errorMessage && (
+        <div className="notification-banner error">
+          <AlertCircle size={18} />
+          <span>{errorMessage}</span>
+          <button onClick={() => setErrorMessage('')} className="close-notification">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+      
       {/* Left Panel: Meal Being Built */}
       <div className="planner-left-panel">
         <div className="meal-builder">
@@ -305,6 +393,7 @@ const NutritionPlanner = ({ client }) => {
                         <input
                           type="number"
                           min="0.1"
+                          max="999"
                           step="0.1"
                           value={food.quantity}
                           onChange={(e) => handleUpdateQuantity(index, e.target.value)}
@@ -420,7 +509,8 @@ const NutritionPlanner = ({ client }) => {
               onChange={(e) => setMealName(e.target.value)}
               placeholder="e.g., High Protein Breakfast, Post-Workout Meal..."
               autoFocus
-              onKeyPress={(e) => e.key === 'Enter' && handleSaveMeal()}
+              maxLength={100}
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveMeal()}
             />
             <div className="modal-actions">
               <button 

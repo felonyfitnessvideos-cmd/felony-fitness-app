@@ -1120,11 +1120,12 @@ const ProgramLibrary = () => {
           }
         }
 
-        // Update trainer_clients with the routine IDs
+        // Update trainer_clients with the routine IDs and program name
         const { error: updateError } = await supabase
           .from('trainer_clients')
           .update({
             assigned_program_id: programId,
+            program_name: program.name,
             generated_routine_ids: routineIds,
             updated_at: new Date().toISOString()
           })
