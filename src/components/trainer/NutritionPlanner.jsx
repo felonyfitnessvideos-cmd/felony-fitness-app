@@ -171,14 +171,30 @@ const NutritionPlanner = ({ client }) => {
   };
 
   /**
-   * Update food quantity with validation
+   * Update food quantity with validation and user feedback
    */
   const handleUpdateQuantity = (index, quantity) => {
     const numQuantity = parseFloat(quantity);
+    
     // Validate: must be positive number, max 999 servings
     if (isNaN(numQuantity) || numQuantity < 0.1 || numQuantity > 999) {
+      // Show error feedback
+      setErrorMessage('Quantity must be between 0.1 and 999');
+      
+      // Restore previous valid value
+      const previousValue = mealFoods[index]?.quantity || 1;
+      const updatedMeal = mealFoods.map((food, i) =>
+        i === index ? { ...food, quantity: previousValue } : food
+      );
+      setMealFoods(updatedMeal);
       return;
     }
+    
+    // Clear any existing error
+    if (errorMessage.includes('Quantity must be')) {
+      setErrorMessage('');
+    }
+    
     const updatedMeal = mealFoods.map((food, i) =>
       i === index ? { ...food, quantity: numQuantity } : food
     );
