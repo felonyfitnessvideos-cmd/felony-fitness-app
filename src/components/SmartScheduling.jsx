@@ -241,8 +241,8 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
         const endDateTime = new Date(startDateTime);
         endDateTime.setMinutes(endDateTime.getMinutes() + durationMinutes);
 
-        // Generate RRULE for weekly recurrence
-        const rrule = `FREQ=WEEKLY;BYDAY=${dayCode};COUNT=${totalSessions}`;
+        // Generate RRULE for weekly recurrence (must include RRULE: prefix for Google Calendar API)
+        const rrule = `RRULE:FREQ=WEEKLY;BYDAY=${dayCode};COUNT=${totalSessions}`;
 
         // Create Google Calendar event (raw format)
         const eventData = {
@@ -261,8 +261,8 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
           reminders: {
             useDefault: false,
             overrides: [
-              { method: 'email', minutes: 1440 }, // 24 hours before
-              { method: 'popup', minutes: 30 }    // 30 minutes before
+              { method: 'email', minutes: 60 },  // 1 hour before
+              { method: 'popup', minutes: 30 }   // 30 minutes before
             ]
           }
         };

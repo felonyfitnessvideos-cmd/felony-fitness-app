@@ -1073,8 +1073,8 @@ const ProgramLibrary = () => {
       // Create workout_routines for each generated routine
       const workoutRoutines = routines.map((routine, index) => ({
         user_id: clientId,
-        routine_name: `${program.name} - ${routine.name}`,
-        name: `${program.name} - ${routine.name}`,
+        routine_name: routine.name,
+        name: routine.name,
         description: `Day ${index + 1}: ${routine.name}`,
         is_active: true,
         is_public: false
