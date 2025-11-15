@@ -1064,6 +1064,7 @@ export type Database = {
           generated_routine_ids: string[] | null
           id: string
           notes: string | null
+          program_name: string | null
           status: string | null
           trainer_id: string | null
           updated_at: string | null
@@ -1077,6 +1078,7 @@ export type Database = {
           generated_routine_ids?: string[] | null
           id?: string
           notes?: string | null
+          program_name?: string | null
           status?: string | null
           trainer_id?: string | null
           updated_at?: string | null
@@ -1090,6 +1092,7 @@ export type Database = {
           generated_routine_ids?: string[] | null
           id?: string
           notes?: string | null
+          program_name?: string | null
           status?: string | null
           trainer_id?: string | null
           updated_at?: string | null
