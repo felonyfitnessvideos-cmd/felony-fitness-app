@@ -57,7 +57,7 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
   const [durationMinutes, setDurationMinutes] = useState(60);
 
   // Auth for client email lookup
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
 
   /**
    * Load client program and routines when client selected
@@ -137,14 +137,14 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
   /**
    * Handle drag start
    */
-  const handleDragStart = (routine) => {
+  const _handleDragStart = (routine) => {
     setDraggedRoutine(routine);
   };
 
   /**
    * Handle drag over day slot
    */
-  const handleDragOver = (e) => {
+  const _handleDragOver = (e) => {
     e.preventDefault();
   };
 
@@ -346,7 +346,7 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
     );
   }
 
-  const sessionsPerWeek = clientProgram?.workoutDays?.length || programRoutines.length;
+  const _sessionsPerWeek = clientProgram?.workoutDays?.length || programRoutines.length;
   const scheduledCount = Object.keys(weeklySchedule).length;
 
   return (

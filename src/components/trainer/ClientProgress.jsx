@@ -210,19 +210,19 @@ const ClientProgress = ({ client }) => {
               <h4>Workout Duration (Minutes)</h4>
               {workoutDurationTrends.length > 0 ? (
                 <LazyRecharts>
-                  {({ LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer }) => (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={workoutDurationTrends} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                        <XAxis dataKey="date" stroke="#888" style={{ fontSize: '9px' }} />
-                        <YAxis stroke="#888" style={{ fontSize: '9px' }} />
-                        <Tooltip 
+                  {({ LineChart: _LineChart, Line: _Line, XAxis: _XAxis, YAxis: _YAxis, CartesianGrid: _CartesianGrid, Tooltip: _Tooltip, ResponsiveContainer: _ResponsiveContainer }) => (
+                    <_ResponsiveContainer width="100%" height="100%">
+                      <_LineChart data={workoutDurationTrends} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                        <_CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                        <_XAxis dataKey="date" stroke="#888" style={{ fontSize: '9px' }} />
+                        <_YAxis stroke="#888" style={{ fontSize: '9px' }} />
+                        <_Tooltip 
                           contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', fontSize: '11px' }}
                           labelStyle={{ color: '#fff' }}
                         />
-                        <Line type="monotone" dataKey="duration" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 3 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
+                        <_Line type="monotone" dataKey="duration" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 3 }} />
+                      </_LineChart>
+                    </_ResponsiveContainer>
                   )}
                 </LazyRecharts>
               ) : (
@@ -234,19 +234,19 @@ const ClientProgress = ({ client }) => {
               <h4>Nutrition Trends (Calories Eaten)</h4>
               {nutritionTrends.length > 0 ? (
                 <LazyRecharts>
-                  {({ LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer }) => (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={nutritionTrends} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                        <XAxis dataKey="date" stroke="#888" style={{ fontSize: '9px' }} />
-                        <YAxis stroke="#888" style={{ fontSize: '9px' }} />
-                        <Tooltip 
+                  {({ LineChart: _LineChart, Line: _Line, XAxis: _XAxis, YAxis: _YAxis, CartesianGrid: _CartesianGrid, Tooltip: _Tooltip, ResponsiveContainer: _ResponsiveContainer }) => (
+                    <_ResponsiveContainer width="100%" height="100%">
+                      <_LineChart data={nutritionTrends} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                        <_CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                        <_XAxis dataKey="date" stroke="#888" style={{ fontSize: '9px' }} />
+                        <_YAxis stroke="#888" style={{ fontSize: '9px' }} />
+                        <_Tooltip 
                           contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', fontSize: '11px' }}
                           labelStyle={{ color: '#fff' }}
                         />
-                        <Line type="monotone" dataKey="calories" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', r: 3 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
+                        <_Line type="monotone" dataKey="calories" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', r: 3 }} />
+                      </_LineChart>
+                    </_ResponsiveContainer>
                   )}
                 </LazyRecharts>
               ) : (

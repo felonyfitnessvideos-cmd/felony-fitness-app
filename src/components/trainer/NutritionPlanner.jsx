@@ -316,7 +316,7 @@ const NutritionPlanner = ({ client }) => {
       setShowSaveModal(false);
       
       // Show success message
-      setSuccessMessage(`Meal "${mealData.name}" added successfully to ${client.first_name || 'client'}\'s meals!`);
+      setSuccessMessage(`Meal "${mealData.name}" added successfully to ${client.first_name || 'client'}'s meals!`);
     } catch (error) {
       // Show user-friendly error without exposing internals
       setErrorMessage(
