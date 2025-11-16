@@ -128,7 +128,6 @@ export function AuthProvider({ children }) {
         setUser(session?.user ?? null);
       } catch (err) {
         // If there's an error reading session, clear any partial state and continue.
-        console.debug('AuthProvider: getSession error', err?.message ?? err);
         if (!mounted) return;
         setSession(null);
         setUser(null);
@@ -164,7 +163,6 @@ export function AuthProvider({ children }) {
       try {
         if (subscription && typeof subscription.unsubscribe === 'function') subscription.unsubscribe();
       } catch (e) {
-        console.debug('AuthProvider: failed to unsubscribe', e);
       }
     };
   }, []);

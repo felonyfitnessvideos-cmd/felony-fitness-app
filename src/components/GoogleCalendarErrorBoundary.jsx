@@ -170,7 +170,6 @@ class GoogleCalendarErrorBoundary extends React.Component {
     const { retryCount } = this.state;
     
     if (retryCount < maxRetries) {
-      console.log(`🔄 Attempting to recover from Google Calendar error (attempt ${retryCount + 1}/${maxRetries})`);
       
       this.setState({
         hasError: false,

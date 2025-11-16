@@ -175,7 +175,6 @@ const MealBuilder = ({
    */
   const loadMealFoods = async (mealId) => {
     try {
-      console.log('[MealBuilder v2.0] Loading foods for meal ID:', mealId);
       const { data, error } = await supabase
         .from('user_meal_foods')  // Changed from meal_foods to user_meal_foods
         .select(`
@@ -194,7 +193,6 @@ const MealBuilder = ({
 
       if (error) throw error;
 
-      console.log('[MealBuilder] Loaded meal foods:', data);
 
       // Map the data to match the expected structure
       const mappedFoods = data.map(item => ({
@@ -209,7 +207,6 @@ const MealBuilder = ({
         }
       }));
 
-      console.log('[MealBuilder] Mapped foods:', mappedFoods);
       setMealFoods(mappedFoods);
     } catch (error) {
       // Error loading meal foods - log for debugging
@@ -331,11 +328,9 @@ const MealBuilder = ({
    * @param {Object} food - Food item from search results
    */
   const openFoodModal = (food) => {
-    console.log('[MealBuilder] Opening food modal for:', food);
     setSelectedFood(food);
     setFoodQuantity('1');
     setIsFoodModalOpen(true);
-    console.log('[MealBuilder] Modal state set - isFoodModalOpen should be true');
   };
 
   /**
@@ -360,7 +355,6 @@ const MealBuilder = ({
    * @param {number} quantity - Quantity to add
    */
   const addFoodToMeal = (food, quantity = 1) => {
-    console.log('[MealBuilder] addFoodToMeal called with:', { food, quantity });
     
     const servingId = food.serving_id || food.id;
 
@@ -370,13 +364,11 @@ const MealBuilder = ({
       return;
     }
 
-    console.log('[MealBuilder] Using serving ID:', servingId);
 
     const existingIndex = mealFoods.findIndex(item => item.food_servings_id === servingId);
 
     if (existingIndex >= 0) {
       // Increase quantity if food already exists
-      console.log('[MealBuilder] Food already exists at index', existingIndex, '- increasing quantity');
       const updated = [...mealFoods];
       updated[existingIndex].quantity += quantity;
       setMealFoods(updated);
@@ -392,8 +384,6 @@ const MealBuilder = ({
         fat_g: food.fat_g || food.fat || 0
       };
 
-      console.log('[MealBuilder] Adding new food with data:', foodServingData);
-      console.log('[MealBuilder] Original serving_description:', food.serving_description);
 
       // Add new food
       const newMealFood = {
@@ -404,7 +394,6 @@ const MealBuilder = ({
         food_servings: foodServingData
       };
       setMealFoods(prev => [...prev, newMealFood]);
-      console.log('[MealBuilder] Food added to meal');
     }
 
     closeFoodModal();
@@ -523,7 +512,6 @@ const MealBuilder = ({
 
         // Check if this is an external food (string ID starting with "ext_")
         if (typeof item.food_servings_id === 'string' && item.food_servings_id.startsWith('ext_')) {
-          console.log('[MealBuilder] Processing external food:', item.food_servings.food_name);
           
           // Create food_servings record directly (no foods table needed)
           const { data: servingData, error: servingError } = await supabase
@@ -555,7 +543,6 @@ const MealBuilder = ({
             throw servingError;
           }
 
-          console.log('[MealBuilder] Created food_servings with ID:', servingData.id);
           finalFoodServingsId = servingData.id;
         }
 
@@ -570,7 +557,6 @@ const MealBuilder = ({
       // CRITICAL: Only after ALL foods are processed successfully, delete old foods and insert new ones
       if (editingMeal?.id) {
         // Delete existing meal foods NOW that we know new ones are ready
-        console.log('[MealBuilder] Deleting old meal foods for meal:', mealId);
         const { error: deleteError } = await supabase
           .from('user_meal_foods')  // Changed from meal_foods to user_meal_foods
           .delete()
@@ -583,7 +569,6 @@ const MealBuilder = ({
       }
 
       // Insert meal foods with proper integer IDs
-      console.log('[MealBuilder] Inserting', processedMealFoods.length, 'meal foods');
       const { error: foodsError } = await supabase
         .from('user_meal_foods')  // Changed from meal_foods to user_meal_foods
         .insert(processedMealFoods);
@@ -731,7 +716,6 @@ const MealBuilder = ({
                       // The quantity field represents "how many servings"
                       const servingDesc = item.food_servings.serving_description || '';
                       
-                      console.log('[MealBuilder Display] Quantity:', item.quantity, 'Serving:', servingDesc, 'Food:', foodName);
 
                       // Build the display string: serving description + food name
                       // The quantity input shows how many of these servings
@@ -848,7 +832,6 @@ const MealBuilder = ({
             <button
               className="log-food-btn"
               onClick={() => {
-                console.log('[MealBuilder] Add to Meal button clicked. Food:', selectedFood, 'Quantity:', foodQuantity);
                 const qty = parseFloat(foodQuantity) || 1;
                 if (qty > 0) {
                   addFoodToMeal(selectedFood, qty);

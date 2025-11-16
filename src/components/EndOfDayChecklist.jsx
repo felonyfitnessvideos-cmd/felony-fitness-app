@@ -98,13 +98,11 @@ const EndOfDayChecklist = () => {
 
   const runBackupScript = () => {
     // In a real app, this would trigger the PowerShell script
-    console.log('Backup script would run here');
     toggleItem('backup');
   };
 
   const generateTypes = () => {
     // In a real app, this would run the Supabase command
-    console.log('Generate types command would run here');
     toggleItem('types');
   };
 
