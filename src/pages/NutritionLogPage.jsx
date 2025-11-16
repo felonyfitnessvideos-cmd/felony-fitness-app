@@ -61,7 +61,6 @@ import './NutritionLogPage.css';
 function NutritionLogPage() {
   const { user } = useAuth();
   const userId = user?.id;
-  console.log('👤 User ID:', userId);
   
   // IMPORTANT: Always use lowercase meal types for state and database operations
   const [activeMeal, setActiveMeal] = useState('breakfast');
@@ -90,9 +89,6 @@ function NutritionLogPage() {
   const mealLogs = todaysLogs.filter(log => 
     log.meal_type?.toLowerCase() === activeMeal.toLowerCase()
   );
-  console.log('🍽️ Meal Logs for', activeMeal, ':', mealLogs.length, 'items');
-  console.log('📋 All today logs:', todaysLogs.length, 'items');
-  console.log('⚙️ Loading state:', loading);
   
   const calorieProgress = goals.daily_calorie_goal > 0 ? (dailyTotals.calories / goals.daily_calorie_goal) * 100 : 0;
 
@@ -112,24 +108,6 @@ function NutritionLogPage() {
       const day = String(today.getDate()).padStart(2, '0');
       const todayDateString = `${year}-${month}-${day}`; // YYYY-MM-DD in LOCAL timezone
 
-      // DEBUGGING: Log the date being queried
-      if (import.meta.env?.DEV) {
-        console.debug('Fetching logs for date:', todayDateString);
-      }
-
-      // Debug: Check if ANY logs exist for this user
-      const { data: allLogs } = await supabase
-        .from('nutrition_logs')
-        .select('id, created_at, meal_type, log_date')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(5);
-      
-      console.log('🔍 Last 5 nutrition logs for user:', allLogs?.length || 0, 'found');
-      if (allLogs && allLogs.length > 0) {
-        console.log('📅 Most recent log:', allLogs[0]);
-      }
-
       const [logsResponse, profileResponse] = await Promise.all([
         supabase
           .from('nutrition_logs')
@@ -148,41 +126,6 @@ function NutritionLogPage() {
 
       const logs = logsResponse.data || [];
       
-      console.log('📊 Nutrition logs fetched:', logs.length, 'entries for', todayDateString);
-      if (logs.length > 0) {
-        console.log('📋 Sample log:', {
-          id: logs[0].id,
-          created_at: logs[0].created_at,
-          meal_type: logs[0].meal_type,
-          log_date: logs[0].log_date
-        });
-      }
-      
-      // DEBUGGING: Avoid logging full objects in production; only show non-sensitive fields in development.
-      if (import.meta.env?.DEV) {
-        try {
-          const safePreview = logs.map(l => ({ 
-            id: l.id, 
-            meal_type: l.meal_type, 
-            created_at: l.created_at,
-            food_serving_id: l.food_serving_id,
-            has_food_servings: !!l.food_servings,
-            food_name: l.food_servings?.food_name || 'NULL'
-          }));
-          console.debug('🔍 Fetched logs (preview):', safePreview);
-          // Check for logs with missing food_servings
-          const missingServings = logs.filter(l => !l.food_servings);
-          if (missingServings.length > 0) {
-            console.warn('⚠️ Found logs with missing food_servings:', missingServings.map(l => ({
-              id: l.id,
-              food_serving_id: l.food_serving_id,
-              meal_type: l.meal_type
-            })));
-          }
-        } catch {
-          console.debug('Fetched logs (count):', Array.isArray(logs) ? logs.length : typeof logs);
-        }
-      }
       setTodaysLogs(logs);
       if (profileResponse.data) setGoals(profileResponse.data);
 
@@ -239,18 +182,6 @@ function NutritionLogPage() {
       const day = String(todayDate.getDate()).padStart(2, '0');
       const today = `${year}-${month}-${day}`; // YYYY-MM-DD in LOCAL timezone
       
-      console.log('🔍 Fetching scheduled meal for:', { userId, mealType, today });
-      
-      // Debug: Check what entries exist for this user around this date
-      const { data: debugEntries } = await supabase
-        .from('weekly_meal_plan_entries')
-        .select('plan_date, meal_type, meals(name), weekly_meal_plans(is_active, user_id)')
-        .eq('weekly_meal_plans.user_id', userId)
-        .order('plan_date', { ascending: false })
-        .limit(10);
-      
-      console.log('🔎 Recent meal plan entries for user:', debugEntries);
-      
       const { data, error} = await supabase
         .from('weekly_meal_plan_entries')
         .select(`
@@ -274,17 +205,6 @@ function NutritionLogPage() {
         .eq('meal_type', mealType)  // Already lowercase from state
         .maybeSingle();
 
-      console.log('📋 Meal plan query result:', { 
-        data, 
-        error,
-        filters: {
-          userId,
-          is_active: true,
-          plan_date: today,
-          meal_type: mealType
-        }
-      });
-
       if (error) {
         console.error('Error fetching scheduled meal:', error);
         setScheduledMeal(null);
@@ -292,7 +212,6 @@ function NutritionLogPage() {
       }
 
       if (data && data.meals) {
-        console.log('✅ Found scheduled meal:', data.meals.name);
         setScheduledMeal({
           entryId: data.id,
           mealId: data.meal_id,
@@ -300,7 +219,6 @@ function NutritionLogPage() {
           servings: data.servings || 1
         });
       } else {
-        console.log('ℹ️ No scheduled meal found for', mealType, 'on', today);
         setScheduledMeal(null);
       }
     } catch (error) {
@@ -489,14 +407,10 @@ function NutritionLogPage() {
     if (!selectedFood || !qty || qty <= 0 || Number.isNaN(qty) || !user) return;
 
     try {
-      console.log('🔍 DEBUG: Logging food:', selectedFood);
-
       let servingId = selectedFood.serving_id;
 
       // If this is an external food without a serving_id, create a food_servings record first
       if (!servingId && selectedFood.is_external) {
-        console.log('🔍 External food detected, creating food_servings record...');
-        
         const { data: newServing, error: servingError } = await supabase
           .from('food_servings')
           .insert({
@@ -544,27 +458,18 @@ function NutritionLogPage() {
           .single();
 
         if (servingError) {
-          console.error('❌ Error creating food_servings record:', servingError);
+          console.error('Error creating food_servings record:', servingError);
           alert(`Error saving food: ${servingError.message}`);
           return;
         }
 
         servingId = newServing.id;
-        console.log('✅ Created food_servings record:', servingId);
       }
 
       // Now insert the nutrition log
       // **TIMEZONE FIX**: Use local date, not UTC
       const today = new Date();
       const logDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      
-      console.log('🔍 DEBUG: About to insert nutrition log:', {
-        user_id: user.id,
-        food_serving_id: servingId,
-        meal_type: activeMeal,
-        quantity_consumed: qty,
-        log_date: logDate
-      });
       
       const { data, error } = await supabase
         .from('nutrition_logs')
@@ -578,17 +483,14 @@ function NutritionLogPage() {
         .select();
 
       if (error) {
-        console.error('❌ Error logging food:', error);
+        console.error('Error logging food:', error);
         alert(`Error logging food: ${error.message}`);
       } else {
-        console.log('✅ Food logged successfully:', data);
-        console.log('🔄 Now fetching updated logs for user:', user.id);
         await fetchLogData(user.id);
-        console.log('✅ Logs refreshed, closing modal');
         closeLogModal();
       }
     } catch (error) {
-      console.error('❌ Unexpected error:', error);
+      console.error('Unexpected error:', error);
       alert(`Error logging food: ${error.message}`);
     }
   };
@@ -668,7 +570,7 @@ function NutritionLogPage() {
         return;
       }
 
-      console.log(`✅ Successfully added ${mealFoods.length} items from meal plan`);
+      console.log(`Successfully added ${mealFoods.length} items from meal plan`);
       
       // Refresh data to show new logs
       await fetchLogData(user.id);
