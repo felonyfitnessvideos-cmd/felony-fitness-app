@@ -75,7 +75,7 @@ const femaleBodyFatImages = [
  * Calculate user age from date of birth
  * 
  * @function calculateAge
- * @param {string|null} dob - Date of birth in 'YYYY-MM-DD' format
+ * @param {string|null} dob - Date of birth in 'YYYY-MM-DD' format (database format)
  * @returns {number|null} Calculated age in years, or null if DOB not provided
  * 
  * @description Accurately calculates age accounting for leap years and exact
@@ -146,7 +146,7 @@ const calculateAge = (dob) => {
  * @state {string} weight - Current weight input value for form submission
  * @state {string} bodyFat - Current body fat percentage input for form submission
  * @state {string} message - User feedback message for metric logging operations
- * @state {Object} profile - User profile data object containing dob (mapped from date_of_birth), sex, diet_preference
+ * @state {Object} profile - User profile data object containing dob (stored as YYYY-MM-DD, displayed as MM-DD-YYYY), sex, diet_preference
  * @state {number|null} age - Calculated age from date of birth, null if no DOB
  * @state {boolean} isEditingProfile - Controls profile form edit/display mode
  * @state {string} profileMessage - User feedback message for profile operations
@@ -264,7 +264,7 @@ function ProfilePage() {
   /**
    * User profile data object containing personal information
    * @type {Object}
-   * @property {string} dob - Date of birth in YYYY-MM-DD format
+   * @property {string} dob - Date of birth (database stores YYYY-MM-DD, user enters MM-DD-YYYY)
    * @property {string} sex - Gender selection (male, female, other - lowercase per DB constraint)
    * @property {string} diet_preference - Dietary preference (Vegetarian, Vegan, or empty)
    * @property {string} first_name - User's first name
@@ -478,8 +478,15 @@ function ProfilePage() {
           heightInches = inchesPart.toString();
         }
 
+        // Convert date from YYYY-MM-DD (database) to MM-DD-YYYY (display)
+        let dobDisplay = '';
+        if (profileData.date_of_birth) {
+          const [year, month, day] = profileData.date_of_birth.split('-');
+          dobDisplay = `${month}-${day}-${year}`;
+        }
+
         setProfile({
-          dob: profileData.date_of_birth || '',
+          dob: dobDisplay,
           sex: profileData.sex || '',
           diet_preference: profileData.diet_preference || '',
           heightFeet: heightFeet,
@@ -493,7 +500,7 @@ function ProfilePage() {
           zip_code: profileData.zip_code || ''
         });
 
-        // Calculate and set user's age from date of birth
+        // Calculate and set user's age from date of birth (uses YYYY-MM-DD format)
         setAge(calculateAge(profileData.date_of_birth));
 
         // Determine if profile editing should be forced
@@ -638,9 +645,10 @@ function ProfilePage() {
    * // Usage in form inputs
    * <input 
    *   name="dob" 
-   *   type="date" 
+   *   type="text" 
    *   value={profile.dob} 
-   *   onChange={handleProfileChange} 
+   *   onChange={handleProfileChange}
+   *   placeholder="MM-DD-YYYY"
    * />
    * 
    * @example
@@ -704,7 +712,7 @@ function ProfilePage() {
    * 
    * Form Validation:
    * - Checks for authenticated user before processing
-   * - Validates date_of_birth format (YYYY-MM-DD) and ensures valid date
+   * - Validates date_of_birth format (accepts MM-DD-YYYY or YYYY-MM-DD) and ensures valid date
    * - Prevents future dates for date of birth
    * - Allows empty date of birth (optional field)
    * - Shows appropriate error messages for validation failures
@@ -760,7 +768,7 @@ function ProfilePage() {
    * // Error flow - Invalid date
    * // 1. User enters invalid date format or future date
    * // 2. Client-side validation fails
-   * // 3. Error message displayed: "Please enter date of birth in YYYY-MM-DD format"
+   * // 3. Error message displayed: "Please enter date of birth in MM-DD-YYYY format"
    * // 4. Form remains in editing mode for correction
    * 
    * @example
@@ -773,7 +781,7 @@ function ProfilePage() {
    * Data Validation Examples:
    * @example
    * // Valid date formats
-   * profile.dob = "1990-05-15";  // ✅ Valid: YYYY-MM-DD format, past date
+   * profile.dob = "05-15-1990";  // ✅ Valid: MM-DD-YYYY format, past date
    * profile.dob = "";           // ✅ Valid: Empty string, optional field
    * profile.dob = "1985-12-25"; // ✅ Valid: Proper format and valid date
    * 
@@ -867,19 +875,27 @@ function ProfilePage() {
       // Only include date_of_birth if it's a valid date
       // Empty strings or invalid dates should not be sent to database
       if (profile.dob && profile.dob.trim() !== '') {
-        // Validate date format (YYYY-MM-DD) and ensure it's a valid date
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (dateRegex.test(profile.dob)) {
-          const testDate = new Date(profile.dob);
-          // Check if date is valid and not in the future
-          if (!isNaN(testDate.getTime()) && testDate <= new Date()) {
-            profileData.date_of_birth = profile.dob;
-          } else {
-            setProfileMessage('Please enter a valid date of birth that is not in the future.');
-            return;
-          }
+        // Accept both MM-DD-YYYY and YYYY-MM-DD formats
+        const mmddyyyyRegex = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])-(\d{4})$/;
+        const yyyymmddRegex = /^\d{4}-\d{2}-\d{2}$/;
+        
+        let dateToValidate = profile.dob;
+        
+        // Convert MM-DD-YYYY to YYYY-MM-DD for database storage
+        if (mmddyyyyRegex.test(profile.dob)) {
+          const [month, day, year] = profile.dob.split('-');
+          dateToValidate = `${year}-${month}-${day}`;
+        } else if (!yyyymmddRegex.test(profile.dob)) {
+          setProfileMessage('Please enter date of birth in MM-DD-YYYY format (e.g., 01-15-1990).');
+          return;
+        }
+        
+        const testDate = new Date(dateToValidate);
+        // Check if date is valid and not in the future
+        if (!isNaN(testDate.getTime()) && testDate <= new Date()) {
+          profileData.date_of_birth = dateToValidate;
         } else {
-          setProfileMessage('Please enter date of birth in YYYY-MM-DD format.');
+          setProfileMessage('Please enter a valid date of birth that is not in the future.');
           return;
         }
       }
@@ -1127,7 +1143,7 @@ function ProfilePage() {
                 type="text" 
                 value={profile.dob} 
                 onChange={handleProfileChange}
-                placeholder="YYYY-MM-DD"
+                placeholder="MM-DD-YYYY"
               />
             </div>
             <div className="form-group">

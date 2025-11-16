@@ -33,6 +33,9 @@ import { useAuth } from '../AuthContext';
 import useResponsive from '../hooks/useResponsive.jsx';
 import { getUnreadMessageCount, subscribeToMessages } from '../utils/messagingUtils';
 import SmartScheduling from '../components/SmartScheduling.jsx';
+import ClientProgress from '../components/trainer/ClientProgress.jsx';
+import WorkoutBuilder from '../components/trainer/WorkoutBuilder.jsx';
+import NutritionPlanner from '../components/trainer/NutritionPlanner.jsx';
 import ClientOnboarding from './trainer/ClientOnboarding.jsx';
 import IntervalTimer from './trainer/IntervalTimer.jsx';
 import TrainerCalendar from './trainer/TrainerCalendar.jsx';
@@ -251,16 +254,16 @@ const TrainerDashboard = () => {
         return <SmartScheduling selectedClient={selectedClient} />;
 
       case 'progress':
-        return renderToolCards('Progress Tracking');
+        return <ClientProgress client={selectedClient} />;
 
       case 'workout':
-        return renderToolCards('Workout Builder');
+        return <WorkoutBuilder client={selectedClient} />;
 
       case 'messaging':
         return renderToolCards('Messaging Hub');
 
       case 'nutrition':
-        return renderToolCards('Nutrition Planner');
+        return <NutritionPlanner client={selectedClient} />;
 
       default:
         return null;
@@ -458,16 +461,6 @@ const TrainerDashboard = () => {
               </button>
               <button
                 type="button"
-                className={`workspace-tool ${activeWorkspaceTool === 'messaging' ? 'active' : ''}`}
-                onClick={() => setActiveWorkspaceTool('messaging')}
-                aria-pressed={activeWorkspaceTool === 'messaging'}
-                aria-label="Messaging Hub Tool"
-              >
-                <MessageSquare size={16} />
-                <span>Messaging Hub</span>
-              </button>
-              <button
-                type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'nutrition' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('nutrition')}
                 aria-pressed={activeWorkspaceTool === 'nutrition'}
@@ -475,6 +468,16 @@ const TrainerDashboard = () => {
               >
                 <Apple size={16} />
                 <span>Nutrition Planner</span>
+              </button>
+              <button
+                type="button"
+                className={`workspace-tool ${activeWorkspaceTool === 'messaging' ? 'active' : ''}`}
+                onClick={() => setActiveWorkspaceTool('messaging')}
+                aria-pressed={activeWorkspaceTool === 'messaging'}
+                aria-label="Messaging Hub Tool"
+              >
+                <MessageSquare size={16} />
+                <span>Messaging Hub</span>
               </button>
             </div>
             <div className="workspace-content">

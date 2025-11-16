@@ -11,6 +11,7 @@ export default defineConfig([
     'node_modules',
     'public',
     'supabase/functions/**/*.ts',
+    'supabase/database.types.ts', // Auto-generated Supabase types
     'src/database.types.ts',
     'src/types/**/*.ts', // Ignore TypeScript type files
     'OldFiles/**/*',

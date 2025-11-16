@@ -83,10 +83,7 @@
   color: var(--text-primary);
   user-select: all;
   word-break: break-all;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Removed max-width to show full UUID for trainers to lookup clients */
 }
 
 .copy-button {
