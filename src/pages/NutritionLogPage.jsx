@@ -558,6 +558,14 @@ function NutritionLogPage() {
       const today = new Date();
       const logDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       
+      console.log('🔍 DEBUG: About to insert nutrition log:', {
+        user_id: user.id,
+        food_serving_id: servingId,
+        meal_type: activeMeal,
+        quantity_consumed: qty,
+        log_date: logDate
+      });
+      
       const { data, error } = await supabase
         .from('nutrition_logs')
         .insert({
@@ -574,7 +582,9 @@ function NutritionLogPage() {
         alert(`Error logging food: ${error.message}`);
       } else {
         console.log('✅ Food logged successfully:', data);
+        console.log('🔄 Now fetching updated logs for user:', user.id);
         await fetchLogData(user.id);
+        console.log('✅ Logs refreshed, closing modal');
         closeLogModal();
       }
     } catch (error) {
