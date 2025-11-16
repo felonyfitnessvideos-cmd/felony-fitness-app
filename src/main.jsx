@@ -104,9 +104,6 @@ const WeeklyMealPlannerPage = React.lazy(() => import('./pages/WeeklyMealPlanner
 const MyMealsPage = React.lazy(() => import('./pages/MyMealsPage.jsx'));
 // Trainer Dashboard
 const TrainerDashboard = React.lazy(() => import('./pages/TrainerDashboard.jsx'));
-// Temporary messaging test component
-const MessagingFlowTest = React.lazy(() => import('./components/MessagingFlowTest.jsx'));
-const RelationshipCleanup = React.lazy(() => import('./components/RelationshipCleanup.jsx'));
 
 // Binds the modal to the app's root element for accessibility (e.g., screen readers).
 Modal.setAppElement('#root'); 
@@ -171,10 +168,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
               {/* --- Profile route --- */}
               <Route path="/profile" element={<ProfilePage />} />
-              
-              {/* --- Temporary messaging test routes --- */}
-              <Route path="/test-messaging" element={<MessagingFlowTest />} />
-              <Route path="/cleanup-relationships" element={<RelationshipCleanup />} />
 
               {/* --- Mesocycles (training cycles) --- */}
               <Route path="/mesocycles" element={<MesocyclesPage />} />

@@ -19,9 +19,11 @@ import {
     FileText,
     Folder,
     Search,
-    X
+    X,
+    Activity
 } from 'lucide-react';
 import { useState } from 'react';
+import NutritionPipelineMonitor from '../../components/NutritionPipelineMonitor.jsx';
 import './TrainerResources.css';
 
 /**
@@ -200,6 +202,9 @@ const TRAINING_RESOURCES = [
 const TrainerResources = () => {
     /** @type {[string, Function]} Search/filter query */
     const [searchQuery, setSearchQuery] = useState('');
+    
+    /** @type {[string, Function]} Active tab selection */
+    const [activeTab, setActiveTab] = useState('resources');
 
     /**
      * Handle download by fetching the file and creating a blob
@@ -259,8 +264,26 @@ const TrainerResources = () => {
                     </div>
                 </div>
 
-                <div className="header-actions">
-                    <div className="search-box">
+                <div className="tab-navigation">
+                    <button 
+                        className={`tab-btn ${activeTab === 'resources' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('resources')}
+                    >
+                        <Folder size={18} />
+                        <span>Resources</span>
+                    </button>
+                    <button 
+                        className={`tab-btn ${activeTab === 'nutrition-pipeline' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('nutrition-pipeline')}
+                    >
+                        <Activity size={18} />
+                        <span>Nutrition Pipeline</span>
+                    </button>
+                </div>
+
+                {activeTab === 'resources' && (
+                    <div className="header-actions">
+                        <div className="search-box">
                         <Search size={18} />
                         <input
                             type="text"
@@ -275,9 +298,14 @@ const TrainerResources = () => {
                         )}
                     </div>
                 </div>
+                )}
             </div>
 
-            {filteredResources.length === 0 && (
+            {activeTab === 'nutrition-pipeline' && (
+                <NutritionPipelineMonitor />
+            )}
+
+            {activeTab === 'resources' && filteredResources.length === 0 && (
                 <div className="empty-state">
                     <Folder size={64} />
                     <h3>No Resources Found</h3>
@@ -285,7 +313,7 @@ const TrainerResources = () => {
                 </div>
             )}
 
-            {filteredResources.length > 0 && (
+            {activeTab === 'resources' && filteredResources.length > 0 && (
                 <div className="resources-grid">
                     {filteredResources.map((file) => (
                         <div key={file.id} className={`resource-card ${file.placeholder ? 'placeholder' : ''}`}>
