@@ -36,6 +36,7 @@ import SmartScheduling from '../components/SmartScheduling.jsx';
 import ClientProgress from '../components/trainer/ClientProgress.jsx';
 import WorkoutBuilder from '../components/trainer/WorkoutBuilder.jsx';
 import NutritionPlanner from '../components/trainer/NutritionPlanner.jsx';
+import MessagingHub from '../components/trainer/MessagingHub.jsx';
 import ClientOnboarding from './trainer/ClientOnboarding.jsx';
 import IntervalTimer from './trainer/IntervalTimer.jsx';
 import TrainerCalendar from './trainer/TrainerCalendar.jsx';
@@ -260,7 +261,7 @@ const TrainerDashboard = () => {
         return <WorkoutBuilder client={selectedClient} />;
 
       case 'messaging':
-        return renderToolCards('Messaging Hub');
+        return <MessagingHub />;
 
       case 'nutrition':
         return <NutritionPlanner client={selectedClient} />;

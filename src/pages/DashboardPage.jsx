@@ -32,6 +32,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
+import BugReportMessaging from '../components/BugReportMessaging.jsx';
 import ClientMessaging from '../components/ClientMessaging.jsx';
 import { supabase } from '../supabaseClient.js';
 import './DashboardPage.css';
@@ -126,6 +127,8 @@ function DashboardPage() {
   /** @type {[ActiveGoal[], React.Dispatch<React.SetStateAction<ActiveGoal[]>>]} */
   const [activeGoals, setActiveGoals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isBeta, setIsBeta] = useState(false);
 
   /**
    * Fetch comprehensive dashboard data with parallel queries
@@ -164,7 +167,7 @@ function DashboardPage() {
       tomorrowStart.setDate(tomorrowStart.getDate() + 1);
 
       const [profileRes, nutritionLogsRes, goalsRes, workoutLogRes] = await Promise.all([
-        supabase.from('user_profiles').select('daily_calorie_goal, daily_protein_goal, daily_water_goal_oz').eq('id', userId).single(),
+        supabase.from('user_profiles').select('daily_calorie_goal, daily_protein_goal, daily_water_goal_oz, is_admin, is_beta').eq('id', userId).single(),
         supabase.from('nutrition_logs').select('quantity_consumed, water_oz_consumed, food_servings(calories, protein_g)').eq('user_id', userId).gte('created_at', todayStart.toISOString()).lt('created_at', tomorrowStart.toISOString()),
         supabase.from('goals').select('*').eq('user_id', userId),
         // Get today's completed workouts by log_date instead of created_at
@@ -179,6 +182,8 @@ function DashboardPage() {
 
       if (profileRes.data) {
         setGoals({ calories: profileRes.data.daily_calorie_goal || 0, protein: profileRes.data.daily_protein_goal || 0, water: profileRes.data.daily_water_goal_oz || 0 });
+        setIsAdmin(profileRes.data.is_admin || false);
+        setIsBeta(profileRes.data.is_beta || false);
       }
 
       if (nutritionLogsRes.data) {
@@ -338,6 +343,9 @@ function DashboardPage() {
 
       {/* Client Messaging - Only visible to clients */}
       <ClientMessaging />
+
+      {/* Bug Reporting - Visible to admins (all reports) and beta users (own reports) */}
+      {(isAdmin || isBeta) && <BugReportMessaging isAdmin={isAdmin} isBeta={isBeta} />}
     </div>
   );
 }

@@ -1,0 +1,446 @@
+/**
+ * @file EmailComposerModal.css
+ * @description Styles for the email composer modal
+ * @author Felony Fitness Development Team
+ * @date 2025-11-16
+ * 
+ * Design: Dark theme matching admin console with TinyMCE editor
+ */
+
+/* ============================================================================
+   MODAL OVERLAY
+   ============================================================================ */
+
+.email-composer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 2rem;
+}
+
+.email-composer-modal {
+  background: #2d3748;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  position: relative;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.email-composer-modal::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================================================
+   MODAL CONTENT
+   ============================================================================ */
+
+.email-composer-content {
+  padding: 2rem;
+  color: #f7fafc;
+}
+
+/* Header */
+.composer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #4a5568;
+}
+
+.composer-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: #cbd5e0;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #ffffff;
+}
+
+/* Form Group Container */
+.form-group {
+  margin-bottom: 1.25rem;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+/* Template Selector */
+.template-selector {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #4a5568;
+  border: 1px solid #718096;
+  border-radius: 6px;
+  color: #f7fafc;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.template-selector:focus {
+  outline: none;
+  border-color: #f97316;
+}
+
+.template-selector option {
+  background: #2d3748;
+  color: #f7fafc;
+}
+
+/* Group Display Box */
+.group-display-box {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.75rem 1rem;
+  background: #4a5568;
+  border: 1px solid #718096;
+  border-radius: 6px;
+  color: #f7fafc;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+/* Subject Input */
+.subject-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #4a5568;
+  border: 1px solid #718096;
+  border-radius: 6px;
+  color: #f7fafc;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.subject-input:focus {
+  outline: none;
+  border-color: #f97316;
+}
+
+.subject-input::placeholder {
+  color: #a0aec0;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.send-btn {
+  flex: 1;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: white;
+  border: none;
+  padding: 0.85rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3);
+}
+
+.send-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+  box-shadow: 0 4px 8px rgba(249, 115, 22, 0.4);
+  transform: translateY(-1px);
+}
+
+.send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.save-template-btn {
+  flex: 1;
+  background: #4a5568;
+  color: white;
+  border: none;
+  padding: 0.85rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-template-btn:hover:not(:disabled) {
+  background: #718096;
+}
+
+.save-template-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   TINYMCE EDITOR
+   ============================================================================ */
+
+.editor-container {
+  margin-bottom: 1rem;
+}
+
+.editor-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #a0aec0;
+}
+
+.word-count {
+  font-weight: 500;
+}
+
+.tinymce-branding {
+  color: #718096;
+}
+
+.tinymce-branding strong {
+  color: #f97316;
+  font-weight: 600;
+}
+
+/* Override TinyMCE styles for dark theme */
+.tox-tinymce {
+  border: 1px solid #4a5568 !important;
+  border-radius: 6px !important;
+}
+
+.tox .tox-toolbar,
+.tox .tox-toolbar__overflow,
+.tox .tox-toolbar__primary {
+  background: #3a3f51 !important;
+}
+
+.tox .tox-edit-area__iframe {
+  background: #ffffff !important;
+}
+
+/* ============================================================================
+   FEEDBACK MESSAGE
+   ============================================================================ */
+
+.feedback-message {
+  padding: 1rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: center;
+  margin-top: 1rem;
+  animation: slideIn 0.3s ease;
+}
+
+.feedback-message.success {
+  background: #10b981;
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.feedback-message.error {
+  background: #dc2626;
+  color: white;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================================
+   SAVE TEMPLATE MODAL
+   ============================================================================ */
+
+.save-template-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.save-template-modal {
+  background: #2d3748;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.save-template-content {
+  padding: 1.5rem;
+}
+
+.save-template-content h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  color: #ffffff;
+}
+
+.template-name-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #4a5568;
+  border: 1px solid #718096;
+  border-radius: 6px;
+  color: #f7fafc;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.template-name-input:focus {
+  outline: none;
+  border-color: #f97316;
+}
+
+.template-name-input::placeholder {
+  color: #a0aec0;
+}
+
+.template-info {
+  font-size: 0.9rem;
+  color: #a0aec0;
+  margin: 0.75rem 0;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.cancel-btn,
+.save-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn {
+  background: transparent;
+  color: #cbd5e0;
+  border: 1px solid #4a5568;
+}
+
+.cancel-btn:hover {
+  background: #4a5568;
+  color: #ffffff;
+}
+
+.save-btn {
+  background: #f97316;
+  color: white;
+}
+
+.save-btn:hover {
+  background: #ea580c;
+}
+
+/* ============================================================================
+   SCROLLBAR STYLING
+   ============================================================================ */
+
+.email-composer-modal::-webkit-scrollbar {
+  width: 10px;
+}
+
+.email-composer-modal::-webkit-scrollbar-track {
+  background: #1a202c;
+  border-radius: 6px;
+}
+
+.email-composer-modal::-webkit-scrollbar-thumb {
+  background: #4a5568;
+  border-radius: 6px;
+}
+
+.email-composer-modal::-webkit-scrollbar-thumb:hover {
+  background: #718096;
+}
+
+/* ============================================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .email-composer-modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .email-composer-content {
+    padding: 1.5rem;
+  }
+
+  .composer-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+}

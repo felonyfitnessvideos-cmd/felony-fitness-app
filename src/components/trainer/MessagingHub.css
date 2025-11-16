@@ -1,0 +1,420 @@
+/**
+ * @file MessagingHub.css
+ * @description Styles for the trainer messaging hub workspace component
+ * @author Felony Fitness Development Team
+ * @date 2025-11-16
+ * 
+ * Design: Dark theme with orange accent buttons (matching screenshots)
+ */
+
+/* ============================================================================
+   MAIN CONTAINER
+   ============================================================================ */
+
+.messaging-hub-workspace {
+  display: grid !important;
+  grid-template-columns: 25% 25% 50% !important;
+  grid-auto-flow: column !important;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--background-color, #1a1a1a);
+  color: var(--text-color, #ffffff);
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  /* Force grid layout, override any parent flex */
+  flex-direction: unset !important;
+  overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  font-size: 0.9rem;
+}
+
+.messaging-hub-workspace::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================================================
+   3 CARDS DISPLAYED HORIZONTALLY
+   ============================================================================ */
+
+/* Card 1: Email Groups - This is card 3 */
+.group-tags-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: #2d2d2d;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 0.625rem;
+  min-height: 400px;
+  grid-column: 1;
+}
+
+/* Card 2: Create Group Input */
+.create-group-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: #2d2d2d;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 0.625rem;
+  min-height: 400px;
+  grid-column: 2;
+}
+
+/* Card 3: Client List (styles below) */
+
+.group-tags-header {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #444;
+}
+
+.group-tags-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.group-tags-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.group-tags-container::-webkit-scrollbar {
+  display: none;
+}
+
+.group-tag-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.group-tag-button {
+  flex: 1;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+}
+
+.group-tag-button:hover {
+  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+  box-shadow: 0 4px 8px rgba(249, 115, 22, 0.4);
+  transform: translateY(-1px);
+}
+
+.group-tag-button.active {
+  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.3);
+}
+
+.tag-count {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+}
+
+.send-email-btn {
+  background: #4b5563;
+  color: white;
+  border: none;
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.send-email-btn:hover:not(:disabled) {
+  background: #6b7280;
+  transform: scale(1.05);
+}
+
+.send-email-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.no-groups-message {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #9ca3af;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+/* Create Group Header */
+.create-group-header {
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #444;
+}
+
+.create-group-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Create Group Input Area */
+.create-group-input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.new-group-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: #3a3a3a;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 0.85rem;
+  transition: border-color 0.2s;
+}
+
+.new-group-input:focus {
+  outline: none;
+  border-color: #f97316;
+}
+
+.new-group-input::placeholder {
+  color: #9ca3af;
+}
+
+.create-group-btn {
+  background: #4b5563;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.create-group-btn:hover:not(:disabled) {
+  background: #6b7280;
+}
+
+.create-group-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.selected-count {
+  font-size: 0.75rem;
+  color: #f97316;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Client List Panel - This is card 3 */
+.client-list-panel {
+  display: flex;
+  flex-direction: column;
+  background: #2d2d2d;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 0.625rem;
+  min-height: 400px;
+  overflow: hidden;
+  grid-column: 3;
+}
+
+.client-list-header {
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #444;
+}
+
+.client-list-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.selected-group-indicator {
+  font-size: 0.85rem;
+  color: #f97316;
+  font-weight: 500;
+}
+
+.client-list-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.client-list-items::-webkit-scrollbar {
+  display: none;
+}
+
+.client-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #3a3a3a;
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.client-list-item:hover {
+  background: #404040;
+}
+
+.client-name {
+  font-size: 0.75rem;
+  color: #ffffff;
+}
+
+.add-client-btn {
+  background: transparent;
+  color: #f97316;
+  border: 2px solid #f97316;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 70px;
+}
+
+.add-client-btn:hover:not(.added) {
+  background: #f97316;
+  color: white;
+}
+
+.add-client-btn.added {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+  cursor: default;
+}
+
+.add-client-btn.selected {
+  background: #f97316;
+  color: white;
+  border-color: #f97316;
+}
+
+.no-group-selected,
+.no-clients-message {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  color: #9ca3af;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* ============================================================================
+   ERROR MESSAGE
+   ============================================================================ */
+
+.error-message {
+  padding: 1rem;
+  background: #dc2626;
+  color: white;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* ============================================================================
+   LOADING STATE
+   ============================================================================ */
+
+.loading-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 1.1rem;
+  color: #9ca3af;
+}
+
+/* ============================================================================
+   SCROLLBAR STYLING
+   ============================================================================ */
+
+.group-tags-list::-webkit-scrollbar,
+.client-list-items::-webkit-scrollbar {
+  width: 8px;
+}
+
+.group-tags-list::-webkit-scrollbar-track,
+.client-list-items::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+.group-tags-list::-webkit-scrollbar-thumb,
+.client-list-items::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+.group-tags-list::-webkit-scrollbar-thumb:hover,
+.client-list-items::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* ============================================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================================ */
+
+@media (max-width: 1400px) {
+  .messaging-hub-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .group-tags-section,
+  .create-group-section,
+  .client-list-panel {
+    min-height: 300px;
+  }
+}

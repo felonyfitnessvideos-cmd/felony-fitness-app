@@ -21,7 +21,7 @@ const ClientMessaging = () => {
     const [trainers, setTrainers] = useState([]);
     const [selectedTrainer, setSelectedTrainer] = useState(null);
     const [sendLoading, setSendLoading] = useState(false);
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(true); // FIXED: Default to collapsed
     const [unreadCount, setUnreadCount] = useState(0);
     const [currentUserName, setCurrentUserName] = useState('');
     const messagesEndRef = useRef(null);
