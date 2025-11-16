@@ -69,7 +69,11 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', { 
+        varsIgnorePattern: '^[A-Z_]|^_',
+        argsIgnorePattern: '^_',
+        destructuredArrayIgnorePattern: '^_'
+      }],
     },
   },
   // Lint Node scripts with a Node environment and appropriate parser options

@@ -47,6 +47,89 @@ export type Database = {
         }
         Relationships: []
       }
+      bug_report_replies: {
+        Row: {
+          bug_report_id: string
+          created_at: string | null
+          id: string
+          is_admin_reply: boolean | null
+          message_text: string
+          user_id: string
+        }
+        Insert: {
+          bug_report_id: string
+          created_at?: string | null
+          id?: string
+          is_admin_reply?: boolean | null
+          message_text: string
+          user_id: string
+        }
+        Update: {
+          bug_report_id?: string
+          created_at?: string | null
+          id?: string
+          is_admin_reply?: boolean | null
+          message_text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bug_report_replies_bug_report_id_fkey"
+            columns: ["bug_report_id"]
+            isOneToOne: false
+            referencedRelation: "bug_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bug_reports: {
+        Row: {
+          admin_notes: string | null
+          browser_info: Json | null
+          category: string | null
+          created_at: string | null
+          id: string
+          message_text: string
+          priority: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          screenshot_url: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          browser_info?: Json | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          message_text: string
+          priority?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          browser_info?: Json | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          message_text?: string
+          priority?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       cycle_sessions: {
         Row: {
           actual_date: string | null
@@ -1247,6 +1330,7 @@ export type Database = {
           height_cm: number | null
           id: string
           is_admin: boolean | null
+          is_beta: boolean | null
           is_client: boolean | null
           is_trainer: boolean | null
           last_name: string | null
@@ -1285,6 +1369,7 @@ export type Database = {
           height_cm?: number | null
           id: string
           is_admin?: boolean | null
+          is_beta?: boolean | null
           is_client?: boolean | null
           is_trainer?: boolean | null
           last_name?: string | null
@@ -1323,6 +1408,7 @@ export type Database = {
           height_cm?: number | null
           id?: string
           is_admin?: boolean | null
+          is_beta?: boolean | null
           is_client?: boolean | null
           is_trainer?: boolean | null
           last_name?: string | null
