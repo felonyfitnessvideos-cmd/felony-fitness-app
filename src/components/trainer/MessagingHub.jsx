@@ -13,7 +13,7 @@
  * - Simple client tagging workflow
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../AuthContext';
 import { supabase } from '../../supabaseClient';
 import EmailComposerModal from './EmailComposerModal';
@@ -42,7 +42,10 @@ const MessagingHub = () => {
    * Load trainer's group tags and clients on mount
    */
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setLoading(false); // Prevent stuck loading if no authenticated user
+      return;
+    }
     
     // Load both immediately
     const initializeData = async () => {
@@ -81,6 +84,7 @@ const MessagingHub = () => {
   const loadClients = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear stale error before retry
       
       // Direct query to get clients with tags field
       // Exclude unsubscribed clients from messaging UI
@@ -153,6 +157,9 @@ const MessagingHub = () => {
       }
 
       // Add all selected clients to this group
+      // OPTIMIZATION: For large groups, consider moving this to a Postgres function
+      // that uses array_append(tags, newGroup.id) in a single UPDATE WHERE client_id IN (...)
+      // to avoid N queries and prevent overwrites if another process updates tags concurrently
       for (const clientId of selectedClientIds) {
         const client = clients.find(c => c.id === clientId);
         if (!client) continue;
@@ -213,10 +220,22 @@ const MessagingHub = () => {
   };
 
   /**
-   * Get count of clients with specific tag
+   * Memoized map of tag ID to client count
+   * Prevents repeated filtering through clients array on every render
+   */
+  const tagClientCounts = useMemo(() => {
+    const counts = {};
+    groupTags.forEach(tag => {
+      counts[tag.id] = clients.filter(c => c.tags.includes(tag.id)).length;
+    });
+    return counts;
+  }, [clients, groupTags]);
+
+  /**
+   * Get count of clients with specific tag (uses memoized map)
    */
   const getTagClientCount = (tagId) => {
-    return clients.filter(c => c.tags.includes(tagId)).length;
+    return tagClientCounts[tagId] || 0;
   };
 
   // Loading state
@@ -267,7 +286,7 @@ const MessagingHub = () => {
             placeholder="Group name"
             value={newGroupName}
             onChange={(e) => setNewGroupName(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleCreateGroup()}
+            onKeyDown={(e) => e.key === 'Enter' && handleCreateGroup()}
             className="new-group-input"
           />
           <div className="selected-count">

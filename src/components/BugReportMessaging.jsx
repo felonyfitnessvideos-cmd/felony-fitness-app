@@ -568,7 +568,7 @@ const BugReportMessaging = ({ isAdmin = false, isBeta = false }) => {
                                         fontSize: '0.75rem',
                                         fontWeight: '600'
                                     }}>
-                                        {selectedReport.priority.toUpperCase()}
+                                        {(selectedReport.priority || 'medium').toUpperCase()}
                                     </span>
                                     <span style={{
                                         background: 'rgba(255, 255, 255, 0.1)',
@@ -577,7 +577,7 @@ const BugReportMessaging = ({ isAdmin = false, isBeta = false }) => {
                                         borderRadius: '4px',
                                         fontSize: '0.75rem'
                                     }}>
-                                        {selectedReport.category.replace(/_/g, ' ')}
+                                        {(selectedReport.category || 'other').replace(/_/g, ' ')}
                                     </span>
                                 </div>
 

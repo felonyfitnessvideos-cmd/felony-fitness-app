@@ -165,6 +165,11 @@ export const BUG_CATEGORY = {
  * // }
  */
 function captureBrowserInfo() {
+  // Guard against non-browser environments (SSR, tests, Node)
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return { environment: 'non-browser', timestamp: new Date().toISOString() };
+  }
+  
   return {
     userAgent: navigator.userAgent,
     screen: {
@@ -803,6 +808,26 @@ export async function addAdminNotes(bugReportId, notes) {
   try {
     if (!bugReportId) {
       throw new Error('Bug report ID is required');
+    }
+
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Check if user is admin
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) throw profileError;
+
+    if (!profile.is_admin) {
+      throw new Error('Admin privileges required to update admin notes');
     }
 
     // Update admin notes

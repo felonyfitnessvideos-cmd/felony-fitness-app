@@ -95,4 +95,4 @@ SELECT
   COUNT(*) FILTER (WHERE is_unsubscribed = FALSE) as subscribed
 FROM trainer_clients;
 
-COMMIT;
+-- Note: COMMIT removed - let migration framework manage transactions

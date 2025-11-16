@@ -1,9 +1,18 @@
 /**
  * Debug utility to check bug reporting system
+ * 
+ * @description This utility logs potentially sensitive user data and should ONLY be used in development.
+ * It is automatically disabled in production builds.
  */
 import { supabase } from './supabaseClient';
 
 export async function debugBugReports() {
+  // Prevent execution in production builds
+  if (import.meta.env.PROD) {
+    console.warn('debugBugReports() is disabled in production');
+    return null;
+  }
+  
   console.log('=== BUG REPORTING DEBUG ===');
   
   // 1. Check current user

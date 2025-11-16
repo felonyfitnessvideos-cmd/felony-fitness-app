@@ -89,25 +89,6 @@ function validateEnvironment(): string[] {
 }
 
 /**
- * Get current authenticated user ID
- */
-async function getCurrentUserId(supabase: any): Promise<string | null> {
-  try {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    
-    if (error || !user) {
-      console.error('Authentication error:', error?.message || 'No user found');
-      return null;
-    }
-    
-    return user.id;
-  } catch (error) {
-    console.error('Error getting user:', error);
-    return null;
-  }
-}
-
-/**
  * Fetch clients with specific tag
  */
 async function getClientsByTag(
@@ -200,6 +181,15 @@ function addUnsubscribeLink(htmlBody: string, recipientEmail: string): string {
 
 /**
  * Send bulk email via Resend
+ * 
+ * @description Sends personalized emails to all recipients in parallel.
+ * 
+ * ⚠️ OPTIMIZATION NOTE: For large recipient lists (>100), this fires all emails concurrently
+ * which may hit Resend API rate limits or Edge Function timeout/memory limits.
+ * Consider implementing:
+ * - Batching (e.g., chunks of 50 recipients)
+ * - Concurrency limiting (e.g., p-limit pattern)
+ * - Progress tracking for long-running campaigns
  */
 async function sendBulkEmail(
   resend: Resend,

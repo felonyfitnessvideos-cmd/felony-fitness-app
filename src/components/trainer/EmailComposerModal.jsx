@@ -176,12 +176,14 @@ const EmailComposerModal = ({ tag, clients, onClose }) => {
    */
   const handleSaveAsTemplate = async () => {
     if (!newTemplateName.trim()) {
-      alert('Please enter a template name');
+      setFeedback('Please enter a template name');
+      setFeedbackType('error');
       return;
     }
 
     if (!subject.trim() || !body.trim()) {
-      alert('Please provide both subject and body content to save as template');
+      setFeedback('Please provide both subject and body content to save as template');
+      setFeedbackType('error');
       return;
     }
 
@@ -198,7 +200,8 @@ const EmailComposerModal = ({ tag, clients, onClose }) => {
       if (error) throw error;
 
       // Success
-      alert('Template saved successfully!');
+      setFeedback('Template saved successfully!');
+      setFeedbackType('success');
       setIsSaveTemplateModalOpen(false);
       setNewTemplateName('');
       
@@ -207,7 +210,8 @@ const EmailComposerModal = ({ tag, clients, onClose }) => {
 
     } catch (err) {
       console.error('Error saving template:', err);
-      alert('Failed to save template. Please try again.');
+      setFeedback('Failed to save template. Please try again.');
+      setFeedbackType('error');
     }
   };
 

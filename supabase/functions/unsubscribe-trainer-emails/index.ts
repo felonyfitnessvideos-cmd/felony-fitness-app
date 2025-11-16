@@ -9,11 +9,11 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { corsHeaders as baseCorsHeaders } from '../_shared/cors.ts';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  ...baseCorsHeaders,
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req: Request) => {
@@ -51,7 +51,19 @@ serve(async (req: Request) => {
       );
     }
 
-    console.log(`Processing unsubscribe for: ${email}`);
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid email format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Normalize email for consistent matching (trim + lowercase)
+    const normalizedEmail = email.trim().toLowerCase();
+
+    console.log(`Processing unsubscribe for: ${normalizedEmail}`);
 
     // Initialize Supabase client with service role key
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -65,7 +77,7 @@ serve(async (req: Request) => {
         is_unsubscribed: true,
         updated_at: new Date().toISOString()
       })
-      .eq('email', email)
+      .eq('email', normalizedEmail)
       .select('client_id, trainer_id');
 
     if (error) {
