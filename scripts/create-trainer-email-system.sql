@@ -197,6 +197,14 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
+    -- Verify tag exists and belongs to the current trainer
+    IF NOT EXISTS (
+        SELECT 1 FROM trainer_group_tags 
+        WHERE id::TEXT = p_tag_id AND trainer_id = auth.uid()
+    ) THEN
+        RAISE EXCEPTION 'Tag % does not exist or does not belong to you', p_tag_id;
+    END IF;
+    
     -- Remove tag from client's tags array
     UPDATE trainer_clients
     SET tags = array_remove(tags, p_tag_id),

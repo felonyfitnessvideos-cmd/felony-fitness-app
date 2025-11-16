@@ -348,7 +348,7 @@ const EmailComposerModal = ({ tag, clients, onClose }) => {
               onChange={(e) => setNewTemplateName(e.target.value)}
               placeholder="e.g., Weekly Motivation"
               className="template-name-input"
-              onKeyPress={(e) => e.key === 'Enter' && handleSaveAsTemplate()}
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveAsTemplate()}
             />
           </div>
           <p className="template-info">
