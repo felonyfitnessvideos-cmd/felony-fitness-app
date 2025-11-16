@@ -1,2 +1,0 @@
-.cycle-week-editor .weeks-grid{ display:flex; gap:.5rem; flex-wrap:wrap }
-.week-card{ padding:.5rem; border:1px solid var(--border-color,#e5e7eb); border-radius:.5rem; min-width:120px }
