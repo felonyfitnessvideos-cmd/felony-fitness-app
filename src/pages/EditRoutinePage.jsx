@@ -183,8 +183,6 @@ function EditRoutinePage() {
           ...item,
           is_external: data?.source === 'external',
         }));
-        console.log('Exercise search results:', results);
-        console.log('Search data source:', data?.source);
         setSearchResults(results);
       } catch (error) {
         if (error?.name === 'AbortError') {
@@ -201,7 +199,6 @@ function EditRoutinePage() {
   }, []);
 
   const handleAddExercise = (exerciseToAdd) => {
-    console.log('Adding exercise to routine:', exerciseToAdd);
     const newExercise = { ...exerciseToAdd, sets: '', reps: '', is_warmup: false };
     setRoutineExercises([...routineExercises, newExercise]);
     setSearchTerm('');
@@ -279,8 +276,6 @@ function EditRoutinePage() {
         // Map to valid database value, default to 'Bodyweight'
         exerciseType = validExerciseTypes[exerciseType] || 'Bodyweight';
 
-        console.log(`Mapped exercise_type: "${ex.exercise_type || ex.type}" -> "${exerciseType}"`);
-
         // Insert new exercise with all fields from AI-generated data
         const exerciseData = {
           name: ex.name,
@@ -295,9 +290,6 @@ function EditRoutinePage() {
           thumbnail_url: ex.thumbnail_url || null,
           video_url: ex.video_url || null
         };
-
-        console.log('Inserting new exercise with data:', exerciseData);
-        console.log('exercise_type value:', exerciseType, 'original:', ex.exercise_type, 'type:', ex.type);
 
         const { data: newExercise, error: insertError } = await supabase
           .from('exercises')
