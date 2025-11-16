@@ -31,7 +31,7 @@ const WeeklyMealPlannerPage = () => {
   /** @type {[Date[], Function]} Current week's date array for meal planning */
   const [currentWeek, setCurrentWeek] = useState(() => {
     const week = getWeekDates(new Date());
-    console.log('🗓️ Initial currentWeek:', week.map(d => d.toLocaleDateString() + ' (' + d.toISOString().split('T')[0] + ')'));
+
     return week;
   });
 
@@ -186,10 +186,9 @@ const WeeklyMealPlannerPage = () => {
         .lte('plan_date', endDate);
 
       if (error) throw error;
-      
-      console.log(`📊 Loaded ${data?.length || 0} meal plan entries for date range ${startDate} to ${endDate}`);
+
       if (data && data.length > 0) {
-        console.log('Sample entries:', data.slice(0, 3).map(e => ({ date: e.plan_date, type: e.meal_type, meal: e.meals.name })));
+
       }
       
       setPlanEntries(data || []);
@@ -768,7 +767,6 @@ const WeeklyMealPlannerPage = () => {
   };
 
 
-
   /**
    * Add a selected meal to a specific time slot in the meal plan
    * 
@@ -846,8 +844,7 @@ const WeeklyMealPlannerPage = () => {
 
   const removeMealFromSlot = async (entryId) => {
     try {
-      console.log('🗑️ Deleting meal plan entry:', entryId);
-      
+
       const { error } = await supabase
         .from('weekly_meal_plan_entries')
         .delete()
@@ -858,7 +855,6 @@ const WeeklyMealPlannerPage = () => {
         throw error;
       }
 
-      console.log('✅ Meal deleted successfully');
       await loadPlanEntries();
     } catch (error) {
       console.error('WeeklyMealPlannerPage - Error removing meal from plan:', error);
@@ -890,9 +886,7 @@ const WeeklyMealPlannerPage = () => {
     
     // Debug logging
     if (matches.length > 0) {
-      console.log(`📅 Found ${matches.length} meal(s) for ${date.toLocaleDateString()} (${dateStr}) ${mealType}:`, 
-        matches.map(m => ({ name: m.meals.name, plan_date: m.plan_date }))
-      );
+
     }
     
     return matches;

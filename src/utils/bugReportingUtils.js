@@ -248,7 +248,6 @@ function validateReplyMessage(message) {
  * 
  * @example
  * const myReports = await getBugReports();
- * console.log(`You have ${myReports.length} bug reports`);
  */
 export async function getBugReports() {
   try {
@@ -442,7 +441,6 @@ export async function getAllBugReports() {
  * @example
  * const replies = await getBugReportReplies(reportId);
  * replies.forEach(reply => {
- *   console.log(`${reply.user.first_name}: ${reply.message_text}`);
  * });
  */
 export async function getBugReportReplies(bugReportId) {
@@ -538,7 +536,6 @@ export async function getUnreadBugReportCount() {
  *   category: "bug",
  *   priority: "high"
  * });
- * console.log(`Bug report #${report.id} created`);
  */
 export async function submitBugReport({ message, category = 'bug', priority = 'medium', screenshotUrl = null }) {
   try {
@@ -572,7 +569,6 @@ export async function submitBugReport({ message, category = 'bug', priority = 'm
 
     if (error) throw error;
 
-    console.log('✅ Bug report submitted successfully:', data.id);
     return data;
   } catch (error) {
     console.error('❌ Error submitting bug report:', error);
@@ -638,7 +634,6 @@ export async function replyToBugReport(bugReportId, message) {
 
     if (error) throw error;
 
-    console.log('✅ Bug report reply added:', data.id);
     return data;
   } catch (error) {
     console.error('❌ Error replying to bug report:', error);
@@ -717,7 +712,6 @@ export async function updateBugReportStatus(bugReportId, newStatus) {
 
     if (error) throw error;
 
-    console.log(`✅ Bug report status updated to ${newStatus}:`, data.id);
     return data;
   } catch (error) {
     console.error('❌ Error updating bug report status:', error);
@@ -781,7 +775,6 @@ export async function updateBugReportPriority(bugReportId, newPriority) {
 
     if (error) throw error;
 
-    console.log(`✅ Bug report priority updated to ${newPriority}:`, data.id);
     return data;
   } catch (error) {
     console.error('❌ Error updating bug report priority:', error);
@@ -840,7 +833,6 @@ export async function addAdminNotes(bugReportId, notes) {
 
     if (error) throw error;
 
-    console.log('✅ Admin notes added to bug report:', data.id);
     return data;
   } catch (error) {
     console.error('❌ Error adding admin notes:', error);
@@ -864,7 +856,6 @@ export async function addAdminNotes(bugReportId, notes) {
  * 
  * @example
  * const subscription = await subscribeToBugReports(() => {
- *   console.log('Bug reports updated, reloading...');
  *   loadBugReports();
  * });
  * 
@@ -883,13 +874,12 @@ export async function subscribeToBugReports(callback) {
           table: 'bug_reports'
         },
         (payload) => {
-          console.log('📡 Bug report update received:', payload);
+
           callback(payload);
         }
       )
       .subscribe();
 
-    console.log('📡 Subscribed to bug reports updates');
     return subscription;
   } catch (error) {
     console.error('❌ Error subscribing to bug reports:', error);
@@ -910,7 +900,6 @@ export async function subscribeToBugReports(callback) {
  * 
  * @example
  * const subscription = await subscribeToBugReportReplies(reportId, () => {
- *   console.log('New reply received');
  *   loadReplies();
  * });
  */
@@ -927,13 +916,12 @@ export async function subscribeToBugReportReplies(bugReportId, callback) {
           ...(bugReportId && { filter: `bug_report_id=eq.${bugReportId}` })
         },
         (payload) => {
-          console.log('📡 Bug report reply received:', payload);
+
           callback(payload);
         }
       )
       .subscribe();
 
-    console.log('📡 Subscribed to bug report replies');
     return channel;
   } catch (error) {
     console.error('❌ Error subscribing to bug report replies:', error);
@@ -993,5 +981,3 @@ export function handleBugReportError(error) {
   // Default message
   return 'An unexpected error occurred. Please try again.';
 }
-
-console.log('📡 Bug reporting utilities loaded successfully');

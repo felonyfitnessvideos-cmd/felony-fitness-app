@@ -863,7 +863,7 @@ const ProgramLibrary = () => {
       console.error('Error fetching programs:', err);
       setError('Failed to load programs. Please try again.');
       setPrograms([]);
-      console.log('Using mock data for demonstration');
+
     } finally {
       setLoading(false);
     }
@@ -1157,9 +1157,6 @@ const ProgramLibrary = () => {
   };
 
 
-
-
-
   // Load programs on component mount
   useEffect(() => {
     fetchPrograms();
@@ -1350,9 +1347,9 @@ const ProgramLibrary = () => {
                     <div 
                       className="muscle-map-container clickable"
                       onClick={() => {
-                        console.log('🎯 Program muscle groups:', program.target_muscle_groups);
+
                         const primaryMuscles = (program.target_muscle_groups || []).filter(m => m.priority === 'primary');
-                        console.log('💪 Primary muscles only:', primaryMuscles);
+
                         setFullscreenMuscleMap({ 
                           muscles: primaryMuscles, 
                           programName: program.name 

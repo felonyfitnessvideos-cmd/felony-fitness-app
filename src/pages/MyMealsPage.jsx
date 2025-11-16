@@ -228,8 +228,6 @@ const MyMealsPage = () => {
   }, [filterMeals]);
 
 
-
-
   /**
    * Toggle favorite status for a meal
    * 
@@ -294,8 +292,7 @@ const MyMealsPage = () => {
    */
   const duplicateMeal = async (meal) => {
     try {
-      console.log('[MyMealsPage] Duplicating meal:', meal);
-      
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -318,8 +315,6 @@ const MyMealsPage = () => {
         meal_id: null // No reference to meals table for user-created meals
       };
 
-      console.log('[MyMealsPage] Creating meal copy in user_meals table:', mealCopy);
-
       const { data: newMeal, error: mealError } = await supabase
         .from('user_meals')
         .insert([mealCopy])
@@ -331,12 +326,9 @@ const MyMealsPage = () => {
         throw mealError;
       }
 
-      console.log('[MyMealsPage] Created meal:', newMeal);
-
       // Step 2: Copy meal foods to user_meal_foods table
       if (meal.user_meal_foods && meal.user_meal_foods.length > 0) {
-        console.log('[MyMealsPage] Copying meal foods:', meal.user_meal_foods);
-        
+
         // Filter out any foods that still have missing food_servings_id
         const validFoods = meal.user_meal_foods.filter(food => {
           const isValid = food.food_servings_id && food.food_servings_id !== null;
@@ -345,9 +337,7 @@ const MyMealsPage = () => {
           }
           return isValid;
         });
-        
-        console.log('[MyMealsPage] Valid foods to copy:', validFoods);
-        
+
         if (validFoods.length === 0) {
           // No valid foods to copy
           console.warn('[MyMealsPage] No valid foods to copy - all foods missing food_servings_id');
@@ -358,9 +348,7 @@ const MyMealsPage = () => {
             quantity: food.quantity,
             notes: food.notes || ''
           }));
-          
-          console.log('[MyMealsPage] Inserting user meal foods:', mealFoodsCopy);
-          
+
           const { error: foodsError } = await supabase
             .from('user_meal_foods')
             .insert(mealFoodsCopy);
@@ -374,12 +362,10 @@ const MyMealsPage = () => {
               .eq('id', newMeal.id);
             throw foodsError;
           }
-          
-          console.log('[MyMealsPage] Successfully copied meal foods');
+
         }
       }
 
-      console.log('[MyMealsPage] Duplicate meal completed successfully');
       await loadMeals();
     } catch (error) {
       if (import.meta.env?.DEV) {

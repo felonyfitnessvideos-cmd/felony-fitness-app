@@ -26,7 +26,6 @@
  * @example
  * // Enrich existing food data
  * const enrichment = await pipeline.enrichFood(foodId, 'full');
- * console.log(`Quality: ${enrichment.quality_score}%`);
  */
 
 import { supabase } from '../supabaseClient';
@@ -75,17 +74,14 @@ class NutritionPipeline {
    * @example
    * // Basic multi-API search
    * const results = await pipeline.searchMultiAPI('banana');
-   * console.log(`Found ${results.foods.length} unique foods`);
    * 
    * @example
    * // Search specific sources
    * const results = await pipeline.searchMultiAPI('chicken', ['usda']);
-   * console.log(`Quality: ${results.metadata.quality_score}`);
    */
   async searchMultiAPI(query, sources = ['usda', 'nutritionx']) {
     try {
-      console.log(`🔍 Multi-API search: "${query}" across ${sources.join(', ')}`);
-      
+
       const response = await fetch(`${this.baseUrl}/nutrition-aggregator`, {
         method: 'POST',
         headers: {
@@ -100,10 +96,8 @@ class NutritionPipeline {
       }
 
       const data = await response.json();
-      
-      console.log(`✅ Found ${data.foods?.length || 0} foods from ${data.sources_searched?.length || 0} sources`);
-      console.log(`📊 Deduplication: ${data.total_found} → ${data.after_deduplication} foods`);
-      
+
+
       return {
         success: true,
         foods: data.foods || [],
@@ -151,17 +145,14 @@ class NutritionPipeline {
    * @example
    * // Full enrichment of food record
    * const result = await pipeline.enrichFood(123, 'full');
-   * console.log(`Quality improved to ${result.quality_score}%`);
    * 
    * @example
    * // Fill only missing data
    * const result = await pipeline.enrichFood(456, 'missing');
-   * console.log('Changes:', result.changes_made);
    */
   async enrichFood(foodId, enrichmentType = 'full') {
     try {
-      console.log(`🔬 Enriching food ID ${foodId} (type: ${enrichmentType})`);
-      
+
       const response = await fetch(`${this.baseUrl}/nutrition-enrichment`, {
         method: 'POST',
         headers: {
@@ -179,10 +170,8 @@ class NutritionPipeline {
       }
 
       const data = await response.json();
-      
-      console.log(`✅ Enrichment complete: ${data.changes_made?.length || 0} changes made`);
-      console.log(`📊 Quality score: ${data.quality_score}% (confidence: ${data.confidence}%)`);
-      
+
+
       return {
         success: true,
         changes_made: data.changes_made || [],
@@ -223,8 +212,6 @@ class NutritionPipeline {
    * @example
    * // Get complete pipeline status
    * const status = await pipeline.getPipelineStatus();
-   * console.log(`Queue: ${status.queue_status.length} pending`);
-   * console.log(`Quality: ${status.pipeline_metrics.avg_quality}%`);
    */
   async getPipelineStatus() {
     try {
@@ -272,8 +259,7 @@ class NutritionPipeline {
    */
   async triggerBulkEnrichment(qualityThreshold = 70, limit = 50) {
     try {
-      console.log(`🚀 Triggering bulk enrichment for foods with quality < ${qualityThreshold}%`);
-      
+
       // Get foods needing enrichment
       const { data: foods, error } = await supabase
         .from('foods')
@@ -307,8 +293,6 @@ class NutritionPipeline {
       const results = await Promise.all(enrichmentPromises);
       const successful = results.filter(r => r.success);
       const failed = results.filter(r => !r.success);
-
-      console.log(`✅ Bulk enrichment complete: ${successful.length} success, ${failed.length} failed`);
 
       return {
         success: true,
@@ -349,7 +333,7 @@ class NutritionPipeline {
       let externalResults = [];
       
       if (needsExternalSearch) {
-        console.log('🌐 Local results insufficient, searching external APIs...');
+
         const multiApiResult = await this.searchMultiAPI(query);
         externalResults = multiApiResult.foods || [];
       }

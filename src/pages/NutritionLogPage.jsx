@@ -286,8 +286,6 @@ function NutritionLogPage() {
           return;
         }
 
-        console.log('Food search successful:', { source: searchData?.source, count: searchData?.results?.length });
-
         const results = searchData?.results || [];
         const source = searchData?.source || 'unknown';
 
@@ -570,8 +568,6 @@ function NutritionLogPage() {
         return;
       }
 
-      console.log(`Successfully added ${mealFoods.length} items from meal plan`);
-      
       // Refresh data to show new logs
       await fetchLogData(user.id);
       setScheduledMeal(null); // Hide button after adding

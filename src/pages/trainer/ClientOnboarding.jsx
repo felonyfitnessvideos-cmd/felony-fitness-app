@@ -243,7 +243,6 @@ const ClientOnboarding = () => {
   const handleSubmit = async () => {
     if (validateSection(currentSection)) {
       try {
-        console.log('🔄 Starting client onboarding process');
 
         // Step 1: Get trainer information
         const { data: { user: trainer }, error: trainerError } = await supabase.auth.getUser();
@@ -254,7 +253,6 @@ const ClientOnboarding = () => {
         // Step 2: Prepare client identifier
         const trimmedUuid = clientUuid?.trim();
         const isLookupSuccessful = lookupMessage.includes('✅');
-        console.log('ℹ️ Processing client:', isLookupSuccessful ? 'existing UUID' : 'new email');
 
         // Step 3: Create trainer-client relationship
         // Prepare comprehensive intake notes with all collected data
@@ -355,8 +353,6 @@ const ClientOnboarding = () => {
           profileUpdates.fitness_goal = GOAL_MAP[formData.primaryGoal] || null;
         }
 
-        console.log('📝 Updating user profile with', Object.keys(profileUpdates).length, 'fields');
-
         // Update the user_profiles table only if we have a valid UUID
         if (trimmedUuid) {
           const { error: updateError } = await supabase
@@ -369,9 +365,8 @@ const ClientOnboarding = () => {
             throw new Error(`Failed to save client data: ${updateError.message}`);
           }
 
-          console.log('✅ Client profile updated successfully');
         } else {
-          console.log('ℹ️ Skipping user_profiles update (no existing client UUID provided)');
+
         }
 
         alert('Client successfully onboarded and added to your client list!');

@@ -193,14 +193,11 @@ const TrainerCalendar = memo(() => {
     if (!user?.id) return;
 
     try {
-      console.log('📅 Loading scheduled routines for trainer:', user.id);
 
       // Get date range for all displayed weeks
       const allDates = getAllWeekDates();
       const startDate = allDates[0].toISOString().split('T')[0];
       const endDate = allDates[allDates.length - 1].toISOString().split('T')[0];
-
-      console.log('📅 Date range:', { startDate, endDate });
 
       // Fetch scheduled routines for trainer's clients
       // All client data is self-contained in scheduled_routines (no joins needed)
@@ -228,7 +225,6 @@ const TrainerCalendar = memo(() => {
         return;
       }
 
-      console.log(`✅ Loaded ${data?.length || 0} scheduled routines`);
       setScheduledRoutines(data || []);
     } catch (error) {
       console.error('❌ Error in loadScheduledRoutines:', error);
@@ -257,11 +253,6 @@ const TrainerCalendar = memo(() => {
       const endDate = new Date(endOfWeek);
       endDate.setDate(endDate.getDate() + 1);
 
-      console.log('🗓️ Loading events for week:', {
-        start: startOfWeek.toISOString(),
-        end: endDate.toISOString(),
-        weekDates: getWeekDates(currentWeek).map(d => d.toDateString())
-      });
       loadEvents('primary', startOfWeek, endDate);
     }
     // getWeekDates is stable from useCallback
@@ -277,7 +268,6 @@ const TrainerCalendar = memo(() => {
 
   // Convert Google Calendar events to appointment format
   useEffect(() => {
-    console.log(`🔄 Converting ${events.length} Google Calendar events to local format`);
 
     if (events.length > 0) {
       const convertedEvents = events.map(event => ({
@@ -298,16 +288,9 @@ const TrainerCalendar = memo(() => {
         source: 'google'
       }));
 
-      console.log(`✅ Converted events:`, convertedEvents.map(e => ({
-        id: e.id,
-        client: e.clientName,
-        date: e.date,
-        time: e.time
-      })));
-
       setLocalEvents(convertedEvents);
     } else {
-      console.log('📝 No events to convert, clearing local events');
+
       setLocalEvents([]);
     }
   }, [events]);
@@ -365,10 +348,9 @@ const TrainerCalendar = memo(() => {
       setComponentError(null);
 
       if (!isAuthenticated) {
-        console.log('🔍 User not authenticated, initiating sign-in...');
+
         await signIn({ loadData: true });
       } else {
-        console.log('🔍 User authenticated, refreshing events...');
 
         // Calculate date range for refresh (current week + 1 month)
         const weekDates = getWeekDates(currentWeek);
@@ -377,7 +359,7 @@ const TrainerCalendar = memo(() => {
         endDate.setMonth(endDate.getMonth() + 1);
 
         await loadEvents('primary', startDate, endDate);
-        console.log('✅ Events refreshed successfully');
+
       }
     } catch (err) {
       const errorMsg = err.message || 'Failed to sync with Google Calendar';
@@ -407,7 +389,7 @@ const TrainerCalendar = memo(() => {
 
       // If today is not in the current week view, navigate to this week
       if (!todayInCurrentWeek) {
-        console.log('📅 Current day not in view, navigating to current week');
+
         setCurrentWeek(now);
         return; // Let the effect run again when currentWeek updates
       }
@@ -423,7 +405,7 @@ const TrainerCalendar = memo(() => {
       const offsetScrollTop = Math.max(0, scrollTop - 100);
 
       scrollContainerRef.current.scrollTop = offsetScrollTop;
-      console.log(`📍 Auto-scrolled to current time: ${currentHour}:00 (scroll position: ${offsetScrollTop}px, calculated: ${scrollTop}px)`);
+
     };
 
     // Multiple attempts with increasing delays to ensure DOM is fully rendered
@@ -441,7 +423,7 @@ const TrainerCalendar = memo(() => {
   // Ensure calendar always starts showing the current week on initial load
   useEffect(() => {
     const today = new Date();
-    console.log('📅 Ensuring calendar shows current week on mount');
+
     setCurrentWeek(today);
   }, []); // Run only once on mount
 
@@ -462,7 +444,6 @@ const TrainerCalendar = memo(() => {
   const handleSignOut = useCallback(async () => {
     try {
       setComponentError(null);
-      console.log('🔍 Signing out from Google Calendar...');
 
       await signOut();
       setLocalEvents([]);
@@ -483,7 +464,6 @@ const TrainerCalendar = memo(() => {
         }
       ]);
 
-      console.log('✅ Successfully signed out from Google Calendar');
     } catch (err) {
       const errorMsg = err.message || 'Failed to sign out from Google Calendar';
       console.error('❌ Google Calendar sign out error:', err);
@@ -493,7 +473,6 @@ const TrainerCalendar = memo(() => {
       setLocalEvents([]);
     }
   }, [signOut]);
-
 
 
   /**
@@ -653,8 +632,6 @@ const TrainerCalendar = memo(() => {
         return;
       }
 
-      console.log('🔍 Creating test appointment...');
-
       // Create test appointment for tomorrow at a reasonable time
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -677,7 +654,6 @@ const TrainerCalendar = memo(() => {
       });
 
       if (createdEvent) {
-        console.log('✅ Test appointment created:', createdEvent.id);
 
         // Force a refresh of events for the week containing the new event
         const eventWeek = new Date(tomorrow);
@@ -685,7 +661,6 @@ const TrainerCalendar = memo(() => {
         const weekEnd = new Date(getWeekDates(eventWeek)[6]);
         weekEnd.setDate(weekEnd.getDate() + 1); // Include full last day
 
-        console.log(`🔄 Force refreshing events for week: ${weekStart.toDateString()} to ${weekEnd.toDateString()}`);
         await loadEvents('primary', weekStart, weekEnd);
 
         // Show success message (could be replaced with a proper toast notification)

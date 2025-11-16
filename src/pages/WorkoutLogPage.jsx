@@ -143,8 +143,7 @@ function WorkoutLogPage() {
   const location = useLocation();
 
   const fetchAndStartWorkout = useCallback(async (userId, opts = {}) => {
-    console.log('[WorkoutLog] fetchAndStartWorkout called', { userId, opts });
-    
+
     // Save existing state in case we need to restore on error
     const existingState = {
       routine,
@@ -196,7 +195,7 @@ function WorkoutLogPage() {
       // Some DB setups / RLS may prevent nested routine_exercises from returning.
       // If routine_exercises is missing or empty, fetch them explicitly as a fallback.
       if (!routineData) throw new Error('Routine not found');
-      console.debug('WorkoutLogPage: fetched routineData', routineData);
+
       if (!routineData.routine_exercises || routineData.routine_exercises.length === 0) {
         try {
           /**
@@ -208,7 +207,7 @@ function WorkoutLogPage() {
             .select('*, exercises(*)')
             .eq('routine_id', currentRoutineId)
             .order('exercise_order', { ascending: true });
-          console.debug('WorkoutLogPage: fallback routine_exercises result', { reData, reErr });
+
           if (!reErr && reData) {
             routineData.routine_exercises = reData;
           } else if (reErr) {
@@ -246,8 +245,6 @@ function WorkoutLogPage() {
 
       if (todaysLogsError) throw todaysLogsError;
 
-      console.log('[WorkoutLog] Found', todaysLogsData?.length || 0, 'workout logs for today');
-      
       // Fetch ALL entries for today's logs separately
       const logIds = todaysLogsData?.map(log => log.id) || [];
       let allTodaysEntries = [];
@@ -263,18 +260,13 @@ function WorkoutLogPage() {
           console.error('[WorkoutLog] Failed to fetch entries:', entriesError);
         } else {
           allTodaysEntries = entriesData || [];
-          console.log('[WorkoutLog] Fetched', allTodaysEntries.length, 'total entries for today');
+
         }
       }
 
       todaysLogsData?.forEach((log, idx) => {
         const logEntries = allTodaysEntries.filter(e => e.log_id === log.id);
-        console.log(`[WorkoutLog] Log ${idx + 1}:`, {
-          id: log.id,
-          is_complete: log.is_complete,
-          entries_count: logEntries.length,
-          created_at: log.created_at
-        });
+
       });
 
       const todaysEntriesMap = {};
@@ -285,19 +277,18 @@ function WorkoutLogPage() {
         if (!todaysEntriesMap[entry.exercise_id]) todaysEntriesMap[entry.exercise_id] = [];
         todaysEntriesMap[entry.exercise_id].push(entry);
       });
-      
-      console.log('[WorkoutLog] Today\'s log entries loaded:', todaysEntriesMap);
+
       setTodaysLog(todaysEntriesMap);
 
       let currentLogId;
       if (activeLog) {
         // Only use existing active log if it has entries (user actually started working out)
         currentLogId = activeLog.id;
-        console.log('[WorkoutLog] Using existing active log:', currentLogId);
+
       } else {
         // DON'T create a log yet - wait until user saves their first set
         // This prevents empty logs from being created when user just views the page
-        console.log('[WorkoutLog] No active log found. Will create on first set save.');
+
         currentLogId = null;
       }
       setWorkoutLogId(currentLogId);
@@ -305,8 +296,7 @@ function WorkoutLogPage() {
       // Fetch "Last Time" data regardless of whether we have a current log
       // User can view previous performance even if they haven't started today's workout yet
       if (routineData?.routine_exercises && routineData.routine_exercises.length > 0) {
-        console.log("[WorkoutLog] Fetching 'Last Time' data for routine:", routineId);
-        
+
         // PERFORMANCE OPTIMIZATION: Batch all exercise IDs into ONE Edge Function call
         const exerciseIds = routineData.routine_exercises.map(item => item.exercises.id);
         
@@ -321,8 +311,7 @@ function WorkoutLogPage() {
         if (batchError) {
           console.error("[WorkoutLog] Error fetching batched 'Last Time' data:", batchError);
         } else {
-          console.log("[WorkoutLog] Batched 'Last Time' results:", batchResult);
-          
+
           // Extract the grouped data (entriesByExercise object)
           const prevLogMap = batchResult.entriesByExercise || {};
           
@@ -331,7 +320,7 @@ function WorkoutLogPage() {
             if (!prevLogMap[exerciseId]) {
               prevLogMap[exerciseId] = [];
             }
-            console.log(`[WorkoutLog] Exercise ${exerciseId} last time:`, prevLogMap[exerciseId].length, "sets");
+
           });
           
           setPreviousLog(prevLogMap);
@@ -384,7 +373,7 @@ function WorkoutLogPage() {
       
       // Restore previous state so UI doesn't go blank
       if (existingState.routine) {
-        console.log('[WorkoutLog] Restoring previous state after error');
+
         setRoutine(existingState.routine);
         setPreviousLog(existingState.previousLog);
         setTodaysLog(existingState.todaysLog);
@@ -461,8 +450,7 @@ function WorkoutLogPage() {
       let logIdToUse = workoutLogId;
       
       if (!logIdToUse) {
-        console.log('[WorkoutLog] Creating workout log on first set save (started_at will be set now)');
-        
+
         // Determine the date for this workout (today or scheduled date)
         let startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
@@ -506,8 +494,7 @@ function WorkoutLogPage() {
         if (matchingSession && matchingSession.id) {
           setSessionMeta(prev => ({ ...(prev || {}), id: matchingSession.id, mesocycle_id: matchingSession.mesocycle_id }));
         }
-        
-        console.log('[WorkoutLog] Created new workout log:', logIdToUse);
+
       } else {
         // If this is the first set of an existing workout, set started_at if not already set
         const isFirstSetOfWorkout = Object.keys(todaysLog).every(key => !todaysLog[key] || todaysLog[key].length === 0);
@@ -539,9 +526,8 @@ function WorkoutLogPage() {
         return;
       }
 
-      console.log('[WorkoutLog] Set saved successfully:', newEntry);
       const newTodaysLog = { ...todaysLog, [selectedExercise.id]: [...(todaysLog[selectedExercise.id] || []), newEntry] };
-      console.log('[WorkoutLog] Updated today\'s log:', newTodaysLog);
+
       setTodaysLog(newTodaysLog);
 
       const targetSets = routine.routine_exercises[selectedExerciseIndex]?.target_sets;
@@ -574,8 +560,7 @@ function WorkoutLogPage() {
    * Updates the set with the selected RPE rating, then shows rest timer
    */
   const handleRpeRating = async (rating) => {
-    console.log('[WorkoutLog] RPE rating selected:', rating, 'for entry:', pendingSetForRpe?.id);
-    
+
     if (pendingSetForRpe && rating) {
       // Update the set entry with RPE rating
       const { error } = await supabase
@@ -586,7 +571,7 @@ function WorkoutLogPage() {
       if (error) {
         console.error('[WorkoutLog] Failed to save RPE rating:', error);
       } else {
-        console.log('[WorkoutLog] RPE rating saved successfully');
+
         // Update local state
         setTodaysLog(prev => {
           const updated = { ...prev };
@@ -613,7 +598,7 @@ function WorkoutLogPage() {
    * User chose not to rate this set, proceed directly to rest timer
    */
   const handleSkipRpe = () => {
-    console.log('[WorkoutLog] User skipped RPE rating');
+
     setIsRpeModalOpen(false);
     setPendingSetForRpe(null);
     setIsTimerOpen(true);
@@ -711,8 +696,7 @@ function WorkoutLogPage() {
         });
         return updatedLog;
       });
-      
-      console.log('[WorkoutLog] Set deleted, local state updated');
+
     } finally {
       if (isMountedRef.current) setRpcLoading(false);
     }
@@ -730,8 +714,7 @@ function WorkoutLogPage() {
     if (rpcLoading) return;
     setRpcLoading(true);
     try {
-      console.log('[WorkoutLog] Updating set:', editingSet.entryId, 'with:', editSetValue);
-      
+
       const newWeight = parseInt(editSetValue.weight, 10);
       const newReps = parseInt(editSetValue.reps, 10);
       
@@ -748,9 +731,7 @@ function WorkoutLogPage() {
         console.error("Secure update failed:", error);
         return alert("Could not update set." + (error?.message ? ` (${error.message})` : ''));
       }
-      
-      console.log('[WorkoutLog] Set updated successfully, updating local state...');
-      
+
       // CRITICAL FIX: Update local state instead of refetching everything
       // This prevents UI from clearing and is much faster
       setTodaysLog(prevLog => {
@@ -772,7 +753,7 @@ function WorkoutLogPage() {
       });
       
       if (isMountedRef.current) setEditingSet(null);
-      console.log('[WorkoutLog] Local state updated successfully');
+
     } catch (refreshError) {
       console.error('[WorkoutLog] Failed to update set:', refreshError);
       alert('Failed to update set. Please try again.');

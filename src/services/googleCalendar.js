@@ -115,7 +115,6 @@ class GoogleCalendarService {
    *   'your-client-id.apps.googleusercontent.com'
    * );
    * if (success) {
-   *   console.log('Calendar service initialized successfully');
    * }
    */
   async initialize(apiKey, clientId) {
@@ -134,19 +133,14 @@ class GoogleCalendarService {
 
     // Prevent double initialization
     if (this.isInitialized) {
-      console.log('⚠️ Service already initialized, skipping...');
+
       return true;
     }
 
     // Store credentials
     this.apiKey = apiKey.trim();
     this.clientId = clientId.trim();
-    
-    console.log('🔍 Initializing Google Calendar API with GIS...', {
-      apiKey: `${this.apiKey.substring(0, 10)}...`,
-      clientId: `${this.clientId.substring(0, 20)}...`
-    });
-    
+
     try {
       // Load Google API and GIS scripts with timeout protection
       const loadPromises = [
@@ -155,7 +149,6 @@ class GoogleCalendarService {
       ];
       
       await Promise.all(loadPromises);
-      console.log('✅ Google API and GIS scripts loaded');
 
       // Validate that scripts loaded correctly
       if (!window.gapi) {
@@ -169,7 +162,7 @@ class GoogleCalendarService {
       this.gis = window.google;
 
       // Initialize the GAPI client for API calls with timeout
-      console.log('🔍 Loading GAPI client...');
+
       await this._executeWithTimeout(
         new Promise((resolve) => {
           this.gapi.load('client', resolve);
@@ -177,9 +170,8 @@ class GoogleCalendarService {
         30000, // Increased from 10s to 30s
         'GAPI client load timeout'
       );
-      console.log('✅ GAPI client loaded');
 
-      console.log('🔍 Initializing GAPI client...');
+
       await this._executeWithTimeout(
         this.gapi.client.init({
           discoveryDocs: [DISCOVERY_DOC]
@@ -188,10 +180,9 @@ class GoogleCalendarService {
         30000, // Increased from 15s to 30s
         'GAPI client initialization timeout'
       );
-      console.log('✅ GAPI client initialized');
 
       // Initialize the GIS token client for authentication
-      console.log('🔍 Initializing GIS token client...');
+
       this.tokenClient = this.gis.accounts.oauth2.initTokenClient({
         client_id: this.clientId,
         scope: SCOPES,
@@ -201,9 +192,7 @@ class GoogleCalendarService {
       if (!this.tokenClient) {
         throw new Error('Failed to create GIS token client');
       }
-      
-      console.log('✅ GIS token client initialized');
-      
+
       this.isInitialized = true;
       
       // Try to restore authentication from localStorage
@@ -212,7 +201,7 @@ class GoogleCalendarService {
       return true;
     } catch (error) {
       console.error('❌ Failed to initialize Google Calendar API:', error);
-      console.log('🔄 This may be due to network issues or slow Google API loading. The calendar will work once the connection improves.');
+
       this.isInitialized = false;
       
       // Don't throw error, allow graceful degradation
@@ -262,7 +251,7 @@ class GoogleCalendarService {
       script.defer = true;
       
       script.onload = () => {
-        console.log('✅ Google API script loaded');
+
         resolve();
       };
       
@@ -322,7 +311,7 @@ class GoogleCalendarService {
       script.defer = true;
       
       script.onload = () => {
-        console.log('✅ Google Identity Services script loaded');
+
         resolve();
       };
       
@@ -396,7 +385,6 @@ class GoogleCalendarService {
         return;
       }
 
-      console.log('✅ Token received successfully');
       this.accessToken = response.access_token;
       this.isSignedIn = true;
       
@@ -441,7 +429,7 @@ class GoogleCalendarService {
       
       // Validate stored authentication data
       if (!savedToken || savedAuth !== 'true') {
-        console.log('🔍 No valid authentication data found in localStorage');
+
         this._clearStoredAuth();
         return false;
       }
@@ -450,7 +438,7 @@ class GoogleCalendarService {
       if (savedExpiry) {
         const expiryTime = parseInt(savedExpiry, 10);
         if (isNaN(expiryTime) || Date.now() > (expiryTime - TOKEN_EXPIRY_BUFFER)) {
-          console.log('⚠️ Stored token has expired, clearing authentication');
+
           this._clearStoredAuth();
           return false;
         }
@@ -459,7 +447,7 @@ class GoogleCalendarService {
 
       // Validate token format (basic check)
       if (typeof savedToken !== 'string' || savedToken.length < 20) {
-        console.log('⚠️ Invalid token format in localStorage');
+
         this._clearStoredAuth();
         return false;
       }
@@ -472,8 +460,7 @@ class GoogleCalendarService {
       if (this.gapi?.client) {
         this.gapi.client.setToken({ access_token: this.accessToken });
       }
-      
-      console.log('✅ Authentication restored from localStorage');
+
       return true;
     } catch (error) {
       console.error('❌ Failed to restore authentication state:', error);
@@ -505,8 +492,7 @@ class GoogleCalendarService {
       if (this.tokenExpiryTime) {
         localStorage.setItem('google_calendar_token_expiry', this.tokenExpiryTime.toString());
       }
-      
-      console.log('✅ Authentication state persisted to localStorage');
+
     } catch (error) {
       console.error('❌ Failed to persist authentication state:', error);
       // Don't throw - authentication can still work without persistence
@@ -564,9 +550,7 @@ class GoogleCalendarService {
    */
   async signIn(options = {}) {
     const { forceConsent = false, hint } = options;
-    
-    console.log('🔍 SignIn called, initialized:', this.isInitialized);
-    
+
     // Validate service state
     if (!this.isInitialized) {
       const error = new Error('Google Calendar API not initialized. Call initialize() first.');
@@ -581,22 +565,19 @@ class GoogleCalendarService {
     }
 
     try {
-      console.log('🔍 Current sign-in status:', this.isSignedIn);
-      
+
       // Check if already signed in and token is still valid
       if (this.isSignedIn && this._isTokenValid()) {
-        console.log('✅ Already signed in with valid token');
+
         return true;
       }
 
       // Clear any invalid/expired authentication
       if (this.isSignedIn && !this._isTokenValid()) {
-        console.log('⚠️ Existing token invalid/expired, clearing authentication');
+
         this._clearStoredAuth();
       }
-      
-      console.log('🔍 Requesting access token...');
-      
+
       // Return a promise that resolves when the OAuth callback is called
       return new Promise((resolve, reject) => {
         const timeoutId = setTimeout(() => {
@@ -616,7 +597,7 @@ class GoogleCalendarService {
               const errorMessage = this._getHumanReadableError(response.error);
               reject(new Error(`Sign-in failed: ${errorMessage}`));
             } else if (this.isSignedIn) {
-              console.log('✅ Google sign-in successful');
+
               resolve(true);
             } else {
               console.error('❌ Sign-in completed but authentication state not updated');
@@ -665,12 +646,10 @@ class GoogleCalendarService {
    * @example
    * const success = await googleCalendarService.signOut();
    * if (success) {
-   *   console.log('User signed out successfully');
    * }
    */
   async signOut() {
-    console.log('🔍 Signing out from Google Calendar...');
-    
+
     if (!this.isInitialized) {
       console.warn('⚠️ Service not initialized, but clearing local state');
       this._clearStoredAuth();
@@ -688,7 +667,7 @@ class GoogleCalendarService {
       
       // Revoke the access token if available
       if (this.accessToken) {
-        console.log('🔍 Revoking access token...');
+
         try {
           // Revoke token asynchronously but don't wait indefinitely
           const revokePromise = new Promise((resolve) => {
@@ -696,7 +675,7 @@ class GoogleCalendarService {
               if (response.error) {
                 console.warn('⚠️ Token revocation failed:', response.error);
               } else {
-                console.log('✅ Access token revoked');
+
               }
               resolve();
             });
@@ -721,8 +700,7 @@ class GoogleCalendarService {
       
       // Clear local state
       this._clearStoredAuth();
-      
-      console.log('✅ Signed out successfully');
+
       return true;
     } catch (error) {
       console.error('❌ Failed to sign out from Google:', error);
@@ -820,7 +798,7 @@ class GoogleCalendarService {
       try {
         const result = await apiCall();
         if (attempt > 0) {
-          console.log(`✅ ${operationName} succeeded on attempt ${attempt + 1}`);
+
         }
         return result;
       } catch (error) {
@@ -940,8 +918,6 @@ class GoogleCalendarService {
       throw new Error('Invalid orderBy: must be "startTime" or "updated"');
     }
 
-    console.log(`🔍 Fetching events from ${calendarId} (${startDate.toISOString()} to ${endDate.toISOString()})`);
-
     try {
       const result = await this._executeWithRetry(async () => {
         // Prepare request parameters
@@ -970,8 +946,7 @@ class GoogleCalendarService {
       }, `get events from ${calendarId}`);
 
       const events = result.items || [];
-      console.log(`✅ Retrieved ${events.length} events from ${calendarId}`);
-      
+
       return events;
     } catch (error) {
       console.error(`❌ Failed to fetch events from ${calendarId}:`, error);

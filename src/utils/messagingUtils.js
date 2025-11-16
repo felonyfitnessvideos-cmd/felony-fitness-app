@@ -124,16 +124,14 @@ import { supabase } from '../supabaseClient';
  * 
  * @example
  * const conversations = await getConversations();
- * console.log('User has', conversations.length, 'conversations');
  */
 export async function getConversations() {
   try {
-    console.log('📥 Fetching conversations...');
 
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      console.log('⚠️ No authenticated user');
+
       return [];
     }
 
@@ -178,7 +176,6 @@ export async function getConversations() {
       }
     }
 
-    console.log('✅ Fetched', conversations.length, 'conversations');
     return conversations;
   } catch (error) {
     console.error('Error in getConversations:', error);
@@ -199,11 +196,9 @@ export async function getConversations() {
  * 
  * @example
  * const messages = await getConversationMessages('user-123');
- * messages.forEach(msg => console.log(msg.is_from_me ? 'You:' : 'Them:', msg.content));
  */
 export async function getConversationMessages(otherUserId) {
   try {
-    console.log('📥 Fetching messages for conversation with:', otherUserId);
 
     if (!otherUserId) {
       throw new Error('Other user ID is required');
@@ -212,7 +207,7 @@ export async function getConversationMessages(otherUserId) {
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      console.log('⚠️ No authenticated user');
+
       return [];
     }
 
@@ -257,7 +252,6 @@ export async function getConversationMessages(otherUserId) {
       is_read: message.read_at !== null
     }));
 
-    console.log('✅ Fetched', formattedMessages.length, 'messages');
     return formattedMessages;
   } catch (_error) {
     console.error('Error in getConversationMessages:', _error);
@@ -276,7 +270,6 @@ export async function getConversationMessages(otherUserId) {
  * 
  * @example
  * const unreadCount = await getUnreadMessageCount();
- * console.log('You have', unreadCount, 'unread messages');
  */
 export async function getUnreadMessageCount() {
   try {
@@ -317,7 +310,6 @@ export async function getUnreadMessageCount() {
  * 
  * @example
  * const unreadCount = await getConversationUnreadCount('user-123');
- * console.log('You have', unreadCount, 'unread messages from this user');
  */
 export async function getConversationUnreadCount(otherUserId) {
   try {
@@ -400,7 +392,6 @@ export async function getConversationUnreadCount(otherUserId) {
  * // Send a simple message
  * try {
  *   const result = await sendMessage('user-123', 'Hello! How is your training?');
- *   console.log('Message sent:', result.message_id);
  * } catch (error) {
  *   console.error('Failed to send:', error.message);
  * }
@@ -424,7 +415,6 @@ export async function getConversationUnreadCount(otherUserId) {
  */
 export async function sendMessage(recipientId, content) {
   try {
-    console.log('📤 Sending message to:', recipientId);
 
     if (!recipientId || !content) {
       throw new Error('Recipient ID and content are required');
@@ -471,7 +461,6 @@ export async function sendMessage(recipientId, content) {
       throw new Error(`Failed to send message: ${error.message}`);
     }
 
-    console.log('✅ Message sent successfully:', data.id);
     return { message_id: data.id, success: true };
   } catch (error) {
     console.error('Error in sendMessage:', error);
@@ -485,7 +474,6 @@ export async function sendMessage(recipientId, content) {
  */
 async function _sendMessageFallback(recipientId, content) {
   try {
-    console.log('📤 Using fallback send message method (database function)...');
 
     // Use the database function to send message
     const { data: result, error: functionError } = await supabase
@@ -503,7 +491,6 @@ async function _sendMessageFallback(recipientId, content) {
       throw new Error('Message sending failed via database function');
     }
 
-    console.log('✅ Fallback: message sent successfully via database function');
     return {
       message_id: result.message_id,
       success: true,
@@ -533,11 +520,9 @@ async function _sendMessageFallback(recipientId, content) {
  * 
  * @example
  * const markedCount = await markMessagesAsRead('user-123');
- * console.log('Marked', markedCount, 'messages as read');
  */
 export async function markMessagesAsRead(otherUserId) {
   try {
-    console.log('📖 Marking messages as read for conversation with:', otherUserId);
 
     if (!otherUserId) {
       throw new Error('Other user ID is required');
@@ -550,12 +535,12 @@ export async function markMessagesAsRead(otherUserId) {
 
     if (error) {
       // If Edge Function fails, use fallback
-      console.log('⚠️ Edge Function failed. Using fallback approach...');
+
       return await markMessagesAsReadFallback(otherUserId);
     }
 
     const markedCount = data?.marked_count || 0;
-    console.log('✅ Marked', markedCount, 'messages as read');
+
     return markedCount;
   } catch (error) {
     console.error('Error in markMessagesAsRead:', error);
@@ -568,12 +553,11 @@ export async function markMessagesAsRead(otherUserId) {
  */
 async function markMessagesAsReadFallback(otherUserId) {
   try {
-    console.log('📖 Using fallback mark as read method...');
 
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      console.log('⚠️ No authenticated user for mark as read fallback');
+
       return 0;
     }
 
@@ -591,7 +575,7 @@ async function markMessagesAsReadFallback(otherUserId) {
     }
 
     const markedCount = count || 0;
-    console.log('✅ Fallback: marked', markedCount, 'messages as read via direct update');
+
     return markedCount;
   } catch (error) {
     console.error('Error in fallback mark as read:', error);
@@ -691,14 +675,9 @@ async function markMessagesAsReadFallback(otherUserId) {
  * @example
  * // With detailed logging
  * const subscription = await subscribeToMessages((payload) => {
- *   console.log('Event:', payload.eventType);
- *   console.log('Old data:', payload.old);
- *   console.log('New data:', payload.new);
  *   
  *   if (payload.eventType === 'INSERT') {
- *     console.log('New message received!');
  *   } else if (payload.eventType === 'UPDATE') {
- *     console.log('Message updated (needs_response changed)');
  *   }
  *   
  *   reloadBadgeCount();
@@ -706,7 +685,6 @@ async function markMessagesAsReadFallback(otherUserId) {
  */
 export async function subscribeToMessages(callback) {
   try {
-    console.log('🔔 Setting up real-time message subscription...');
 
     if (typeof callback !== 'function') {
       throw new Error('Callback must be a function');
@@ -730,7 +708,7 @@ export async function subscribeToMessages(callback) {
           filter: `recipient_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('📨 New message received:', payload);
+
           callback(payload);
         }
       )
@@ -743,15 +721,14 @@ export async function subscribeToMessages(callback) {
           // No filter - catch all updates to recalculate badge
         },
         (payload) => {
-          console.log('📝 Message updated (needs_response changed):', payload);
+
           callback(payload);
         }
       )
       .subscribe((status) => {
-        console.log('📡 Message subscription status:', status);
+
       });
 
-    console.log('✅ Real-time subscription established');
     return subscription;
   } catch (error) {
     console.error('Error setting up message subscription:', error);
@@ -772,13 +749,11 @@ export async function subscribeToMessages(callback) {
  * @example
  * const subscription = subscribeToMessageUpdates((payload) => {
  *   if (payload.new.is_read && !payload.old.is_read) {
- *     console.log('Message was read:', payload.new.id);
  *   }
  * });
  */
 export function subscribeToMessageUpdates(callback) {
   try {
-    console.log('🔔 Setting up message update subscription...');
 
     if (typeof callback !== 'function') {
       throw new Error('Callback must be a function');
@@ -794,15 +769,14 @@ export function subscribeToMessageUpdates(callback) {
           table: 'direct_messages'
         },
         (payload) => {
-          console.log('📝 Message updated:', payload);
+
           callback(payload);
         }
       )
       .subscribe((status) => {
-        console.log('Update subscription status:', status);
+
       });
 
-    console.log('✅ Message update subscription established');
     return subscription;
   } catch (error) {
     console.error('Error setting up message update subscription:', error);
@@ -1041,9 +1015,9 @@ export async function retryMessagingOperation(operation, maxRetries = 3, baseDel
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`🔄 Messaging operation attempt ${attempt + 1}/${maxRetries + 1}`);
+
       const result = await operation();
-      console.log('✅ Messaging operation succeeded');
+
       return result;
     } catch (error) {
       lastError = error;
@@ -1059,18 +1033,16 @@ export async function retryMessagingOperation(operation, maxRetries = 3, baseDel
         error.message?.includes('validation') ||
         error.message?.includes('empty') ||
         error.message?.includes('too long')) {
-        console.log('🚫 Not retrying due to error type');
+
         break;
       }
 
       // Calculate delay with exponential backoff
       const delay = baseDelay * Math.pow(2, attempt);
-      console.log(`⏳ Waiting ${delay}ms before retry...`);
+
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
 
   throw lastError;
 }
-
-console.log('📡 Messaging utilities loaded successfully');

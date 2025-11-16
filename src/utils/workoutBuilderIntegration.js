@@ -537,13 +537,6 @@ export const initializeWorkoutBuilderPlatform = async (config = {}) => {
     await Promise.all(preloadPromises);
 
     initResults.initialized = true;
-    
-    console.log('Workout Builder Platform initialized:', {
-      exercisesLoaded: initResults.exercises.length,
-      muscleGroupsLoaded: initResults.muscleGroups.length,
-      availableMuscles: initResults.availableMuscles.length,
-      errors: initResults.errors.length
-    });
 
     return initResults;
   } catch (error) {

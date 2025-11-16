@@ -159,7 +159,6 @@ const TrainerMessages = () => {
     const setupSubscription = async () => {
       try {
         subscription = await subscribeToMessages((payload) => {
-          console.log('📨 New message received:', payload);
           loadConversations();
 
           if (expandedClientId &&
