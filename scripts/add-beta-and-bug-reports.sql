@@ -113,11 +113,19 @@ WITH CHECK (
     )
 );
 
--- Users can update their own bug reports (before admin responds)
+-- Users can update their own bug reports (message_text only, not admin-only fields)
 CREATE POLICY "Users can update own bug reports"
 ON bug_reports FOR UPDATE
 USING (auth.uid() = user_id)
-WITH CHECK (auth.uid() = user_id);
+WITH CHECK (
+    auth.uid() = user_id AND
+    -- Prevent users from modifying admin-only columns
+    admin_notes IS NOT DISTINCT FROM (SELECT admin_notes FROM bug_reports WHERE id = bug_reports.id) AND
+    resolved_by IS NOT DISTINCT FROM (SELECT resolved_by FROM bug_reports WHERE id = bug_reports.id) AND
+    resolved_at IS NOT DISTINCT FROM (SELECT resolved_at FROM bug_reports WHERE id = bug_reports.id) AND
+    status IS NOT DISTINCT FROM (SELECT status FROM bug_reports WHERE id = bug_reports.id) AND
+    priority IS NOT DISTINCT FROM (SELECT priority FROM bug_reports WHERE id = bug_reports.id)
+);
 
 -- Admins can update any bug report
 CREATE POLICY "Admins can update any bug report"

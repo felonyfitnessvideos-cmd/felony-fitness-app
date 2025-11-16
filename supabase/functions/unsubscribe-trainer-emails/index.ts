@@ -22,10 +22,27 @@ serve(async (req: Request) => {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
+  // Only allow POST requests
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Method not allowed. Use POST.' }),
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
     console.log('🔴 Unsubscribe request received');
 
-    const { email } = await req.json();
+    let email: string;
+    try {
+      const body = await req.json();
+      email = body.email;
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid JSON in request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!email || typeof email !== 'string') {
       return new Response(

@@ -222,34 +222,6 @@ const TrainerDashboard = () => {
       );
     }
 
-    // Common card structure for all tools to maintain consistent layout
-    const renderToolCards = (toolName) => (
-      <div className="workspace-content-uniform">
-        <div className="tool-cards-grid">
-          <div className="tool-card">
-            <h5>Quick Actions</h5>
-            <p>Commonly used {toolName.toLowerCase()} functions</p>
-            <button className="card-action-btn">View All</button>
-          </div>
-          <div className="tool-card">
-            <h5>Templates</h5>
-            <p>Pre-built templates for faster workflow</p>
-            <button className="card-action-btn">Browse</button>
-          </div>
-          <div className="tool-card">
-            <h5>Recent Items</h5>
-            <p>Your recently accessed {toolName.toLowerCase()} items</p>
-            <button className="card-action-btn">View Recent</button>
-          </div>
-          <div className="tool-card">
-            <h5>Analytics</h5>
-            <p>{toolName} performance and insights</p>
-            <button className="card-action-btn">View Stats</button>
-          </div>
-        </div>
-      </div>
-    );
-
     switch (activeWorkspaceTool) {
       case 'scheduling':
         return <SmartScheduling selectedClient={selectedClient} />;

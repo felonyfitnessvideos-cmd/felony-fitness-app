@@ -31,6 +31,7 @@ CREATE OR REPLACE FUNCTION unsubscribe_from_trainer_emails(
 RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_updated_count INTEGER;

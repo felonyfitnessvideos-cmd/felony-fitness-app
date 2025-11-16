@@ -56,7 +56,8 @@ function createResponse(
   success: boolean,
   message: string,
   data: any = null,
-  error: string | null = null
+  error: string | null = null,
+  status?: number
 ) {
   return new Response(
     JSON.stringify({
@@ -68,7 +69,7 @@ function createResponse(
     }),
     {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: success ? 200 : 400,
+      status: status || (success ? 200 : 400),
     }
   );
 }
@@ -294,10 +295,27 @@ serve(async (req: Request) => {
 
     // ===== 2. INITIALIZE CLIENTS =====
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const resendApiKey = Deno.env.get('RESEND_API_KEY')!;
 
-    // Create Supabase client with service role key for admin access
+    // Create Supabase client with anon key for authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return createResponse(false, 'Authentication required', null, 'MISSING_AUTH', 401);
+    }
+
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Get authenticated user
+    const userId = await getCurrentUserId(supabaseAuth);
+    if (!userId) {
+      return createResponse(false, 'Authentication failed', null, 'INVALID_AUTH', 401);
+    }
+
+    // Create service role client for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Resend client
@@ -350,6 +368,18 @@ serve(async (req: Request) => {
       );
     }
 
+    // Verify trainer owns this tag
+    if (tag.trainer_id !== userId) {
+      console.error('Unauthorized: Tag does not belong to authenticated trainer');
+      return createResponse(
+        false,
+        'You do not have permission to send campaigns with this tag',
+        null,
+        'UNAUTHORIZED',
+        403
+      );
+    }
+
     const trainerId = tag.trainer_id;
     console.log(`✅ Tag verified: ${tag.name} (trainer: ${trainerId})`);
 
@@ -391,7 +421,8 @@ serve(async (req: Request) => {
       false,
       'Internal server error',
       null,
-      error.message || 'Unknown error occurred'
+      error.message || 'Unknown error occurred',
+      500
     );
   }
 });

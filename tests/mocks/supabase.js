@@ -73,7 +73,7 @@ export const createMockSupabase = () => {
      * @param {string} table - Table name
      * @returns {Object} Query builder
      */
-    from: vi.fn((table) => createQueryBuilder()),
+    from: vi.fn((_table) => createQueryBuilder()),
 
     /**
      * Mock authentication methods
@@ -151,7 +151,7 @@ export const createMockSupabase = () => {
      * @param {string} name - Channel name
      * @returns {Object} Channel mock
      */
-    channel: vi.fn((name) => {
+    channel: vi.fn((_name) => {
       const channel = {
         on: vi.fn().mockReturnThis(),
         subscribe: vi.fn((callback) => {
@@ -170,7 +170,7 @@ export const createMockSupabase = () => {
      * Mock storage bucket access
      */
     storage: {
-      from: vi.fn((bucket) => ({
+      from: vi.fn((_bucket) => ({
         upload: vi.fn(() => Promise.resolve({ data: { path: 'mock-path' }, error: null })),
         download: vi.fn(() => Promise.resolve({ data: new Blob(), error: null })),
         remove: vi.fn(() => Promise.resolve({ data: {}, error: null })),
@@ -185,7 +185,7 @@ export const createMockSupabase = () => {
      * @param {Object} params - Function parameters
      * @returns {Promise} Mock response
      */
-    rpc: vi.fn((fn, params) => Promise.resolve({ data: null, error: null })),
+    rpc: vi.fn((_fn, _params) => Promise.resolve({ data: null, error: null })),
 
     /**
      * Remove all channels (cleanup helper)
@@ -210,7 +210,8 @@ export const createMockSupabase = () => {
           if (typeof unsubscribe === 'function') {
             unsubscribe();
           }
-        } catch (error) {
+        // eslint-disable-next-line no-unused-vars
+        } catch (_error) {
           // Silently ignore cleanup errors
         }
       });
@@ -225,7 +226,8 @@ export const createMockSupabase = () => {
           if (channel.unsubscribe) {
             channel.unsubscribe();
           }
-        } catch (error) {
+        // eslint-disable-next-line no-unused-vars
+        } catch (_error) {
           // Silently ignore cleanup errors
         }
       });

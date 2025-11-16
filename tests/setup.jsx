@@ -192,7 +192,8 @@ afterEach(() => {
     if (global.supabase.removeAllChannels) {
       try {
         global.supabase.removeAllChannels();
-      } catch (error) {
+      // eslint-disable-next-line no-unused-vars
+      } catch (_error) {
         // Silently ignore cleanup errors
       }
     }

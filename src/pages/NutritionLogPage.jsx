@@ -471,7 +471,7 @@ function NutritionLogPage() {
       const today = new Date();
       const logDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       
-      const { data, error } = await supabase
+      const { data: _data, error } = await supabase
         .from('nutrition_logs')
         .insert({
           user_id: user.id,

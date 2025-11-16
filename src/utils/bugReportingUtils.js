@@ -491,17 +491,8 @@ export async function getUnreadBugReportCount() {
       return 0;
     }
 
-    // Get reports where user is reporter and there are admin replies they haven't seen
-    const { error } = await supabase
-      .from('bug_reports')
-      .select('id, updated_at')
-      .eq('user_id', user.id)
-      .gt('updated_at', 'last_viewed_at'); // Assumes we track last_viewed_at
-
-    if (error) throw error;
-
-    // For now, return count of all open/in_progress reports
-    // TODO: Implement proper last_viewed_at tracking
+    // Return count of all open/in_progress reports
+    // TODO: Implement proper last_viewed_at tracking for accurate unread counts
     const { count, error: countError } = await supabase
       .from('bug_reports')
       .select('id', { count: 'exact', head: true })
@@ -687,6 +678,19 @@ export async function updateBugReportStatus(bugReportId, newStatus) {
       throw new Error('User not authenticated');
     }
 
+    // Check if user is admin
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) throw profileError;
+
+    if (!profile.is_admin) {
+      throw new Error('Only admins can update bug report status');
+    }
+
     // Prepare update data
     const updateData = {
       status: newStatus
@@ -740,6 +744,26 @@ export async function updateBugReportPriority(bugReportId, newPriority) {
 
     if (!Object.values(BUG_PRIORITY).includes(newPriority)) {
       throw new Error(`Invalid priority: ${newPriority}`);
+    }
+
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Check if user is admin
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) throw profileError;
+
+    if (!profile.is_admin) {
+      throw new Error('Only admins can update bug report priority');
     }
 
     // Update priority

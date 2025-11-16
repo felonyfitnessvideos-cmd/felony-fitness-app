@@ -50,7 +50,10 @@ CREATE TABLE IF NOT EXISTS trainer_email_templates (
     subject TEXT NOT NULL,
     body TEXT NOT NULL, -- HTML content from TinyMCE editor
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Each trainer's template names must be unique
+    UNIQUE(trainer_id, name)
 );
 
 -- Add index for fast trainer lookup
@@ -161,6 +164,14 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
+    -- Verify tag exists and belongs to the current trainer
+    IF NOT EXISTS (
+        SELECT 1 FROM trainer_group_tags 
+        WHERE id::TEXT = p_tag_id AND trainer_id = auth.uid()
+    ) THEN
+        RAISE EXCEPTION 'Tag % does not exist or does not belong to you', p_tag_id;
+    END IF;
+    
     -- Add tag to client's tags array if not already present
     UPDATE trainer_clients
     SET tags = array_append(tags, p_tag_id),
@@ -168,12 +179,10 @@ BEGIN
     WHERE client_id = p_client_id
       AND trainer_id = auth.uid()
       AND NOT (p_tag_id = ANY(tags)); -- Only add if not already present
-    
+
     RETURN FOUND;
 END;
-$$;
-
-/**
+$$;/**
  * Remove a tag from a client's tags array
  * @param p_client_id UUID - The client's ID
  * @param p_tag_id TEXT - The tag UUID to remove
