@@ -23,6 +23,7 @@ import {
     Activity
 } from 'lucide-react';
 import { useState } from 'react';
+import { useUserRoles } from '../../hooks/useUserRoles.js';
 import NutritionPipelineMonitor from '../../components/NutritionPipelineMonitor.jsx';
 import './TrainerResources.css';
 
@@ -205,6 +206,9 @@ const TrainerResources = () => {
     
     /** @type {[string, Function]} Active tab selection */
     const [activeTab, setActiveTab] = useState('resources');
+    
+    /** Check if user has admin role for pipeline access */
+    const { permissions } = useUserRoles();
 
     /**
      * Handle download by fetching the file and creating a blob
@@ -272,13 +276,15 @@ const TrainerResources = () => {
                         <Folder size={18} />
                         <span>Resources</span>
                     </button>
-                    <button 
-                        className={`tab-btn ${activeTab === 'nutrition-pipeline' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('nutrition-pipeline')}
-                    >
-                        <Activity size={18} />
-                        <span>Nutrition Pipeline</span>
-                    </button>
+                    {permissions.isAdmin && (
+                        <button 
+                            className={`tab-btn ${activeTab === 'nutrition-pipeline' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('nutrition-pipeline')}
+                        >
+                            <Activity size={18} />
+                            <span>Nutrition Pipeline</span>
+                        </button>
+                    )}
                 </div>
 
                 {activeTab === 'resources' && (
