@@ -11,7 +11,7 @@ jobs:
   quality-checks:
     name: Code Quality & Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     
     strategy:
       matrix:
@@ -32,12 +32,15 @@ jobs:
     
     - name: Run ESLint
       run: npm run lint
+      timeout-minutes: 3
     
     - name: Run TypeScript type checking
       run: npm run type-check
+      timeout-minutes: 2
     
     - name: Run tests with coverage
       run: npm run test:ci
+      timeout-minutes: 8
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4

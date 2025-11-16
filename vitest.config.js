@@ -39,8 +39,15 @@ export default defineConfig({
     // Global variables available in tests
     globals: true,
 
-    // Pool configuration for parallel test execution
-    pool: 'threads',
+    // Pool configuration for parallel test execution with better isolation
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: false,
+        maxForks: 4,
+        minForks: 1
+      }
+    },
 
     // Coverage configuration
     coverage: {
@@ -71,9 +78,10 @@ export default defineConfig({
       all: true
     },
 
-    // Test timeout configuration
-    testTimeout: 5000,
-    hookTimeout: 10000,
+    // Test timeout configuration (stricter for CI stability)
+    testTimeout: 3000,
+    hookTimeout: 5000,
+    teardownTimeout: 5000,
 
     // Reporters for test output
     reporter: ['verbose', 'json'],
@@ -86,8 +94,8 @@ export default defineConfig({
     // Retry configuration for flaky tests
     retry: 0,
 
-    // Bail after first failure (faster feedback)
-    bail: 0,
+    // Bail after first failure (faster feedback in CI)
+    bail: 1,
 
     // Run tests in sequence for stability
     sequence: {

@@ -186,9 +186,36 @@ afterEach(() => {
   // Clear all mocks to prevent test interference
   vi.clearAllMocks();
   
+  // Cleanup any Supabase subscriptions or listeners to prevent memory leaks
+  if (global.supabase) {
+    // Clear any active realtime subscriptions
+    if (global.supabase.removeAllChannels) {
+      try {
+        global.supabase.removeAllChannels();
+      } catch (error) {
+        // Silently ignore cleanup errors
+      }
+    }
+    
+    // Reset auth state change listeners
+    if (global.supabase.auth && global.supabase.auth.onAuthStateChange) {
+      const mockAuthStateChange = vi.fn(() => ({
+        data: { 
+          subscription: { 
+            unsubscribe: vi.fn() 
+          } 
+        }
+      }));
+      global.supabase.auth.onAuthStateChange = mockAuthStateChange;
+    }
+  }
+  
   // Reset DOM to clean state
   document.body.innerHTML = '';
   document.head.innerHTML = '';
+  
+  // Clear any pending timers
+  vi.clearAllTimers();
 });
 
 /**
