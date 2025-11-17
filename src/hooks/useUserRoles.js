@@ -13,6 +13,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../AuthContext.jsx';
+import { supabase } from '../supabaseClient.js';
 import userRoleUtils from '../utils/userRoleUtils.js';
 
 /**
@@ -38,6 +39,8 @@ export const useUserRoles = () => {
 
     /**
      * Load user roles from the database
+     * Note: is_admin and is_trainer are stored as booleans in user_profiles table
+     * user_tags is a separate system for email/admin console functionality
      */
     const loadRoles = useCallback(async () => {
         if (!user) {
@@ -57,17 +60,29 @@ export const useUserRoles = () => {
             setLoading(true);
             setError(null);
             
-            const userTags = await userRoleUtils.getCurrentUserTags();
-            setRoles(userTags);
+            // Get user profile with role flags
+            const { data: profile, error: profileError } = await supabase
+                .from('user_profiles')
+                .select('is_admin, is_trainer')
+                .eq('id', user.id)
+                .single();
+            
+            if (profileError) throw profileError;
+            
+            // Build roles array from boolean flags
+            const userRoles = [];
+            if (profile?.is_admin) userRoles.push({ tag_name: 'Admin' });
+            if (profile?.is_trainer) userRoles.push({ tag_name: 'Trainer' });
+            
+            setRoles(userRoles);
             
             // Update cached permissions
-            const roleNames = userTags.map(tag => tag.tag_name);
             setPermissions({
-                isTrainer: roleNames.includes('Trainer'),
-                isClient: roleNames.includes('Client'),
-                isAdmin: roleNames.includes('Admin'),
-                hasPremium: roleNames.includes('Premium'),
-                isUser: roleNames.includes('User')
+                isTrainer: profile?.is_trainer || false,
+                isClient: false, // Not stored in DB yet
+                isAdmin: profile?.is_admin || false,
+                hasPremium: false, // Not implemented yet
+                isUser: true
             });
             
         } catch (err) {
