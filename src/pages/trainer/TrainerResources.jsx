@@ -354,37 +354,38 @@ const TrainerResources = () => {
                     {filteredResources.length > 0 && (
                         <div className="resources-grid">
                             {filteredResources.map((file) => (
-                        <div key={file.id} className={`resource-card ${file.placeholder ? 'placeholder' : ''}`}>
-                            <div className="card-header">
-                                {getFileIcon(file.type)}
-                                <h3>{file.name}</h3>
-                            </div>
+                                <div key={file.id} className={`resource-card ${file.placeholder ? 'placeholder' : ''}`}>
+                                    <div className="card-header">
+                                        {getFileIcon(file.type)}
+                                        <h3>{file.name}</h3>
+                                    </div>
 
-                            {file.placeholder && (
-                                <div className="placeholder-badge">Coming Soon</div>
-                            )}
+                                    {file.placeholder && (
+                                        <div className="placeholder-badge">Coming Soon</div>
+                                    )}
 
-                            <div className="card-actions">
-                                <button
-                                    onClick={() => window.open(file.url, '_blank')}
-                                    className="action-btn view-btn"
-                                    title="View file"
-                                    disabled={file.placeholder}
-                                >
-                                    <Eye size={16} />
-                                    <span>View</span>
-                                </button>
-                                <button
-                                    onClick={() => handleDownload(file.url, `${file.name}.pdf`)}
-                                    className="action-btn download-btn"
-                                    title="Download file"
-                                    disabled={file.placeholder}
-                                >
-                                    <Download size={16} />
-                                    <span>Download</span>
-                                </button>
-                            </div>
-                        </div>
+                                    <div className="card-actions">
+                                        <button
+                                            onClick={() => window.open(file.url, '_blank')}
+                                            className="action-btn view-btn"
+                                            title="View file"
+                                            disabled={file.placeholder}
+                                        >
+                                            <Eye size={16} />
+                                            <span>View</span>
+                                        </button>
+                                        <button
+                                            onClick={() => handleDownload(file.url, `${file.name}.pdf`)}
+                                            className="action-btn download-btn"
+                                            title="Download file"
+                                            disabled={file.placeholder}
+                                        >
+                                            <Download size={16} />
+                                            <span>Download</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
