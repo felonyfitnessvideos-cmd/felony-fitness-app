@@ -264,8 +264,8 @@ function WorkoutLogPage() {
         }
       }
 
-      todaysLogsData?.forEach((log, idx) => {
-        const logEntries = allTodaysEntries.filter(e => e.log_id === log.id);
+      todaysLogsData?.forEach((log) => {
+        allTodaysEntries.filter(e => e.log_id === log.id);
 
       });
 

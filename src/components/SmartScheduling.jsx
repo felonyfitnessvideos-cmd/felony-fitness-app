@@ -71,7 +71,7 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
     }
 
     loadClientProgram();
-  }, [selectedClient]);
+    }, [clientId, loadClientProgram]);
 
   /**
    * Load client's assigned program and generated routines

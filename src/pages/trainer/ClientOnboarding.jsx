@@ -252,7 +252,8 @@ const ClientOnboarding = () => {
 
         // Step 2: Prepare client identifier
         const trimmedUuid = clientUuid?.trim();
-        const isLookupSuccessful = lookupMessage.includes('✅');
+        // Check if lookup was successful
+        lookupMessage.includes('✅');
 
         // Step 3: Create trainer-client relationship
         // Prepare comprehensive intake notes with all collected data
@@ -366,7 +367,7 @@ const ClientOnboarding = () => {
           }
 
         } else {
-
+          // No additional processing needed for client update
         }
 
         alert('Client successfully onboarded and added to your client list!');
