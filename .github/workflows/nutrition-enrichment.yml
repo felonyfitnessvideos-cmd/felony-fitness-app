@@ -1,0 +1,36 @@
+name: Nutrition Enrichment Queue Worker
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/5 * * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  process-enrichment-queue:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Call Nutrition Queue Worker
+        run: |
+          response=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            "https://wkmrdelhoeqhsdifrarn.supabase.co/functions/v1/nutrition-queue-worker")
+          
+          echo "Worker Response:"
+          echo "$response" | jq .
+          
+          # Check if successful
+          success=$(echo "$response" | jq -r '.success')
+          processed=$(echo "$response" | jq -r '.processed // 0')
+          remaining=$(echo "$response" | jq -r '.remaining // 0')
+          
+          echo "✓ Processed: $processed foods"
+          echo "✓ Remaining: $remaining foods"
+          
+          if [ "$remaining" -eq 0 ]; then
+            echo "🎉 All foods enriched! Queue is complete."
+          fi

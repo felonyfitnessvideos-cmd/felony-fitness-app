@@ -412,8 +412,18 @@ Deno.serve(async (req: Request) => {
         return servings.slice(0, 3);
       });
 
-    if (finalResults.length > 0) {
-      console.log(`Returning ${finalResults.length} results with multiple serving options`);
+    // Check if we have good matches or just weak matches
+    // Good match = relevance score > 30 (contains all search terms as words or starts with query)
+    const hasGoodMatches = finalResults.some((food: any) => food.relevanceScore > 30);
+    const hasExactMatch = finalResults.some((food: any) => {
+      const name = (food.food_name || food.name || '').toLowerCase();
+      return name === cleanedQuery.toLowerCase() || name === fullQuery;
+    });
+
+    // Only return local results if we have good matches
+    // Otherwise, call AI to get more specific results
+    if (finalResults.length > 0 && (hasGoodMatches || hasExactMatch)) {
+      console.log(`Returning ${finalResults.length} local results with good relevance scores`);
       return new Response(JSON.stringify({
         results: finalResults,
         source: 'local',
@@ -423,6 +433,9 @@ Deno.serve(async (req: Request) => {
         status: 200,
       });
     }
+
+    // If we only have weak matches or no matches, use AI to get better results
+    console.log(`Local search returned weak matches or no results. Calling AI for: "${cleanedQuery}"`);
 
     // Step 3: Check for similar foods to prevent duplicates (optional - skip for now since no foods table relationship)
     // TODO: Re-enable after schema consolidation
