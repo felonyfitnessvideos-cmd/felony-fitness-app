@@ -152,11 +152,17 @@ class NutritionPipeline {
    */
   async enrichFood(foodId, enrichmentType = 'full') {
     try {
+      // Get current session using modern Supabase API
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No active session');
+      }
 
       const response = await fetch(`${this.baseUrl}/nutrition-enrichment`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${supabase.auth.session()?.access_token}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
@@ -262,8 +268,8 @@ class NutritionPipeline {
 
       // Get foods needing enrichment
       const { data: foods, error } = await supabase
-        .from('foods')
-        .select('id, name, quality_score, enrichment_status')
+        .from('food_servings')
+        .select('id, food_name, quality_score, enrichment_status')
         .lt('quality_score', qualityThreshold)
         .neq('enrichment_status', 'processing')
         .limit(limit);
@@ -393,8 +399,8 @@ class NutritionPipeline {
 
       // Get foods needing attention
       const { data: needsAttention, error: attentionError } = await supabase
-        .from('foods')
-        .select('id, name, quality_score, enrichment_status, last_enrichment')
+        .from('food_servings')
+        .select('id, food_name, quality_score, enrichment_status, last_enrichment')
         .lt('quality_score', 70)
         .order('quality_score', { ascending: true })
         .limit(20);
@@ -412,8 +418,8 @@ class NutritionPipeline {
 
       // Get recent improvements
       const { data: recentImprovements, error: improvementsError } = await supabase
-        .from('foods')
-        .select('id, name, quality_score, last_enrichment')
+        .from('food_servings')
+        .select('id, food_name, quality_score, last_enrichment')
         .not('last_enrichment', 'is', null)
         .gte('quality_score', 80)
         .order('last_enrichment', { ascending: false })

@@ -259,69 +259,101 @@ const TrainerResources = () => {
 
     return (
         <div className="trainer-resources-container">
-            <div className="resources-header">
-                <div className="header-content">
-                    <Folder size={32} />
-                    <div>
-                        <h2>Training Resources</h2>
-                        <p>Trainer's Manual, Forms, and other resources</p>
-                    </div>
-                </div>
-
-                <div className="tab-navigation">
+            <div className="tab-navigation">
+                <button 
+                    className={`tab-btn ${activeTab === 'resources' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('resources')}
+                >
+                    <Folder size={18} />
+                    <span>Resources</span>
+                </button>
+                <button 
+                    className={`tab-btn ${activeTab === 'forms' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('forms')}
+                >
+                    <FileText size={18} />
+                    <span>Forms</span>
+                </button>
+                {permissions.isAdmin && (
                     <button 
-                        className={`tab-btn ${activeTab === 'resources' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('resources')}
+                        className={`tab-btn ${activeTab === 'nutrition-pipeline' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('nutrition-pipeline')}
                     >
-                        <Folder size={18} />
-                        <span>Resources</span>
+                        <Activity size={18} />
+                        <span>Nutrition Pipeline</span>
                     </button>
-                    {permissions.isAdmin && (
-                        <button 
-                            className={`tab-btn ${activeTab === 'nutrition-pipeline' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('nutrition-pipeline')}
-                        >
-                            <Activity size={18} />
-                            <span>Nutrition Pipeline</span>
-                        </button>
-                    )}
-                </div>
+                )}
+                <button 
+                    className={`tab-btn ${activeTab === 'misc' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('misc')}
+                >
+                    <Folder size={18} />
+                    <span>Misc</span>
+                </button>
+            </div>
 
-                {activeTab === 'resources' && (
+            {activeTab === 'resources' && (
+                <div className="resources-header">
                     <div className="header-actions">
                         <div className="search-box">
-                        <Search size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search resources..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                        {searchQuery && (
-                            <button onClick={() => setSearchQuery('')} className="clear-search">
-                                <X size={16} />
-                            </button>
-                        )}
+                            <Search size={18} />
+                            <input
+                                type="text"
+                                placeholder="Search resources..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            {searchQuery && (
+                                <button onClick={() => setSearchQuery('')} className="clear-search">
+                                    <X size={16} />
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
-                )}
-            </div>
+            )}
 
             {activeTab === 'nutrition-pipeline' && (
                 <NutritionPipelineMonitor />
             )}
 
-            {activeTab === 'resources' && filteredResources.length === 0 && (
-                <div className="empty-state">
-                    <Folder size={64} />
-                    <h3>No Resources Found</h3>
-                    <p>No files match your search. Try a different query.</p>
+            {activeTab === 'forms' && (
+                <div className="tab-content-wrapper">
+                    <div className="forms-section">
+                        <div className="empty-state">
+                            <FileText size={64} />
+                            <h3>Forms Section</h3>
+                            <p>Client intake forms, assessment templates, and waivers will be available here.</p>
+                        </div>
+                    </div>
                 </div>
             )}
 
-            {activeTab === 'resources' && filteredResources.length > 0 && (
-                <div className="resources-grid">
-                    {filteredResources.map((file) => (
+            {activeTab === 'misc' && (
+                <div className="tab-content-wrapper">
+                    <div className="misc-section">
+                        <div className="empty-state">
+                            <Folder size={64} />
+                            <h3>Miscellaneous Resources</h3>
+                            <p>Additional training materials and resources will be available here.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'resources' && (
+                <div className="tab-content-wrapper">
+                    {filteredResources.length === 0 && (
+                        <div className="empty-state">
+                            <Folder size={64} />
+                            <h3>No Resources Found</h3>
+                            <p>No files match your search. Try a different query.</p>
+                        </div>
+                    )}
+
+                    {filteredResources.length > 0 && (
+                        <div className="resources-grid">
+                            {filteredResources.map((file) => (
                         <div key={file.id} className={`resource-card ${file.placeholder ? 'placeholder' : ''}`}>
                             <div className="card-header">
                                 {getFileIcon(file.type)}
@@ -353,7 +385,8 @@ const TrainerResources = () => {
                                 </button>
                             </div>
                         </div>
-                    ))}
+                        </div>
+                    )}
                 </div>
             )}
         </div>

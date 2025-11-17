@@ -37,15 +37,15 @@ async function completeNutritionData(foodData: any): Promise<any> {
   try {
     const prompt = `You are a nutrition expert. Complete the missing nutritional information for this food item based on typical values for similar foods.
 
-Food: ${foodData.name} ${foodData.brand ? `(${foodData.brand})` : ''}
+Food: ${foodData.food_name} ${foodData.brand_name ? `(${foodData.brand_name})` : ''}
 Current data:
 - Calories: ${foodData.calories || 'MISSING'}
-- Protein: ${foodData.protein_g || 'MISSING'}g
-- Carbs: ${foodData.carbs_g || 'MISSING'}g  
-- Fat: ${foodData.fat_g || 'MISSING'}g
-- Fiber: ${foodData.fiber_g || 'MISSING'}g
-- Sugar: ${foodData.sugar_g || 'MISSING'}g
-- Sodium: ${foodData.sodium_mg || 'MISSING'}mg
+- Protein: ${foodData.protein || 'MISSING'}g
+- Carbs: ${foodData.carbs || 'MISSING'}g  
+- Fat: ${foodData.fat || 'MISSING'}g
+- Fiber: ${foodData.fiber || 'MISSING'}g
+- Sugar: ${foodData.sugar || 'MISSING'}g
+- Sodium: ${foodData.sodium || 'MISSING'}mg
 - Serving: ${foodData.serving_description || 'MISSING'}
 
 Rules:
@@ -58,12 +58,12 @@ Rules:
 Return JSON with completed values:
 {
   "calories": number,
-  "protein_g": number,
-  "carbs_g": number,
-  "fat_g": number,
-  "fiber_g": number,
-  "sugar_g": number,
-  "sodium_mg": number,
+  "protein": number,
+  "carbs": number,
+  "fat": number,
+  "fiber": number,
+  "sugar": number,
+  "sodium": number,
   "serving_description": "string",
   "confidence": number (0-100),
   "reasoning": "brief explanation"
@@ -117,7 +117,7 @@ function validateNutritionalConsistency(foodData: any): { isValid: boolean; issu
   const corrections: any = {};
 
   // Calculate expected calories
-  const calculatedCalories = (foodData.protein_g || 0) * 4 + (foodData.carbs_g || 0) * 4 + (foodData.fat_g || 0) * 9;
+  const calculatedCalories = (foodData.protein || 0) * 4 + (foodData.carbs || 0) * 4 + (foodData.fat || 0) * 9;
   const caloriesDiff = Math.abs((foodData.calories || 0) - calculatedCalories);
   
   if (caloriesDiff > calculatedCalories * 0.2) { // More than 20% difference
@@ -126,19 +126,19 @@ function validateNutritionalConsistency(foodData: any): { isValid: boolean; issu
   }
 
   // Fiber validation
-  if (foodData.fiber_g && foodData.carbs_g && foodData.fiber_g > foodData.carbs_g) {
+  if (foodData.fiber && foodData.carbs && foodData.fiber > foodData.carbs) {
     issues.push('Fiber cannot exceed total carbohydrates');
-    corrections.fiber_g = Math.min(foodData.fiber_g, foodData.carbs_g);
+    corrections.fiber = Math.min(foodData.fiber, foodData.carbs);
   }
 
   // Sugar validation
-  if (foodData.sugar_g && foodData.carbs_g && foodData.sugar_g > foodData.carbs_g) {
+  if (foodData.sugar && foodData.carbs && foodData.sugar > foodData.carbs) {
     issues.push('Sugar cannot exceed total carbohydrates');
-    corrections.sugar_g = Math.min(foodData.sugar_g, foodData.carbs_g);
+    corrections.sugar = Math.min(foodData.sugar, foodData.carbs);
   }
 
   // Unrealistic values validation
-  if (foodData.protein_g && foodData.protein_g > 100) {
+  if (foodData.protein && foodData.protein > 100) {
     issues.push('Protein content seems unrealistically high');
   }
 
@@ -160,7 +160,7 @@ async function enhanceCategory(foodData: any): Promise<{ category: string; confi
   try {
     const prompt = `You are a food categorization expert. Analyze this food and determine the most appropriate category.
 
-Food: ${foodData.name} ${foodData.brand ? `(${foodData.brand})` : ''}
+Food: ${foodData.food_name} ${foodData.brand_name ? `(${foodData.brand_name})` : ''}
 Current category: ${foodData.category || 'Unknown'}
 
 Available categories:
@@ -221,8 +221,8 @@ function calculateQualityScore(foodData: any, validationResult: any, completionC
   let score = 0;
 
   // Completeness (40 points)
-  const fields = ['calories', 'protein_g', 'carbs_g', 'fat_g'];
-  const optionalFields = ['fiber_g', 'sugar_g', 'sodium_mg'];
+  const fields = ['calories', 'protein', 'carbs', 'fat'];
+  const optionalFields = ['fiber', 'sugar', 'sodium'];
   
   const completeFields = fields.filter(field => foodData[field] !== null && foodData[field] !== undefined && foodData[field] !== 0);
   const completeOptionalFields = optionalFields.filter(field => foodData[field] !== null && foodData[field] !== undefined);
@@ -273,19 +273,19 @@ Deno.serve(async (req) => {
     // If food_id provided, fetch from database
     if (food_id && !food_data) {
       const { data, error } = await supabaseAdmin
-        .from('foods')
+        .from('food_servings')
         .select('*')
         .eq('id', food_id)
         .single();
       
       if (error || !data) {
-        throw new Error('Food not found');
+        throw new Error(`Food not found: ${error?.message || 'Unknown error'}`);
       }
       
       originalData = data;
     }
 
-    console.log(`Enriching food: ${originalData.name} (type: ${enrichment_type})`);
+    console.log(`Enriching food: ${originalData.food_name} (type: ${enrichment_type})`);
 
     const result: EnrichmentResult = {
       original_data: originalData,
@@ -345,7 +345,7 @@ Deno.serve(async (req) => {
     // Step 5: Update database if food_id provided and changes were made
     if (food_id && result.changes_made.length > 0) {
       const { error: updateError } = await supabaseAdmin
-        .from('foods')
+        .from('food_servings')
         .update({
           ...result.enriched_data,
           quality_score: result.quality_score,
