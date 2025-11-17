@@ -32,15 +32,15 @@ async function completeNutritionData(foodData: any): Promise<any> {
   try {
     const prompt = `You are a nutrition expert. Complete the missing nutritional information for this food item based on typical values for similar foods.
 
-Food: ${foodData.food_name} ${foodData.brand_name ? `(${foodData.brand_name})` : ''}
+Food: ${foodData.food_name} ${foodData.brand ? `(${foodData.brand})` : ''}
 Current data:
 - Calories: ${foodData.calories || 'MISSING'}
-- Protein: ${foodData.protein || 'MISSING'}g
-- Carbs: ${foodData.carbs || 'MISSING'}g  
-- Fat: ${foodData.fat || 'MISSING'}g
-- Fiber: ${foodData.fiber || 'MISSING'}g
-- Sugar: ${foodData.sugar || 'MISSING'}g
-- Sodium: ${foodData.sodium || 'MISSING'}mg
+- Protein: ${foodData.protein_g || 'MISSING'}g
+- Carbs: ${foodData.carbs_g || 'MISSING'}g  
+- Fat: ${foodData.fat_g || 'MISSING'}g
+- Fiber: ${foodData.fiber_g || 'MISSING'}g
+- Sugar: ${foodData.sugar_g || 'MISSING'}g
+- Sodium: ${foodData.sodium_mg || 'MISSING'}mg
 - Serving: ${foodData.serving_description || 'MISSING'}
 
 Rules:
@@ -115,7 +115,7 @@ function validateNutritionalConsistency(foodData: any): { isValid: boolean; issu
   const corrections: any = {};
 
   // Calculate expected calories
-  const calculatedCalories = (foodData.protein || 0) * 4 + (foodData.carbs || 0) * 4 + (foodData.fat || 0) * 9;
+  const calculatedCalories = (foodData.protein_g || 0) * 4 + (foodData.carbs_g || 0) * 4 + (foodData.fat_g || 0) * 9;
   const caloriesDiff = Math.abs((foodData.calories || 0) - calculatedCalories);
   
   if (caloriesDiff > calculatedCalories * 0.2) { // More than 20% difference
@@ -124,15 +124,15 @@ function validateNutritionalConsistency(foodData: any): { isValid: boolean; issu
   }
 
   // Fiber validation
-  if (foodData.fiber && foodData.carbs && foodData.fiber > foodData.carbs) {
+  if (foodData.fiber_g && foodData.carbs_g && foodData.fiber_g > foodData.carbs_g) {
     issues.push('Fiber cannot exceed total carbohydrates');
-    corrections.fiber = Math.min(foodData.fiber, foodData.carbs);
+    corrections.fiber_g = Math.min(foodData.fiber_g, foodData.carbs_g);
   }
 
   // Sugar validation
-  if (foodData.sugar && foodData.carbs && foodData.sugar > foodData.carbs) {
+  if (foodData.sugar_g && foodData.carbs_g && foodData.sugar_g > foodData.carbs_g) {
     issues.push('Sugar cannot exceed total carbohydrates');
-    corrections.sugar = Math.min(foodData.sugar, foodData.carbs);
+    corrections.sugar_g = Math.min(foodData.sugar_g, foodData.carbs_g);
   }
 
   return {
@@ -210,12 +210,12 @@ async function processSingleFood(supabaseAdmin: any, food: any): Promise<{ succe
       .from('food_servings')
       .update({
         calories: finalData.calories,
-        protein: finalData.protein,
-        carbs: finalData.carbs,
-        fat: finalData.fat,
-        fiber: finalData.fiber,
-        sugar: finalData.sugar,
-        sodium: finalData.sodium,
+        protein_g: finalData.protein_g,
+        carbs_g: finalData.carbs_g,
+        fat_g: finalData.fat_g,
+        fiber_g: finalData.fiber_g,
+        sugar_g: finalData.sugar_g,
+        sodium_mg: finalData.sodium_mg,
         serving_description: finalData.serving_description,
         quality_score: qualityScore,
         enrichment_status: 'completed',
@@ -275,7 +275,7 @@ Deno.serve(async (req) => {
     // Get foods that need enrichment (quality_score < 70 or null, not currently processing)
     const { data: foods, error: fetchError } = await supabaseAdmin
       .from('food_servings')
-      .select('id, food_name, brand_name, calories, protein, carbs, fat, fiber, sugar, sodium, serving_description, source, quality_score')
+      .select('id, food_name, brand, calories, protein_g, carbs_g, fat_g, fiber_g, sugar_g, sodium_mg, serving_description, source, quality_score')
       .or('quality_score.lt.70,quality_score.is.null')
       .neq('enrichment_status', 'processing')
       .order('quality_score', { ascending: true, nullsFirst: true })

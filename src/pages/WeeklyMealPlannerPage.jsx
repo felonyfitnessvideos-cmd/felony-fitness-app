@@ -137,6 +137,7 @@ const WeeklyMealPlannerPage = () => {
       const endDateObj = currentWeek[6];
       const endDate = `${endDateObj.getFullYear()}-${String(endDateObj.getMonth() + 1).padStart(2, '0')}-${String(endDateObj.getDate()).padStart(2, '0')}`;
 
+      // Query for both premade meals AND user meals
       const { data, error } = await supabase
         .from('weekly_meal_plan_entries')
         .select(`
@@ -179,6 +180,45 @@ const WeeklyMealPlannerPage = () => {
                 vitamin_b12_mcg
               )
             )
+          ),
+          user_meals (
+            id,
+            name,
+            category,
+            user_meal_foods (
+              quantity,
+              food_servings (
+                id,
+                food_name,
+                serving_description,
+                category,
+                calories,
+                protein_g,
+                carbs_g,
+                fat_g,
+                fiber_g,
+                sugar_g,
+                sodium_mg,
+                calcium_mg,
+                iron_mg,
+                potassium_mg,
+                magnesium_mg,
+                phosphorus_mg,
+                zinc_mg,
+                copper_mg,
+                selenium_mcg,
+                vitamin_a_mcg,
+                vitamin_c_mg,
+                vitamin_e_mg,
+                vitamin_k_mcg,
+                thiamin_mg,
+                riboflavin_mg,
+                niacin_mg,
+                vitamin_b6_mg,
+                folate_mcg,
+                vitamin_b12_mcg
+              )
+            )
           )
         `)
         .eq('plan_id', activePlan.id)
@@ -187,11 +227,24 @@ const WeeklyMealPlannerPage = () => {
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-
-      }
+      // Normalize data - handle both meals and user_meals
+      const normalizedEntries = (data || []).map(entry => {
+        // Check if this entry references a premade meal or user meal
+        if (entry.user_meals) {
+          // User meal - normalize structure to match meals format
+          return {
+            ...entry,
+            meals: {
+              ...entry.user_meals,
+              meal_foods: entry.user_meals.user_meal_foods || []
+            }
+          };
+        }
+        // Already has meals data (premade meal)
+        return entry;
+      });
       
-      setPlanEntries(data || []);
+      setPlanEntries(normalizedEntries);
     } catch (error) {
       if (import.meta.env?.DEV) {
 
@@ -326,51 +379,42 @@ const WeeklyMealPlannerPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get user's saved meals from user_meals table
+      // Get user's saved meals from user_meals table (self-contained with all meal data)
       const { data: userSavedMeals, error: userMealsError } = await supabase
         .from('user_meals')
         .select(`
-          is_favorite,
-          custom_name,
-          meals (
-            *,
-            meal_foods (
-              quantity,
-              food_servings (
-                calories,
-                protein_g,
-                carbs_g,
-                fat_g
-              )
+          *,
+          user_meal_foods (
+            id,
+            food_servings_id,
+            quantity,
+            notes,
+            food_servings (
+              id,
+              food_name,
+              calories,
+              protein_g,
+              carbs_g,
+              fat_g,
+              serving_description
             )
           )
         `)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
       if (userMealsError) throw userMealsError;
 
-      // Process user saved meals only (no premade meals in meal planner)
-      const userMealsData = userSavedMeals.map(um => ({
-        ...um.meals,
-        user_meals: [{
-          is_favorite: um.is_favorite,
-          custom_name: um.custom_name
-        }]
-      }));
+      // user_meals is now self-contained, no processing needed
+      const data = userSavedMeals || [];
 
-      const data = userMealsData;
-      const error = null;
-
-      if (error) throw error;
-
-      // Calculate nutrition for each meal and handle user_meals relationship
+      // Calculate nutrition for each meal
       const mealsWithNutrition = data.map(meal => {
-        const userMeal = meal.user_meals && meal.user_meals.length > 0 ? meal.user_meals[0] : null;
         return {
           ...meal,
-          nutrition: calculateMealNutrition(meal.meal_foods),
-          display_name: userMeal?.custom_name || meal.name,
-          is_favorite: userMeal?.is_favorite || false,
+          nutrition: calculateMealNutrition(meal.user_meal_foods),
+          display_name: meal.custom_name || meal.name,
+          is_favorite: meal.is_favorite || false,
         };
       });
 
@@ -797,33 +841,32 @@ const WeeklyMealPlannerPage = () => {
     if (!activePlan || !selectedSlot) return;
 
     try {
-      // First, ensure the meal is in user_meals (so it shows up in My Meals page)
-      const { error: userMealError } = await supabase
-        .from('user_meals')
-        .upsert([{
-          user_id: user.id,
-          meal_id: meal.id,
-          is_favorite: false
-        }], {
-          onConflict: 'user_id,meal_id',
-          ignoreDuplicates: true
-        });
+      // Determine if this is a user meal or premade meal
+      // User meals won't have meal_id foreign key (it's null)
+      // Premade meals will have meal_id pointing to meals table
+      const isUserMeal = !meal.meal_id;  // If meal_id is null, it's a user-created meal
+      
+      // Prepare the entry data
+      const entryData = {
+        plan_id: activePlan.id,
+        plan_date: selectedSlot.date,
+        meal_type: selectedSlot.mealType,
+        servings: servings
+      };
 
-      if (userMealError) {
-        console.error('Error adding meal to user collection:', userMealError);
-        // Continue anyway - meal might already be in user_meals
+      // Add either meal_id (for premade) or user_meal_id (for user-created)
+      if (isUserMeal) {
+        entryData.user_meal_id = meal.id;
+        entryData.meal_id = null;
+      } else {
+        entryData.meal_id = meal.meal_id || meal.id;
+        entryData.user_meal_id = null;
       }
 
-      // Then add to the meal plan
+      // Add to the meal plan
       const { error } = await supabase
         .from('weekly_meal_plan_entries')
-        .insert([{
-          plan_id: activePlan.id,
-          meal_id: meal.id,
-          plan_date: selectedSlot.date,
-          meal_type: selectedSlot.mealType,
-          servings: servings
-        }]);
+        .insert([entryData]);
 
       if (error) throw error;
 
@@ -836,6 +879,8 @@ const WeeklyMealPlannerPage = () => {
       // Provide more specific error messages
       if (error.code === '23505') {
         alert('This meal is already in that time slot.');
+      } else if (error.code === '23514') {
+        alert('Database constraint error - please ensure the meal data is valid.');
       } else {
         alert('Error adding meal to plan. Please try again.');
       }
