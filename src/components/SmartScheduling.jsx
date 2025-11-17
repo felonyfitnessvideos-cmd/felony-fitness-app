@@ -16,7 +16,7 @@ import {
   Dumbbell,
   User
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import googleCalendarService from '../services/googleCalendar.js';
 import { useAuth } from '../AuthContext.jsx';
 import { supabase } from '../supabaseClient.js';
@@ -60,23 +60,9 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
   const { user: _user } = useAuth();
 
   /**
-   * Load client program and routines when client selected
-   */
-  useEffect(() => {
-    if (!selectedClient) {
-      setClientProgram(null);
-      setProgramRoutines([]);
-      setWeeklySchedule({});
-      return;
-    }
-
-    loadClientProgram();
-  }, [selectedClient, loadClientProgram]);
-
-  /**
    * Load client's assigned program and generated routines
    */
-  const loadClientProgram = async () => {
+  const loadClientProgram = useCallback(async () => {
     if (!selectedClient?.id) return;
 
     try {
@@ -132,7 +118,21 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
       console.error('Error loading client program:', error);
       setStatusMessage('Error loading program data');
     }
-  };
+  }, [selectedClient]);
+
+  /**
+   * Load client program and routines when client selected
+   */
+  useEffect(() => {
+    if (!selectedClient) {
+      setClientProgram(null);
+      setProgramRoutines([]);
+      setWeeklySchedule({});
+      return;
+    }
+
+    loadClientProgram();
+  }, [selectedClient, loadClientProgram]);
 
   /**
    * Handle drag start
