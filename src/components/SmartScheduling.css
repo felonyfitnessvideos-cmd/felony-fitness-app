@@ -178,7 +178,7 @@
   position: absolute;
   left: 0;
   top: 0;
-  bottom: 0;
+  /* Fit to content height instead of full container height */
   width: 90px;
   background: #2d3748;
   border-right: 1px solid #4a5568;
@@ -210,11 +210,11 @@
 .routine-item {
   font-size: 0.65rem;
   color: #f7fafc;
-  padding: 0.3rem;
+  padding: 0.2rem 0.25rem; /* tighter padding to fit text */
   background: #1a202c;
   border: 1px solid #4a5568;
   border-radius: 3px;
-  line-height: 1.2;
+  line-height: 1.1; /* reduce vertical height */
   word-break: break-word;
 }
 
@@ -251,7 +251,8 @@
 
 /* Dropdown Select */
 .routine-select {
-  width: 100%;
+  width: 60%; /* reduce width by 40% */
+  margin: 0 auto; /* center within day cell */
   padding: 0.3rem;
   background: #1a202c;
   border: 2px solid #4a5568;
