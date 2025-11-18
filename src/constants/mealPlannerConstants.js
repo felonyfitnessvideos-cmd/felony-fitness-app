@@ -179,7 +179,8 @@ export function calculateMealNutrition(mealFoods) {
 
   return mealFoods.reduce((acc, item) => {
     const food = item.food_servings;
-    const quantity = item.quantity || 0;
+    // Default to 1 when quantity is missing/invalid to ensure premade meals show correct macros
+    const quantity = Number.isFinite(item?.quantity) && item.quantity > 0 ? item.quantity : 1;
     
     // Handle null or undefined food_servings
     if (!food) {

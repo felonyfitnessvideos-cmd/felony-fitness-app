@@ -10,7 +10,21 @@
  * SOLUTION:
  * 1. Migrate any user-created meals from 'meals' table to 'user_meals' table
  * 2. Migrate meal_foods entries to user_meal_foods
- * 3. Update weekly_meal_plan_entries to add support for both meals and user_meals
+ * 3. Remove NOT NULL constraint from meal_id column in weekly_meal_plan_entries
+ * 4. Add user_meal_id column to weekly_meal_plan_entries
+ * 5. Add XOR constraint to ensure exactly one meal reference
+ * 6. Remove meal_id column from user_meals (not needed - user meals are standalone)
+ * 
+ * CRITICAL: Run this SQL BEFORE using the meal planner with user-created meals!
+ * Without this migration, you'll see errors:
+ * - "null value in column meal_id violates not-null constraint"
+ * - "Key (meal_id)=(...) is not present in table meals"
+ * 
+ * HOW TO RUN:
+ * 1. Copy this entire file
+ * 2. Go to Supabase Dashboard → SQL Editor
+ * 3. Paste and click "Run"
+ * 4. Verify success (should see green checkmarks and NOTICE messages)
  */
 
 -- Step 1: Check if we need to migrate any meals from 'meals' to 'user_meals'
@@ -32,7 +46,6 @@ BEGIN
     INSERT INTO user_meals (
       id,  -- Keep the same ID to preserve foreign key relationships
       user_id,
-      meal_id,  -- NULL for user-created meals
       name,
       description,
       category,
@@ -50,7 +63,6 @@ BEGIN
     ) VALUES (
       meal_record.id,  -- Preserve the ID
       meal_record.user_id,
-      NULL,  -- Not linked to premade meals
       meal_record.name,
       meal_record.description,
       meal_record.category,
@@ -90,7 +102,19 @@ BEGIN
   RAISE NOTICE 'Migration complete!';
 END $$;
 
--- Step 2: Add user_meal_id column to weekly_meal_plan_entries if it doesn't exist
+-- Step 2: Remove NOT NULL constraint from meal_id (it's optional now)
+DO $$
+BEGIN
+  ALTER TABLE weekly_meal_plan_entries 
+  ALTER COLUMN meal_id DROP NOT NULL;
+  
+  RAISE NOTICE 'Removed NOT NULL constraint from meal_id';
+EXCEPTION
+  WHEN others THEN
+    RAISE NOTICE 'meal_id already allows NULL';
+END $$;
+
+-- Step 3: Add user_meal_id column to weekly_meal_plan_entries if it doesn't exist
 -- This allows meal plans to reference EITHER meals (premade) OR user_meals (user-created)
 DO $$
 BEGIN
@@ -108,7 +132,7 @@ BEGIN
   END IF;
 END $$;
 
--- Step 3: Add constraint to ensure either meal_id OR user_meal_id is set (not both, not neither)
+-- Step 4: Add constraint to ensure either meal_id OR user_meal_id is set (not both, not neither)
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -128,28 +152,31 @@ BEGIN
   END IF;
 END $$;
 
--- Step 4: Update any existing weekly_meal_plan_entries that point to migrated meals
+-- Step 5: Update any existing weekly_meal_plan_entries that point to migrated meals
 -- If meal_id points to a meal that was migrated to user_meals, update to use user_meal_id
 UPDATE weekly_meal_plan_entries
 SET 
   user_meal_id = meal_id,
   meal_id = NULL
 WHERE meal_id IN (
-  SELECT id FROM user_meals WHERE meal_id IS NULL
+  SELECT id FROM user_meals
 );
 
--- Step 5: Clean up - delete user-created meals from meals table (they're now in user_meals)
+-- Step 6: Remove meal_id column from user_meals table (not needed - user meals are standalone)
+ALTER TABLE user_meals 
+DROP COLUMN IF EXISTS meal_id CASCADE;
+
+-- Step 7: Clean up - delete user-created meals from meals table (they're now in user_meals)
 DELETE FROM meals
 WHERE user_id IS NOT NULL 
   AND is_premade = FALSE
-  AND id IN (SELECT id FROM user_meals WHERE meal_id IS NULL);
+  AND id IN (SELECT id FROM user_meals);
 
 -- Verify the migration
 SELECT 
   'User-created meals in user_meals' as table_name,
   COUNT(*) as count
 FROM user_meals
-WHERE meal_id IS NULL
 
 UNION ALL
 
@@ -159,3 +186,5 @@ SELECT
 FROM meals
 WHERE user_id IS NOT NULL 
   AND is_premade = FALSE;
+
+SELECT 'Successfully migrated user meals and removed meal_id column from user_meals!' as status;

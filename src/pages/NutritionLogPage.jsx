@@ -784,7 +784,7 @@ function NutritionLogPage() {
             </div>
             <div className="modal-footer">
               <button className="log-food-btn" onClick={handleLogFood}>
-                Add to {activeMeal}
+                Add to {formatMealType(activeMeal)}
               </button>
             </div>
           </div>

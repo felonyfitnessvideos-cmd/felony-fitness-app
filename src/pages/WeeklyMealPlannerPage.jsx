@@ -43,6 +43,8 @@ const WeeklyMealPlannerPage = () => {
 
   /** @type {[Array, Function]} Meal entries for the current week/plan */
   const [planEntries, setPlanEntries] = useState([]);
+  // Feature detection: whether weekly_meal_plan_entries has user_meal_id and user_meals relation is queryable
+  const [supportsUserMealEntries, setSupportsUserMealEntries] = useState(true);
 
   /** @type {[Array, Function]} User's saved meals library */
   const [userMeals, setUserMeals] = useState([]);
@@ -137,10 +139,9 @@ const WeeklyMealPlannerPage = () => {
       const endDateObj = currentWeek[6];
       const endDate = `${endDateObj.getFullYear()}-${String(endDateObj.getMonth() + 1).padStart(2, '0')}-${String(endDateObj.getDate()).padStart(2, '0')}`;
 
-      // Query for both premade meals AND user meals
-      const { data, error } = await supabase
-        .from('weekly_meal_plan_entries')
-        .select(`
+      // Query for both premade meals AND user meals. If the schema doesn't yet support user_meal_id,
+      // fall back to meals-only to avoid 400 errors and keep planner usable.
+      const baseSelect = `
           *,
           meals (
             id,
@@ -180,7 +181,8 @@ const WeeklyMealPlannerPage = () => {
                 vitamin_b12_mcg
               )
             )
-          ),
+          )`;
+      const userMealsSelect = `,
           user_meals (
             id,
             name,
@@ -219,19 +221,36 @@ const WeeklyMealPlannerPage = () => {
                 vitamin_b12_mcg
               )
             )
-          )
-        `)
+          )`;
+
+      let data = null;
+      let error = null;
+      // First attempt: include user_meals relation (preferred)
+      ({ data, error } = await supabase
+        .from('weekly_meal_plan_entries')
+        .select(`${baseSelect}${userMealsSelect}`)
         .eq('plan_id', activePlan.id)
         .gte('plan_date', startDate)
-        .lte('plan_date', endDate);
+        .lte('plan_date', endDate));
+
+      if (error) {
+        // Fallback: meals-only (schema likely missing user_meal_id). Keep app functional.
+        ({ data, error } = await supabase
+          .from('weekly_meal_plan_entries')
+          .select(baseSelect)
+          .eq('plan_id', activePlan.id)
+          .gte('plan_date', startDate)
+          .lte('plan_date', endDate));
+        setSupportsUserMealEntries(false);
+      } else {
+        setSupportsUserMealEntries(true);
+      }
 
       if (error) throw error;
 
-      // Normalize data - handle both meals and user_meals
+      // Normalize data - handle both meals and user_meals when available
       const normalizedEntries = (data || []).map(entry => {
-        // Check if this entry references a premade meal or user meal
         if (entry.user_meals) {
-          // User meal - normalize structure to match meals format
           return {
             ...entry,
             meals: {
@@ -240,10 +259,8 @@ const WeeklyMealPlannerPage = () => {
             }
           };
         }
-        // Already has meals data (premade meal)
         return entry;
       });
-      
       setPlanEntries(normalizedEntries);
     } catch (error) {
       if (import.meta.env?.DEV) {
@@ -466,7 +483,7 @@ const WeeklyMealPlannerPage = () => {
   const calculateMealNutrition = (mealFoods, servings = 1) => {
     return mealFoods.reduce((acc, item) => {
       const food = item.food_servings;
-      const quantity = item.quantity || 0;
+      const quantity = Number.isFinite(item?.quantity) && item.quantity > 0 ? item.quantity : 1;
 
       return {
         calories: acc.calories + (food.calories * quantity * servings || 0),
@@ -720,7 +737,7 @@ const WeeklyMealPlannerPage = () => {
       // Fetch last week's meal entries
       const { data: lastWeekEntries, error: fetchError } = await supabase
         .from('weekly_meal_plan_entries')
-        .select('meal_id, plan_date, meal_type, servings, notes')
+        .select('meal_id, user_meal_id, plan_date, meal_type, servings, notes')
         .eq('plan_id', activePlan.id)
         .gte('plan_date', lastWeekStartStr)
         .lte('plan_date', lastWeekEndStr);
@@ -742,6 +759,7 @@ const WeeklyMealPlannerPage = () => {
         return {
           plan_id: activePlan.id,
           meal_id: entry.meal_id,
+          user_meal_id: entry.user_meal_id,
           plan_date: newDateStr,
           meal_type: entry.meal_type,
           servings: entry.servings,
@@ -842,9 +860,10 @@ const WeeklyMealPlannerPage = () => {
 
     try {
       // Determine if this is a user meal or premade meal
-      // User meals won't have meal_id foreign key (it's null)
-      // Premade meals will have meal_id pointing to meals table
-      const isUserMeal = !meal.meal_id;  // If meal_id is null, it's a user-created meal
+      // - User meals: Come from user_meals table (has user_meal_foods property)
+      // - Premade meals: Come from meals table (has meal_foods property)
+      
+      const isUserMeal = meal.user_meal_foods !== undefined;
       
       // Prepare the entry data
       const entryData = {
@@ -856,10 +875,16 @@ const WeeklyMealPlannerPage = () => {
 
       // Add either meal_id (for premade) or user_meal_id (for user-created)
       if (isUserMeal) {
+        // This is a user-created meal from user_meals table
+        if (!supportsUserMealEntries) {
+          alert('Your database schema does not yet support adding user meals to the planner (missing user_meal_id column). Please run scripts/fix-user-meals-data-structure.sql to add support.');
+          return;
+        }
         entryData.user_meal_id = meal.id;
         entryData.meal_id = null;
       } else {
-        entryData.meal_id = meal.meal_id || meal.id;
+        // This is a premade meal from meals table
+        entryData.meal_id = meal.id;
         entryData.user_meal_id = null;
       }
 
@@ -879,6 +904,8 @@ const WeeklyMealPlannerPage = () => {
       // Provide more specific error messages
       if (error.code === '23505') {
         alert('This meal is already in that time slot.');
+      } else if (error.code === '23503') {
+        alert('Error: This meal reference is invalid. The meal may have been deleted.');
       } else if (error.code === '23514') {
         alert('Database constraint error - please ensure the meal data is valid.');
       } else {

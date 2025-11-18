@@ -897,7 +897,23 @@ const ProgramLibrary = () => {
    * @returns {boolean} Whether program matches category
    */
   const getCategoryMatch = (program, category) => {
-    // Handle null/undefined values safely
+    // First check program_type column (preferred method)
+    if (program.program_type) {
+      const programType = program.program_type.toLowerCase();
+      const categoryLower = category.toLowerCase();
+      
+      // Direct match (e.g., 'strength' === 'strength')
+      if (programType === categoryLower) {
+        return true;
+      }
+      
+      // Handle special case: 'Balance' category doesn't have a program_type
+      if (category === 'Balance') {
+        return programType === 'flexibility' || programType === 'recovery';
+      }
+    }
+    
+    // Fallback to text matching for programs without program_type set
     const programName = (program?.name || '').toLowerCase();
     const programDesc = (program?.description || '').toLowerCase();
 

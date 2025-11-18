@@ -20,7 +20,7 @@ INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time
  'Scramble 3 eggs with 28g cheddar cheese. Toast 2 slices whole wheat bread. Top with 50g sliced avocado. Serves 1. Macros: 520 cal, 32g protein, 35g carbs, 28g fat',
  true,
  true,
- '["high-protein","quick","muscle-building"]');
+ ARRAY['high-protein','quick','muscle-building']);
 
 -- Breakfast 2: Greek Yogurt Power Bowl
 INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time_minutes, serving_size, difficulty_level, instructions, is_premade, is_public, tags) VALUES
@@ -35,7 +35,7 @@ INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time
  'Mix 150g Greek yogurt with 40g instant oats (cooked). Top with ½ medium banana, 16g almond butter, 50g blueberries. Microwave oats 1-2 min, let cool, then assemble. Macros: 420 cal, 24g protein, 52g carbs, 13g fat',
  true,
  true,
- '["high-protein","meal-prep","balanced"]');
+ ARRAY['high-protein','meal-prep','balanced']);
 
 -- Breakfast 3: Turkey Sausage & Sweet Potato Hash
 INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time_minutes, serving_size, difficulty_level, instructions, is_premade, is_public, tags) VALUES
@@ -50,7 +50,7 @@ INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time
  'Dice 100g sweet potato and 50g red bell pepper. Roast at 400°F for 15 min. Cook 100g turkey sausage until browned. Combine and season with salt, pepper, paprika. Macros: 380 cal, 30g protein, 34g carbs, 14g fat',
  true,
  true,
- '["high-protein","whole30-friendly","paleo"]');
+ ARRAY['high-protein','whole30-friendly','paleo']);
 
 -- 3 LUNCHES
 -- Lunch 1: Grilled Chicken Power Bowl
@@ -66,7 +66,7 @@ INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time
  'Grill 170g chicken breast seasoned with garlic and herbs (20 min). Cook 150g brown rice. Steam 100g broccoli. Assemble bowl and drizzle with 1 tbsp olive oil. Macros: 550 cal, 52g protein, 53g carbs, 14g fat',
  true,
  true,
- '["high-protein","meal-prep","balanced"]');
+ ARRAY['high-protein','meal-prep','balanced']);
 
 -- Lunch 2: Turkey & Avocado Whole Wheat Wrap
 INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time_minutes, serving_size, difficulty_level, instructions, is_premade, is_public, tags) VALUES
@@ -81,7 +81,7 @@ INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time
  'Layer 100g lean turkey (sliced), 50g avocado, 30g romaine lettuce, tomato slices on 1 large whole wheat tortilla. Roll tightly and cut in half. Perfect for meal prep! Macros: 420 cal, 36g protein, 38g carbs, 15g fat',
  true,
  true,
- '["high-protein","portable","quick"]');
+ ARRAY['high-protein','portable','quick']);
 
 -- Lunch 3: Salmon & Quinoa Mediterranean Bowl
 INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time_minutes, serving_size, difficulty_level, instructions, is_premade, is_public, tags) VALUES
@@ -96,7 +96,7 @@ INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time
  'Bake 150g salmon at 400°F for 15 min. Cook 100g quinoa (dry weight). Add 50g fresh spinach, 50g sliced cucumber. Drizzle with 1 tbsp olive oil and lemon juice. Macros: 580 cal, 42g protein, 46g carbs, 25g fat',
  true,
  true,
- '["high-protein","omega-3","heart-healthy"]');
+ ARRAY['high-protein','omega-3','heart-healthy']);
 
 -- 3 DINNERS
 -- Dinner 1: Lean Beef Stir-Fry with Vegetables
@@ -112,7 +112,7 @@ INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time
  'Slice 150g sirloin into strips. Stir-fry with 150g mixed vegetables (bell peppers, broccoli, carrots) in 1 tsp olive oil. Season with soy sauce and garlic. Serve over 150g cooked brown rice. Macros: 580 cal, 48g protein, 60g carbs, 15g fat',
  true,
  true,
- '["high-protein","balanced","asian-inspired"]');
+ ARRAY['high-protein','balanced','asian-inspired']);
 
 -- Dinner 2: Baked Chicken Thighs with Sweet Potato
 INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time_minutes, serving_size, difficulty_level, instructions, is_premade, is_public, tags) VALUES
@@ -127,7 +127,7 @@ INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time
  'Season 150g chicken thighs with paprika, garlic powder, salt, pepper. Bake with 150g cubed sweet potato at 425°F for 30 min. Roast 120g green beans last 15 min. Macros: 520 cal, 45g protein, 48g carbs, 18g fat',
  true,
  true,
- '["high-protein","whole30","family-friendly"]');
+ ARRAY['high-protein','whole30','family-friendly']);
 
 -- Dinner 3: Ground Turkey Taco Bowl
 INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time_minutes, serving_size, difficulty_level, instructions, is_premade, is_public, tags) VALUES
@@ -142,7 +142,7 @@ INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time
  'Cook 120g lean ground turkey with taco seasoning. Prepare 120g brown rice and 75g black beans. Top with 40g salsa and 30g avocado. Season with cumin and chili powder. Macros: 560 cal, 45g protein, 62g carbs, 14g fat',
  true,
  true,
- '["high-protein","mexican-inspired","meal-prep"]');
+ ARRAY['high-protein','mexican-inspired','meal-prep']);
 
 -- 1 PRE-WORKOUT SNACK  
 INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time_minutes, serving_size, difficulty_level, instructions, is_premade, is_public, tags) VALUES
@@ -157,11 +157,11 @@ INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time
  'Slice 1 medium banana. Spread with 16g almond butter. Mix 20g instant oats with cinnamon for dipping. Fast-acting carbs + healthy fats for sustained energy. Macros: 280 cal, 6g protein, 40g carbs, 12g fat',
  true,
  true,
- '["pre-workout","quick","energy-boost"]');
+ ARRAY['pre-workout','quick','energy-boost']);
 
 -- 1 POST-WORKOUT SNACK
 INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time_minutes, serving_size, difficulty_level, instructions, is_premade, is_public, tags) VALUES
-('fbaccc2c3-d5e6-4f1b-2a3b-4c5d6e7f8091',
+('fbaccc2c-d5e6-4f1b-2a3b-4c5d6e7f8091',
  'Post-Workout Protein Shake',
  'Whey protein shake with banana and almond milk',
  'snack',
@@ -172,7 +172,7 @@ INSERT INTO meals (id, name, description, category, prep_time_minutes, cook_time
  'Blend 1 scoop (30g) whey protein, 1 small banana, 240ml unsweetened almond milk, ice. Optional: add 5g creatine. Perfect 30min post-workout for muscle recovery. Macros: 250 cal, 28g protein, 32g carbs, 2g fat',
  true,
  true,
- '["post-workout","high-protein","muscle-recovery"]');
+ ARRAY['post-workout','high-protein','muscle-recovery']);
 
 -- Verify insertion
 SELECT 'Successfully inserted 10 meal templates' as status;
@@ -194,7 +194,7 @@ WHERE id IN (
   'f8a9b0c1-d2e3-4f8c-9d0e-1f2a3b4c5d6e',
   'f9a0b1c2-d3e4-4f9d-0e1f-2a3b4c5d6e7f',
   'faabb1c2-d4e5-4f0a-1f2a-3b4c5d6e7f80',
-  'fbaccc2c3-d5e6-4f1b-2a3b-4c5d6e7f8091'
+  'fbaccc2c-d5e6-4f1b-2a3b-4c5d6e7f8091'
 )
 GROUP BY category
 ORDER BY category;
