@@ -60,8 +60,8 @@ function Invoke-EnrichmentWorker {
         if ($response.errors -and $response.errors.Count -gt 0) {
             Write-Host ""
             Write-Host "Errors:" -ForegroundColor Yellow
-            foreach ($error in $response.errors) {
-                Write-Host "  - $($error.food_name): $($error.error)" -ForegroundColor Red
+            foreach ($errorItem in $response.errors) {
+                Write-Host "  - $($errorItem.food_name): $($errorItem.error)" -ForegroundColor Red
             }
         }
 

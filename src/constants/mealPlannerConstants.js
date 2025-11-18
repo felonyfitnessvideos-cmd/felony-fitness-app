@@ -166,6 +166,10 @@ export function getWeekDates(date) {
  * @returns {number} returns.carbs - Total carbohydrates in grams
  * @returns {number} returns.fat - Total fat in grams
  * 
+ * @remarks
+ * If an item quantity is missing, non-finite, or <= 0, a default quantity of 1 is used.
+ * This ensures premade meals without explicit quantities still display correct macros.
+ * 
  * @example
  * const mealFoods = [
  *   { quantity: 2, food_servings: { calories: 100, protein_g: 20, carbs_g: 5, fat_g: 2 } },
