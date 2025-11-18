@@ -63,3 +63,5 @@ remaining-nulls.json
 
 # HTTP request files with credentials
 *.http
+
+.env.local

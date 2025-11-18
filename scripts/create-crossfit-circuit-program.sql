@@ -46,7 +46,7 @@ WITH exercise_ids AS (
   )
 )
 
--- Insert the program
+-- Insert the program (or update if exists)
 INSERT INTO programs (
   id,
   name,
@@ -124,7 +124,7 @@ VALUES (
     
     -- Exercise 5: Kettlebell Swing (Weeks 5-8) / Jump Squats (Weeks 1-4)
     jsonb_build_object(
-      'exercise_id', (SELECT id FROM exercise_ids WHERE name = 'Jump Squats' LIMIT 1),
+      'exercise_id', '7cb01809-96ac-4e29-8c75-c5e57f5450a3',
       'exercise_name', 'Jump Squats / Kettlebell Swing',
       'sets', 3,
       'reps', 'AMRAP',
@@ -179,7 +179,7 @@ VALUES (
     
     -- Exercise 10: Burpees (Weeks 1-4) / Kettlebell Clean (Weeks 5-8)
     jsonb_build_object(
-      'exercise_id', (SELECT id FROM exercise_ids WHERE name = 'Burpees' LIMIT 1),
+      'exercise_id', 'd68d11dc-c7c0-4527-b9d7-29af366c92d9',
       'exercise_name', 'Burpees / Kettlebell Clean',
       'sets', 3,
       'reps', 'AMRAP',
@@ -191,7 +191,10 @@ VALUES (
   
   NOW(),
   NOW()
-);
+)
+ON CONFLICT (id) DO UPDATE SET
+  exercise_pool = EXCLUDED.exercise_pool,
+  updated_at = NOW();
 
 -- Verify the program was created
 SELECT 

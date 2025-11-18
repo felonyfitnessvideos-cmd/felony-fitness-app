@@ -220,6 +220,59 @@ const MessagingHub = () => {
   };
 
   /**
+   * Delete a group tag and remove it from all associated clients
+   * Ensures database and local state stay in sync
+   * @param {Object} tag - Group tag record { id, name }
+   */
+  const handleDeleteGroup = async (tag) => {
+    if (!tag?.id) return;
+    const confirmDelete = confirm(`Delete group "${tag.name}"? This will remove the tag from all clients.`);
+    if (!confirmDelete) return;
+
+    try {
+      // 1) Delete the group tag record
+      const { error: deleteError } = await supabase
+        .from('trainer_group_tags')
+        .delete()
+        .eq('id', tag.id)
+        .eq('trainer_id', user.id);
+
+      if (deleteError) throw deleteError;
+
+      // 2) Remove tag from all affected clients (use local state to find them)
+      const affectedClients = clients.filter(c => (c.tags || []).includes(tag.id));
+      for (const c of affectedClients) {
+        const newTags = (c.tags || []).filter(t => t !== tag.id);
+        const { error: updateError } = await supabase
+          .from('trainer_clients')
+          .update({ tags: newTags })
+          .eq('client_id', c.id)
+          .eq('trainer_id', user.id);
+        if (updateError) {
+          // Log and continue to attempt best-effort cleanup
+          console.error('Error removing tag from client:', c.id, updateError);
+        }
+      }
+
+      // 3) Update local state
+      setGroupTags(prev => prev.filter(g => g.id !== tag.id));
+      setClients(prev => prev.map(c => ({
+        ...c,
+        tags: (c.tags || []).filter(t => t !== tag.id)
+      })));
+
+      // Close composer if it was open for this tag
+      if (isComposerOpen && selectedTag?.id === tag.id) {
+        setIsComposerOpen(false);
+        setSelectedTag(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete group:', err);
+      alert('Failed to delete group. Please try again.');
+    }
+  };
+
+  /**
    * Memoized map of tag ID to client count
    * Prevents repeated filtering through clients array on every render
    */
@@ -267,8 +320,17 @@ const MessagingHub = () => {
                 onClick={() => handleOpenComposer(tag)}
                 title={`Click to email ${getTagClientCount(tag.id)} client(s)`}
               >
-                <span>{tag.name}</span>
+                <span className="tag-name">{tag.name}</span>
                 <span className="tag-count">({getTagClientCount(tag.id)})</span>
+                <span
+                  className="delete-tag-btn"
+                  title="Delete group"
+                  onClick={(e) => { e.stopPropagation(); handleDeleteGroup(tag); }}
+                  aria-label={`Delete group ${tag.name}`}
+                  role="button"
+                >
+                  ×
+                </span>
               </button>
             ))
           )}

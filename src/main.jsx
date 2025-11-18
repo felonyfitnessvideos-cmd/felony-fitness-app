@@ -1,4 +1,3 @@
- 
 /**
  * @fileoverview Main application entry point with global provider setup
  * @description Primary React application bootstrap file managing global context
@@ -58,6 +57,7 @@ import { AuthProvider } from './AuthContext.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
+import { PostHogProvider } from 'posthog-js/react';
 
 // Suppress Recharts defaultProps deprecation warnings
 // TODO: Remove when Recharts updates to React 19 patterns (tracked in recharts issue #3615)
@@ -111,76 +111,85 @@ Modal.setAppElement('#root');
 // Renders the main React application into the DOM.
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <BrowserRouter 
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true
-        }}
-      >
-        {/* The AuthProvider makes user session data available to all components. */}
-        <AuthProvider>
-          <ErrorBoundary>
-            <React.Suspense fallback={
-              <div className="loading-container">
-                <div>⚡ Loading...</div>
-              </div>
-            }>
-            <Routes>
-            {/* Route 1: The public login page. It does not use the main App layout. */}
-            <Route path="/" element={<AuthPage />} />
+    <PostHogProvider
+      apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY}
+      options={{
+        api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
+        defaults: '2025-05-24',
+        capture_exceptions: true, // This enables capturing exceptions using Error Tracking, set to false if you don't want this
+        debug: import.meta.env.MODE === "development",
+      }}
+    >
+      <ThemeProvider>
+        <BrowserRouter 
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true
+          }}
+        >
+          {/* The AuthProvider makes user session data available to all components. */}
+          <AuthProvider>
+            <ErrorBoundary>
+              <React.Suspense fallback={
+                <div className="loading-container">
+                  <div>⚡ Loading...</div>
+                </div>
+              }>
+              <Routes>
+              {/* Route 1: The public login page. It does not use the main App layout. */}
+              <Route path="/" element={<AuthPage />} />
 
-            {/* Route 2: Standalone Trainer Dashboard - separate from main app layout */}
-            <Route path="/trainer-dashboard/*" element={<TrainerDashboard />} />
+              {/* Route 2: Standalone Trainer Dashboard - separate from main app layout */}
+              <Route path="/trainer-dashboard/*" element={<TrainerDashboard />} />
 
-            {/* Route 3: A layout route. All child routes will render inside the <App /> component. */}
-            {/* This is how the bottom navbar appears on all the main pages. */}
-            <Route element={<App />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/workouts" element={<WorkoutsPage />} />
-              <Route path="/nutrition" element={<NutritionPage />} />
-              <Route path="/progress" element={<ProgressPage />} />
-              <Route path="/my-plan" element={<MyPlanPage />} />
-              
-              {/* --- Nested routes for the "Workouts" section --- */}
-              <Route path="/workouts/goals" element={<WorkoutGoalsPage />} />
-              <Route path="/workouts/routines" element={<WorkoutRoutinePage />} />
-              <Route path="/workouts/select-routine-log" element={<SelectRoutineLogPage />} />
-              <Route path="/log-workout/:routineId" element={<WorkoutLogPage />} />
-              <Route path="/workouts/recommendations" element={<WorkoutRecsPage />} />
-              {/* This route handles both creating a new routine and editing an existing one */}
-              <Route path="/workouts/routines/:routineId" element={<EditRoutinePage />} />
-              
-              {/* --- Nested routes for the "Pro Routines" feature --- */}
-              {/* The main hub/category selection page */}
-                <Route path="/workouts/routines/select-pro" element={<SelectProRoutinePage />} />
-                {/* The dynamic page that displays routines for a specific category */}
-                <Route path="/workouts/routines/pro-category/:categoryName" element={<ProRoutineCategoryPage />} />
+              {/* Route 3: A layout route. All child routes will render inside the <App /> component. */}
+              {/* This is how the bottom navbar appears on all the main pages. */}
+              <Route element={<App />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/workouts" element={<WorkoutsPage />} />
+                <Route path="/nutrition" element={<NutritionPage />} />
+                <Route path="/progress" element={<ProgressPage />} />
+                <Route path="/my-plan" element={<MyPlanPage />} />
+                
+                {/* --- Nested routes for the "Workouts" section --- */}
+                <Route path="/workouts/goals" element={<WorkoutGoalsPage />} />
+                <Route path="/workouts/routines" element={<WorkoutRoutinePage />} />
+                <Route path="/workouts/select-routine-log" element={<SelectRoutineLogPage />} />
+                <Route path="/log-workout/:routineId" element={<WorkoutLogPage />} />
+                <Route path="/workouts/recommendations" element={<WorkoutRecsPage />} />
+                {/* This route handles both creating a new routine and editing an existing one */}
+                <Route path="/workouts/routines/:routineId" element={<EditRoutinePage />} />
+                
+                {/* --- Nested routes for the "Pro Routines" feature --- */}
+                {/* The main hub/category selection page */}
+                  <Route path="/workouts/routines/select-pro" element={<SelectProRoutinePage />} />
+                  {/* The dynamic page that displays routines for a specific category */}
+                  <Route path="/workouts/routines/pro-category/:categoryName" element={<ProRoutineCategoryPage />} />
 
-              {/* --- Nested routes for the "Nutrition" section --- */}
-              <Route path="/nutrition/goals" element={<NutritionGoalsPage />} />
-              <Route path="/nutrition/log" element={<NutritionLogPage />} />
-              <Route path="/nutrition/recommendations" element={<NutritionRecsPage />} />
-              
-              {/* --- Meal Planner routes --- */}
-              <Route path="/nutrition/meal-planner" element={<WeeklyMealPlannerPage />} />
-              <Route path="/nutrition/my-meals" element={<MyMealsPage />} />
+                {/* --- Nested routes for the "Nutrition" section --- */}
+                <Route path="/nutrition/goals" element={<NutritionGoalsPage />} />
+                <Route path="/nutrition/log" element={<NutritionLogPage />} />
+                <Route path="/nutrition/recommendations" element={<NutritionRecsPage />} />
+                
+                {/* --- Meal Planner routes --- */}
+                <Route path="/nutrition/meal-planner" element={<WeeklyMealPlannerPage />} />
+                <Route path="/nutrition/my-meals" element={<MyMealsPage />} />
 
-              {/* --- Profile route --- */}
-              <Route path="/profile" element={<ProfilePage />} />
+                {/* --- Profile route --- */}
+                <Route path="/profile" element={<ProfilePage />} />
 
-              {/* --- Mesocycles (training cycles) --- */}
-              <Route path="/mesocycles" element={<MesocyclesPage />} />
-              <Route path="/mesocycles/new" element={<MesocycleBuilder />} />
-              <Route path="/mesocycles/:mesocycleId" element={<MesocycleDetail />} />
-              <Route path="/mesocycles/:mesocycleId/log" element={<MesocycleLogPage />} />
-            </Route>
-            </Routes>
-            </React.Suspense>
-          </ErrorBoundary>
-        </AuthProvider>
-      </BrowserRouter>
-    </ThemeProvider>
+                {/* --- Mesocycles (training cycles) --- */}
+                <Route path="/mesocycles" element={<MesocyclesPage />} />
+                <Route path="/mesocycles/new" element={<MesocycleBuilder />} />
+                <Route path="/mesocycles/:mesocycleId" element={<MesocycleDetail />} />
+                <Route path="/mesocycles/:mesocycleId/log" element={<MesocycleLogPage />} />
+              </Route>
+              </Routes>
+              </React.Suspense>
+            </ErrorBoundary>
+          </AuthProvider>
+        </BrowserRouter>
+      </ThemeProvider>
+    </PostHogProvider>
   </React.StrictMode>
 );
-
