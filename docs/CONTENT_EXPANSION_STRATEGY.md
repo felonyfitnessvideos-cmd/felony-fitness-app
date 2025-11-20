@@ -661,6 +661,60 @@ WHERE ABS((total_protein * 4 + total_carbs * 4 + total_fat * 9) - total_calories
 
 ---
 
+### 🎯 Ongoing Performance Optimization Tasks
+
+**Priority: MEDIUM** - These items should be addressed during regular development cycles
+
+#### 🔧 Nutrition Log Page Query Optimization
+**Status:** Identified, not yet implemented  
+**Problem:** NutritionLogPage.jsx makes multiple sequential queries and performs client-side aggregation:
+- Get user data
+- Query nutrition_logs
+- JOIN to food_servings
+- Calculate daily totals (calories, protein, water) in JavaScript
+
+**Solution:** Create PostgreSQL function for server-side aggregation
+```sql
+CREATE FUNCTION get_daily_nutrition_totals(p_user_id UUID, p_date DATE)
+RETURNS TABLE (calories INT, protein INT, water INT)
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    COALESCE(SUM(fs.calories * nl.quantity_consumed)::INT, 0) as calories,
+    COALESCE(SUM(fs.protein_g * nl.quantity_consumed)::INT, 0) as protein,
+    COALESCE(SUM(nl.water_oz_consumed)::INT, 0) as water
+  FROM nutrition_logs nl
+  LEFT JOIN food_servings fs ON nl.food_serving_id = fs.id
+  WHERE nl.user_id = p_user_id AND nl.log_date = p_date;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Implementation:** Update NutritionLogPage.jsx to use RPC call:
+```javascript
+const { data } = await supabase.rpc('get_daily_nutrition_totals', {
+  p_user_id: user.id,
+  p_date: today
+});
+```
+
+**Benefits:**
+- ✅ Single query instead of multiple
+- ✅ Server-side aggregation (faster)
+- ✅ Reduced network payload
+- ✅ Better page load performance
+
+**Files to Modify:**
+- `scripts/create-nutrition-totals-function.sql` (create SQL function)
+- `src/pages/NutritionLogPage.jsx` (replace query logic with RPC)
+
+**Estimated Time:** 30-45 minutes
+
+---
+
+---
+
 ### ✅ Day 1 - November 17, 2025
 
 **Content Added:**

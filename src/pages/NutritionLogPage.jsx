@@ -186,11 +186,11 @@ function NutritionLogPage() {
         .from('weekly_meal_plan_entries')
         .select(`
           id,
-          meal_id,
+          user_meal_id,
           meal_type,
           plan_date,
           servings,
-          meals (
+          user_meals (
             id,
             name
           ),
@@ -211,11 +211,11 @@ function NutritionLogPage() {
         return;
       }
 
-      if (data && data.meals) {
+      if (data && data.user_meals) {
         setScheduledMeal({
           entryId: data.id,
-          mealId: data.meal_id,
-          mealName: data.meals.name,
+          mealId: data.user_meal_id,
+          mealName: data.user_meals.name,
           servings: data.servings || 1
         });
       } else {
@@ -527,11 +527,11 @@ function NutritionLogPage() {
     
     setIsAddingMealPlan(true);
     try {
-      // Fetch all meal_foods for this meal
+      // Fetch all user_meal_foods for this meal
       const { data: mealFoods, error: mealFoodsError } = await supabase
-        .from('meal_foods')
+        .from('user_meal_foods')
         .select('food_servings_id, quantity')
-        .eq('meal_id', scheduledMeal.mealId);
+        .eq('user_meal_id', scheduledMeal.mealId);
 
       if (mealFoodsError) {
         console.error('Error fetching meal foods:', mealFoodsError);
@@ -599,12 +599,31 @@ function NutritionLogPage() {
     }
   };
 
+  /**
+   * Delete a nutrition log entry from the database
+   * 
+   * @description Removes a single food or water entry from nutrition_logs.
+   * No confirmation dialog (removed for better UX). Includes security check
+   * to ensure user can only delete their own entries.
+   * 
+   * @param {string} logId - UUID of the nutrition_logs entry to delete
+   * 
+   * @returns {Promise<void>} Resolves after deletion and data refresh
+   * 
+   * @sideEffects
+   * - Deletes row from nutrition_logs table
+   * - Calls fetchLogData to refresh UI after deletion
+   * - Shows alert on error
+   * 
+   * @security User ID verification prevents users from deleting other users' logs
+   * 
+   * @example
+   * // Called from delete button click
+   * handleDeleteFoodLog('550e8400-e29b-41d4-a716-446655440000');
+   * // Result: Log entry deleted, page refreshes to show updated totals
+   */
   const handleDeleteFoodLog = async (logId) => {
     if (!user || !logId) return;
-
-    if (!confirm('Are you sure you want to delete this food entry?')) {
-      return;
-    }
 
     const { error } = await supabase
       .from('nutrition_logs')
