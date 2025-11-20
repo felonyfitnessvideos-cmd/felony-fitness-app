@@ -9,3 +9,8 @@ entrypoint = "./functions/generate-nutrition-recommendations/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/generate-nutrition-recommendations/*.html" ]
+
+[functions.nutrition-usda-enrichment]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/nutrition-usda-enrichment/index.ts"
