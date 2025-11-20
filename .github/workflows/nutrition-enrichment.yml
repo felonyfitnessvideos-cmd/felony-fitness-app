@@ -16,7 +16,6 @@ jobs:
       - name: Call USDA Nutrition Enrichment Worker
         run: |
           response=$(curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "Content-Type: application/json" \
             "https://wkmrdelhoeqhsdifrarn.supabase.co/functions/v1/nutrition-usda-enrichment")
           
