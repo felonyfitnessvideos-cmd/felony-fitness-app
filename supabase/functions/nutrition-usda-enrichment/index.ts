@@ -270,18 +270,37 @@ function extractNutrient(nutrients: any[], nutrientId: number): number {
 
 /**
  * Parse serving size from description string
- * Examples: "30g", "85g", "1 cup", "100g", "1 oz"
+ * Examples: "30g", "85g", "1 cup (47g)", "100g", "1 oz", "226GRM"
  */
 function parseServingSize(servingDescription: string): { grams: number; original: string } {
-  const gramsMatch = servingDescription.match(/(\d+\.?\d*)\s*g/i);
+  // Try to extract grams from parentheses first (e.g., "1 cup (47g)")
+  const parenthesesMatch = servingDescription.match(/\((\d+\.?\d*)\s*g/i);
+  if (parenthesesMatch) {
+    return { grams: parseFloat(parenthesesMatch[1]), original: servingDescription };
+  }
+  
+  // Try GRM format (e.g., "226GRM")
+  const grmMatch = servingDescription.match(/(\d+\.?\d*)\s*GRM/i);
+  if (grmMatch) {
+    return { grams: parseFloat(grmMatch[1]), original: servingDescription };
+  }
+  
+  // Try standard grams at end (e.g., "30g", "85g")
+  const gramsMatch = servingDescription.match(/(\d+\.?\d*)\s*g$/i);
   if (gramsMatch) {
     return { grams: parseFloat(gramsMatch[1]), original: servingDescription };
   }
   
-  // Common conversions
+  // Try ounces
   const ozMatch = servingDescription.match(/(\d+\.?\d*)\s*oz/i);
   if (ozMatch) {
     return { grams: parseFloat(ozMatch[1]) * 28.35, original: servingDescription };
+  }
+  
+  // Try any number followed by g anywhere
+  const anyGramsMatch = servingDescription.match(/(\d+\.?\d*)\s*g/i);
+  if (anyGramsMatch) {
+    return { grams: parseFloat(anyGramsMatch[1]), original: servingDescription };
   }
   
   // Default to 100g if can't parse
