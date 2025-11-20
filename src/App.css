@@ -39,7 +39,54 @@
 
 /**
  * The primary content area for all pages.
+ * 
  * This is where the `<Outlet />` from React Router renders its content.
+ * 
+ * @layout_pattern App Shell Layout
+ * - Uses flexbox to grow and fill available vertical space
+ * - Independent scrolling container for page content
+ * - Bottom padding accounts for fixed navigation bar
+ * 
+ * @scrolling_behavior
+ * - `overflow-y: auto` - Enables vertical scrolling when content exceeds container height
+ * - Scrollbar hidden via CSS for clean, native-app-like appearance
+ * - Smooth scrolling enabled on supporting browsers
+ * 
+ * @safe_area_handling
+ * - Bottom padding calculation: 60px (nav height) + env(safe-area-inset-bottom) + 0.5rem (breathing room)
+ * - MUST stay synchronized with `.bottom-nav` height and safe area handling
+ * - iOS: Accounts for home indicator area (34px on iPhone X and newer)
+ * - Android: Accounts for gesture navigation bar (varies by device, typically 20-48px)
+ * - Prevents content from being hidden behind bottom navigation
+ * - Ensures last element in scrollable content is always accessible
+ * - Requires `viewport-fit=cover` in index.html meta viewport tag
+ * 
+ * @mobile_optimization
+ * - Full safe area support for iOS and Android
+ * - Touch scrolling optimized via -webkit-overflow-scrolling
+ * - Works with both gesture navigation and traditional button navigation
+ * 
+ * @previous_issues
+ * - Fixed 2025-11-20: Updated to match bottom-nav safe area handling for iOS and Android
+ * - Related issue: Bottom nav disappearing behind phone UI elements
+ * 
+ * @desktop_override
+ * - Desktop layout removes extra bottom padding (no bottom nav present)
+ * - See `.app-container.desktop-layout .main-content` override at bottom of file
+ * 
+ * @related_components
+ * - `.bottom-nav` - Fixed navigation bar this padding accounts for
+ * - `.app-container.desktop-layout` - Alternative layout without bottom nav
+ * - index.html: Requires `viewport-fit=cover` meta tag
+ * 
+ * @testing_checklist
+ * - [ ] Scroll to bottom of long pages - last element should be fully visible
+ * - [ ] Verify content doesn't overlap bottom navigation
+ * - [ ] Test on iOS devices with home indicator
+ * - [ ] Test on Android devices with gesture navigation (Pixel, Samsung, OnePlus)
+ * - [ ] Test on Android devices with traditional nav buttons
+ * - [ ] Verify desktop layout doesn't have unnecessary bottom padding
+ * - [ ] Test in Chrome DevTools device emulation
  */
 .main-content {
   flex-grow: 1; /* This is the key property: it tells this element to "grow" and fill all available vertical space not taken by the navbar. */
@@ -60,7 +107,46 @@
 
 /**
  * The bottom navigation bar.
- * It is positioned absolutely to remain fixed at the bottom of the screen.
+ * 
+ * CRITICAL: This component must account for mobile device safe areas (iOS home indicator, Android gesture navigation)
+ * to prevent the navigation from being hidden behind phone UI elements.
+ * 
+ * @positioning
+ * - `position: absolute` - Fixed at bottom of screen across all pages
+ * - `bottom: 0` - Anchored to viewport bottom
+ * - `z-index: 100` - High z-index ensures it sits on top of page content but below modals
+ * 
+ * @safe_area_handling
+ * - Base height: 60px (visible navigation content)
+ * - Additional padding-bottom: env(safe-area-inset-bottom) for device-specific bottom insets
+ * - iOS: Handles home indicator area (34px on iPhone X and newer)
+ * - Android: Handles gesture navigation bar (varies by device, typically 20-48px)
+ * - MUST use `padding-bottom` NOT `height` to extend clickable area below visible content
+ * - This ensures nav icons remain above phone UI while extending into safe area
+ * - Requires `viewport-fit=cover` in index.html meta viewport tag
+ * 
+ * @previous_issues
+ * - Fixed 2025-11-20: Bottom nav disappearing behind iOS home indicator and Android gesture bar
+ * - Root cause: Missing safe-area-inset-bottom in padding calculation
+ * - Impact: Navigation icons were partially or fully obscured on iPhone X+ and Android with gesture nav
+ * 
+ * @related_components
+ * - `.main-content` uses matching safe-area calculation for scroll padding
+ * - Fixed footers (e.g., `.calorie-status-footer`) must position above this element
+ * - index.html: Requires `viewport-fit=cover` meta tag
+ * 
+ * @testing_checklist
+ * - [ ] Test on iPhone with home indicator (X, 11, 12, 13, 14, 15, 16)
+ * - [ ] Test on Android devices with gesture navigation (Pixel, Samsung, OnePlus)
+ * - [ ] Test on Android devices with traditional nav buttons
+ * - [ ] Verify nav icons are fully clickable and visible
+ * - [ ] Check that no content is hidden behind nav on any page
+ * - [ ] Test in Chrome DevTools device emulation
+ * - [ ] Verify safe area works in both portrait and landscape
+ * 
+ * @see {@link https://webkit.org/blog/7929/designing-websites-for-iphone-x/}
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/env}
+ * @see `.main-content` for related safe area handling
  */
 .bottom-nav {
   position: absolute;
@@ -72,7 +158,9 @@
   background-color: var(--card-color);
   border-top: 1px solid var(--border-color);
   padding: 0.5rem 0;
-  height: 60px; /* A fixed height is important for layout consistency */
+  /* ✅ CRITICAL FIX: Add safe-area-inset-bottom to padding to prevent iOS home indicator and Android gesture bar from hiding navigation */
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  height: 60px; /* A fixed height is important for layout consistency - does NOT include safe area */
   z-index: 100; /* A high z-index ensures it sits on top of page content */
 }
 
