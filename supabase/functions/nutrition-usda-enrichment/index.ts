@@ -269,6 +269,27 @@ function extractNutrient(nutrients: any[], nutrientId: number): number {
 }
 
 /**
+ * Parse serving size from description string
+ * Examples: "30g", "85g", "1 cup", "100g", "1 oz"
+ */
+function parseServingSize(servingDescription: string): { grams: number; original: string } {
+  const gramsMatch = servingDescription.match(/(\d+\.?\d*)\s*g/i);
+  if (gramsMatch) {
+    return { grams: parseFloat(gramsMatch[1]), original: servingDescription };
+  }
+  
+  // Common conversions
+  const ozMatch = servingDescription.match(/(\d+\.?\d*)\s*oz/i);
+  if (ozMatch) {
+    return { grams: parseFloat(ozMatch[1]) * 28.35, original: servingDescription };
+  }
+  
+  // Default to 100g if can't parse
+  console.log(`⚠️ Could not parse serving size "${servingDescription}", assuming 100g`);
+  return { grams: 100, original: servingDescription };
+}
+
+/**
  * Enrich food data with USDA information
  */
 async function enrichWithUSDA(foodData: any): Promise<any> {
@@ -297,37 +318,51 @@ async function enrichWithUSDA(foodData: any): Promise<any> {
     
     const nutrients = detail.foodNutrients;
     
-    // Extract all nutrients using the mapping
+    // Parse our target serving size
+    const targetServing = parseServingSize(foodData.serving_description || '100g');
+    
+    // USDA data is per 100g by default, so we need to scale to our serving size
+    const scaleFactor = targetServing.grams / 100;
+    
+    console.log(`Scaling: USDA (per 100g) × ${scaleFactor.toFixed(3)} = ${targetServing.grams}g serving`);
+    
+    // Helper to extract and scale nutrient
+    const extractScaledNutrient = (nutrients: any[], nutrientId: number): number => {
+      const value = extractNutrient(nutrients, nutrientId);
+      return Math.round(value * scaleFactor * 100) / 100; // Scale and round to 2 decimals
+    };
+    
+    // Extract all nutrients using the mapping WITH SCALING
     const enrichedData: any = {
       ...foodData,
-      // Macronutrients
-      calories: extractNutrient(nutrients, NUTRIENT_MAP.calories),
-      protein_g: extractNutrient(nutrients, NUTRIENT_MAP.protein),
-      carbs_g: extractNutrient(nutrients, NUTRIENT_MAP.carbs),
-      fat_g: extractNutrient(nutrients, NUTRIENT_MAP.fat),
-      fiber_g: extractNutrient(nutrients, NUTRIENT_MAP.fiber),
-      sugar_g: extractNutrient(nutrients, NUTRIENT_MAP.sugar),
-      sodium_mg: extractNutrient(nutrients, NUTRIENT_MAP.sodium),
+      // Macronutrients (scaled to serving size)
+      calories: Math.round(extractNutrient(nutrients, NUTRIENT_MAP.calories) * scaleFactor),
+      protein_g: extractScaledNutrient(nutrients, NUTRIENT_MAP.protein),
+      carbs_g: extractScaledNutrient(nutrients, NUTRIENT_MAP.carbs),
+      fat_g: extractScaledNutrient(nutrients, NUTRIENT_MAP.fat),
+      fiber_g: extractScaledNutrient(nutrients, NUTRIENT_MAP.fiber),
+      sugar_g: extractScaledNutrient(nutrients, NUTRIENT_MAP.sugar),
+      sodium_mg: extractScaledNutrient(nutrients, NUTRIENT_MAP.sodium),
       
-      // Micronutrients
-      calcium_mg: extractNutrient(nutrients, NUTRIENT_MAP.calcium),
-      iron_mg: extractNutrient(nutrients, NUTRIENT_MAP.iron),
-      vitamin_c_mg: extractNutrient(nutrients, NUTRIENT_MAP.vitamin_c),
-      potassium_mg: extractNutrient(nutrients, NUTRIENT_MAP.potassium),
-      vitamin_a_mcg: extractNutrient(nutrients, NUTRIENT_MAP.vitamin_a),
-      vitamin_e_mg: extractNutrient(nutrients, NUTRIENT_MAP.vitamin_e),
-      vitamin_k_mcg: extractNutrient(nutrients, NUTRIENT_MAP.vitamin_k),
-      thiamin_mg: extractNutrient(nutrients, NUTRIENT_MAP.thiamin),
-      riboflavin_mg: extractNutrient(nutrients, NUTRIENT_MAP.riboflavin),
-      niacin_mg: extractNutrient(nutrients, NUTRIENT_MAP.niacin),
-      vitamin_b6_mg: extractNutrient(nutrients, NUTRIENT_MAP.vitamin_b6),
-      folate_mcg: extractNutrient(nutrients, NUTRIENT_MAP.folate),
-      vitamin_b12_mcg: extractNutrient(nutrients, NUTRIENT_MAP.vitamin_b12),
-      magnesium_mg: extractNutrient(nutrients, NUTRIENT_MAP.magnesium),
-      phosphorus_mg: extractNutrient(nutrients, NUTRIENT_MAP.phosphorus),
-      zinc_mg: extractNutrient(nutrients, NUTRIENT_MAP.zinc),
-      copper_mg: extractNutrient(nutrients, NUTRIENT_MAP.copper),
-      selenium_mcg: extractNutrient(nutrients, NUTRIENT_MAP.selenium),
+      // Micronutrients (scaled to serving size)
+      calcium_mg: extractScaledNutrient(nutrients, NUTRIENT_MAP.calcium),
+      iron_mg: extractScaledNutrient(nutrients, NUTRIENT_MAP.iron),
+      vitamin_c_mg: extractScaledNutrient(nutrients, NUTRIENT_MAP.vitamin_c),
+      potassium_mg: extractScaledNutrient(nutrients, NUTRIENT_MAP.potassium),
+      vitamin_a_mcg: extractScaledNutrient(nutrients, NUTRIENT_MAP.vitamin_a),
+      vitamin_e_mg: extractScaledNutrient(nutrients, NUTRIENT_MAP.vitamin_e),
+      vitamin_k_mcg: extractScaledNutrient(nutrients, NUTRIENT_MAP.vitamin_k),
+      thiamin_mg: extractScaledNutrient(nutrients, NUTRIENT_MAP.thiamin),
+      riboflavin_mg: extractScaledNutrient(nutrients, NUTRIENT_MAP.riboflavin),
+      niacin_mg: extractScaledNutrient(nutrients, NUTRIENT_MAP.niacin),
+      vitamin_b6_mg: extractScaledNutrient(nutrients, NUTRIENT_MAP.vitamin_b6),
+      folate_mcg: extractScaledNutrient(nutrients, NUTRIENT_MAP.folate),
+      vitamin_b12_mcg: extractScaledNutrient(nutrients, NUTRIENT_MAP.vitamin_b12),
+      magnesium_mg: extractScaledNutrient(nutrients, NUTRIENT_MAP.magnesium),
+      phosphorus_mg: extractScaledNutrient(nutrients, NUTRIENT_MAP.phosphorus),
+      zinc_mg: extractScaledNutrient(nutrients, NUTRIENT_MAP.zinc),
+      copper_mg: extractScaledNutrient(nutrients, NUTRIENT_MAP.copper),
+      selenium_mcg: extractScaledNutrient(nutrients, NUTRIENT_MAP.selenium),
       
       // Metadata
       data_sources: 'USDA',
@@ -340,10 +375,8 @@ async function enrichWithUSDA(foodData: any): Promise<any> {
       category: foodData.category || detectPrimaryCategory(foodData.food_name, bestMatch.description)
     };
     
-    // Use USDA serving size if available, otherwise keep original
-    if (detail.servingSize && detail.servingSizeUnit) {
-      enrichedData.serving_description = `${detail.servingSize}${detail.servingSizeUnit}`;
-    }
+    // Keep original serving description (don't override with USDA's)
+    // Our serving sizes are user-defined and should be preserved
     
     return enrichedData;
     
