@@ -50,7 +50,7 @@ Rules:
 4. Sugar should be ≤ total carbs
 5. Values should be realistic for the serving size
 
-Return JSON with completed values:
+Return ONLY a valid JSON object (no markdown, no code blocks, no formatting):
 {
   "calories": number,
   "protein": number,
@@ -80,18 +80,53 @@ Return JSON with completed values:
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`OpenAI API failed: ${response.status} - ${errorText}`);
       throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
 
     const aiData = await response.json();
-    const completedData = JSON.parse(aiData.choices[0].message.content);
+    
+    // Validate response structure
+    if (!aiData.choices || !aiData.choices[0] || !aiData.choices[0].message) {
+      console.error('Invalid OpenAI response structure:', JSON.stringify(aiData));
+      throw new Error('Invalid OpenAI response structure');
+    }
+    
+    const messageContent = aiData.choices[0].message.content;
+    console.log('OpenAI response:', messageContent);
+    
+    // Clean up markdown code blocks if present
+    let cleanContent = messageContent.trim();
+    if (cleanContent.startsWith('```json')) {
+      cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanContent.startsWith('```')) {
+      cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    
+    const completedData = JSON.parse(cleanContent);
 
-    // Merge with original data
+    // Merge with original data - map AI field names to database column names
     const enriched = { ...foodData };
     
+    // Map AI response fields to database columns
+    const fieldMapping: { [key: string]: string } = {
+      'calories': 'calories',
+      'protein': 'protein_g',
+      'carbs': 'carbs_g',
+      'fat': 'fat_g',
+      'fiber': 'fiber_g',
+      'sugar': 'sugar_g',
+      'sodium': 'sodium_mg',
+      'serving_description': 'serving_description'
+    };
+    
     Object.keys(completedData).forEach(key => {
-      if (key !== 'confidence' && key !== 'reasoning' && (foodData[key] === null || foodData[key] === undefined || foodData[key] === 0)) {
-        enriched[key] = completedData[key];
+      if (key !== 'confidence' && key !== 'reasoning') {
+        const dbColumn = fieldMapping[key] || key;
+        // Only update if the original value is null or undefined (not 0, as 0 is valid)
+        if (foodData[dbColumn] === null || foodData[dbColumn] === undefined) {
+          enriched[dbColumn] = completedData[key];
+        }
       }
     });
 
@@ -149,10 +184,11 @@ function calculateQualityScore(foodData: any, validationResult: any, completionC
   let score = 0;
 
   // Completeness (40 points)
-  const fields = ['calories', 'protein', 'carbs', 'fat'];
-  const optionalFields = ['fiber', 'sugar', 'sodium'];
+  // Check for presence of required fields (0 is valid - supplements can have 0 calories)
+  const fields = ['calories', 'protein_g', 'carbs_g', 'fat_g'];
+  const optionalFields = ['fiber_g', 'sugar_g', 'sodium_mg'];
   
-  const completeFields = fields.filter(field => foodData[field] !== null && foodData[field] !== undefined && foodData[field] !== 0);
+  const completeFields = fields.filter(field => foodData[field] !== null && foodData[field] !== undefined);
   const completeOptionalFields = optionalFields.filter(field => foodData[field] !== null && foodData[field] !== undefined);
   
   score += (completeFields.length / fields.length) * 30;
@@ -205,27 +241,58 @@ async function processSingleFood(supabaseAdmin: any, food: any): Promise<{ succe
       completedData.ai_completion_confidence || 0
     );
 
-    // Update database
-    const { error: updateError } = await supabaseAdmin
+    // Update database - ensure NO null values after enrichment
+    console.log(`Updating food ID: ${food.id} with quality score: ${qualityScore}`);
+    
+    const updateData = {
+      // Core macros (from AI)
+      calories: finalData.calories ?? 0,
+      protein_g: finalData.protein_g ?? 0,
+      carbs_g: finalData.carbs_g ?? 0,
+      fat_g: finalData.fat_g ?? 0,
+      fiber_g: finalData.fiber_g ?? 0,
+      sugar_g: finalData.sugar_g ?? 0,
+      sodium_mg: finalData.sodium_mg ?? 0,
+      serving_description: finalData.serving_description,
+      // Micronutrients - set to 0 if not provided (never null after enrichment)
+      calcium_mg: finalData.calcium_mg ?? 0,
+      iron_mg: finalData.iron_mg ?? 0,
+      vitamin_c_mg: finalData.vitamin_c_mg ?? 0,
+      vitamin_a_mcg: finalData.vitamin_a_mcg ?? 0,
+      vitamin_b12_mcg: finalData.vitamin_b12_mcg ?? 0,
+      vitamin_b6_mg: finalData.vitamin_b6_mg ?? 0,
+      vitamin_e_mg: finalData.vitamin_e_mg ?? 0,
+      vitamin_k_mcg: finalData.vitamin_k_mcg ?? 0,
+      potassium_mg: finalData.potassium_mg ?? 0,
+      magnesium_mg: finalData.magnesium_mg ?? 0,
+      zinc_mg: finalData.zinc_mg ?? 0,
+      copper_mg: finalData.copper_mg ?? 0,
+      selenium_mcg: finalData.selenium_mcg ?? 0,
+      phosphorus_mg: finalData.phosphorus_mg ?? 0,
+      folate_mcg: finalData.folate_mcg ?? 0,
+      thiamin_mg: finalData.thiamin_mg ?? 0,
+      riboflavin_mg: finalData.riboflavin_mg ?? 0,
+      niacin_mg: finalData.niacin_mg ?? 0,
+      // Enrichment metadata
+      quality_score: qualityScore,
+      enrichment_status: 'completed',
+      last_enrichment: new Date().toISOString()
+    };
+    
+    console.log('Update data:', JSON.stringify(updateData));
+    
+    const { data: updateResult, error: updateError } = await supabaseAdmin
       .from('food_servings')
-      .update({
-        calories: finalData.calories,
-        protein_g: finalData.protein_g,
-        carbs_g: finalData.carbs_g,
-        fat_g: finalData.fat_g,
-        fiber_g: finalData.fiber_g,
-        sugar_g: finalData.sugar_g,
-        sodium_mg: finalData.sodium_mg,
-        serving_description: finalData.serving_description,
-        quality_score: qualityScore,
-        enrichment_status: 'completed',
-        last_enrichment: new Date().toISOString()
-      })
-      .eq('id', food.id);
+      .update(updateData)
+      .eq('id', food.id)
+      .select();
 
     if (updateError) {
-      throw new Error(`Database update failed: ${updateError.message}`);
+      console.error('Update error details:', JSON.stringify(updateError));
+      throw new Error(`Database update failed: ${updateError.message} (Code: ${updateError.code}, Details: ${updateError.details})`);
     }
+    
+    console.log('Update result:', JSON.stringify(updateResult));
 
     console.log(`✓ Completed: ${food.food_name} (Quality: ${qualityScore}%)`);
     return { success: true };
@@ -233,18 +300,28 @@ async function processSingleFood(supabaseAdmin: any, food: any): Promise<{ succe
   } catch (error) {
     console.error(`✗ Failed: ${food.food_name}`, error);
     
+    // Determine if this is a temporary or permanent failure
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const isTemporaryError = errorMessage.includes('rate limit') || 
+                            errorMessage.includes('timeout') || 
+                            errorMessage.includes('network') ||
+                            errorMessage.includes('503') ||
+                            errorMessage.includes('429');
+    
     // Mark as failed in database
+    // For temporary errors, don't set enrichment_status so it can be retried
+    // For permanent errors, mark as 'failed'
     await supabaseAdmin
       .from('food_servings')
       .update({ 
-        enrichment_status: 'failed',
+        enrichment_status: isTemporaryError ? null : 'failed',
         last_enrichment: new Date().toISOString()
       })
       .eq('id', food.id);
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: errorMessage
     };
   }
 }
@@ -267,17 +344,41 @@ Deno.serve(async (req) => {
   try {
     console.log('=== Nutrition Queue Worker Started ===');
     
+    // Validate OpenAI API key
+    if (!OPENAI_API_KEY) {
+      console.error('❌ CRITICAL: OPENAI_API_KEY environment variable is not set!');
+      return new Response(JSON.stringify({
+        error: 'OPENAI_API_KEY is not configured',
+        success: false,
+        processed: 0,
+        remaining: 0
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      });
+    }
+    
+    console.log('✓ OpenAI API key found');
+    
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     );
 
-    // Get foods that need enrichment (quality_score < 70 or null, not currently processing)
+    // Get foods that need enrichment
+    // Priority: Never-enriched foods (null status) first, then pending, failed, and low-quality foods
     const { data: foods, error: fetchError } = await supabaseAdmin
       .from('food_servings')
-      .select('id, food_name, brand, calories, protein_g, carbs_g, fat_g, fiber_g, sugar_g, sodium_mg, serving_description, source, quality_score')
-      .or('quality_score.lt.70,quality_score.is.null')
+      .select('id, food_name, brand, calories, protein_g, carbs_g, fat_g, fiber_g, sugar_g, sodium_mg, serving_description, source, quality_score, enrichment_status')
+      .or('enrichment_status.is.null,enrichment_status.eq.pending,enrichment_status.eq.failed,and(quality_score.lt.70,enrichment_status.eq.completed)')
       .neq('enrichment_status', 'processing')
+      .order('enrichment_status', { ascending: false, nullsFirst: true }) // null first (never enriched)
       .order('quality_score', { ascending: true, nullsFirst: true })
       .limit(BATCH_SIZE);
 

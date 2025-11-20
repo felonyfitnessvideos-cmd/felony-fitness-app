@@ -57,7 +57,21 @@ import { AuthProvider } from './AuthContext.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
+import posthog from 'posthog-js';
 import { PostHogProvider } from 'posthog-js/react';
+
+// Initialize PostHog
+if (import.meta.env.VITE_PUBLIC_POSTHOG_KEY) {
+  posthog.init(import.meta.env.VITE_PUBLIC_POSTHOG_KEY, {
+    api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
+    person_profiles: 'identified_only',
+    capture_pageview: true,
+    capture_pageleave: true,
+    loaded: (posthog) => {
+      if (import.meta.env.MODE === 'development') posthog.debug();
+    }
+  });
+}
 
 // Suppress Recharts defaultProps deprecation warnings
 // TODO: Remove when Recharts updates to React 19 patterns (tracked in recharts issue #3615)
@@ -111,15 +125,7 @@ Modal.setAppElement('#root');
 // Renders the main React application into the DOM.
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <PostHogProvider
-      apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY}
-      options={{
-        api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
-        defaults: '2025-05-24',
-        capture_exceptions: true, // This enables capturing exceptions using Error Tracking, set to false if you don't want this
-        debug: import.meta.env.MODE === "development",
-      }}
-    >
+    <PostHogProvider client={posthog}>
       <ThemeProvider>
         <BrowserRouter 
           future={{
