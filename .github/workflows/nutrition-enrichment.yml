@@ -13,24 +13,28 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Call Nutrition Queue Worker
+      - name: Call USDA Nutrition Enrichment Worker
         run: |
           response=$(curl -s -X POST \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "Content-Type: application/json" \
-            "https://wkmrdelhoeqhsdifrarn.supabase.co/functions/v1/nutrition-queue-worker")
+            "https://wkmrdelhoeqhsdifrarn.supabase.co/functions/v1/nutrition-usda-enrichment")
           
-          echo "Worker Response:"
+          echo "USDA Worker Response:"
           echo "$response" | jq .
           
           # Check if successful
           success=$(echo "$response" | jq -r '.success')
           processed=$(echo "$response" | jq -r '.processed // 0')
+          successful=$(echo "$response" | jq -r '.successful // 0')
+          failed=$(echo "$response" | jq -r '.failed // 0')
           remaining=$(echo "$response" | jq -r '.remaining // 0')
           
-          echo "✓ Processed: $processed foods"
-          echo "✓ Remaining: $remaining foods"
+          echo "✓ Processed: $processed foods (USDA authoritative data)"
+          echo "✓ Successful: $successful"
+          echo "✓ Failed: $failed"
+          echo "✓ Remaining: $remaining"
           
           if [ "$remaining" -eq 0 ]; then
-            echo "🎉 All foods enriched! Queue is complete."
+            echo "🎉 All foods enriched with USDA data! Queue complete."
           fi
