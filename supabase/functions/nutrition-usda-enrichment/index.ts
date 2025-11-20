@@ -587,7 +587,18 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('\n=== USDA Nutrition Enrichment Worker Started ===');
+    // Parse request body for worker configuration
+    let workerConfig = { worker_id: 1, offset_multiplier: 0 };
+    try {
+      const body = await req.json();
+      if (body.worker_id) workerConfig.worker_id = body.worker_id;
+      if (body.offset_multiplier !== undefined) workerConfig.offset_multiplier = body.offset_multiplier;
+    } catch {
+      // No body provided, use defaults (worker 1)
+    }
+
+    console.log(`\n=== USDA Enrichment Worker ${workerConfig.worker_id} Started ===`);
+    console.log(`Starting offset: ${workerConfig.offset_multiplier} rows\n`);
     
     if (!USDA_API_KEY) {
       throw new Error('USDA_API_KEY is not configured');
@@ -599,12 +610,14 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Get foods needing enrichment
+    // Get foods needing enrichment with offset for parallel workers
+    // Each worker starts at a different point to avoid conflicts
     const { data: foods, error: fetchError } = await supabaseAdmin
       .from('food_servings')
       .select('*')
-      .or('enrichment_status.is.null,enrichment_status.eq.pending')
-      .order('created_at', { ascending: true })
+      .or('enrichment_status.is.null,enrichment_status.eq.pending,enrichment_status.eq.failed')
+      .order('id', { ascending: true })
+      .range(workerConfig.offset_multiplier, workerConfig.offset_multiplier + BATCH_SIZE - 1)
       .limit(BATCH_SIZE);
 
     if (fetchError) throw new Error(`Fetch failed: ${fetchError.message}`);
