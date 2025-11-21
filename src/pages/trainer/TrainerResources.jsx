@@ -42,150 +42,146 @@ const TRAINING_RESOURCES = [
     {
         id: 1,
         name: 'Chapter 1',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%201.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter1-compressed.pdf',
         size: 0,
         type: 'pdf'
     },
     {
         id: 2,
         name: 'Chapter 2',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%202.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter2-compressed.pdf',
         size: 0,
         type: 'pdf'
     },
     {
         id: 3,
         name: 'Chapter 3',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%203.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter3-compressed.pdf',
         size: 0,
         type: 'pdf'
     },
     {
         id: 4,
         name: 'Chapter 4',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%204.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter4-compressed.pdf',
         size: 0,
         type: 'pdf'
     },
     {
         id: 5,
         name: 'Chapter 5',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%205.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter5-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true
+        type: 'pdf'
     },
     {
         id: 6,
         name: 'Chapter 6',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%206.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter6-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true
+        type: 'pdf'
     },
     {
         id: 7,
         name: 'Chapter 7',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%207.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter7-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true
+        type: 'pdf'
     },
     {
         id: 8,
         name: 'Chapter 8',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%208.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter8-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true
+        type: 'pdf'
     },
     {
         id: 9,
         name: 'Chapter 9',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%209.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter9-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true
+        type: 'pdf'
     },
     {
         id: 10,
         name: 'Chapter 10',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%2010.pdf',
+        url: '',
         size: 0,
         type: 'pdf',
-        placeholder: true
+        placeholder: true,
+        comingSoon: true
     },
     {
         id: 11,
         name: 'Chapter 11',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%2011.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter11-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true
+        type: 'pdf'
     },
     {
         id: 12,
         name: 'Chapter 12',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%2012.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter12-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true
+        type: 'pdf'
     },
     {
         id: 13,
         name: 'Chapter 13',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%2013.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter13-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true
+        type: 'pdf'
     },
     {
         id: 14,
         name: 'Chapter 14',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%2014.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter14-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true
+        type: 'pdf'
     },
     {
         id: 15,
         name: 'Chapter 15',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%2015.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter15-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true
+        type: 'pdf'
     },
     {
         id: 16,
         name: 'Chapter 16',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%2016.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter16-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true
+        type: 'pdf'
     },
     {
         id: 17,
         name: 'Chapter 17',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%2017.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter17-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true
+        type: 'pdf'
     },
     {
         id: 18,
         name: 'Chapter 18',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%2018.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter18-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true
+        type: 'pdf'
     },
     {
         id: 19,
         name: 'Chapter 19',
-        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/Trainer%20Manual%20Chapters/Chapter%2019.pdf',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter19-compressed.pdf',
+        size: 0,
+        type: 'pdf'
+    },
+    {
+        id: 20,
+        name: 'Glossary',
+        url: '',
         size: 0,
         type: 'pdf',
-        placeholder: true
+        placeholder: true,
+        comingSoon: true
     }
 ];
 
