@@ -19,12 +19,10 @@ import {
     FileText,
     Folder,
     Search,
-    X,
-    Activity
+    X
 } from 'lucide-react';
 import { useState } from 'react';
 import { useUserRoles } from '../../hooks/useUserRoles.js';
-import NutritionPipelineMonitor from '../../components/NutritionPipelineMonitor.jsx';
 import './TrainerResources.css';
 
 /**
@@ -274,15 +272,6 @@ const TrainerResources = () => {
                     <FileText size={18} />
                     <span>Forms</span>
                 </button>
-                {permissions.isAdmin && (
-                    <button 
-                        className={`tab-btn ${activeTab === 'nutrition-pipeline' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('nutrition-pipeline')}
-                    >
-                        <Activity size={18} />
-                        <span>Nutrition Pipeline</span>
-                    </button>
-                )}
                 <button 
                     className={`tab-btn ${activeTab === 'misc' ? 'active' : ''}`}
                     onClick={() => setActiveTab('misc')}
@@ -311,10 +300,6 @@ const TrainerResources = () => {
                         </div>
                     </div>
                 </div>
-            )}
-
-            {activeTab === 'nutrition-pipeline' && (
-                <NutritionPipelineMonitor />
             )}
 
             {activeTab === 'forms' && (

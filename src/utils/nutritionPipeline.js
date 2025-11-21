@@ -197,127 +197,6 @@ class NutritionPipeline {
   }
 
   /**
-   * Get comprehensive nutrition pipeline status and monitoring data
-   * 
-   * @async
-   * @method getPipelineStatus
-   * @returns {Promise<Object>} Complete pipeline status information
-   * @returns {boolean} returns.success - Whether status retrieval was successful
-   * @returns {Array<Object>} returns.queue_status - Current enrichment queue status
-   * @returns {Object} returns.pipeline_metrics - Overall pipeline performance metrics
-   * @returns {Array<Object>} returns.recent_activity - Recent enrichment activities (last 10)
-   * @returns {string} [returns.error] - Error message if status retrieval failed
-   * 
-   * @description Retrieves comprehensive pipeline monitoring data including:
-   * - Enrichment queue status and pending jobs
-   * - Pipeline performance metrics and statistics
-   * - Recent enrichment activity and results
-   * - System health and error tracking
-   * - Quality trends and improvements
-   * 
-   * @example
-   * // Get complete pipeline status
-   * const status = await pipeline.getPipelineStatus();
-   */
-  async getPipelineStatus() {
-    try {
-      // Get enrichment queue status
-      const { data: queueStatus, error: queueError } = await supabase
-        .rpc('get_enrichment_status');
-
-      if (queueError) throw queueError;
-
-      // Get overall pipeline metrics (single row)
-      const { data: pipelineMetricsRow, error: metricsError } = await supabase
-        .from('nutrition_pipeline_status')
-        .select('*')
-        .maybeSingle();
-
-      if (metricsError) throw metricsError;
-
-      // Get recent enrichment activity
-      const { data: recentActivity, error: activityError } = await supabase
-        .from('nutrition_enrichment_queue')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (activityError) throw activityError;
-
-      return {
-        success: true,
-        queue_status: queueStatus || [],
-        pipeline_metrics: pipelineMetricsRow || {},
-        recent_activity: recentActivity || []
-      };
-
-    } catch (error) {
-      console.error('Pipeline status error:', error);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
-  /**
-   * Trigger bulk enrichment for foods with low quality scores
-   */
-  async triggerBulkEnrichment(qualityThreshold = 70, limit = 50) {
-    try {
-
-      // Get foods needing enrichment
-      const { data: foods, error } = await supabase
-        .from('food_servings')
-        .select('id, food_name, quality_score, enrichment_status')
-        .lt('quality_score', qualityThreshold)
-        .neq('enrichment_status', 'processing')
-        .limit(limit);
-
-      if (error) throw error;
-
-      const enrichmentPromises = foods.map(async (food) => {
-        try {
-          const result = await this.enrichFood(food.id, 'full');
-          return {
-            food_id: food.id,
-            food_name: food.name,
-            success: result.success,
-            changes_made: result.changes_made?.length || 0,
-            new_quality_score: result.quality_score
-          };
-        } catch (error) {
-          return {
-            food_id: food.id,
-            food_name: food.name,
-            success: false,
-            error: error.message
-          };
-        }
-      });
-
-      const results = await Promise.all(enrichmentPromises);
-      const successful = results.filter(r => r.success);
-      const failed = results.filter(r => !r.success);
-
-      return {
-        success: true,
-        total_processed: results.length,
-        successful: successful.length,
-        failed: failed.length,
-        results: results
-      };
-
-    } catch (error) {
-      console.error('Bulk enrichment error:', error);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
-  /**
    * Search with automatic fallback and enrichment
    */
   async intelligentSearch(query) {
@@ -467,25 +346,14 @@ export const enhancedNutritionAPI = {
     return await nutritionPipeline.intelligentSearch(query);
   },
 
-  // New pipeline-specific functions
+  // Multi-API search
   async searchMultiAPI(query, sources) {
     return await nutritionPipeline.searchMultiAPI(query, sources);
   },
 
+  // Food enrichment
   async enrichFood(foodId, type = 'full') {
     return await nutritionPipeline.enrichFood(foodId, type);
-  },
-
-  async getPipelineStatus() {
-    return await nutritionPipeline.getPipelineStatus();
-  },
-
-  async triggerBulkEnrichment(threshold = 70, limit = 50) {
-    return await nutritionPipeline.triggerBulkEnrichment(threshold, limit);
-  },
-
-  async getQualityInsights() {
-    return await nutritionPipeline.getQualityInsights();
   }
 };
 
