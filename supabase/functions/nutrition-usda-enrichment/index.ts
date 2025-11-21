@@ -4,10 +4,14 @@
  * 
  * FEATURES:
  * 1. Uses authoritative USDA nutrition database (400k+ foods)
- * 2. Smart search strategy: Branded → SR Legacy → Foundation
+ * 2. Smart search strategy: Foundation → SR Legacy → Survey → Branded (whole foods prioritized)
  * 3. Primary ingredient-based categorization
  * 4. Comprehensive validation and quality scoring
  * 5. Rate-limit friendly (5 foods per run, 2s delay)
+ * 
+ * CRITICAL FIX (2025-11-20): Reversed search order to prioritize whole foods over branded products
+ * - Prevents pulling "Brussels Sprout Chips" when user means "Raw Brussels Sprouts"
+ * - Foundation/SR Legacy provide accurate nutritional data for basic ingredients
  * 
  * USDA API DOCS: https://fdc.nal.usda.gov/api-guide.html
  */
@@ -184,15 +188,24 @@ function detectPrimaryCategory(foodName: string, description: string): string {
 
 /**
  * Search USDA FoodData Central
+ * 
+ * SEARCH STRATEGY (Updated 2025-11-20):
+ * 1. Survey (FNDDS): We imported 5000+ foods from FNDDS - match these first!
+ * 2. Foundation: Lab-analyzed basic ingredients (most accurate for raw foods)
+ * 3. SR Legacy: Gold standard reference database (comprehensive whole foods)
+ * 4. Branded: Packaged products (LAST RESORT - often has chips/processed versions)
+ * 
+ * This order prevents "Brussels Sprout Chips" from matching "Brussels Sprouts"
  */
 async function searchUSDA(query: string): Promise<USDASearchResult | null> {
   try {
-    // Try multiple search strategies
+    // Try multiple search strategies - FNDDS FIRST (our imported dataset), then whole foods!
     const searchStrategies = [
-      { query: query, dataType: ['Branded'] }, // Try branded foods first (most specific)
-      { query: query, dataType: ['SR Legacy'] }, // Then standard reference
-      { query: query, dataType: ['Foundation', 'Survey (FNDDS)'] }, // Then foundation foods
-      { query: query.split(',')[0].trim(), dataType: [] } // Finally, try just the food name without brand
+      { query: query, dataType: ['Survey (FNDDS)'] }, // Match our 5000+ imported FNDDS foods first
+      { query: query, dataType: ['Foundation'] }, // Best for basic ingredients (lab data)
+      { query: query, dataType: ['SR Legacy'] }, // Gold standard for generic foods
+      { query: query, dataType: ['Branded'] }, // LAST - packaged products only as fallback
+      { query: query.split(',')[0].trim(), dataType: [] } // Final fallback: any type, food name only
     ];
     
     for (const strategy of searchStrategies) {

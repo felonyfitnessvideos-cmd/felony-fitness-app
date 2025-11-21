@@ -123,8 +123,10 @@ Get-Content .env.local | Select-String "VITE_SUPABASE"
 
 **Backup Strategy:**
 - Database backups: Daily automatic via Supabase
-- Manual backup: Supabase Dashboard → Database → Backup
+- **Reliable manual backup:** `.\scripts\backup-database.ps1` (see [Backup Guide](./docs/DATABASE_BACKUP_GUIDE.md))
+- Alternative: Supabase Dashboard → Database → Backup
 - Git commits: Commit working code frequently (every 1-2 hours)
+- **Before major changes:** Always run backup with descriptive name
 
 ---
 
@@ -151,11 +153,41 @@ Get-Content .env.local | Select-String "VITE_SUPABASE"
 
 **Before you stop coding:**
 
-1. ✅ Commit all working changes with clear messages
-2. ✅ Update `CONTENT_EXPANSION_STRATEGY.md` Daily Check-ins section
-3. ✅ Push code to GitHub: `git push origin main`
-4. ✅ Note any blockers or questions for tomorrow
+1. ✅ **Run complete database backup:**
+   ```powershell
+   .\scripts\backup-via-api.ps1 -BackupName "daily-$(Get-Date -Format 'yyyy-MM-dd')"
+   ```
+   - Backs up all 39 tables via REST API (works on free tier!)
+   - Creates timestamped JSON exports in `backups/` folder
+   - Takes ~2-3 minutes for full database
+   - **Location:** `backups/daily-YYYY-MM-DD/`
+
+2. ✅ Commit all working changes with clear messages
+   ```powershell
+   git add .
+   git commit -m "feat: describe your changes"
+   ```
+
+3. ✅ Update `CONTENT_EXPANSION_STRATEGY.md` Daily Check-ins section
+   - Document what was accomplished today
+   - Note any blockers or questions for tomorrow
+
+4. ✅ Push code to GitHub: 
+   ```powershell
+   git push origin main
+   ```
+
 5. ✅ Check USDA enrichment progress one last time
+   ```sql
+   SELECT enrichment_status, COUNT(*) 
+   FROM food_servings 
+   GROUP BY enrichment_status;
+   ```
+
+6. ✅ Verify backup completed successfully
+   - Check `backups/daily-YYYY-MM-DD/` folder exists
+   - Verify files have reasonable sizes (food_servings.json should be ~6MB)
+   - Keep last 7 days of backups, delete older ones
 
 ---
 
