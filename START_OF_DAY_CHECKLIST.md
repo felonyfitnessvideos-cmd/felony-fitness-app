@@ -158,9 +158,21 @@ Get-Content .env.local | Select-String "VITE_SUPABASE"
    .\scripts\backup-via-api.ps1 -BackupName "daily-$(Get-Date -Format 'yyyy-MM-dd')"
    ```
    - Backs up all 39 tables via REST API (works on free tier!)
+   - Includes `schema.sql` (functions, triggers, RLS policies, indexes)
+   - Includes `database.types.ts` (TypeScript definitions)
    - Creates timestamped JSON exports in `backups/` folder
    - Takes ~2-3 minutes for full database
    - **Location:** `backups/daily-YYYY-MM-DD/`
+
+1a. ⚙️ **Optional: Backup storage buckets (weekly recommended):**
+   ```powershell
+   .\scripts\backup-storage-buckets.ps1 -BackupName "storage-$(Get-Date -Format 'yyyy-MM-dd')"
+   ```
+   - Downloads all files from 5 storage buckets
+   - Includes trainer manual PDFs, images, assets
+   - Takes ~5-10 minutes (233 MB currently)
+   - **Location:** `backups/storage-YYYY-MM-DD/`
+   - **Note:** Run weekly or after adding new files to buckets
 
 2. ✅ Commit all working changes with clear messages
    ```powershell
