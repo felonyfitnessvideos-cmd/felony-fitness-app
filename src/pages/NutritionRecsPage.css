@@ -102,6 +102,7 @@
   gap: 1rem; /* Space between each card. */
   text-align: left; /* Aligns text inside cards to the left. */
   margin-bottom: 2rem;
+  background-color: transparent; /* Ensure dark theme background is inherited. */
 }
 
 /* Individual recommendation card. */
