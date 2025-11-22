@@ -113,7 +113,7 @@ INSERT INTO programs (
         ),
         jsonb_build_object(
           'exercise_order', 2,
-          'exercise_name', 'Barbell Overhead Press',
+          'exercise_name', 'Overhead Press',
           'sets', 3,
           'reps', '8-10',
           'rest_seconds', 150,
@@ -158,7 +158,7 @@ INSERT INTO programs (
         ),
         jsonb_build_object(
           'exercise_order', 5,
-          'exercise_name', 'Tricep Press-Down',
+          'exercise_name', 'Tricep Pushdown',
           'sets', 3,
           'reps', '12-15',
           'rest_seconds', 90,
@@ -173,7 +173,7 @@ INSERT INTO programs (
         ),
         jsonb_build_object(
           'exercise_order', 6,
-          'exercise_name', 'Face Pulls',
+          'exercise_name', 'Cable Face Pull',
           'sets', 3,
           'reps', '15-20',
           'rest_seconds', 60,
@@ -200,7 +200,7 @@ INSERT INTO programs (
       'exercises', jsonb_build_array(
         jsonb_build_object(
           'exercise_order', 1,
-          'exercise_name', 'Barbell Back Squat',
+          'exercise_name', 'Barbell Squat',
           'sets', 4,
           'reps', '6-8',
           'rest_seconds', 180,
@@ -215,7 +215,7 @@ INSERT INTO programs (
         ),
         jsonb_build_object(
           'exercise_order', 2,
-          'exercise_name', 'Leg Press',
+          'exercise_name', 'Leg Press Machine',
           'sets', 3,
           'reps', '10-12',
           'rest_seconds', 120,
@@ -244,7 +244,7 @@ INSERT INTO programs (
         ),
         jsonb_build_object(
           'exercise_order', 4,
-          'exercise_name', 'Leg Curl',
+          'exercise_name', 'Leg Curl Machine',
           'sets', 3,
           'reps', '12-15',
           'rest_seconds', 90,
@@ -376,7 +376,7 @@ INSERT INTO programs (
         ),
         jsonb_build_object(
           'exercise_order', 6,
-          'exercise_name', 'Hammer Curl',
+          'exercise_name', 'Dumbbell Hammer Curl',
           'sets', 3,
           'reps', '12-15',
           'rest_seconds', 60,
@@ -418,7 +418,7 @@ INSERT INTO programs (
         ),
         jsonb_build_object(
           'exercise_order', 2,
-          'exercise_name', 'Bulgarian Split Squat',
+          'exercise_name', 'Dumbbell Bulgarian Split Squat',
           'sets', 3,
           'reps', '10-12 per leg',
           'rest_seconds', 120,
@@ -433,7 +433,7 @@ INSERT INTO programs (
         ),
         jsonb_build_object(
           'exercise_order', 3,
-          'exercise_name', 'Leg Extension',
+          'exercise_name', 'Leg Extension Machine',
           'sets', 3,
           'reps', '12-15',
           'rest_seconds', 90,
