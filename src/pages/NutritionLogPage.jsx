@@ -2,6 +2,13 @@
 /**
  * @file NutritionLogPage.jsx
  * @description This page allows users to log their daily food and water intake for different meals.
+ * 
+ * PERFORMANCE OPTIMIZATION:
+ * - Uses pre-calculated nutritional values stored in nutrition_logs table
+ * - Database trigger auto-populates all 25 nutrients (macros + micronutrients) on INSERT/UPDATE
+ * - Zero aggregation cost at query time (just SELECT + SUM)
+ * - Historical accuracy (values frozen at time of logging)
+ * 
  * @project Felony Fitness
  */
 
@@ -95,6 +102,11 @@ function NutritionLogPage() {
   /**
    * Fetches all nutrition data for the current day and calculates totals.
    * This function uses a robust, timezone-proof method to query the database.
+   * 
+   * PERFORMANCE OPTIMIZED: Uses pre-calculated nutritional values from nutrition_logs table.
+   * Values are auto-populated by database trigger (calculate_nutrition_log_values) which
+   * multiplies food_servings data by quantity_consumed on INSERT/UPDATE.
+   * 
    * @param {string} userId - The UUID of the authenticated user.
    * @async
    */
@@ -111,7 +123,7 @@ function NutritionLogPage() {
       const [logsResponse, profileResponse] = await Promise.all([
         supabase
           .from('nutrition_logs')
-          .select('*, food_servings(*)')
+          .select('*, food_servings(food_name, serving_description)')
           .eq('user_id', userId)
           .eq('log_date', todayDateString),
         supabase
@@ -129,12 +141,14 @@ function NutritionLogPage() {
       setTodaysLogs(logs);
       if (profileResponse.data) setGoals(profileResponse.data);
 
-      // **FIX APPLIED**: Calculate totals on the client-side for perfect consistency.
+      // **PERFORMANCE OPTIMIZED**: Use pre-calculated values from nutrition_logs table
+      // Values are auto-populated by database trigger when food is logged
       const totals = logs.reduce((acc, log) => {
-        if (log.food_servings) {
-          acc.calories += (log.food_servings.calories || 0) * log.quantity_consumed;
-          acc.protein += (log.food_servings.protein_g || 0) * log.quantity_consumed;
-        }
+        // Use pre-calculated nutritional values (already multiplied by quantity_consumed)
+        acc.calories += log.calories || 0;
+        acc.protein += log.protein_g || 0;
+        
+        // Water is still logged separately (no trigger needed)
         if (log.water_oz_consumed) {
           acc.water += log.water_oz_consumed;
         }
@@ -740,7 +754,7 @@ function NutritionLogPage() {
               </div>
               <div className="food-item-actions">
                 <span className="food-item-calories">
-                  {Math.round((log.food_servings.calories || 0) * log.quantity_consumed)} cal
+                  {Math.round(log.calories || 0)} cal
                 </span>
                 <button
                   className="delete-food-btn"
