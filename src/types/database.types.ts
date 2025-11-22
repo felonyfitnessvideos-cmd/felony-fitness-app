@@ -1442,7 +1442,6 @@ export type Database = {
           image_url: string | null
           instructions: string | null
           is_favorite: boolean | null
-          meal_id: string | null
           name: string
           prep_time_minutes: number | null
           serving_size: number | null
@@ -1461,7 +1460,6 @@ export type Database = {
           image_url?: string | null
           instructions?: string | null
           is_favorite?: boolean | null
-          meal_id?: string | null
           name?: string
           prep_time_minutes?: number | null
           serving_size?: number | null
@@ -1480,7 +1478,6 @@ export type Database = {
           image_url?: string | null
           instructions?: string | null
           is_favorite?: boolean | null
-          meal_id?: string | null
           name?: string
           prep_time_minutes?: number | null
           serving_size?: number | null
@@ -1694,35 +1691,38 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
-          meal_id: string
+          meal_id: string | null
           meal_type: string
           notes: string | null
           plan_date: string
           plan_id: string
           servings: number | null
           updated_at: string | null
+          user_meal_id: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
-          meal_id: string
+          meal_id?: string | null
           meal_type: string
           notes?: string | null
           plan_date: string
           plan_id: string
           servings?: number | null
           updated_at?: string | null
+          user_meal_id?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
-          meal_id?: string
+          meal_id?: string | null
           meal_type?: string
           notes?: string | null
           plan_date?: string
           plan_id?: string
           servings?: number | null
           updated_at?: string | null
+          user_meal_id?: string | null
         }
         Relationships: [
           {
@@ -1737,6 +1737,13 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "weekly_meal_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_meal_plan_entries_user_meal_id_fkey"
+            columns: ["user_meal_id"]
+            isOneToOne: false
+            referencedRelation: "user_meals"
             referencedColumns: ["id"]
           },
         ]
@@ -2036,7 +2043,6 @@ export type Database = {
         }
         Returns: Json
       }
-      refresh_pipeline_status: { Args: never; Returns: undefined }
       remove_tag_from_client: {
         Args: { p_client_id: string; p_tag_id: string }
         Returns: boolean

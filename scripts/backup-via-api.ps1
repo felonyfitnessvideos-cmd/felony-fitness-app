@@ -157,6 +157,25 @@ $metadata = @{
 
 $metadata | Set-Content (Join-Path $backupDir "metadata.json") -Encoding UTF8
 
+# Copy schema and types files
+Write-Host "`n=== 📋 Copying Schema Files ===" -ForegroundColor Cyan
+
+if (Test-Path "schema.sql") {
+    Copy-Item "schema.sql" -Destination (Join-Path $backupDir "schema.sql")
+    $schemaSizeKB = [math]::Round((Get-Item (Join-Path $backupDir "schema.sql")).Length / 1KB, 2)
+    Write-Host "✅ Copied schema.sql ($schemaSizeKB KB)" -ForegroundColor Green
+} else {
+    Write-Host "⚠️  schema.sql not found in root directory" -ForegroundColor Yellow
+}
+
+if (Test-Path "src\types\database.types.ts") {
+    Copy-Item "src\types\database.types.ts" -Destination (Join-Path $backupDir "database.types.ts")
+    $typesSizeKB = [math]::Round((Get-Item (Join-Path $backupDir "database.types.ts")).Length / 1KB, 2)
+    Write-Host "✅ Copied database.types.ts ($typesSizeKB KB)" -ForegroundColor Green
+} else {
+    Write-Host "⚠️  database.types.ts not found in src/types/" -ForegroundColor Yellow
+}
+
 # Calculate total backup size
 $totalSize = (Get-ChildItem $backupDir -Recurse | Measure-Object -Property Length -Sum).Sum
 $totalSizeMB = [math]::Round($totalSize / 1MB, 2)
