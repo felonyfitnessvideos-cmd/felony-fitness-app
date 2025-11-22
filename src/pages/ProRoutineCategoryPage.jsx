@@ -105,6 +105,7 @@ function ProRoutineCategoryPage() {
     // Log missing names for easier debugging when backend data is inconsistent.
     const missing = exercisesWithDetails.filter(e => !e.name || e.name === 'Unknown Exercise').map(e => e?.exercise_id ?? e?.id ?? e?.exercises?.id);
     if (missing.length > 0) {
+      console.warn('Exercises with missing names:', missing);
     }
     setModalExercises(exercisesWithDetails);
   };

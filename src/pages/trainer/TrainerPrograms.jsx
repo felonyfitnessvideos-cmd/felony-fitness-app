@@ -21,7 +21,6 @@ import {
   Activity,
   ArrowLeft,
   BookOpen,
-  Calendar,
   Edit,
   Home,
   Plus,
@@ -237,476 +236,7 @@ const ProgramMuscleMap = ({ program, routines = [] }) => {
   );
 };
 
-/**
- * Program Configuration Modal Component
- */
-const ProgramConfigModal = ({ program, onClose, user }) => {
-  const [frequency, setFrequency] = useState(3);
-  const [duration, setDuration] = useState(program?.estimated_weeks || 8);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedClient, setSelectedClient] = useState('');
-  const [clients, setClients] = useState([]);
-  const [routines, setRoutines] = useState([]);
-  const [availableRoutines, setAvailableRoutines] = useState([]);
-  const [showRoutineSelector, setShowRoutineSelector] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [enrolling, setEnrolling] = useState(false);
 
-  // Load program routines and clients
-  useEffect(() => {
-    if (program) {
-      loadProgramData();
-    }
-    // loadProgramData changes on every render, so we can't include it safely
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [program]);
-
-  const loadProgramData = async () => {
-    try {
-      setLoading(true);
-
-      // Load program routines
-      const { data: routinesData, error: routinesError } = await supabase
-        .from('program_routines')
-        .select('*')
-        .eq('program_id', program.id)
-        .order('week_number', { ascending: true })
-        .order('day_number', { ascending: true });
-
-      if (routinesError) throw routinesError;
-
-      // Load trainer's clients (simplified - would need proper client relationship)
-      const { data: clientsData, error: clientsError } = await supabase
-        .from('user_profiles')
-        .select('id, full_name, email')
-        .eq('user_type', 'client')
-        .limit(10);
-
-      if (clientsError) console.warn('Could not load clients:', clientsError);
-
-      // Load available routines from trainer's collection
-      const { data: availableRoutinesData, error: availableRoutinesError } = await supabase
-        .from('routines')
-        .select('id, name, description, estimated_duration_minutes')
-        .eq('created_by', user.id)
-        .eq('is_active', true)
-        .order('name');
-
-      if (availableRoutinesError) console.warn('Could not load available routines:', availableRoutinesError);
-
-      setRoutines(routinesData || []);
-      setClients(clientsData || []);
-      setAvailableRoutines(availableRoutinesData || []);
-      generateScheduledRoutines(routinesData || [], frequency, startDate, duration);
-
-    } catch (err) {
-      console.error('Error loading program data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generateScheduledRoutines = (programRoutines, weeklyFreq, start, programDuration) => {
-    // Logic to distribute routines across the week based on frequency
-    const scheduledRoutines = [];
-    const startDateObj = new Date(start);
-
-    // Days of week for different frequencies
-    const frequencyPatterns = {
-      1: [1], // Monday
-      2: [1, 4], // Monday, Thursday
-      3: [1, 3, 5], // Monday, Wednesday, Friday
-      4: [1, 2, 4, 5], // Mon, Tue, Thu, Fri
-      5: [1, 2, 3, 4, 5], // Weekdays
-      6: [1, 2, 3, 4, 5, 6] // Monday-Saturday
-    };
-
-    const dayPattern = frequencyPatterns[weeklyFreq] || [1, 3, 5];
-    let routineIndex = 0;
-
-    for (let week = 0; week < programDuration; week++) {
-      dayPattern.forEach((dayOfWeek, sessionIndex) => {
-        // Cycle through routines if we have fewer routines than total sessions
-        const routine = programRoutines[routineIndex % programRoutines.length];
-        if (routine) {
-          const scheduleDate = new Date(startDateObj);
-          scheduleDate.setDate(startDateObj.getDate() + (week * 7) + (dayOfWeek - 1));
-
-          scheduledRoutines.push({
-            ...routine,
-            scheduled_date: scheduleDate,
-            week_in_program: week + 1,
-            session_in_week: sessionIndex + 1,
-            cycle_number: Math.floor(routineIndex / programRoutines.length) + 1
-          });
-
-          routineIndex++;
-        }
-      });
-    }
-
-    setRoutines(scheduledRoutines);
-  };
-
-  const handleFrequencyChange = (newFreq) => {
-    setFrequency(newFreq);
-    generateScheduledRoutines(routines, newFreq, startDate, duration);
-  };
-
-  const handleDurationChange = (newDuration) => {
-    setDuration(newDuration);
-    generateScheduledRoutines(routines, frequency, startDate, newDuration);
-  };
-
-  const handleStartDateChange = (newDate) => {
-    setStartDate(newDate);
-    generateScheduledRoutines(routines, frequency, newDate, duration);
-  };
-
-  const addRoutineToProgram = async (routineId) => {
-    try {
-      // Add routine to program_routines table
-      const { error } = await supabase
-        .from('program_routines')
-        .insert({
-          program_id: program.id,
-          routine_id: routineId,
-          week_number: Math.floor(routines.length / 7) + 1,
-          day_number: (routines.length % 7) + 1
-        });
-
-      if (error) throw error;
-
-      // Reload program data
-      await loadProgramData();
-      setShowRoutineSelector(false);
-      alert('Routine added to program successfully!');
-
-    } catch (err) {
-      console.error('Error adding routine to program:', err);
-      alert('Failed to add routine. Please try again.');
-    }
-  };
-
-  const removeRoutineFromProgram = async (routineId) => {
-    try {
-      const { error } = await supabase
-        .from('program_routines')
-        .delete()
-        .eq('program_id', program.id)
-        .eq('routine_id', routineId);
-
-      if (error) throw error;
-
-      // Reload program data
-      await loadProgramData();
-      alert('Routine removed from program successfully!');
-
-    } catch (err) {
-      console.error('Error removing routine from program:', err);
-      alert('Failed to remove routine. Please try again.');
-    }
-  };
-
-  const enrollClient = async () => {
-    if (!selectedClient) {
-      alert('Please select a client to enroll');
-      return;
-    }
-
-    try {
-      setEnrolling(true);
-
-      // Create scheduled routines for the client
-      const scheduledRoutines = routines.map(routine => ({
-        trainer_id: user.id,
-        client_id: selectedClient,
-        routine_id: routine.id,
-        routine_name: routine.name,
-        start_time: new Date(routine.scheduled_date).toISOString(),
-        estimated_duration_minutes: routine.estimated_duration_minutes || 60,
-        notes: `Week ${routine.week_in_program}, Session ${routine.session_in_week} - ${program.name}`
-      }));
-
-      const { error } = await supabase
-        .from('scheduled_routines')
-        .insert(scheduledRoutines);
-
-      if (error) throw error;
-
-      alert(`Successfully enrolled client in ${program.name}! ${routines.length} workouts scheduled.`);
-      onClose();
-
-    } catch (err) {
-      console.error('Error enrolling client:', err);
-      alert('Failed to enroll client. Please try again.');
-    } finally {
-      setEnrolling(false);
-    }
-  };
-
-  if (!program) return null;
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="program-config-modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{program.name}</h2>
-          <button onClick={onClose} className="close-btn">×</button>
-        </div>
-
-        <div className="modal-content">
-          {loading ? (
-            <div className="loading-spinner">Loading program details...</div>
-          ) : (
-            <>
-              <div className="program-summary">
-                <p>{program.description}</p>
-                <div className="program-stats">
-                  <span>📊 {program.difficulty_level}</span>
-                  <span>⏱️ {program.estimated_weeks} weeks</span>
-                    <span>🎯 {(program.target_muscle_groups || []).map(m => typeof m === 'string' ? m : m.name).join(', ')}</span>
-                  <span>📝 {routines.length} total workouts</span>
-                </div>
-              </div>
-
-              <div className="config-section">
-                <h3>Schedule Configuration</h3>
-                <div className="config-row">
-                  <div className="config-group">
-                    <label>Frequency (per week):</label>
-                    <select
-                      value={frequency}
-                      onChange={(e) => handleFrequencyChange(parseInt(e.target.value))}
-                      className="config-select"
-                    >
-                      <option value={1}>1x per week</option>
-                      <option value={2}>2x per week</option>
-                      <option value={3}>3x per week</option>
-                      <option value={4}>4x per week</option>
-                      <option value={5}>5x per week</option>
-                      <option value={6}>6x per week</option>
-                    </select>
-                  </div>
-
-                  <div className="config-group">
-                    <label>Duration (weeks):</label>
-                    <select
-                      value={duration}
-                      onChange={(e) => handleDurationChange(parseInt(e.target.value))}
-                      className="config-select"
-                    >
-                      <option value={4}>4 weeks</option>
-                      <option value={6}>6 weeks</option>
-                      <option value={8}>8 weeks</option>
-                      <option value={10}>10 weeks</option>
-                      <option value={12}>12 weeks</option>
-                      <option value={16}>16 weeks</option>
-                      <option value={20}>20 weeks</option>
-                      <option value={24}>24 weeks</option>
-                    </select>
-                  </div>
-
-                  <div className="config-group">
-                    <label>Start Date:</label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => handleStartDateChange(e.target.value)}
-                      className="config-input"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="routines-management">
-                <div className="routines-management-header">
-                  <h3>Program Routines ({routines.length} base routines)</h3>
-                  <button
-                    className="add-routine-btn"
-                    onClick={() => setShowRoutineSelector(true)}
-                  >
-                    <Plus size={16} />
-                    Add Routine
-                  </button>
-                </div>
-                <div className="routines-grid">
-                  {routines.slice(0, 4).map((routine, index) => (
-                    <div key={routine.id || index} className="routine-card">
-                      <div className="routine-header">
-                        <div className="routine-title">
-                          <strong>{routine.name}</strong>
-                          <span className="routine-day">Day {routine.day_number || index + 1}</span>
-                        </div>
-                        <div className="routine-actions">
-                          <div className="routine-stats">
-                            <span>{routine.exercises?.length || 0} exercises</span>
-                            <span>{routine.estimated_duration_minutes || 45}min</span>
-                          </div>
-                          <button
-                            onClick={() => removeRoutineFromProgram(routine.routine_id || routine.id)}
-                            className="remove-routine-btn"
-                            title="Remove routine from program"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="routine-muscle-preview">
-                        <ProgramMuscleMap
-                          program={{ ...program, routines: [routine] }}
-                          routines={[routine]}
-                        />
-                      </div>
-
-                      {routine.exercises && routine.exercises.length > 0 && (
-                        <div className="routine-exercises-preview">
-                          <div className="exercise-list">
-                            {routine.exercises.slice(0, 3).map((exercise, exIndex) => (
-                              <span key={exIndex} className="exercise-name">
-                                {exercise.exercises?.name || exercise.name || `Exercise ${exIndex + 1}`}
-                              </span>
-                            ))}
-                            {routine.exercises.length > 3 && (
-                              <span className="more-exercises">
-                                +{routine.exercises.length - 3} more
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {routines.length > 4 && (
-                    <div className="more-routines-card">
-                      <div className="more-routines-content">
-                        <BookOpen size={24} />
-                        <span>+{routines.length - 4} more routines</span>
-                        <small>Total program variety</small>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="program-analytics-section">
-                <h3>Program Analysis</h3>
-                <ProgramMuscleMap
-                  program={{ ...program, routines: routines.slice(0, 4) }}
-                  routines={routines.slice(0, 4)}
-                />
-              </div>
-
-              <div className="schedule-preview">
-                <h3>Generated Schedule ({Math.min(routines.length * duration * frequency / routines.length, duration * frequency)} total workouts)</h3>
-                <div className="schedule-summary">
-                  <div className="schedule-stats">
-                    <div className="stat">
-                      <span className="stat-value">{frequency}</span>
-                      <span className="stat-label">per week</span>
-                    </div>
-                    <div className="stat">
-                      <span className="stat-value">{duration}</span>
-                      <span className="stat-label">weeks</span>
-                    </div>
-                    <div className="stat">
-                      <span className="stat-value">{routines.length}</span>
-                      <span className="stat-label">unique routines</span>
-                    </div>
-                  </div>
-
-                  <div className="schedule-note">
-                    <small>
-                      Routines will cycle through the program. Each routine may repeat
-                      {Math.ceil((duration * frequency) / routines.length)} times over {duration} weeks.
-                    </small>
-                  </div>
-                </div>
-              </div>
-
-              <div className="client-enrollment">
-                <h3>Enroll Client</h3>
-                <div className="config-row">
-                  <div className="config-group">
-                    <label>Select Client:</label>
-                    <select
-                      value={selectedClient}
-                      onChange={(e) => setSelectedClient(e.target.value)}
-                      className="config-select"
-                    >
-                      <option value="">Choose a client...</option>
-                      {clients.map(client => (
-                        <option key={client.id} value={client.id}>
-                          {client.full_name || client.email}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="modal-actions">
-                <button
-                  onClick={enrollClient}
-                  disabled={!selectedClient || enrolling}
-                  className="enroll-btn"
-                >
-                  {enrolling ? 'Enrolling...' : 'Enroll Client & Schedule Workouts'}
-                </button>
-                <button onClick={onClose} className="cancel-btn">
-                  Cancel
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Routine Selector Modal */}
-      {showRoutineSelector && (
-        <div className="routine-selector-overlay" onClick={() => setShowRoutineSelector(false)}>
-          <div className="routine-selector-modal" onClick={e => e.stopPropagation()}>
-            <div className="routine-selector-header">
-              <h4>Add Routine to Program</h4>
-              <button onClick={() => setShowRoutineSelector(false)} className="close-btn">×</button>
-            </div>
-
-            <div className="routine-selector-content">
-              {availableRoutines.length === 0 ? (
-                <div className="no-routines">
-                  <BookOpen size={32} />
-                  <p>No routines available</p>
-                  <small>Create some routines first to add them to programs</small>
-                </div>
-              ) : (
-                <div className="available-routines-list">
-                  {availableRoutines.map(routine => (
-                    <div key={routine.id} className="available-routine-item">
-                      <div className="routine-info">
-                        <strong>{routine.name}</strong>
-                        <p>{routine.description}</p>
-                        <small>{routine.estimated_duration_minutes || 60} minutes</small>
-                      </div>
-                      <button
-                        onClick={() => addRoutineToProgram(routine.id)}
-                        className="add-routine-to-program-btn"
-                        disabled={routines.some(r => r.routine_id === routine.id)}
-                      >
-                        {routines.some(r => r.routine_id === routine.id) ? 'Already Added' : 'Add to Program'}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 /**
  * Main Program Library Component
@@ -718,15 +248,15 @@ const ProgramLibrary = () => {
   const [programFrequencies, setProgramFrequencies] = useState({}); // Selected frequency for each program
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [difficultyFilter, setDifficultyFilter] = useState('intermediate');
+  const [difficultyFilter, setDifficultyFilter] = useState('beginner');
   const [selectedCategory, setSelectedCategory] = useState('Strength');
-  const [selectedProgram, setSelectedProgram] = useState(null);
   const [editingProgram, setEditingProgram] = useState(null);
   const [showProgramBuilder, setShowProgramBuilder] = useState(false);
   const [clients, setClients] = useState([]);
   const [selectedClientForProgram, setSelectedClientForProgram] = useState({}); // programId -> clientId mapping
   const [assigningToClient, setAssigningToClient] = useState(false);
   const [fullscreenMuscleMap, setFullscreenMuscleMap] = useState(null); // { muscles: [], programName: '' }
+  const [expandedDescriptions, setExpandedDescriptions] = useState({}); // programId -> boolean mapping
 
   const categories = [
     { name: 'Strength', icon: '💪' },
@@ -963,6 +493,18 @@ const ProgramLibrary = () => {
       default:
         return true;
     }
+  };
+
+  /**
+   * Toggle description expanded state for a program
+   * @function toggleDescription
+   * @param {string} programId - Program ID
+   */
+  const toggleDescription = (programId) => {
+    setExpandedDescriptions(prev => ({
+      ...prev,
+      [programId]: !prev[programId]
+    }));
   };
 
   /**
@@ -1298,7 +840,19 @@ const ProgramLibrary = () => {
                     Edit Program
                   </button>
 
-                  <p className="program-description">{program.description}</p>
+                  <div className="program-description-container">
+                    <p className={`program-description ${expandedDescriptions[program.id] ? 'expanded' : ''}`}>
+                      {program.description}
+                    </p>
+                    {program.description && program.description.length > 120 && (
+                      <button 
+                        className="description-toggle-btn"
+                        onClick={() => toggleDescription(program.id)}
+                      >
+                        {expandedDescriptions[program.id] ? 'Show less' : 'Read more'}
+                      </button>
+                    )}
+                  </div>
 
                   {/* Exercise List */}
                   {program.routine_count > 0 && (
@@ -1425,31 +979,12 @@ const ProgramLibrary = () => {
                       <span className="stat-value">{program.routine_count}</span>
                     </div>
                   </div>
-
-                  <div className="program-actions-bottom">
-                    <button
-                      onClick={() => setSelectedProgram(program)}
-                      className="configure-program-btn"
-                    >
-                      <Calendar size={16} />
-                      Configure Program
-                    </button>
-                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
-
-      {/* Program Configuration Modal */}
-      {selectedProgram && (
-        <ProgramConfigModal
-          program={selectedProgram}
-          user={user}
-          onClose={() => setSelectedProgram(null)}
-        />
-      )}
 
       {/* Program Editor Modal */}
       {editingProgram && (

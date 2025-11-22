@@ -725,8 +725,8 @@ export async function subscribeToMessages(callback) {
           callback(payload);
         }
       )
-      .subscribe((status) => {
-
+      .subscribe(() => {
+        // Subscription established
       });
 
     return subscription;
@@ -773,8 +773,8 @@ export function subscribeToMessageUpdates(callback) {
           callback(payload);
         }
       )
-      .subscribe((status) => {
-
+      .subscribe(() => {
+        // Subscription established
       });
 
     return subscription;

@@ -22,7 +22,6 @@ import {
     X
 } from 'lucide-react';
 import { useState } from 'react';
-import { useUserRoles } from '../../hooks/useUserRoles.js';
 import './TrainerResources.css';
 
 /**
@@ -196,9 +195,6 @@ const TrainerResources = () => {
     
     /** @type {[string, Function]} Active tab selection */
     const [activeTab, setActiveTab] = useState('resources');
-    
-    /** Check if user has admin role for pipeline access */
-    const { permissions } = useUserRoles();
 
     /**
      * Handle download by fetching the file and creating a blob

@@ -674,8 +674,6 @@ class GoogleCalendarService {
             this.gis.accounts.oauth2.revoke(this.accessToken, (response) => {
               if (response.error) {
                 console.warn('⚠️ Token revocation failed:', response.error);
-              } else {
-
               }
               resolve();
             });
@@ -797,9 +795,6 @@ class GoogleCalendarService {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const result = await apiCall();
-        if (attempt > 0) {
-
-        }
         return result;
       } catch (error) {
         lastError = error;

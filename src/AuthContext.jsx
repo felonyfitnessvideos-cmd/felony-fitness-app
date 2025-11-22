@@ -126,7 +126,7 @@ export function AuthProvider({ children }) {
         if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
-      } catch (err) {
+      } catch {
         // If there's an error reading session, clear any partial state and continue.
         if (!mounted) return;
         setSession(null);
@@ -162,7 +162,8 @@ export function AuthProvider({ children }) {
       mounted = false;
       try {
         if (subscription && typeof subscription.unsubscribe === 'function') subscription.unsubscribe();
-      } catch (e) {
+      } catch {
+        // Silently handle unsubscribe errors
       }
     };
   }, []);

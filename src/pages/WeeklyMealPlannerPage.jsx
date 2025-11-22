@@ -1,6 +1,5 @@
 import { Calendar, ChefHat, Copy, Plus, Share2, ShoppingCart, Target, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { useAuth } from '../AuthContext';
 import MealBuilder from '../components/MealBuilder';
 import { DAYS_OF_WEEK, formatMealType, getWeekDates, MEAL_TYPES } from '../constants/mealPlannerConstants';
 import { supabase } from '../supabaseClient';
@@ -25,9 +24,6 @@ import './WeeklyMealPlannerPage.css';
  * <WeeklyMealPlannerPage />
  */
 const WeeklyMealPlannerPage = () => {
-  /** @type {Object} Current authenticated user */
-  const { user } = useAuth();
-
   /** @type {[Date[], Function]} Current week's date array for meal planning */
   const [currentWeek, setCurrentWeek] = useState(() => {
     const week = getWeekDates(new Date());
@@ -955,11 +951,6 @@ const WeeklyMealPlannerPage = () => {
     const matches = planEntries.filter(entry =>
       entry.plan_date === dateStr && entry.meal_type === mealType
     );
-    
-    // Debug logging
-    if (matches.length > 0) {
-
-    }
     
     return matches;
   };

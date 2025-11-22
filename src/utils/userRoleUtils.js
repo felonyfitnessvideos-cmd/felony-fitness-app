@@ -411,13 +411,6 @@ export const addClientToTrainer = async (trainerId, clientId, notes = null, clie
             return null;
         }
 
-        // Log role assignment status
-        if (data?.roles_assigned) {
-
-        } else {
-
-        }
-
         return data?.relationship_id || null;
     } catch (error) {
         console.error('Error in addClientToTrainer:', error);
@@ -467,7 +460,7 @@ export const getTrainerClients = async (trainerId) => {
             const transformedData = [];
             for (const relationship of simpleData || []) {
                 // Get user profile data
-                const { data: profileData, error: profileError } = await supabase
+                const { data: profileData } = await supabase
                     .from('user_profiles')
                     .select('*')
                     .eq('id', relationship.client_id)

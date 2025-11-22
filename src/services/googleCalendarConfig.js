@@ -154,6 +154,7 @@ export function getGoogleCalendarConfig(options = {}) {
         
         // Log recommendations if available
         if (validation.recommendations && Object.keys(validation.recommendations).length > 0) {
+          console.warn('💡 Recommendations:', validation.recommendations);
         }
       }
     }
