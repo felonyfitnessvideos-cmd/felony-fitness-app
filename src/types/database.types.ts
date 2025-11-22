@@ -877,49 +877,112 @@ export type Database = {
       }
       nutrition_logs: {
         Row: {
+          calcium_mg: number | null
           calories: number | null
           carbs_g: number | null
+          copper_mg: number | null
           created_at: string | null
           fat_g: number | null
+          fiber_g: number | null
+          folate_mcg: number | null
           food_serving_id: string | null
           id: string
+          iron_mg: number | null
           log_date: string | null
+          magnesium_mg: number | null
           meal_type: string | null
+          niacin_mg: number | null
           notes: string | null
+          phosphorus_mg: number | null
+          potassium_mg: number | null
           protein_g: number | null
           quantity_consumed: number | null
+          riboflavin_mg: number | null
+          selenium_mcg: number | null
+          sodium_mg: number | null
+          sugar_g: number | null
+          thiamin_mg: number | null
           user_id: string | null
+          vitamin_a_mcg: number | null
+          vitamin_b12_mcg: number | null
+          vitamin_b6_mg: number | null
+          vitamin_c_mg: number | null
+          vitamin_e_mg: number | null
+          vitamin_k_mcg: number | null
           water_oz_consumed: number | null
+          zinc_mg: number | null
         }
         Insert: {
+          calcium_mg?: number | null
           calories?: number | null
           carbs_g?: number | null
+          copper_mg?: number | null
           created_at?: string | null
           fat_g?: number | null
+          fiber_g?: number | null
+          folate_mcg?: number | null
           food_serving_id?: string | null
           id?: string
+          iron_mg?: number | null
           log_date?: string | null
+          magnesium_mg?: number | null
           meal_type?: string | null
+          niacin_mg?: number | null
           notes?: string | null
+          phosphorus_mg?: number | null
+          potassium_mg?: number | null
           protein_g?: number | null
           quantity_consumed?: number | null
+          riboflavin_mg?: number | null
+          selenium_mcg?: number | null
+          sodium_mg?: number | null
+          sugar_g?: number | null
+          thiamin_mg?: number | null
           user_id?: string | null
+          vitamin_a_mcg?: number | null
+          vitamin_b12_mcg?: number | null
+          vitamin_b6_mg?: number | null
+          vitamin_c_mg?: number | null
+          vitamin_e_mg?: number | null
+          vitamin_k_mcg?: number | null
           water_oz_consumed?: number | null
+          zinc_mg?: number | null
         }
         Update: {
+          calcium_mg?: number | null
           calories?: number | null
           carbs_g?: number | null
+          copper_mg?: number | null
           created_at?: string | null
           fat_g?: number | null
+          fiber_g?: number | null
+          folate_mcg?: number | null
           food_serving_id?: string | null
           id?: string
+          iron_mg?: number | null
           log_date?: string | null
+          magnesium_mg?: number | null
           meal_type?: string | null
+          niacin_mg?: number | null
           notes?: string | null
+          phosphorus_mg?: number | null
+          potassium_mg?: number | null
           protein_g?: number | null
           quantity_consumed?: number | null
+          riboflavin_mg?: number | null
+          selenium_mcg?: number | null
+          sodium_mg?: number | null
+          sugar_g?: number | null
+          thiamin_mg?: number | null
           user_id?: string | null
+          vitamin_a_mcg?: number | null
+          vitamin_b12_mcg?: number | null
+          vitamin_b6_mg?: number | null
+          vitamin_c_mg?: number | null
+          vitamin_e_mg?: number | null
+          vitamin_k_mcg?: number | null
           water_oz_consumed?: number | null
+          zinc_mg?: number | null
         }
         Relationships: [
           {
