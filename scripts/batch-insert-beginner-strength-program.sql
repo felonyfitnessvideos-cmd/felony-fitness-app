@@ -76,7 +76,7 @@ INSERT INTO programs (
   
   'beginner',
   8,
-  'Strength & Hypertrophy',
+  'strength',
   ARRAY[
     'Chest', 'Back', 'Shoulders', 'Quadriceps', 'Hamstrings', 
     'Glutes', 'Triceps', 'Biceps', 'Calves', 'Core'
