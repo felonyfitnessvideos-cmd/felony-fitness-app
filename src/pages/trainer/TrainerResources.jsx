@@ -105,11 +105,9 @@ const TRAINING_RESOURCES = [
     {
         id: 10,
         name: 'Chapter 10',
-        url: '',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Chapter10-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true,
-        comingSoon: true
+        type: 'pdf'
     },
     {
         id: 11,
@@ -177,11 +175,9 @@ const TRAINING_RESOURCES = [
     {
         id: 20,
         name: 'Glossary',
-        url: '',
+        url: 'https://wkmrdelhoeqhsdifrarn.supabase.co/storage/v1/object/public/trainer-manual-chapters/Glossary-compressed.pdf',
         size: 0,
-        type: 'pdf',
-        placeholder: true,
-        comingSoon: true
+        type: 'pdf'
     }
 ];
 
