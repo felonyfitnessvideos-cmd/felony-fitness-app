@@ -326,6 +326,7 @@
 .quantity-input {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 .quantity-input label {
   font-size: 0.9rem;
@@ -339,6 +340,8 @@
   padding: 0.8rem;
   border-radius: 8px;
   font-size: 1.2rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 .log-food-modal .modal-footer {
   margin-top: 1.5rem;
