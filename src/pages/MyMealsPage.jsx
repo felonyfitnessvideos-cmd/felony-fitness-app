@@ -311,8 +311,7 @@ const MyMealsPage = () => {
         difficulty_level: meal.difficulty_level,
         image_url: meal.image_url,
         is_favorite: false,
-        custom_name: null,
-        meal_id: null // No reference to meals table for user-created meals
+        custom_name: null
       };
 
       const { data: newMeal, error: mealError } = await supabase
@@ -402,19 +401,54 @@ const MyMealsPage = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Use upsert to avoid duplicate user_meals rows
-      const { error: userMealError } = await supabase
-        .from('user_meals')
-        .upsert([{
-          user_id: user.id,
-          meal_id: meal.id,
-          is_favorite: false
-        }], {
-          onConflict: 'user_id,meal_id',
-          ignoreDuplicates: true
-        });
+      // Duplicate the premade meal as a user meal (user_meals table is self-contained)
+      // Note: This creates a full copy rather than a reference since meal_id column was removed
+      const mealCopy = {
+        user_id: user.id,
+        name: meal.name,
+        description: meal.description,
+        instructions: meal.instructions,
+        tags: meal.tags,
+        category: meal.category,
+        prep_time_minutes: meal.prep_time_minutes,
+        cook_time_minutes: meal.cook_time_minutes,
+        serving_size: meal.serving_size,
+        difficulty_level: meal.difficulty_level,
+        image_url: meal.image_url,
+        is_favorite: false,
+        custom_name: null
+      };
 
-      if (userMealError) throw userMealError;
+      const { data: newMeal, error: mealError } = await supabase
+        .from('user_meals')
+        .insert([mealCopy])
+        .select()
+        .single();
+
+      if (mealError) throw mealError;
+
+      // Copy meal foods if they exist
+      if (meal.meal_foods && meal.meal_foods.length > 0) {
+        const mealFoodsCopy = meal.meal_foods.map(food => ({
+          user_meal_id: newMeal.id,
+          food_servings_id: food.food_servings_id,
+          quantity: food.quantity,
+          notes: food.notes || ''
+        }));
+
+        const { error: foodsError } = await supabase
+          .from('user_meal_foods')
+          .insert(mealFoodsCopy);
+
+        if (foodsError) {
+          // Clean up orphaned meal
+          await supabase
+            .from('user_meals')
+            .delete()
+            .eq('id', newMeal.id);
+          throw foodsError;
+        }
+      }
 
       await loadMeals();
       
