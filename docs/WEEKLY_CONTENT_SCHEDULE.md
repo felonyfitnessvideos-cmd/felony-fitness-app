@@ -317,6 +317,179 @@
 
 ---
 
+## 📋 Daily Development Protocols
+
+### 🌅 Start of Day Checklist (15 minutes)
+
+> **Reference:** Full checklist available in [`START_OF_DAY_CHECKLIST.md`](../START_OF_DAY_CHECKLIST.md) in project root
+
+**Quick Daily Routine:**
+
+1. **Environment Check (2 min)**
+   - Open VS Code workspace
+   - Verify PowerShell terminal
+   - Check internet connection
+
+2. **Git Status (2 min)**
+   ```powershell
+   git status              # Should be clean
+   git pull origin main    # Get latest changes
+   git log --oneline -n 5  # Review recent commits
+   ```
+
+3. **Database Health (3 min)**
+   - Quick test query in Supabase dashboard
+   - Check for alerts or warnings
+   - Review Edge Function logs if applicable
+
+4. **Review Yesterday's Work (5 min)**
+   - Read last session summary: `docs/SESSION_SUMMARY_YYYY-MM-DD.md`
+   - Check `CONTENT_EXPANSION_STRATEGY.md` Daily Check-ins section
+   - Note any action items or blockers
+
+5. **Today's Focus (3 min)**
+   - Check this document for today's themed focus
+   - Review current week's progress
+   - Identify primary goal for today
+
+**Monday Only: Food Enrichment Check (2 min)**
+```powershell
+node scripts/check-food-status.js
+# Review: Total foods, enrichment %, quality scores, failed count
+```
+
+---
+
+### 🌙 End of Day Checklist (30-35 minutes)
+
+**Critical Tasks:**
+
+1. **Code Cleanup (3 min)**
+   - Remove `console.log()` debug statements
+   - Delete unused imports and commented code
+   - Check for unintentional TODOs
+
+2. **Quality Check (5 min)**
+   - Run `npm run lint` (if code changes made)
+   - Fix all ESLint errors (zero tolerance policy)
+   - Manual test of changes made today
+   - Verify no obvious bugs introduced
+
+3. **Database Backup (2-3 min)** ⚡ CRITICAL
+   ```powershell
+   # Daily full backup (all 39 tables via REST API)
+   .\scripts\backup-via-api.ps1 -BackupName "daily-$(Get-Date -Format 'yyyy-MM-dd')"
+   
+   # Optional: Weekly storage bucket backup (PDFs, images)
+   # Run Fridays or after adding new files to buckets
+   .\scripts\backup-storage-buckets.ps1 -BackupName "storage-$(Get-Date -Format 'yyyy-MM-dd')"
+   ```
+   - Verify backup folder created: `backups/daily-YYYY-MM-DD/`
+   - Check file sizes are reasonable (food_servings.json ~6MB)
+   - Keep last 7 days, delete older backups
+
+4. **Git Commit (5 min)**
+   ```powershell
+   git status              # Review all changes
+   git diff                # Verify changes intentional
+   git add .               # Stage all (or selective: git add file1 file2)
+   git commit -m "type: clear description"
+   git push origin main
+   ```
+   
+   **Commit Types:**
+   - `feat:` New features
+   - `fix:` Bug fixes
+   - `docs:` Documentation only
+   - `refactor:` Code restructuring
+   - `perf:` Performance improvements
+   - `test:` Test changes
+   - `chore:` Tooling/dependencies
+
+5. **Session Documentation (10-15 min)**
+   - Create: `docs/SESSION_SUMMARY_YYYY-MM-DD.md`
+   - Include:
+     * What was accomplished
+     * Files changed
+     * Bugs found (even if fixed)
+     * Technical debt created
+     * Next session priorities
+     * Time spent, metrics
+   - Update `CONTENT_EXPANSION_STRATEGY.md` Daily Check-ins section
+
+6. **Content Progress Update (3 min)**
+   - Update this document's progress trackers
+   - Check off completed tasks
+   - Note any schedule adjustments needed
+
+7. **Environment Cleanup (2 min)**
+   - Close unused terminals
+   - Clear sensitive data from terminal history
+   - Close unnecessary browser tabs
+   - Save all open files
+
+**Emergency Shortcuts if Short on Time:**
+
+**Minimum End of Day (15 min):**
+- Database backup (NEVER skip this)
+- Git commit + push with detailed message
+- Quick bullet-point session notes
+- Note top priority for tomorrow
+
+---
+
+### 📝 Commit Message Examples
+
+**✅ Good Examples:**
+```
+feat: add nutrition enrichment backfill for 117 failed foods
+fix: resolve duplicate key error in pro_routine_exercises table
+docs: create comprehensive weekly content schedule
+refactor: simplify food enrichment worker error handling
+perf: add database indexes for nutrition_logs queries
+test: add unit tests for macro calculation utilities
+chore: upgrade Supabase client to v2.39.0
+```
+
+**❌ Bad Examples (Avoid):**
+```
+fix stuff          ❌ Too vague
+updates            ❌ Not descriptive
+wip                ❌ Work in progress shouldn't be committed
+asdf               ❌ Nonsense
+fixed the bug      ❌ Which bug? What fix?
+```
+
+---
+
+### 🔗 Quick Reference Links
+
+**Documentation:**
+- [Start of Day Checklist](../START_OF_DAY_CHECKLIST.md) - Full version with emergency protocols
+- [Content Expansion Strategy](./CONTENT_EXPANSION_STRATEGY.md) - Historical progress tracking
+- [Database Backup Guide](./DATABASE_BACKUP_GUIDE.md) - Backup methods and troubleshooting
+- [Database Indexing Explained](./DATABASE_INDEXING_EXPLAINED.md) - Performance optimization
+
+**Monitoring:**
+- [Supabase Dashboard](https://supabase.com/dashboard/project/wkmrdelhoeqhsdifrarn)
+- [GitHub Actions](https://github.com/felonyfitnessvideos-cmd/felony-fitness-app/actions) - Enrichment workers
+- [GitHub Repository](https://github.com/felonyfitnessvideos-cmd/felony-fitness-app)
+
+**Scripts:**
+```powershell
+# Food enrichment monitoring
+node scripts/check-food-status.js
+node scripts/analyze-failed-foods.js
+node scripts/get-food-stats.js
+
+# Database backups
+.\scripts\backup-via-api.ps1 -BackupName "daily-$(Get-Date -Format 'yyyy-MM-dd')"
+.\scripts\backup-storage-buckets.ps1  # Weekly or as needed
+.\scripts\backup-database.ps1          # Alternative method (requires PostgreSQL client)
+```
+
+---
+
 **Document Status:** 📝 Active  
 **Last Updated:** November 23, 2025  
 **Owner:** David (Developer)  
