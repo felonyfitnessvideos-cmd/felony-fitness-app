@@ -89,26 +89,30 @@ function WorkoutRoutinePage() {
   }, [userId, fetchRoutines]);
 
   /**
-   * Deletes a specific workout routine after user confirmation.
+   * Deletes a specific workout routine without confirmation.
    * @param {string} routineId - The UUID of the routine to be deleted.
    * @async
    */
   const handleDeleteRoutine = async (routineId) => {
     if (!userId) return;
 
-    if (window.confirm('Are you sure you want to delete this routine? This cannot be undone.')) {
-      try {
-        const { error } = await supabase
-          .from('workout_routines')
-          .delete()
-          .eq('id', routineId)
-          .eq('user_id', userId);
+    try {
+      // Optimistically remove from UI immediately
+      setRoutines(prev => prev.filter(r => r.id !== routineId));
+      
+      const { error } = await supabase
+        .from('workout_routines')
+        .delete()
+        .eq('id', routineId)
+        .eq('user_id', userId);
 
-        if (error) throw error;
+      if (error) {
+        // Revert on error
         fetchRoutines(userId);
-      } catch (error) {
-        alert(`Error: ${error.message}`);
+        throw error;
       }
+    } catch (error) {
+      alert(`Error: ${error.message}`);
     }
   };
 
@@ -121,14 +125,24 @@ function WorkoutRoutinePage() {
     if (!userId) return;
 
     try {
+      // Optimistically update UI immediately
+      setRoutines(prev => prev.map(r => 
+        r.id === routine.id ? { ...r, is_active: !r.is_active } : r
+      ));
+      
       const { error } = await supabase
         .from('workout_routines')
         .update({ is_active: !routine.is_active })
         .eq('id', routine.id)
         .eq('user_id', userId);
       
-      if (error) throw error;
-      fetchRoutines(userId);
+      if (error) {
+        // Revert on error
+        setRoutines(prev => prev.map(r => 
+          r.id === routine.id ? { ...r, is_active: routine.is_active } : r
+        ));
+        throw error;
+      }
     } catch (error) {
       alert(`Error: ${error.message}`);
     }
@@ -183,9 +197,15 @@ function WorkoutRoutinePage() {
         if (insertError) throw insertError;
       }
 
-      // Step 4: Refresh the routine list
-      fetchRoutines(userId);
-      alert(`Routine duplicated successfully as "${newRoutineName}"`);
+      // Step 4: Add new routine to UI without refetch
+      const newRoutineDisplay = {
+        id: newRoutine.id,
+        routine_name: newRoutineName,
+        is_active: false,
+        created_at: new Date().toISOString(),
+        user_id: userId
+      };
+      setRoutines(prev => [newRoutineDisplay, ...prev]);
     } catch (error) {
       console.error('Error duplicating routine:', error);
       alert(`Error duplicating routine: ${error.message}`);

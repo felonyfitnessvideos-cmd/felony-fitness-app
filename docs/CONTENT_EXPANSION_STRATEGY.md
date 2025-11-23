@@ -1,7 +1,8 @@
-# Content Library Expansion Strategy
+# Content Library Expansion Strategy (TO_DO)
 **Project:** Felony Fitness App  
 **Timeline:** Week of November 17-24, 2025  
-**Goal:** Build comprehensive, production-ready content libraries
+**Goal:** Build comprehensive, production-ready content libraries  
+**Note:** This is our active working to-do list for content expansion
 
 ---
 
@@ -160,6 +161,8 @@ INSERT INTO exercises (
 
 ---
 
+## 📋 To Do
+
 ### Priority 3: Meal Database Creation
 **Target:** Create 10 accurate, complete meal entries  
 **Status:** ✅ **COMPLETED** (10 meal templates with ingredients)
@@ -233,18 +236,26 @@ INSERT INTO exercises (
 
 ---
 
-### Priority 4: Program Template Creation
+### Priority 4: Make New Program (Formerly Create Program Template)
 **Target:** Create 1 complete training program  
-**Status:** 🔴 Not Started
+**Status:** 🟡 **IN PROGRESS** (6 specialized programs created)
 
 **Success Criteria:**
-- [ ] 1 full program added to `programs` table
-- [ ] Program spans 4-12 weeks
-- [ ] Includes progressive overload structure
-- [ ] All exercises in program exist in `exercises` table
-- [ ] Rep ranges, sets, and rest periods defined
-- [ ] Program follows evidence-based training principles
-- [ ] Program can be assigned to clients via trainer dashboard
+- [x] Programs added to `programs` table ✅ **6 programs created**
+- [x] Program spans 4-12 weeks ✅ **All programs 8+ weeks**
+- [x] Includes progressive overload structure ✅ **Progressive loading documented**
+- [x] All exercises in program exist in `exercises` table ✅ **All exercises verified**
+- [x] Rep ranges, sets, and rest periods defined ✅ **All parameters specified**
+- [x] Program follows evidence-based training principles ✅ **Recovery-focused, specialized programs**
+- [ ] Program can be assigned to clients via trainer dashboard ⚠️ **Assignment feature ready, needs testing**
+
+**Programs Created:**
+1. ✅ **Stability** - 8-week balance & proprioception program (beginner)
+2. ✅ **The Cuff** - 8-week rotator cuff recovery program (beginner) 
+3. ✅ **Glute Guard** - 8-week hip stability & recovery program (beginner)
+4. ✅ **Foundation** - 8-week knee recovery & VMO strengthening program (beginner)
+5. ✅ **Fluidity** - 8-week flexibility & mobility program (beginner)
+6. ✅ **The Engine** - 8-week endurance conditioning program (intermediate)
 
 **Program to Create: "Beginner Strength & Hypertrophy - 8 Week Program"**
 
@@ -312,19 +323,39 @@ INSERT INTO exercises (
 
 ---
 
-### Priority 5: Pro Routine Creation
-**Target:** Create 1 professional routine template  
+### Priority 5: Pro Routine Exercise Population
+**Target:** Populate existing 12 pro routines with exercises  
 **Status:** 🔴 Not Started
 
-**Success Criteria:**
-- [ ] 1 pro routine added to `pro_routines` table
-- [ ] Routine is reusable template for trainers
-- [ ] Includes exercise substitutions/alternatives
-- [ ] Pre-built with optimal exercise selection
-- [ ] Can be quickly customized and assigned to clients
-- [ ] Follows advanced training principles
+**Critical Issue Found:**
+- ❌ `pro_routine_exercises` table does NOT exist in database
+- ❌ All 12 pro routines in `pro_routines` table are empty (no exercises)
+- ✅ Solution: `create-pro-routine-exercises-table.sql` created
 
-**Pro Routine to Create: "Hypertrophy Block - Push Day"**
+**Pro Routine Categories (6 categories, 2 routines each):**
+1. **Strength** - Strength Starter (Beginner), Strength Pro (Advanced)
+2. **Hypertrophy** - Hypertrophy Builder (Intermediate), Hypertrophy Pro (Advanced)
+3. **Endurance** - Endurance Express (Intermediate), Endurance Pro (Advanced)
+4. **Challenges** - Challenge Circuit (Advanced), Challenge Pro (Advanced)
+5. **Bodyweight** - Bodyweight Basics (Beginner), Bodyweight Pro (Advanced)
+6. **Interval** - Interval Intensity (Intermediate), Interval Pro (Advanced)
+
+**Success Criteria:**
+- [ ] Create `pro_routine_exercises` table ⚠️ **SQL ready: create-pro-routine-exercises-table.sql**
+- [ ] Populate 12 pro routines with appropriate exercises from `exercises` table
+- [ ] Each routine should have 6-10 exercises based on difficulty level
+- [ ] Exercise order, sets, reps, and rest periods defined
+- [ ] Routines follow evidence-based training principles
+- [ ] Routines can be copied to user accounts via ProRoutineCategoryPage
+
+**Implementation Plan:**
+1. Run `create-pro-routine-exercises-table.sql` in Supabase
+2. For each of the 12 pro routines, create SQL to insert exercises:
+   - Query exercises table for relevant exercises
+   - Create `pro_routine_exercises` inserts with proper ordering
+   - Define sets, reps, rest based on routine type and difficulty
+3. Verify exercises display in ProRoutineCategoryPage
+4. Test "Add to My Routines" functionality
 
 **Routine Overview:**
 - **Target:** Chest, Shoulders, Triceps

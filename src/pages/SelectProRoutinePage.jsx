@@ -57,7 +57,7 @@ function SelectProRoutinePage() {
     { name: 'Hypertrophy', icon: <Zap size={40} className="card-icon" /> },
     { name: 'Endurance', icon: <HeartPulse size={40} className="card-icon" /> },
     { name: 'Challenges', icon: <Shield size={40} className="card-icon" /> },
-    { name: 'Bodyweight Beast', icon: <Wind size={40} className="card-icon" /> },
+    { name: 'Bodyweight', icon: <Wind size={40} className="card-icon" /> },
     { name: 'Interval', icon: <Repeat size={40} className="card-icon" /> },
   ];
 

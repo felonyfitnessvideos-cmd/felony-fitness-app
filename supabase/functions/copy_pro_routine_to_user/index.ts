@@ -100,9 +100,10 @@ Deno.serve(async (req) => {
     }
 
     // Prepare new routine data
+    const newRoutineId = generateUUID();
     const newRoutine = {
       ...proRoutine,
-      id: generateUUID(),
+      id: newRoutineId,
       user_id,
       category: undefined, // Remove category for user routines
       created_at: new Date().toISOString(),
@@ -121,7 +122,58 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    // Fetch all exercises from pro_routine_exercises
+    const { data: proExercises, error: exercisesError } = await supabaseAdmin
+      .from('pro_routine_exercises')
+      .select('*')
+      .eq('routine_id', pro_routine_id);
+    
+    if (exercisesError) {
+      console.error('Error fetching pro routine exercises:', exercisesError);
+      // Continue even if no exercises found - routine was created
+    }
+
+    // Copy exercises to routine_exercises if any exist
+    if (proExercises && proExercises.length > 0) {
+      const newExercises = proExercises.map(ex => ({
+        id: generateUUID(),
+        routine_id: newRoutineId,
+        exercise_id: ex.exercise_id,
+        target_sets: ex.target_sets,
+        sets: ex.sets,
+        reps: ex.reps,
+        weight_kg: ex.weight_kg,
+        rest_seconds: ex.rest_seconds,
+        notes: ex.notes,
+        exercise_order: ex.exercise_order,
+        is_warmup: ex.is_warmup,
+        target_reps: ex.target_reps,
+        target_intensity_pct: ex.target_intensity_pct,
+        created_at: new Date().toISOString(),
+      }));
+
+      const { error: exerciseInsertError } = await supabaseAdmin
+        .from('routine_exercises')
+        .insert(newExercises);
+      
+      if (exerciseInsertError) {
+        console.error('Error inserting routine exercises:', exerciseInsertError);
+        // Return error but note the routine was created
+        return new Response(JSON.stringify({ 
+          error: 'Routine created but exercises failed to copy: ' + exerciseInsertError.message,
+          routine_id: newRoutineId 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 207, // Multi-status: partial success
+        });
+      }
+    }
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      routine_id: newRoutineId,
+      exercises_copied: proExercises?.length ?? 0 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
