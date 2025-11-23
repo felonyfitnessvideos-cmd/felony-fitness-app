@@ -135,50 +135,11 @@ const WeeklyMealPlannerPage = () => {
       const endDateObj = currentWeek[6];
       const endDate = `${endDateObj.getFullYear()}-${String(endDateObj.getMonth() + 1).padStart(2, '0')}-${String(endDateObj.getDate()).padStart(2, '0')}`;
 
-      // Query for both premade meals AND user meals. If the schema doesn't yet support user_meal_id,
-      // fall back to meals-only to avoid 400 errors and keep planner usable.
-      const baseSelect = `
+      // Query ONLY user_meals (no longer using old meals table)
+      const { data, error } = await supabase
+        .from('weekly_meal_plan_entries')
+        .select(`
           *,
-          meals (
-            id,
-            name,
-            category,
-            meal_foods (
-              quantity,
-              food_servings (
-                id,
-                food_name,
-                serving_description,
-                category,
-                calories,
-                protein_g,
-                carbs_g,
-                fat_g,
-                fiber_g,
-                sugar_g,
-                sodium_mg,
-                calcium_mg,
-                iron_mg,
-                potassium_mg,
-                magnesium_mg,
-                phosphorus_mg,
-                zinc_mg,
-                copper_mg,
-                selenium_mcg,
-                vitamin_a_mcg,
-                vitamin_c_mg,
-                vitamin_e_mg,
-                vitamin_k_mcg,
-                thiamin_mg,
-                riboflavin_mg,
-                niacin_mg,
-                vitamin_b6_mg,
-                folate_mcg,
-                vitamin_b12_mcg
-              )
-            )
-          )`;
-      const userMealsSelect = `,
           user_meals (
             id,
             name,
@@ -217,34 +178,15 @@ const WeeklyMealPlannerPage = () => {
                 vitamin_b12_mcg
               )
             )
-          )`;
-
-      let data = null;
-      let error = null;
-      // First attempt: include user_meals relation (preferred)
-      ({ data, error } = await supabase
-        .from('weekly_meal_plan_entries')
-        .select(`${baseSelect}${userMealsSelect}`)
+          )
+        `)
         .eq('plan_id', activePlan.id)
         .gte('plan_date', startDate)
-        .lte('plan_date', endDate));
-
-      if (error) {
-        // Fallback: meals-only (schema likely missing user_meal_id). Keep app functional.
-        ({ data, error } = await supabase
-          .from('weekly_meal_plan_entries')
-          .select(baseSelect)
-          .eq('plan_id', activePlan.id)
-          .gte('plan_date', startDate)
-          .lte('plan_date', endDate));
-        setSupportsUserMealEntries(false);
-      } else {
-        setSupportsUserMealEntries(true);
-      }
+        .lte('plan_date', endDate);
 
       if (error) throw error;
 
-      // Normalize data - handle both meals and user_meals when available
+      // Normalize data - map user_meals to meals property for consistency
       const normalizedEntries = (data || []).map(entry => {
         if (entry.user_meals) {
           return {
@@ -255,8 +197,9 @@ const WeeklyMealPlannerPage = () => {
             }
           };
         }
-        return entry;
-      });
+        // Skip entries with no user_meals (old meal_id references)
+        return null;
+      }).filter(entry => entry !== null);
       setPlanEntries(normalizedEntries);
     } catch (error) {
       if (import.meta.env?.DEV) {
