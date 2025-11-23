@@ -378,7 +378,8 @@
   border-radius: 12px;
   box-sizing: border-box;
   max-height: calc(100vh - 48px);
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 body.ReactModal__Body--open { overflow: hidden; }

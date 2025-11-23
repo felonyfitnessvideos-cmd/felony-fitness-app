@@ -229,7 +229,8 @@ function NutritionLogPage() {
 
       console.log(`[fetchScheduledMeal] Query result for "${mealType}":`, data);
 
-      if (data && data.user_meals) {
+      // Only show button if there's actually a meal assigned (user_meal_id is not null)
+      if (data && data.user_meal_id && data.user_meals) {
         console.log(`[fetchScheduledMeal] Found scheduled meal: "${data.user_meals.name}"`);
         setScheduledMeal({
           entryId: data.id,
@@ -238,7 +239,11 @@ function NutritionLogPage() {
           servings: data.servings || 1
         });
       } else {
-        console.log(`[fetchScheduledMeal] No scheduled meal found for "${mealType}"`);
+        if (data && !data.user_meal_id) {
+          console.log(`[fetchScheduledMeal] Meal slot exists but no meal assigned for "${mealType}"`);
+        } else {
+          console.log(`[fetchScheduledMeal] No scheduled meal found for "${mealType}"`);
+        }
         setScheduledMeal(null);
       }
     } catch (error) {
