@@ -196,6 +196,8 @@ function NutritionLogPage() {
       const day = String(todayDate.getDate()).padStart(2, '0');
       const today = `${year}-${month}-${day}`; // YYYY-MM-DD in LOCAL timezone
       
+      console.log(`[fetchScheduledMeal] Querying for: userId=${userId}, mealType="${mealType}", date=${today}`);
+      
       const { data, error} = await supabase
         .from('weekly_meal_plan_entries')
         .select(`
@@ -225,7 +227,10 @@ function NutritionLogPage() {
         return;
       }
 
+      console.log(`[fetchScheduledMeal] Query result for "${mealType}":`, data);
+
       if (data && data.user_meals) {
+        console.log(`[fetchScheduledMeal] Found scheduled meal: "${data.user_meals.name}"`);
         setScheduledMeal({
           entryId: data.id,
           mealId: data.user_meal_id,
@@ -233,6 +238,7 @@ function NutritionLogPage() {
           servings: data.servings || 1
         });
       } else {
+        console.log(`[fetchScheduledMeal] No scheduled meal found for "${mealType}"`);
         setScheduledMeal(null);
       }
     } catch (error) {
