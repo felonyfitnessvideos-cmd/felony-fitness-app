@@ -1,4 +1,10 @@
 # Content Library Expansion Strategy (TO_DO)
+
+> **⚠️ SUPERSEDED BY `WEEKLY_CONTENT_SCHEDULE.md`**  
+> **Date Superseded:** November 23, 2025  
+> **This document is preserved for historical progress tracking only.**  
+> **Use `WEEKLY_CONTENT_SCHEDULE.md` for current planning and scheduling.**
+
 **Project:** Felony Fitness App  
 **Timeline:** Week of November 17-24, 2025  
 **Goal:** Build comprehensive, production-ready content libraries  
