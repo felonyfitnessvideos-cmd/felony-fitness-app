@@ -319,6 +319,10 @@
   color: #a0aec0;
   cursor: pointer;
 }
+.log-food-modal .modal-body {
+  width: 100%;
+  box-sizing: border-box;
+}
 .log-food-modal .modal-body p {
   margin: 0 0 1.5rem 0;
   color: #a0aec0;
@@ -327,6 +331,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  box-sizing: border-box;
 }
 .quantity-input label {
   font-size: 0.9rem;
