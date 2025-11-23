@@ -494,8 +494,7 @@ const MealBuilder = ({
           .insert([{
             ...mealData,
             user_id: user.id,
-            is_favorite: false,
-            meal_id: null // Not linked to premade meals
+            is_favorite: false
           }])
           .select()
           .single();
