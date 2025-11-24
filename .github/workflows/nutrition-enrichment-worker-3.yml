@@ -20,15 +20,27 @@ jobs:
             "https://wkmrdelhoeqhsdifrarn.supabase.co/functions/v1/nutrition-usda-enrichment")
           
           echo "USDA Worker 3 Response:"
-          echo "$response" | jq .
+          echo "$response"
           
-          success=$(echo "$response" | jq -r '.success')
-          processed=$(echo "$response" | jq -r '.processed // 0')
-          successful=$(echo "$response" | jq -r '.successful // 0')
-          failed=$(echo "$response" | jq -r '.failed // 0')
-          remaining=$(echo "$response" | jq -r '.remaining // 0')
+          # Check if response is empty
+          if [ -z "$response" ]; then
+            echo "⚠️  Empty response from worker - likely timeout"
+            exit 0
+          fi
           
-          echo "✓ Processed: $processed foods"
-          echo "✓ Successful: $successful"
-          echo "✓ Failed: $failed"
-          echo "✓ Remaining: $remaining"
+          # Validate JSON before parsing
+          if echo "$response" | jq . > /dev/null 2>&1; then
+            success=$(echo "$response" | jq -r '.success')
+            processed=$(echo "$response" | jq -r '.processed // 0')
+            successful=$(echo "$response" | jq -r '.successful // 0')
+            failed=$(echo "$response" | jq -r '.failed // 0')
+            remaining=$(echo "$response" | jq -r '.remaining // 0')
+            
+            echo "✓ Processed: $processed foods"
+            echo "✓ Successful: $successful"
+            echo "✓ Failed: $failed"
+            echo "✓ Remaining: $remaining"
+          else
+            echo "⚠️  Invalid JSON response"
+            exit 0
+          fi

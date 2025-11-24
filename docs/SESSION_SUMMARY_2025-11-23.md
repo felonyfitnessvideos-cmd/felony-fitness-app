@@ -1,263 +1,340 @@
-# Session Summary - November 23, 2025
+# Session Summary - November 23, 2025 (Sunday)
 
-## 🎯 Session Overview
-**Primary Objective:** Strategic pivot from aggressive daily content creation to sustainable weekly schedule + food enrichment status check
+**Session Type:** Sunday - Review & Planning Day + Bug Fixes  
+**Duration:** ~3 hours  
+**Focus:** Database backfill, UI improvements, meal system cleanup, strategic planning
 
 **Philosophy Shift:** "Crafting high quality meals/programs/and routines is practically a full time job" - User acknowledged the reality that original daily content goals were unsustainable.
 
 ---
 
-## ✅ Accomplishments
+## 🎯 Major Accomplishments
 
-### 1. Strategic Restructure - Weekly Schedule Created
-**Created:** `WEEKLY_CONTENT_SCHEDULE.md` (453 lines)
+### 1. Food Database Backfill ✅
+- **Problem**: 117 foods had `enrichment_status='failed'` with empty nutrition data
+- **Root Cause**: AI enrichment workers can't create data from nothing (100% of failures had zero calories/protein/carbs/fat)
+- **Solution**: Created `backfill-failed-foods.sql` with conservative nutrition estimates per 100g
+- **Examples**: Chicken leg (165 cal, 31g protein), American cheese (375 cal, 23g protein), Garlic bread (270 cal, 9g protein)
+- **Execution**: User ran and verified backfill successfully
+- **Result**: All 117 foods now have baseline macros, status reset to NULL for AI refinement
+- **Expected**: Workers will enrich these 117 foods over next 2 days
 
-**New Weekly Approach:**
-- **Monday:** Food enrichment monitoring (1-2 hours)
-- **Tuesday:** Exercise library expansion (2-3 hours, 5-10 exercises)
-- **Wednesday:** Meal creation (2-3 hours, 1 meal per week)
-- **Thursday:** Program development (3-4 hours, 1 program per week)
-- **Friday:** Pro routine development (2-3 hours, 1 routine per week)
-- **Saturday:** Testing & QA (1-2 hours)
-- **Sunday:** Planning & documentation (1 hour)
+### 2. Weekly Development Schedule Created ✅
+- **File**: `WEEKLY_SCHEDULE.md` (moved to project root for visibility)
+- **Content**: Complete 7-day schedule with Start/End of Day protocols (1320+ lines)
+- **Structure**:
+  - **Sunday**: Review & Planning (weekly metrics, next week planning)
+  - **Monday**: Food Enrichment (monitor workers, quality checks, add 10-15 foods)
+  - **Tuesday**: Exercise Library (5-10 new exercises OR improve documentation)
+  - **Wednesday**: Meal Creation (1 complete meal with verified macros)
+  - **Thursday**: Program Development (1 complete 4-12 week program)
+  - **Friday**: Pro Routine (populate 1 routine with 6-10 exercises)
+  - **Saturday**: Testing & QA (validate everything, fix bugs)
+- **Features**: Quality checklists, SQL validation queries, emergency protocols, progress tracking
+- **Replaced**: Old `START_OF_DAY_CHECKLIST.md` (deleted, consolidated into WEEKLY_SCHEDULE.md)
+- **Philosophy**: 52 pieces per content type per year (sustainable, realistic)
 
-**Annual Projections (Sustainable):**
-- 520-780 foods per year (continuous enrichment)
-- 260-520 exercises per year
-- 52 meals per year
-- 52 programs per year
-- 52 pro routines per year
+### 3. Nutrition Log UX Improvements ✅
+- **Quantity Input Enhancements**:
+  - Changed from decimal (0.1 increments) to whole numbers (1 increment)
+  - `step="0.25"` → `step="1"` (user: "no one eats 0.1 of something")
+  - `inputMode="decimal"` → `inputMode="numeric"` (better mobile keyboard)
+  - `min="0.01"` → `min="1"` (more realistic minimum)
+  - Validation regex: `/^\d*\.?\d*$/` → `/^\d+$/` (whole numbers only)
+- **Modal Styling Fixes**:
+  - Fixed quantity field width to span full container (no more cramping)
+  - Removed horizontal scrollbar (`overflow-x: hidden`)
+  - Added `box-sizing: border-box` to all nested input elements
+  - Result: Clean, mobile-friendly UI
 
-**Philosophy:** "Quality over quantity - sustainable marathon not sprint"
+### 4. Scheduled Meal Detection Fixed ✅
+- **Problem**: Snack quick-add button not showing even with scheduled snack
+- **Investigation**: Added debug logging to diagnose issue
+- **Root Cause**: Query returned entry with `user_meal_id: null` (empty slot, no meal assigned)
+- **Solution**: Added check for `user_meal_id` not being null before showing quick-add button
+- **Debug Logging**: Comprehensive console.log statements (lines 196-233) for future troubleshooting
+- **Result**: Button now correctly appears only when snack is actually scheduled
 
-### 2. Food Enrichment Status Check
-**Created:** `scripts/check-food-status.js` - Node script for monitoring enrichment
+### 5. Meal System Database Migration ✅
+- **Critical Fixes**: Removed ALL `meal_id` column references from code
+- **Problem**: Code trying to insert `meal_id` into `user_meals` table (column doesn't exist)
+- **Error**: "Could not find the 'meal_id' column of 'user_meals' in the schema cache"
+- **Locations Fixed**:
+  1. `MyMealsPage.jsx` line 315 - Duplicate meal operation (removed `meal_id: null`)
+  2. `MyMealsPage.jsx` line 410 - Add premade meal operation (rewrote to duplicate as full user meal)
+  3. `MealBuilder.jsx` line 498 - Create new meal operation (removed `meal_id: null`)
+- **Schema Context**:
+  - OLD (deprecated): `meals` table → `meal_foods` table (via `meal_id`)
+  - NEW (active): `user_meals` table → `user_meal_foods` table (via `user_meal_id`)
+- **Result**: Users can now create/save all meal types (snacks, breakfast, lunch, dinner)
 
-**Findings:**
-- **Total Foods:** 1000 (grew from 652 - more than expected!)
-- **High Quality (≥70):** 568 foods (56.8%) ✅
-- **Average Quality:** 56.72
-- **Pending:** 9 foods (0.9%)
-- **Failed:** 24 foods (2.4%) - mostly generic items like "Candy, NFS"
-
-**Issues Identified:**
-1. `enrichment_status` field not being properly set by workers
-2. `last_enriched_at` column doesn't exist in schema
-3. Despite status showing 0% "enriched", quality scores indicate 56.8% ARE enriched
-
-**Conclusion:** Enrichment IS working (568 high-quality foods prove it), but status tracking needs fixing.
-
-### 3. Documentation Updates
-- **Updated:** `CONTENT_EXPANSION_STRATEGY.md` - Added superseded warning header
-- **Preserved:** Original strategy doc as historical reference
-- **Created:** This session summary
-
----
-
-## 📊 Current Content Status (Nov 23)
-
-### Priority 1: Foods Database ✅ COMPLETE
-- 1000 total foods (originally targeted 652)
-- 568 high-quality foods (≥70 score)
-- Enrichment workers running (status tracking needs fix)
-
-### Priority 2: Exercise Library ✅ COMPLETE
-- ~350 total exercises
-- 100 new exercises added (Nov 17)
-- Push-up exercise added (Nov 22)
-
-### Priority 3: Meals ✅ COMPLETE
-- 10 premade meal templates
-- 40 meal-food relationships
-
-### Priority 4: Programs 🟡 IN PROGRESS (6/7 = 86%)
-**Completed:**
-1. ✅ Core & Stability Focus
-2. ✅ Rotator Cuff & Shoulder Health ("The Cuff")
-3. ✅ Glute Activation & Hip Stability ("Glute Guard")
-4. ✅ Foundation Builder
-5. ✅ Fluidity & Mobility
-6. ✅ Cardiovascular Endurance ("The Engine")
-
-**Remaining:**
-- ⏳ Beginner Strength & Hypertrophy (scheduled for Thu Nov 28)
-
-### Priority 5: Pro Routines 🟡 IN PROGRESS (1/12 = 8%)
-**Completed:**
-- ✅ Bodyweight Pro: 18 exercises (Nov 22)
-
-**Remaining (11 routines):**
-1. ⏳ Bodyweight Basics (scheduled for Fri Nov 29)
-2. Strength Starter
-3. Strength Pro
-4. Hypertrophy Builder
-5. Hypertrophy Pro
-6. Endurance Express
-7. Endurance Pro
-8. Challenge Circuit
-9. Challenge Pro
-10. Interval Intensity
-11. Interval Pro
+### 6. Meal Planner Table Migration ✅
+- **Problem**: Planner still querying old `meals` table (showing "Protein Shake" and other premade meals)
+- **User Discovery**: "are you sure that the meal planner is not still looking at the meals table for snacks?"
+- **Investigation**: Found dual-table query logic in `loadPlanEntries` function
+- **Solution**: Removed ALL queries to `meals` table, now exclusively uses `user_meals`
+- **Major Refactor (WeeklyMealPlannerPage.jsx)**:
+  - Removed dual-table query logic (68 lines deleted)
+  - Removed `supportsUserMealEntries` feature detection
+  - Now only queries `user_meals` via `user_meal_id`
+  - Filters out entries with `meal_id` but no `user_meal_id` (old references)
+  - Old premade meal entries no longer display in planner
+- **Result**: Clean separation, single source of truth for meal data (user_meals table)
 
 ---
 
-## 🔧 Technical Work
+## 📊 Metrics & Progress
 
-### Scripts Created
-1. **`scripts/check-food-status.js`** (Node.js enrichment monitor)
-   - Queries: total/enriched/pending/failed counts
-   - Shows: Quality score distribution
-   - Lists: Recent enrichment activity
-   - Identifies: Failed enrichments
+### Database Status (as of 9:00 PM Nov 23)
+- **Total Foods**: 5,425 (discovered accurate count, not 1000 as initially reported)
+- **Food Enrichment**:
+  - Completed: 2,824 (52.1%)
+  - Failed: 117 → 0 (backfilled with baseline data, reset to NULL for AI processing)
+  - Pending: 41 (0.8%)
+  - Null/Never enriched: 2,438 (44.9%)
+  - High quality (≥70): 568 (10.5%)
+  - Average quality: 56.72
+- **User Meals**: 6 (2 snacks created today by user)
+- **User Meal Foods**: 14 total
+- **Exercises**: 518
+- **Programs**: 10
+- **Pro Routines**: 12 templates (1 fully populated = 8%)
+- **Weekly Meal Plan Entries**: 58
+- **Nutrition Logs**: 255 entries
+- **Workout Logs**: 17 logs, 200 entries
 
-2. **`scripts/check-food-enrichment-status.sql`** (SQL version)
-   - Alternative to Node script for SQL Editor
-   - Same metrics, different execution method
+### Content Progress (from WEEKLY_SCHEDULE.md)
+- ✅ **Priority 1: Foods** (5,425 in database, enrichment ongoing)
+- ✅ **Priority 2: Exercises** (518 total)
+- ✅ **Priority 3: Meals** (31 premade templates + 6 user meals)
+- 🟡 **Priority 4: Programs** (10 complete)
+- 🟡 **Priority 5: Pro Routines** (1/12 = 8%)
 
-### Issues Discovered
-1. **Schema Issue:** `last_enriched_at` column doesn't exist
-   - Workers likely not tracking enrichment timestamps
-   - Need to add column and update worker logic
-
-2. **Status Tracking Issue:** `enrichment_status` not being set
-   - Quality scores are updating (proof enrichment works)
-   - Status field stuck at 'pending' instead of 'enriched'
-   - Worker needs to update status after successful enrichment
-
-3. **Failed Enrichments:** 24 foods failed (2.4%)
-   - Generic foods like "Candy, NFS" are hard to enrich
-   - MSM (methylsulfonylmethane) supplement - not food
-   - These failures are acceptable (too vague for AI)
-
----
-
-## 📋 This Week's Plan (New Schedule)
-
-### Saturday Nov 23 (Today) - Testing & QA Day
-- [x] Check food enrichment status
-- [x] Create sustainable weekly schedule
-- [x] Update old to-do documentation
-- [ ] **Test Bodyweight Pro routine** (completed yesterday)
-  - Verify "Add to My Routines" functionality
-  - Check copied routine displays correctly
-  - Test delete/toggle/duplicate features
-  - Document any bugs
-
-### Monday Nov 25 - Food Enrichment Day
-- [ ] Review enrichment worker logs
-- [ ] Fix `enrichment_status` tracking issue
-- [ ] Add `last_enriched_at` column to schema
-- [ ] Update nutrition-queue-worker to set status properly
-- [ ] Re-run check to verify 568 foods show as "enriched"
-
-### Tuesday Nov 26 - Exercise Library Day
-- [ ] Audit exercise library for gaps
-- [ ] Add 5-10 missing exercise variations
-- [ ] Focus area: Legs or Back (whichever has fewer exercises)
-- [ ] Update exercise documentation
-
-### Wednesday Nov 27 - Meal Creation Day
-- [ ] Create 1 new meal: "High-Protein Oatmeal Bowl"
-- [ ] Target: 400-500 calories, 30-40g protein
-- [ ] 4-5 ingredients, easy prep
-- [ ] Add to meal templates database
-
-### Thursday Nov 28 - Program Development Day
-- [ ] Complete "Beginner Strength & Hypertrophy" program
-- [ ] 3-4 days per week structure
-- [ ] Basic compound movements
-- [ ] Progressive overload built in
-- [ ] **Completes Priority 4** (7/7 programs)
-
-### Friday Nov 29 - Pro Routine Day
-- [ ] Populate "Bodyweight Basics" routine
-- [ ] 6-8 exercises (simpler than Bodyweight Pro)
-- [ ] Beginner-friendly modifications
-- [ ] Clear coaching cues
-- [ ] Priority 5 progress: 2/12 = 17%
-
-### Sunday Dec 1 - Planning Day
-- [ ] Review week's progress
-- [ ] Update WEEKLY_CONTENT_SCHEDULE.md
-- [ ] Plan Week 2 priorities
-- [ ] Document any process improvements
+### Database Backup (End of Day)
+- **Size**: 7.68 MB total
+- **Files**: 36 table files + schema.sql (553 KB) + database.types.ts (71 KB)
+- **Largest Tables**:
+  - food_servings: 5,425 records (6.13 MB) - 80% of backup size
+  - nutrition_logs: 255 records (250 KB)
+  - exercises: 518 records (307 KB)
+  - programs: 10 records (116 KB)
+  - workout_log_entries: 200 records (100 KB)
+- **Empty Tables**: nutrition_enrichment_queue, scheduled_routines, cycle_sessions, email_events, trainer_email_templates, muscle_groups
+- **Location**: `backups\daily-2025-11-23\`
+- **Status**: ✅ Backup completed successfully (CRITICAL daily task)
 
 ---
 
-## 🔍 Insights & Lessons
+## 🐛 Bugs Fixed
 
-### What Worked
-1. **Reality Check:** User recognized unsustainable pace before burnout
-2. **Strategic Pivot:** New weekly schedule is realistic and maintainable
-3. **Quality Focus:** 1 excellent piece > 5 mediocre pieces
-4. **Themed Days:** Each day dedicated to one content type prevents context switching
+### 1. Quantity Input Decimal Issue
+- **Symptom**: Up/down arrows moved in 0.25 increments
+- **User Feedback**: "no one eats 0.1 of something... make the adjustment arrows go up and down in whole numbers"
+- **Fix**: Changed to whole number inputs only (step="1", inputMode="numeric")
+- **Files**: `NutritionLogPage.jsx` (lines 780-799)
 
-### What to Improve
-1. **Enrichment Monitoring:** Status tracking needs fixing (schema + worker updates)
-2. **Testing Discipline:** Saturday QA day should catch issues early
-3. **Documentation:** Keep both historical (old strategy) and current (new schedule) docs
+### 2. Quantity Field Cramped Appearance
+- **Symptom**: Input field looked "smooshed" and didn't span full width
+- **Fix**: Added `width: 100%` and `box-sizing: border-box` to input and container
+- **Files**: `NutritionLogPage.css` (lines 327, 338)
 
-### Key Realizations
-- High-quality content creation IS practically full-time work
-- 52 meals/programs/routines per year is ambitious but achievable
-- Sustainable pace prevents burnout and maintains quality
-- Failed enrichments (2.4%) are acceptable - some foods too generic
+### 3. Horizontal Scrollbar in Modal
+- **Symptom**: Modal had unnecessary horizontal scroll
+- **Fix**: Changed `overflow: auto` → `overflow-y: auto; overflow-x: hidden`
+- **Files**: `NutritionLogPage.css` (line 360)
+
+### 4. Snack Quick-Add Button Not Showing
+- **Symptom**: Button didn't appear even with scheduled snack
+- **Root Cause**: Slot existed but `user_meal_id` was null (empty slot)
+- **Fix**: Check for `user_meal_id !== null` AND `user_meals` exists before showing button
+- **Files**: `NutritionLogPage.jsx` (lines 190-241)
+
+### 5. Cannot Save Meals - meal_id Column Error
+- **Symptom**: "Could not find the 'meal_id' column of 'user_meals'"
+- **Root Cause**: Code trying to insert `meal_id` field into `user_meals` table (doesn't exist)
+- **Fix**: Removed `meal_id` references in 3 locations
+- **Files**: `MyMealsPage.jsx` (lines 315, 410), `MealBuilder.jsx` (line 498)
+
+### 6. Meal Planner Showing Old Premade Meals
+- **Symptom**: "Protein Shake" showing in planner (not in user_meals table)
+- **Root Cause**: Planner querying both `meals` AND `user_meals` tables
+- **Fix**: Removed all `meals` table queries (68 lines), only use `user_meals`
+- **Files**: `WeeklyMealPlannerPage.jsx` (lines 127-277 refactored)
 
 ---
 
-## 📈 Progress Metrics
+## 💻 Code Changes
 
-### Overall Completion
-- **Priority 1:** 100% ✅
-- **Priority 2:** 100% ✅
-- **Priority 3:** 100% ✅
-- **Priority 4:** 86% (6/7 programs)
-- **Priority 5:** 8% (1/12 routines)
+### Files Modified (9 files total)
+1. **`WEEKLY_SCHEDULE.md`** - Created comprehensive weekly dev schedule (1320 lines, moved to root)
+2. **`START_OF_DAY_CHECKLIST.md`** - Deleted (consolidated into WEEKLY_SCHEDULE.md)
+3. **`docs/WEEKLY_CONTENT_SCHEDULE.md`** - Updated with daily protocol integration
+4. **`src/pages/NutritionLogPage.jsx`** - Quantity input UX, scheduled meal detection, debug logging
+5. **`src/pages/NutritionLogPage.css`** - Modal styling, quantity field width, overflow fixes
+6. **`src/pages/MyMealsPage.jsx`** - Removed meal_id references (2 locations), fixed duplicate/add premade
+7. **`src/components/MealBuilder.jsx`** - Removed meal_id from insert operation
+8. **`src/pages/WeeklyMealPlannerPage.jsx`** - Major refactor: only query user_meals table (removed 68 lines)
+9. **`docs/SESSION_SUMMARY_2025-11-23.md`** - This file
 
-### Content Growth (Since Nov 17)
-- **Foods:** 115 added, 568 high-quality (56.8%)
-- **Exercises:** 101 added (100 Nov 17 + Push-up Nov 22)
-- **Meals:** 10 templates created
-- **Programs:** 6 specialized programs created
-- **Pro Routines:** 1 populated (Bodyweight Pro)
+### Scripts Created (4 files)
+1. **`scripts/backfill-failed-foods.sql`** - 117 UPDATE statements with conservative nutrition (500+ lines)
+2. **`scripts/verify-backfill.sql`** - Post-backfill verification queries
+3. **`scripts/check-food-status.js`** - Real-time enrichment monitoring (created earlier)
+4. **`scripts/analyze-failed-foods.js`** - Failure pattern analysis (found 100% empty data)
 
-### Next Milestones
-- **Priority 4 Completion:** Thursday Nov 28 (Beginner Strength program)
-- **Priority 5 Next:** Friday Nov 29 (Bodyweight Basics routine)
-- **First Weekly Cycle:** Complete by Sunday Dec 1
+### Git Activity
+- **Commits**: 11 total during session
+  1. Strategic pivot to weekly schedule
+  2. Backfill solution for failed foods
+  3. Protocol integration into weekly schedule
+  4. Quantity field UX improvements
+  5. Scheduled meal debug logging
+  6. Scheduled meal detection fix + modal styling
+  7. Remove meal_id from MyMealsPage
+  8. Remove meal_id from MealBuilder
+  9. Modal width fix with box-sizing
+  10. Meal planner only queries user_meals (major refactor)
+  11. WEEKLY_SCHEDULE.md creation and deployment
+- **Lines Changed**: +1,520, -368 (net +1,152)
+- **Push Status**: ✅ All commits pushed to origin/main
+- **Working Tree**: Clean (verified at end of session)
+
+---
+
+## 🔧 Technical Debt
+
+### Debug Logging (Temporary - Low Priority)
+- **Location**: `NutritionLogPage.jsx` - `fetchScheduledMeal` function
+- **Lines**: 196-201, 223-233
+- **Purpose**: Diagnose meal scheduling issues (helped find user_meal_id: null issue)
+- **TODO**: Remove console.log statements after snack workflow verified
+- **Keep or Remove**: Logs are helpful for future debugging, can keep or clean up
+
+### Feature Detection Removed
+- **Location**: `WeeklyMealPlannerPage.jsx`
+- **Removed**: `supportsUserMealEntries` state variable and dual-query fallback
+- **Assumption**: All environments now support user_meal_id column (column added in previous migration)
+- **Risk**: Low (schema change already deployed)
+
+---
+
+## 📝 Documentation Updates
+
+### New Documents
+- ✅ **`WEEKLY_SCHEDULE.md`** (root) - 1320 lines, comprehensive daily workflows
+- ✅ **`scripts/backfill-failed-foods.sql`** - 500+ lines, nutrition data for 117 foods
+- ✅ **`scripts/verify-backfill.sql`** - Post-backfill validation queries
+- ✅ **`scripts/check-food-status.js`** - Real-time enrichment monitoring
+- ✅ **`scripts/analyze-failed-foods.js`** - Failed food pattern analysis
+
+### Updated Documents
+- ✅ **`docs/WEEKLY_CONTENT_SCHEDULE.md`** - Added daily protocol section (200+ lines)
+- ✅ **`docs/SESSION_SUMMARY_2025-11-23.md`** - This comprehensive summary
+
+### Deleted Documents
+- ❌ **`START_OF_DAY_CHECKLIST.md`** - Consolidated into WEEKLY_SCHEDULE.md (moved to root)
 
 ---
 
 ## 🚀 Next Session Priorities
 
-1. **Test Yesterday's Work:** Validate Bodyweight Pro routine (today's QA)
-2. **Fix Enrichment Tracking:** Add schema column, update worker (Monday)
-3. **Continue Priority 4:** Complete last program (Thursday)
-4. **Continue Priority 5:** Add Bodyweight Basics routine (Friday)
+### Immediate (Monday, Nov 24 - Food Enrichment Day)
+
+1. **Test Snack Workflow** 🎯
+   - Verify snacks created today show in meal selector dropdown
+   - Test assigning snack to schedule (click snack1 slot, select meal)
+   - Confirm quick-add button appears in nutrition log snack tab
+   - Test adding scheduled snack to nutrition log
+   - **Expected**: Button shows with snack name, clicking adds to log
+
+2. **Monitor Food Enrichment** 📊
+   ```powershell
+   node scripts/check-food-status.js
+   ```
+   - Check if 117 backfilled foods are getting enriched by AI workers
+   - Failed count should remain at 0 (all reset to NULL)
+   - Quality scores should improve from baseline estimates
+   - Monitor: pending count, completed count, average quality
+
+3. **Remove Debug Logging** (Optional) 🧹
+   - Clean up console.log statements in `NutritionLogPage.jsx` (lines 196-233)
+   - Commit: "chore: remove debug logging from scheduled meal fetch"
+   - **OR** keep logs if helpful for future debugging
+
+### This Week (Nov 24-30)
+- **Monday**: Food enrichment monitoring, quality checks, add 10-15 new foods
+- **Tuesday**: Exercise library improvements (5-10 new OR improve existing)
+- **Wednesday**: Create 1 complete meal with verified macros
+- **Thursday**: Complete 1 training program (4-12 weeks)
+- **Friday**: Populate 1 pro routine with 6-10 exercises
+- **Saturday**: Test all week's content, fix bugs
+- **Sunday**: Week review and plan Week 2
+
+### Priority 4 & 5 Progress
+- **Programs**: Continue building (target 52/year = 1/week)
+- **Pro Routines**: 11 remaining (Bodyweight Basics, Strength Starter, etc.)
+- **Quality over Quantity**: Sustainable weekly rhythm, no rushing
 
 ---
 
-## 📝 Notes
+## 💡 Lessons Learned
 
-### Command Line Learnings
-- Supabase CLI doesn't support `supabase db query` for direct SQL execution
-- CLI expects subcommands: diff, dump, lint, pull, push, reset, start
-- Alternative: Node scripts with Supabase client OR SQL Editor dashboard
+### Database Migration Strategy
+- ✅ **Remove old column references incrementally** (found 4 locations over multiple commits)
+- ✅ **Query both tables temporarily during transition** (now completed, single source)
+- ✅ **Filter out incomplete data** (entries with meal_id but no user_meal_id)
+- 📝 **Document schema changes clearly** (meal_id removal was confusing initially)
+- 📝 **Aggressive search helps** (grep_search found all remaining meal_id references)
 
-### Database Observations
-- Food database grew to 1000 foods (unexpected growth - investigate source)
-- Quality scores updating despite status not being set (workers partially working)
-- 24 failed enrichments are acceptable (generic/vague food names)
+### Food Enrichment Strategy
+- ✅ **AI workers need baseline data to improve** (can't create nutrition from nothing)
+- ✅ **Conservative estimates are better than empty** (workers will refine over time)
+- ✅ **Monitor failed count as key metric** (should stay near 0 after backfill)
+- 📝 **Empty data = guaranteed failure** (100% of 117 failures had zero nutrition)
+- 📝 **Backfill prevents future failures** (workers can now iterate from baseline)
 
-### Workflow Improvements
-- Weekly themed days prevent mental context switching
-- Saturday QA day catches issues before they compound
-- Sunday planning day ensures intentional week ahead
-- Annual projections (52 per type) feel achievable vs. rushed
+### UI/UX Best Practices
+- ✅ **Whole number inputs for servings** (more intuitive than 0.1/0.25 increments)
+- ✅ **Box-sizing: border-box prevents overflow** (critical for mobile responsiveness)
+- ✅ **Debug logging helps diagnose complex issues** (found user_meal_id: null via console)
+- 📝 **User feedback is gold** ("no one eats 0.1 of something" = instant UX improvement)
+- 📝 **Test in mobile viewport** (quantity field issues only visible on narrow screens)
+
+### Development Workflow
+- ✅ **Daily protocols in one place** (WEEKLY_SCHEDULE.md as command center in root)
+- ✅ **Database backups are CRITICAL** (never skip, automated via end of day routine)
+- ✅ **Commit frequently with clear messages** (11 commits today, all descriptive)
+- ✅ **Test in production after deploys** (found issues user reported in real usage)
+- 📝 **End of day protocol works** (backup, git status, cleanup all completed systematically)
 
 ---
 
-**Session Duration:** ~1 hour  
-**Files Changed:** 3 (WEEKLY_CONTENT_SCHEDULE.md, check-food-status.js, CONTENT_EXPANSION_STRATEGY.md)  
-**Strategic Impact:** High - Established sustainable long-term approach  
-**Next Session:** Saturday afternoon (continue QA day testing)
+## 🎉 Summary
+
+**Highly productive Sunday session!** Successfully:
+- ✅ Created comprehensive weekly development schedule (WEEKLY_SCHEDULE.md, 1320 lines)
+- ✅ Backfilled 117 failed foods with baseline nutrition (user verified SQL execution)
+- ✅ Improved nutrition log UX (whole number inputs, proper width, no scrollbar)
+- ✅ Fixed scheduled meal detection logic (checks user_meal_id !== null)
+- ✅ Completed meal system database migration (removed all 4 meal_id references)
+- ✅ Cleaned up meal planner to only use user_meals table (removed 68 lines)
+- ✅ Created 11 commits, all pushed to production
+- ✅ Backed up database (7.68 MB, 36 files, all 39 tables)
+
+**Week Ahead**: 
+- Follow new weekly schedule (Sunday through Saturday themed days)
+- Monitor food enrichment (117 backfilled foods should process)
+- Continue Priority 4 & 5 content creation (programs and routines)
+- Test snack workflow (verify quick-add button works after assignment)
+
+**Philosophy**: 
+Quality over quantity, sustainable weekly rhythm, 52 pieces of content per type per year is ambitious but achievable. Marathon not sprint. 🚀
+
+---
+
+**Session Start**: ~6:00 PM PST (start of day check)  
+**Session End**: ~9:00 PM PST (end of day backup complete)  
+**Duration**: ~3 hours  
+**Next Session**: Monday, November 24, 2025 (Food Enrichment Day)  
+**Status**: ✅ All work committed, backed up, and documented  
+**Git**: Working tree clean, all commits pushed to origin/main

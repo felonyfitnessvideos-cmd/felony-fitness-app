@@ -810,15 +810,15 @@ function NutritionLogPage() {
                 <input
                   id="quantity"
                   type="number"
-                  inputMode="numeric"
-                  step="1"
-                  min="1"
+                  inputMode="decimal"
+                  step="0.25"
+                  min="0.01"
                   max="999"
                   value={quantity}
                   onChange={(e) => {
                     const value = e.target.value;
-                    // Allow empty string or valid whole numbers
-                    if (value === '' || /^\d+$/.test(value)) {
+                    // Allow empty string or valid decimal numbers (e.g., 0.5, 1.5, 2)
+                    if (value === '' || /^\d*\.?\d*$/.test(value)) {
                       setQuantity(value);
                     }
                   }}

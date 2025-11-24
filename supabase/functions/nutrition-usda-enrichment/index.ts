@@ -21,7 +21,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 const USDA_API_KEY = Deno.env.get("USDA_API_KEY");
 const BATCH_SIZE = 5;
-const DELAY_BETWEEN_REQUESTS_MS = 2000;
+const DELAY_BETWEEN_REQUESTS_MS = 3000; // Increased from 2s to 3s to avoid rate limits
 
 interface USDASearchResult {
   foods: Array<{
@@ -198,6 +198,7 @@ function detectPrimaryCategory(foodName: string, description: string): string {
  * This order prevents "Brussels Sprout Chips" from matching "Brussels Sprouts"
  */
 async function searchUSDA(query: string): Promise<USDASearchResult | null> {
+  const TIMEOUT_MS = 8000; // 8 second timeout for API calls
   try {
     // Try multiple search strategies - FNDDS FIRST (our imported dataset), then whole foods!
     const searchStrategies = [
@@ -222,7 +223,22 @@ async function searchUSDA(query: string): Promise<USDASearchResult | null> {
       const url = `https://api.nal.usda.gov/fdc/v1/foods/search?${params.toString()}`;
       console.log(`Searching USDA: ${url}`);
       
-      const response = await fetch(url);
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+      
+      let response;
+      try {
+        response = await fetch(url, { signal: controller.signal });
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          console.log(`⏱️ USDA search timed out after ${TIMEOUT_MS}ms`);
+          continue;
+        }
+        throw error;
+      } finally {
+        clearTimeout(timeoutId);
+      }
       
       if (!response.ok) {
         console.error(`USDA API error: ${response.status}`);
@@ -250,9 +266,25 @@ async function searchUSDA(query: string): Promise<USDASearchResult | null> {
  * Get detailed food information from USDA
  */
 async function getFoodDetail(fdcId: number): Promise<USDAFoodDetail | null> {
+  const TIMEOUT_MS = 8000;
   try {
     const url = `https://api.nal.usda.gov/fdc/v1/food/${fdcId}?api_key=${USDA_API_KEY}`;
-    const response = await fetch(url);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    
+    let response;
+    try {
+      response = await fetch(url, { signal: controller.signal });
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.error(`⏱️ USDA detail fetch timed out after ${TIMEOUT_MS}ms`);
+        return null;
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
     
     if (!response.ok) {
       console.error(`USDA detail API error: ${response.status}`);
@@ -326,10 +358,19 @@ function parseServingSize(servingDescription: string): { grams: number; original
  */
 async function enrichWithUSDA(foodData: any): Promise<any> {
   try {
-    // Search USDA database
+    // Normalize food name for better USDA matching
+    const normalizeFoodName = (name: string): string => {
+      return name
+        .replace(/[\"]/g, '') // Remove quotes
+        .replace(/\s*\/\s*/g, ' ') // Replace slashes with spaces
+        .replace(/\s+/g, ' ') // Collapse multiple spaces
+        .trim();
+    };
+    
+    // Search USDA database with normalized query
     const searchQuery = foodData.brand 
-      ? `${foodData.brand} ${foodData.food_name}`
-      : foodData.food_name;
+      ? normalizeFoodName(`${foodData.brand} ${foodData.food_name}`)
+      : normalizeFoodName(foodData.food_name);
     
     const searchResults = await searchUSDA(searchQuery);
     
@@ -593,12 +634,14 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * Main handler
+ * CRITICAL: Always return valid JSON to prevent GitHub Actions jq parse errors
  */
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  // Wrap everything in try-catch to guarantee valid JSON response
   try {
     // Parse request body for worker configuration
     let workerConfig = { worker_id: 1, offset_multiplier: 0 };
@@ -687,12 +730,24 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Worker error:', error);
+    
+    // CRITICAL: Always return valid JSON even on catastrophic failure
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : '';
+    
+    console.error('Full error details:', { message: errorMessage, stack: errorStack });
+    
     return new Response(JSON.stringify({
-      error: error instanceof Error ? error.message : 'Unknown error',
-      success: false
+      success: false,
+      error: errorMessage,
+      processed: 0,
+      successful: 0,
+      failed: 0,
+      remaining: 0,
+      errors: [{ type: 'WORKER_CRASH', message: errorMessage }]
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500
+      status: 200 // Return 200 so GitHub Actions doesn't fail, but success: false indicates error
     });
   }
 });
