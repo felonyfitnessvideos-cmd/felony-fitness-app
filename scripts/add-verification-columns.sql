@@ -33,7 +33,7 @@ CREATE INDEX IF NOT EXISTS idx_food_servings_last_verification ON food_servings(
 
 -- Create index for verification worker queries
 CREATE INDEX IF NOT EXISTS idx_food_servings_verification_queue 
-ON food_servings(enrichment_status, is_verified, enrichment_quality_score DESC)
+ON food_servings(enrichment_status, is_verified, quality_score DESC)
 WHERE enrichment_status IN ('completed', 'verified') 
 AND (is_verified IS NULL OR is_verified = FALSE);
 
@@ -63,7 +63,7 @@ SELECT
   needs_review,
   review_flags,
   review_details,
-  enrichment_quality_score,
+  quality_score,
   last_verification
 FROM food_servings
 WHERE needs_review = TRUE
@@ -76,13 +76,13 @@ SELECT
   food_name,
   serving_description,
   enrichment_status,
-  enrichment_quality_score,
+  quality_score,
   is_verified,
   last_verification
 FROM food_servings
 WHERE enrichment_status IN ('completed', 'verified')
   AND (is_verified IS NULL OR is_verified = FALSE)
-ORDER BY enrichment_quality_score DESC
+ORDER BY quality_score DESC
 LIMIT 100;
 
 -- Verification statistics function

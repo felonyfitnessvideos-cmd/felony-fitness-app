@@ -78,7 +78,7 @@ async function checkVerificationStatus() {
   // Get recent verifications (top 10)
   const { data: recentVerified, error: recentError } = await supabase
     .from('food_servings')
-    .select('food_name, enrichment_quality_score, last_verification')
+    .select('food_name, quality_score, last_verification')
     .eq('is_verified', true)
     .not('last_verification', 'is', null)
     .order('last_verification', { ascending: false })
@@ -91,7 +91,7 @@ async function checkVerificationStatus() {
     recentVerified.forEach((food, idx) => {
       const timestamp = new Date(food.last_verification).toLocaleString();
       console.log(`${idx + 1}. ${food.food_name}`);
-      console.log(`   Quality: ${food.enrichment_quality_score} | ${timestamp}`);
+      console.log(`   Quality: ${food.quality_score} | ${timestamp}`);
     });
     console.log('');
   }
@@ -99,7 +99,7 @@ async function checkVerificationStatus() {
   // Get verification queue status
   const { data: queue, error: queueError } = await supabase
     .from('food_servings')
-    .select('enrichment_quality_score')
+    .select('quality_score')
     .in('enrichment_status', ['completed', 'verified'])
     .or('is_verified.is.null,is_verified.eq.false')
     .limit(100);
@@ -111,10 +111,10 @@ async function checkVerificationStatus() {
     console.log(`Foods in queue: ${queue.length}`);
     
     if (queue.length > 0) {
-      const avgQuality = queue.reduce((sum, f) => sum + (f.enrichment_quality_score || 0), 0) / queue.length;
-      const highQuality = queue.filter(f => f.enrichment_quality_score >= 90).length;
-      const medQuality = queue.filter(f => f.enrichment_quality_score >= 70 && f.enrichment_quality_score < 90).length;
-      const lowQuality = queue.filter(f => f.enrichment_quality_score < 70).length;
+      const avgQuality = queue.reduce((sum, f) => sum + (f.quality_score || 0), 0) / queue.length;
+      const highQuality = queue.filter(f => f.quality_score >= 90).length;
+      const medQuality = queue.filter(f => f.quality_score >= 70 && f.quality_score < 90).length;
+      const lowQuality = queue.filter(f => f.quality_score < 70).length;
 
       console.log(`Average quality: ${avgQuality.toFixed(1)}`);
       console.log(`High quality (≥90): ${highQuality}`);

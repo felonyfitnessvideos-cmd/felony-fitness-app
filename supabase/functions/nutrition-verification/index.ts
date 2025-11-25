@@ -47,7 +47,7 @@ interface FoodServing {
   zinc_mg: number
   category: string
   data_sources: string
-  enrichment_quality_score: number
+  quality_score: number
 }
 
 interface VerificationResult {
@@ -489,7 +489,7 @@ async function verifySingleFood(supabaseAdmin: any, food: FoodServing): Promise<
         .from('food_servings')
         .update({
           is_verified: true,
-          enrichment_quality_score: 100,
+          quality_score: 100,
           enrichment_status: 'verified',
           needs_review: false,
           review_flags: null,
@@ -569,7 +569,7 @@ Deno.serve(async (req) => {
       .select('*')
       .or('is_verified.is.null,is_verified.eq.false')
       .in('enrichment_status', ['completed', 'verified'])
-      .order('enrichment_quality_score', { ascending: false })
+      .order('quality_score', { ascending: false })
       .limit(batchSize)
 
     if (fetchError) {
