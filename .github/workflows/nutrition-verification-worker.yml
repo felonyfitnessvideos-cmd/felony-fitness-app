@@ -1,0 +1,62 @@
+name: Nutrition Data Verification Worker
+
+on:
+  schedule:
+    # Run every 2 minutes
+    - cron: '*/2 * * * *'
+  workflow_dispatch:
+    inputs:
+      batch_size:
+        description: 'Number of foods to verify per run'
+        required: false
+        default: '5'
+
+jobs:
+  verify-nutrition-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Verify Nutrition Data
+        id: verify
+        run: |
+          echo "🔍 Starting nutrition data verification..."
+          
+          # Call Edge Function with batch size from input or default to 5
+          BATCH_SIZE="${{ github.event.inputs.batch_size || '5' }}"
+          
+          response=$(curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -d "{\"batch_size\": ${BATCH_SIZE}}" \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/nutrition-verification")
+          
+          echo "Response: $response"
+          
+          # Check for empty response
+          if [ -z "$response" ]; then
+            echo "⚠️  Empty response from verification worker - likely timeout or no foods to verify"
+            exit 0
+          fi
+          
+          # Validate JSON before parsing
+          if echo "$response" | jq . > /dev/null 2>&1; then
+            verified=$(echo "$response" | jq -r '.verified // 0')
+            flagged=$(echo "$response" | jq -r '.flagged // 0')
+            errors=$(echo "$response" | jq -r '.errors // 0')
+            remaining=$(echo "$response" | jq -r '.remaining // 0')
+            
+            echo "✅ Verified: $verified foods"
+            echo "⚠️  Flagged for review: $flagged foods"
+            echo "❌ Errors: $errors foods"
+            echo "📊 Remaining: $remaining foods"
+          else
+            echo "⚠️  Invalid JSON response from verification worker"
+            exit 0
+          fi
+
+      - name: Report Status
+        if: always()
+        run: |
+          echo "Verification worker completed"
+          echo "Next run in 2 minutes"
