@@ -417,11 +417,13 @@ Deno.serve(async (req) => {
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
     // Get next 1 food to verify (batch size = 1)
+    // Exclude foods already verified OR already flagged for review
     const { data: foods, error } = await supabaseAdmin
       .from('food_servings')
       .select('*')
       .in('enrichment_status', ['completed', 'verified'])
       .or('is_verified.is.null,is_verified.eq.false')
+      .is('needs_review', null)  // Exclude already flagged foods
       .order('quality_score', { ascending: false })
       .limit(1)
 
@@ -443,12 +445,13 @@ Deno.serve(async (req) => {
     // Process the single food with auto-correction
     const result = await autoCorrectFood(supabaseAdmin, foods[0])
 
-    // Count remaining foods
+    // Count remaining foods (exclude verified and flagged)
     const { count } = await supabaseAdmin
       .from('food_servings')
       .select('*', { count: 'exact', head: true })
       .in('enrichment_status', ['completed', 'verified'])
       .or('is_verified.is.null,is_verified.eq.false')
+      .is('needs_review', null)  // Exclude already flagged foods
 
     return new Response(
       JSON.stringify({
