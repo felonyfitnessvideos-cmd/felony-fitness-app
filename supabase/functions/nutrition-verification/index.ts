@@ -423,7 +423,7 @@ Deno.serve(async (req) => {
       .select('*')
       .in('enrichment_status', ['completed', 'verified'])
       .or('is_verified.is.null,is_verified.eq.false')
-      .is('needs_review', null)  // Exclude already flagged foods
+      .or('needs_review.is.null,needs_review.eq.false')  // Exclude already flagged foods
       .order('quality_score', { ascending: false })
       .limit(1)
 
@@ -451,7 +451,7 @@ Deno.serve(async (req) => {
       .select('*', { count: 'exact', head: true })
       .in('enrichment_status', ['completed', 'verified'])
       .or('is_verified.is.null,is_verified.eq.false')
-      .is('needs_review', null)  // Exclude already flagged foods
+      .or('needs_review.is.null,needs_review.eq.false')  // Exclude already flagged foods
 
     return new Response(
       JSON.stringify({
