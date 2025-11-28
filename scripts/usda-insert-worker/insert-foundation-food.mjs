@@ -21,8 +21,14 @@ async function getFoundationFoodIds() {
 	// USDA Foundation Foods: dataType = "Foundation"
 	const url = `https://api.nal.usda.gov/fdc/v1/foods/list?api_key=${USDA_API_KEY}` +
 		`&dataType=Foundation&pageSize=2000`;
+	console.log(`[DEBUG] Fetching Foundation foods from URL: ${url}`);
 	const res = await fetch(url);
-	if (!res.ok) throw new Error('Failed to fetch Foundation foods list');
+	if (!res.ok) {
+		const text = await res.text();
+		console.error(`[ERROR] Failed to fetch Foundation foods list. Status: ${res.status} ${res.statusText}`);
+		console.error(`[ERROR] Response body: ${text}`);
+		throw new Error('Failed to fetch Foundation foods list');
+	}
 	const foods = await res.json();
 	console.log(`[DEBUG] Fetched ${foods.length} Foundation foods from USDA API.`);
 	return foods.map(f => f.fdcId);
