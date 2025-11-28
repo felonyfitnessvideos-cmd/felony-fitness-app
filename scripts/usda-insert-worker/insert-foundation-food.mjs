@@ -59,7 +59,7 @@ async function insertFood(food) {
 		fdc_id: food.fdcId,
 		description: food.description,
 		data_type: food.dataType,
-		brand_owner: food.brandOwner || null,
+		brand: food.brandOwner || null,
 		food_category: food.foodCategory || null,
 		nutrients: food.foodNutrients,
 		enrichment_status: 'complete',
