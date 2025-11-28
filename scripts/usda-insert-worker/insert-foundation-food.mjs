@@ -56,17 +56,124 @@ async function fetchFoodDetails(fdcId) {
 async function insertFood(food) {
 	// Map USDA food object to your DB schema
 	const serving = {
-		fdc_id: food.fdcId,
-		description: food.description,
-		data_type: food.dataType,
+		fdc_id: food.fdcId, // manually added column
+		food_name: food.description,
+		serving_description: null, // USDA API may not provide this directly
+		calories: null, // will need to extract from food.foodNutrients
+		protein_g: null,
+		carbs_g: null,
+		fat_g: null,
+		fiber_g: null,
+		sugar_g: null,
+		sodium_mg: null,
+		calcium_mg: null,
+		iron_mg: null,
+		vitamin_c_mg: null,
+		potassium_mg: null,
+		vitamin_a_mcg: null,
+		vitamin_e_mg: null,
+		vitamin_k_mcg: null,
+		thiamin_mg: null,
+		riboflavin_mg: null,
+		niacin_mg: null,
+		vitamin_b6_mg: null,
+		folate_mcg: null,
+		vitamin_b12_mcg: null,
+		magnesium_mg: null,
+		phosphorus_mg: null,
+		zinc_mg: null,
+		copper_mg: null,
+		selenium_mcg: null,
 		brand: food.brandOwner || null,
-		food_category: food.foodCategory || null,
-		nutrients: food.foodNutrients,
+		category: food.foodCategory || null,
+		data_sources: 'usda_foundation',
 		enrichment_status: 'complete',
-		needs_review: false,
-		review_flags: ['foundation_import'],
+		quality_score: 100,
+		is_verified: true,
+		source: 'usda_foundation',
 		// Add other fields as needed
 	};
+	// Map nutrients from food.foodNutrients array to columns
+	if (Array.isArray(food.foodNutrients)) {
+		for (const n of food.foodNutrients) {
+			switch (n.nutrientName) {
+				case 'Energy':
+					serving.calories = n.value;
+					break;
+				case 'Protein':
+					serving.protein_g = n.value;
+					break;
+				case 'Carbohydrate, by difference':
+					serving.carbs_g = n.value;
+					break;
+				case 'Total lipid (fat)':
+					serving.fat_g = n.value;
+					break;
+				case 'Fiber, total dietary':
+					serving.fiber_g = n.value;
+					break;
+				case 'Sugars, total including NLEA':
+					serving.sugar_g = n.value;
+					break;
+				case 'Sodium, Na':
+					serving.sodium_mg = n.value;
+					break;
+				case 'Calcium, Ca':
+					serving.calcium_mg = n.value;
+					break;
+				case 'Iron, Fe':
+					serving.iron_mg = n.value;
+					break;
+				case 'Vitamin C, total ascorbic acid':
+					serving.vitamin_c_mg = n.value;
+					break;
+				case 'Potassium, K':
+					serving.potassium_mg = n.value;
+					break;
+				case 'Vitamin A, RAE':
+					serving.vitamin_a_mcg = n.value;
+					break;
+				case 'Vitamin E (alpha-tocopherol)':
+					serving.vitamin_e_mg = n.value;
+				case 'Vitamin K (phylloquinone)':
+					serving.vitamin_k_mcg = n.value;
+					break;
+				case 'Thiamin':
+					serving.thiamin_mg = n.value;
+					break;
+				case 'Riboflavin':
+					serving.riboflavin_mg = n.value;
+					break;
+				case 'Niacin':
+					serving.niacin_mg = n.value;
+					break;
+				case 'Vitamin B-6':
+					serving.vitamin_b6_mg = n.value;
+					break;
+				case 'Folate, total':
+					serving.folate_mcg = n.value;
+					break;
+				case 'Vitamin B-12':
+					serving.vitamin_b12_mcg = n.value;
+					break;
+				case 'Magnesium, Mg':
+					serving.magnesium_mg = n.value;
+					break;
+				case 'Phosphorus, P':
+					serving.phosphorus_mg = n.value;
+					break;
+				case 'Zinc, Zn':
+					serving.zinc_mg = n.value;
+					break;
+				case 'Copper, Cu':
+					serving.copper_mg = n.value;
+					break;
+				case 'Selenium, Se':
+					serving.selenium_mcg = n.value;
+					break;
+			}
+		}
+	}
 	console.log('[DEBUG] Attempting to insert food_serving:', JSON.stringify(serving, null, 2));
 	const { error, data } = await supabase.from('food_servings').insert([serving]).select();
 	if (error) {
