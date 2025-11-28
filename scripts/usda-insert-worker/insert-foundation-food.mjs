@@ -55,6 +55,21 @@ async function fetchFoodDetails(fdcId) {
 // Insert food into Supabase
 async function insertFood(food) {
 	// Map USDA food object to your DB schema
+	// Check for existing fdc_id
+	const { data: existing, error: checkError } = await supabase
+		.from('food_servings')
+		.select('id')
+		.eq('fdc_id', food.fdcId)
+		.limit(1);
+	if (checkError) {
+		console.error('[ERROR] Failed to check for existing fdc_id:', checkError);
+		throw checkError;
+	}
+	if (existing && existing.length > 0) {
+		console.log(`[INFO] Skipping insert: fdc_id ${food.fdcId} already exists in food_servings.`);
+		return;
+	}
+
 	const serving = {
 		fdc_id: food.fdcId, // manually added column
 		food_name: food.description,
