@@ -20,7 +20,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 async function getFoundationFoodIds() {
 	// USDA Foundation Foods: dataType = "Foundation"
 	const url = `https://api.nal.usda.gov/fdc/v1/foods/list?api_key=${USDA_API_KEY}` +
-		`&dataType=Foundation&pageSize=2000`;
+		`&dataType=Foundation&pageSize=200`;
 	console.log(`[DEBUG] Fetching Foundation foods from URL: ${url}`);
 	const res = await fetch(url);
 	if (!res.ok) {
