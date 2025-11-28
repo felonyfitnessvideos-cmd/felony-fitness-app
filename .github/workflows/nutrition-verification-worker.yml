@@ -1,15 +1,15 @@
-name: Nutrition Data Verification Worker
+name: Nutrition Data Verification Worker (Single)
 
 on:
   schedule:
-    # Run every 2 minutes
-    - cron: '*/2 * * * *'
+    # DISABLED - Use nutrition-verification-parallel.yml instead
+    # - cron: '*/2 * * * *'
   workflow_dispatch:
     inputs:
       batch_size:
         description: 'Number of foods to verify per run'
         required: false
-        default: '1'
+        default: '10'
 
 jobs:
   verify-nutrition-data:

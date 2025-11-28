@@ -282,7 +282,9 @@ Return JSON: {"accurate": true/false, "confidence": 0-100, "issues": [list any r
     const data = await response.json()
     const result = JSON.parse(data.choices[0].message.content)
     
-    return result.accurate && result.confidence >= 80
+    // Lowered confidence threshold from 80 to 65 to reduce false flags
+    // If deterministic checks pass, GPT just confirms reasonableness
+    return result.accurate && result.confidence >= 65
 
   } catch (error) {
     console.error('GPT verification failed:', error)
@@ -416,7 +418,11 @@ Deno.serve(async (req) => {
   try {
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Get next 1 food to verify (batch size = 1)
+    // Parse batch size from request body (default to 1)
+    const requestBody = await req.json().catch(() => ({}))
+    const batchSize = requestBody.batch_size || 1
+
+    // Get next batch of foods to verify
     // Exclude foods already verified OR already flagged for review
     const { data: foods, error } = await supabaseAdmin
       .from('food_servings')
@@ -425,7 +431,7 @@ Deno.serve(async (req) => {
       .or('is_verified.is.null,is_verified.eq.false')
       .or('needs_review.is.null,needs_review.eq.false')  // Exclude already flagged foods
       .order('quality_score', { ascending: false })
-      .limit(1)
+      .limit(batchSize)
 
     if (error) throw error
 
@@ -442,8 +448,17 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Process the single food with auto-correction
-    const result = await autoCorrectFood(supabaseAdmin, foods[0])
+    // Process all foods in batch
+    let verifiedCount = 0
+    let flaggedCount = 0
+    const results = []
+
+    for (const food of foods) {
+      const result = await autoCorrectFood(supabaseAdmin, food)
+      if (result.verified) verifiedCount++
+      if (result.flagged) flaggedCount++
+      results.push({ food_name: food.food_name, ...result })
+    }
 
     // Count remaining foods (exclude verified and flagged)
     const { count } = await supabaseAdmin
@@ -456,12 +471,12 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        verified: result.verified ? 1 : 0,
-        flagged: result.flagged ? 1 : 0,
+        verified: verifiedCount,
+        flagged: flaggedCount,
         errors: 0,
         remaining: count || 0,
-        attempts: result.attempts,
-        food_name: foods[0].food_name
+        batch_size: foods.length,
+        results: results
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
