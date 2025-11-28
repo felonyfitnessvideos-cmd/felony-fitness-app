@@ -24,6 +24,7 @@ async function getFoundationFoodIds() {
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch Foundation foods list');
   const foods = await res.json();
+  console.log(`[DEBUG] Fetched ${foods.length} Foundation foods from USDA API.`);
   return foods.map(f => f.fdcId);
 }
 
@@ -33,6 +34,7 @@ async function getExistingFdcIds() {
     .from('food_servings')
     .select('fdc_id');
   if (error) throw error;
+  console.log(`[DEBUG] Found ${data.length} existing FDC IDs in food_servings table.`);
   return new Set(data.map(row => row.fdc_id));
 }
 
@@ -59,8 +61,13 @@ async function insertFood(food) {
     review_flags: ['foundation_import'],
     // Add other fields as needed
   };
-  const { error } = await supabase.from('food_servings').insert([serving]);
-  if (error) throw error;
+  console.log('[DEBUG] Attempting to insert food_serving:', JSON.stringify(serving, null, 2));
+  const { error, data } = await supabase.from('food_servings').insert([serving]).select();
+  if (error) {
+    console.error('[ERROR] Supabase insert error:', error);
+    throw error;
+  }
+  console.log('[DEBUG] Insert result:', data);
 }
 
 // Main runner
@@ -70,14 +77,15 @@ const main = async () => {
     const existingFdcIds = await getExistingFdcIds();
     const missingFdcIds = allFdcIds.filter(id => !existingFdcIds.has(id));
     if (missingFdcIds.length === 0) {
-      console.log('All Foundation foods already imported.');
+      console.log('[INFO] All Foundation foods already imported.');
       return;
     }
+    console.log(`[INFO] ${missingFdcIds.length} Foundation foods missing from DB. Next FDC ID: ${missingFdcIds[0]}`);
     const nextFdcId = missingFdcIds[0];
-    console.log(`Importing Foundation food FDC ID: ${nextFdcId}`);
     const food = await fetchFoodDetails(nextFdcId);
+    console.log('[DEBUG] USDA food object:', JSON.stringify(food, null, 2));
     await insertFood(food);
-    console.log(`Successfully inserted FDC ID: ${nextFdcId}`);
+    console.log(`[SUCCESS] Successfully inserted FDC ID: ${nextFdcId}`);
   } catch (err) {
     console.error('Worker error:', err);
     process.exit(1);
