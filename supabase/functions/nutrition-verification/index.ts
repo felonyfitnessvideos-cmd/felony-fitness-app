@@ -1,8 +1,14 @@
 /**
- * @file supabase/functions/nutrition-verification/index-v2-autocorrect.ts
+ * @file supabase/functions/nutrition-verification/index.ts
  * @description AUTO-CORRECTING Nutrition Verification Worker
  * 
- * NEW VERIFICATION FLOW:
+ * UPDATED VERIFICATION FLOW (2025-11-28):
+ * - Process ALL unverified foods (including flagged and low quality)
+ * - Prioritize low quality scores first (ascending order)
+ * - Re-verify foods marked needs_review=TRUE (give them another chance)
+ * - Target: Get everything to is_verified=TRUE with quality_score=100
+ * 
+ * VERIFICATION PROCESS:
  * 1. Initial deterministic checks (Atwater, Physics, Outliers)
  * 2. If issues found → Ask GPT-4 for corrections
  * 3. Apply corrections to database
@@ -10,9 +16,9 @@
  * 5. Loop until verified OR max attempts (3) reached
  * 6. Mark as verified (100%) OR flag for human review
  * 
- * BATCH SIZE: 1 food per run (ensures full correction before moving on)
- * FREQUENCY: Every 2 minutes = 30 foods/hour = 720 foods/day
- * TIMELINE: ~7.5 days for 5,400 foods (but with higher quality)
+ * BATCH SIZE: Configurable (default: 5 per worker)
+ * FREQUENCY: Every 2 minutes = 5 workers × 5 foods = 25 foods per run
+ * PERFORMANCE: 750 foods/hour with 5 parallel workers
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
@@ -423,14 +429,17 @@ Deno.serve(async (req) => {
     const batchSize = requestBody.batch_size || 1
 
     // Get next batch of foods to verify
-    // Exclude foods already verified OR already flagged for review
+    // UPDATED LOGIC: Process foods that need verification OR re-verification
+    // 1. Not yet verified (is_verified IS NULL OR FALSE)
+    // 2. Include foods flagged for review (needs_review=TRUE) - recheck them
+    // 3. Include low quality scores (<100) - verify to 100
+    // 4. Prioritize: bad_enrichment_data flags first, then low quality, then unverified
     const { data: foods, error } = await supabaseAdmin
       .from('food_servings')
       .select('*')
       .in('enrichment_status', ['completed', 'verified'])
-      .or('is_verified.is.null,is_verified.eq.false')
-      .or('needs_review.is.null,needs_review.eq.false')  // Exclude already flagged foods
-      .order('quality_score', { ascending: false })
+      .or('is_verified.is.null,is_verified.eq.false')  // Not verified yet
+      .order('quality_score', { ascending: true, nullsFirst: true })  // Low quality first
       .limit(batchSize)
 
     if (error) throw error
@@ -460,13 +469,12 @@ Deno.serve(async (req) => {
       results.push({ food_name: food.food_name, ...result })
     }
 
-    // Count remaining foods (exclude verified and flagged)
+    // Count remaining foods (exclude only verified foods)
     const { count } = await supabaseAdmin
       .from('food_servings')
       .select('*', { count: 'exact', head: true })
       .in('enrichment_status', ['completed', 'verified'])
-      .or('is_verified.is.null,is_verified.eq.false')
-      .or('needs_review.is.null,needs_review.eq.false')  // Exclude already flagged foods
+      .or('is_verified.is.null,is_verified.eq.false')  // Include flagged and low quality foods
 
     return new Response(
       JSON.stringify({
