@@ -1,9 +1,6 @@
 name: Nutrition Data Verification Worker (Single)
 
 on:
-  schedule:
-    # DISABLED - Use nutrition-verification-parallel.yml instead
-    # - cron: '*/2 * * * *'
   workflow_dispatch:
     inputs:
       batch_size:
