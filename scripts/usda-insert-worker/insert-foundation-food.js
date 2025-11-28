@@ -1,9 +1,9 @@
-// scripts/usda-insert-worker/insert-foundation-food.js
+// scripts/usda-insert-worker/insert-foundation-food.mjs
 // Automated worker to insert next missing USDA Foundation Food into the database
 // Requires: USDA_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY in env
 
-const fetch = require('node-fetch');
-const { createClient } = require('@supabase/supabase-js');
+import fetch from 'node-fetch';
+import { createClient } from '@supabase/supabase-js';
 
 const USDA_API_KEY = process.env.USDA_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -63,7 +63,8 @@ async function insertFood(food) {
   if (error) throw error;
 }
 
-(async () => {
+// Main runner
+const main = async () => {
   try {
     const allFdcIds = await getFoundationFoodIds();
     const existingFdcIds = await getExistingFdcIds();
@@ -81,4 +82,6 @@ async function insertFood(food) {
     console.error('Worker error:', err);
     process.exit(1);
   }
-})();
+};
+
+main();

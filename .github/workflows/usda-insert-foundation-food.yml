@@ -25,4 +25,4 @@ jobs:
           USDA_API_KEY: ${{ secrets.USDA_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: node scripts/usda-insert-worker/insert-foundation-food.js
+        run: node scripts/usda-insert-worker/insert-foundation-food.mjs
