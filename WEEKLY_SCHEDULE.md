@@ -302,7 +302,7 @@ git log --oneline -n 5
 
 **5. Today's Focus (3 min)**
 - Tuesday = Exercise Library Day
-- Goal: Add 5-10 exercises OR improve documentation
+- Goal: Add 100 exercises OR improve documentation
 
 ---
 

@@ -1,4 +1,44 @@
-name: Nutrition Verification - Parallel Workers
+## WORKFLOW DISABLED: Commented out to prevent disk IO overload
+# name: Nutrition Verification - Parallel Workers
+#
+# on:
+#   schedule:
+#     # Run every 2 minutes - 5 workers in parallel
+#     - cron: '*/2 * * * *'
+#   workflow_dispatch:
+#     inputs:
+#       batch_size:
+#         description: 'Batch size per worker (default 5)'
+#         required: false
+#         default: '5'
+#
+# jobs:
+#   verify-nutrition-parallel:
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 10
+#     strategy:
+#       matrix:
+#         worker: [1, 2, 3, 4, 5]
+#       fail-fast: false
+#       max-parallel: 5
+#     
+#     steps:
+#       - name: Verify Nutrition Data - Worker ${{ matrix.worker }}
+#         id: verify
+#         run: |
+#           echo "🔍 Worker ${{ matrix.worker }}: Starting verification..."
+#           
+#           BATCH_SIZE="${{ github.event.inputs.batch_size || '5' }}"
+#           
+#           response=$(curl -s -X POST \
+#             -H "Content-Type: application/json" \
+#             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+#             -d "{\"batch_size\": ${BATCH_SIZE}}" \
+#             "${{ secrets.SUPABASE_URL }}/functions/v1/nutrition-verification")
+#           
+#           echo "Response: $response"
+#           
+#           if [ -z "$response" ]; then
 
 on:
   schedule:

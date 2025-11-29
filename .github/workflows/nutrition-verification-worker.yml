@@ -1,4 +1,44 @@
-name: Nutrition Data Verification Worker (Single)
+## WORKFLOW DISABLED: Commented out to prevent disk IO overload
+# name: Nutrition Data Verification Worker (Single)
+#
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       batch_size:
+#         description: 'Number of foods to verify per run'
+#         required: false
+#         default: '10'
+#
+# jobs:
+#   verify-nutrition-data:
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 10
+#     
+#     steps:
+#       - name: Verify Nutrition Data
+#         id: verify
+#         run: |
+#           echo "🔍 Starting nutrition data verification..."
+#           
+#           # Call Edge Function with batch size from input or default to 1
+#           BATCH_SIZE="${{ github.event.inputs.batch_size || '1' }}"
+#           
+#           response=$(curl -s -X POST \
+#             -H "Content-Type: application/json" \
+#             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+#             -d "{\"batch_size\": ${BATCH_SIZE}}" \
+#             "${{ secrets.SUPABASE_URL }}/functions/v1/nutrition-verification")
+#           
+#           echo "Response: $response"
+#           
+#           # Check for empty response
+#           if [ -z "$response" ]; then
+#             echo "⚠️  Empty response from verification worker - likely timeout or no foods to verify"
+#             exit 0
+#           fi
+#           
+#           # Validate JSON before parsing
+#           if echo "$response" | jq . > /dev/null 2>&1; then
 
 on:
   workflow_dispatch:

@@ -1,4 +1,41 @@
-name: Nutrition Enrichment - Parallel Workers
+## WORKFLOW DISABLED: Commented out to prevent disk IO overload
+# name: Nutrition Enrichment - Parallel Workers
+#
+# on:
+#   schedule:
+#     # Run every 2 minutes
+#     - cron: '*/2 * * * *'
+#   
+#   workflow_dispatch:
+#
+# jobs:
+#   process-enrichment-queue:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         worker: [1, 2, 3]  # 3 parallel workers
+#       max-parallel: 3  # Run all 3 simultaneously
+#     
+#     steps:
+#       - name: Call USDA Nutrition Enrichment Worker ${{ matrix.worker }}
+#         run: |
+#           response=$(curl -s -X POST \
+#             -H "Content-Type: application/json" \
+#             "https://wkmrdelhoeqhsdifrarn.supabase.co/functions/v1/nutrition-usda-enrichment")
+#           
+#           echo "USDA Worker ${{ matrix.worker }} Response:"
+#           echo "$response" | jq .
+#           
+#           success=$(echo "$response" | jq -r '.success')
+#           processed=$(echo "$response" | jq -r '.processed // 0')
+#           successful=$(echo "$response" | jq -r '.successful // 0')
+#           failed=$(echo "$response" | jq -r '.failed // 0')
+#           remaining=$(echo "$response" | jq -r '.remaining // 0')
+#           
+#           echo "✓ Worker ${{ matrix.worker }} - Processed: $processed foods"
+#           echo "✓ Successful: $successful"
+#           echo "✓ Failed: $failed"
+#           echo "✓ Remaining: $remaining"
 
 on:
   schedule:

@@ -1,4 +1,37 @@
-name: Nutrition Enrichment Queue Worker
+## WORKFLOW DISABLED: Commented out to prevent disk IO overload
+# name: Nutrition Enrichment Queue Worker
+#
+# on:
+#   schedule:
+#     # Run every 5 minutes
+#     - cron: '*/5 * * * *'
+#   
+#   # Allow manual trigger
+#   workflow_dispatch:
+#
+# jobs:
+#   process-enrichment-queue:
+#     runs-on: ubuntu-latest
+#     
+#     steps:
+#       - name: Call USDA Nutrition Enrichment Worker 1
+#         run: |
+#           response=$(curl -s -X POST \
+#             -H "Content-Type: application/json" \
+#             -d '{"worker_id": 1, "offset_multiplier": 0}' \
+#             "https://wkmrdelhoeqhsdifrarn.supabase.co/functions/v1/nutrition-usda-enrichment")
+#           
+#           echo "USDA Worker 1 Response:"
+#           echo "$response"
+#           
+#           # Check if response is empty or invalid JSON
+#           if [ -z "$response" ]; then
+#             echo "⚠️  Empty response from worker - likely timeout"
+#             exit 0
+#           fi
+#           
+#           # Try to parse with jq, but don't fail if invalid
+#           if echo "$response" | jq . > /dev/null 2>&1; then
 
 on:
   schedule:
