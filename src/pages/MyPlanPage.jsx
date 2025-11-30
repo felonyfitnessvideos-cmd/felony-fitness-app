@@ -192,6 +192,9 @@ function MyPlanPage() {
   const [plans, setPlans] = useState([]); // Available subscription plans from database
   const [userProfile, setUserProfile] = useState(null); // User's profile data including current plan
   const [loading, setLoading] = useState(true); // Loading state for data operations
+  // Settings toggles for RPE modals and Rest timers
+  const [useRpe, setUseRpe] = useState(true);
+  const [useRestTimer, setUseRestTimer] = useState(true);
 
   // Load plans and user profile data
   useEffect(() => {
@@ -229,6 +232,30 @@ function MyPlanPage() {
 
     loadData();
   }, [user]);
+
+  // Sync toggles with userProfile
+  useEffect(() => {
+    if (userProfile) {
+      setUseRpe(userProfile.use_rpe !== false); // default true
+      setUseRestTimer(userProfile.use_rest_timer !== false); // default true
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (userProfile) {
+      setUseRpe(userProfile.use_rpe !== false);
+      setUseRestTimer(userProfile.use_rest_timer !== false);
+    }
+  }, [userProfile]);
+  // Handler to update user profile setting in Supabase
+  const updateUserSetting = async (field, value) => {
+    if (!user) return;
+    setUserProfile((prev) => ({ ...prev, [field]: value }));
+    await supabase
+      .from('user_profiles')
+      .update({ [field]: value })
+      .eq('user_id', user.id);
+  };
 
   /**
    * Opens the settings modal interface
@@ -580,6 +607,32 @@ function MyPlanPage() {
               >
                 High Contrast
               </button>
+            </div>
+            <hr style={{ margin: '1.5rem 0' }} />
+            <h3>Workout Logging</h3>
+            <div className="toggle-row">
+              <label htmlFor="toggle-use-rpe">Use RPE Scale</label>
+              <input
+                id="toggle-use-rpe"
+                type="checkbox"
+                checked={useRpe}
+                onChange={e => {
+                  setUseRpe(e.target.checked);
+                  updateUserSetting('use_rpe', e.target.checked);
+                }}
+              />
+            </div>
+            <div className="toggle-row">
+              <label htmlFor="toggle-use-rest-timer">Use Rest Timers</label>
+              <input
+                id="toggle-use-rest-timer"
+                type="checkbox"
+                checked={useRestTimer}
+                onChange={e => {
+                  setUseRestTimer(e.target.checked);
+                  updateUserSetting('use_rest_timer', e.target.checked);
+                }}
+              />
             </div>
           </div>
         </div>

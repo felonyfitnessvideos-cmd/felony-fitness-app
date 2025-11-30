@@ -128,11 +128,25 @@ function WorkoutLogPage() {
     }
 
     if (lastSet) {
+      // Drop Set logic: if drop_set is enabled and this is not the first set, reduce weight
+      if (
+        selectedRoutineExercise?.drop_set &&
+        selectedRoutineExercise?.drop_set_percentage > 0 &&
+        todaysSets.length > 0 // Only apply after the first set
+      ) {
+        const percent = Number(selectedRoutineExercise.drop_set_percentage);
+        const prevWeight = Number(lastSet.weight_lbs);
+        if (!isNaN(percent) && !isNaN(prevWeight) && percent > 0 && percent < 100) {
+          const reducedWeight = Math.round(prevWeight * (1 - percent / 100));
+          setCurrentSet({ weight: reducedWeight > 0 ? reducedWeight : '', reps: lastSet.reps_completed });
+          return;
+        }
+      }
       setCurrentSet({ weight: lastSet.weight_lbs, reps: lastSet.reps_completed });
     } else {
       setCurrentSet({ weight: '', reps: '' });
     }
-  }, [selectedExercise, todaysLog, previousLog]);
+  }, [selectedExercise, todaysLog, previousLog, selectedRoutineExercise]);
 
   // The fetchAndStartWorkout callback intentionally omits dependencies so it
   // remains stable across renders. This reduces the chance of duplicate
@@ -186,7 +200,7 @@ function WorkoutLogPage() {
        */
       const { data: routineData, error: routineError } = await supabase
         .from('workout_routines')
-        .select(`*, routine_exercises(target_sets, exercise_order, exercises(*))`)
+        .select(`*, routine_exercises(target_sets, exercise_order, negative, drop_set, drop_set_percentage, superset_id, is_warmup, exercises(*))`)
         .eq('id', currentRoutineId)
         .order('exercise_order', { foreignTable: 'routine_exercises', ascending: true })
         .single();
@@ -204,7 +218,7 @@ function WorkoutLogPage() {
            */
           const { data: reData, error: reErr } = await supabase
             .from('routine_exercises')
-            .select('*, exercises(*)')
+            .select('*, negative, drop_set, drop_set_percentage, superset_id, is_warmup, exercises(*)')
             .eq('routine_id', currentRoutineId)
             .order('exercise_order', { ascending: true });
 
@@ -802,6 +816,59 @@ function WorkoutLogPage() {
         {adjustedTargetSets > 0 && (
           <span className="set-count-subtitle">
             &nbsp;- {formatSetCount(adjustedTargetSets)}
+            {/* Routine-level tags: Negative, Drop Set, Superset, Warmup */}
+            {selectedRoutineExercise?.negative && (
+              <span className="negative-badge" style={{
+                background: '#fee2e2',
+                color: '#b91c1c',
+                border: '1px solid #f87171',
+                borderRadius: 4,
+                padding: '2px 8px',
+                marginLeft: 8,
+                fontWeight: 700,
+                fontSize: '0.85em',
+                verticalAlign: 'middle',
+              }}>Negative</span>
+            )}
+            {selectedRoutineExercise?.drop_set && (
+              <span className="drop-set-badge" style={{
+                background: '#fef9c3',
+                color: '#92400e',
+                border: '1px solid #fde68a',
+                borderRadius: 4,
+                padding: '2px 8px',
+                marginLeft: 8,
+                fontWeight: 700,
+                fontSize: '0.85em',
+                verticalAlign: 'middle',
+              }}>Drop Set</span>
+            )}
+            {selectedRoutineExercise?.superset_id && (
+              <span className="superset-badge" style={{
+                background: '#cffafe',
+                color: '#0369a1',
+                border: '1px solid #67e8f9',
+                borderRadius: 4,
+                padding: '2px 8px',
+                marginLeft: 8,
+                fontWeight: 700,
+                fontSize: '0.85em',
+                verticalAlign: 'middle',
+              }}>Superset</span>
+            )}
+            {selectedRoutineExercise?.is_warmup && (
+              <span className="warmup-badge" style={{
+                background: '#f0fdf4',
+                color: '#166534',
+                border: '1px solid #bbf7d0',
+                borderRadius: 4,
+                padding: '2px 8px',
+                marginLeft: 8,
+                fontWeight: 700,
+                fontSize: '0.85em',
+                verticalAlign: 'middle',
+              }}>Warmup</span>
+            )}
             {sessionMeta && sessionMeta.planned_volume_multiplier !== 1 && (
               <em style={{ marginLeft: '0.5rem', fontWeight: 400, fontSize: '0.85rem' }}> (base: {formatSetCount(targetSets)})</em>
             )}
@@ -835,7 +902,15 @@ function WorkoutLogPage() {
               <h3>Today</h3>
               <ul>
                 {(todaysLog[selectedExercise?.id] || []).map((set) => (
-                  <li key={set.id}>
+                  <li
+                    key={set.id}
+                    style={selectedExercise?.negative ? {
+                      background: '#fee2e2',
+                      border: '1px solid #f87171',
+                      borderRadius: 4,
+                      marginBottom: 4,
+                    } : {}}
+                  >
                     {editingSet && editingSet.entryId === set.id ? (
                       <div className="edit-set-form">
                         <input type="text" inputMode="numeric" pattern="[0-9]*" value={editSetValue.weight} onChange={(e) => setEditSetValue(prev => ({ ...prev, weight: e.target.value.replace(/\D/g, '') }))} />
@@ -849,6 +924,19 @@ function WorkoutLogPage() {
                         <span>
                           {set.weight_lbs} lbs x {set.reps_completed}
                           {set.rpe_rating && <span className="rpe-badge">RPE {set.rpe_rating}</span>}
+                          {selectedExercise?.negative && (
+                            <span className="negative-badge" style={{
+                              background: '#fee2e2',
+                              color: '#b91c1c',
+                              border: '1px solid #f87171',
+                              borderRadius: 4,
+                              padding: '2px 8px',
+                              marginLeft: 8,
+                              fontWeight: 700,
+                              fontSize: '0.85em',
+                              verticalAlign: 'middle',
+                            }}>Negative</span>
+                          )}
                         </span>
                         <div className="set-actions">
                           <button onClick={() => handleEditSetClick(set)} disabled={rpcLoading}><Edit2 size={14} /></button>

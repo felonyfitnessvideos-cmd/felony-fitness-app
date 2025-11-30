@@ -53,7 +53,9 @@
  * { error: "Insert failed: new row violates row-level security policy" }
  */
 
+// @ts-expect-error: Deno import for Edge Functions
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-expect-error: Deno import for Edge Functions
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 /**
@@ -66,7 +68,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // Handle CORS preflight requests (OPTIONS method)
   // Returns 204 No Content with CORS headers to allow browser preflight checks
   if (req.method === "OPTIONS") {
@@ -98,7 +100,9 @@ serve(async (req) => {
 
     // Create Supabase client with user's authentication context
     // This ensures all database operations respect RLS policies for the authenticated user
+    // @ts-expect-error: Deno global for Edge Functions
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    // @ts-expect-error: Deno global for Edge Functions
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -128,7 +132,11 @@ serve(async (req) => {
         target_sets: item.target_sets,
         target_reps: item.target_reps || '8-12',
         exercise_order: item.exercise_order,
-        is_warmup: item.is_warmup || false
+        is_warmup: item.is_warmup || false,
+        negative: item.negative || false,
+        drop_set: item.drop_set || false,
+        drop_set_percentage: item.drop_set_percentage ?? null,
+        superset_id: item.superset_id ?? null
       }));
     }
 

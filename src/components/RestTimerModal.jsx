@@ -136,6 +136,8 @@ function RestTimerModal({ isOpen, onClose, initialDuration = 60, isWorkoutComple
     setTimeLeft(prevTime => Math.max(0, prevTime + amount));
   };
 
+  // Debug: Log when RestTimerModal is rendering and its open state
+  console.log('[RestTimerModal] render, isOpen:', isOpen);
   // Render nothing if the modal is not supposed to be open.
   if (!isOpen) return null;
 

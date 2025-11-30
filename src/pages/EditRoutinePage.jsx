@@ -67,6 +67,15 @@ function EditRoutinePage() {
   /** @type {[Exercise[], React.Dispatch<React.SetStateAction<Exercise[]>>]} */
   const [routineExercises, setRoutineExercises] = useState([]);
 
+  // Helper to generate UUID for supersets
+  const generateUUID = () => {
+    // Simple UUID v4 generator
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -199,7 +208,16 @@ function EditRoutinePage() {
   }, []);
 
   const handleAddExercise = (exerciseToAdd) => {
-    const newExercise = { ...exerciseToAdd, sets: '', reps: '', is_warmup: false };
+    const newExercise = {
+      ...exerciseToAdd,
+      sets: '',
+      reps: '',
+      is_warmup: false,
+      negative: false,
+      drop_set: false,
+      drop_set_percentage: null,
+      superset_id: null,
+    };
     setRoutineExercises([...routineExercises, newExercise]);
     setSearchTerm('');
     setSearchResults([]);
@@ -207,14 +225,32 @@ function EditRoutinePage() {
 
   const handleExerciseChange = (index, field, value) => {
     const updatedExercises = [...routineExercises];
-    // Allow empty sets field so users must input a value
     if (field === 'sets') {
       updatedExercises[index][field] = value === '' ? '' : Number(value);
+    } else if (field === 'negative') {
+      updatedExercises[index].negative = value;
+      if (value) {
+        updatedExercises[index].drop_set = false;
+        updatedExercises[index].drop_set_percentage = null;
+      }
+    } else if (field === 'drop_set') {
+      updatedExercises[index].drop_set = value;
+      if (!value) {
+        updatedExercises[index].drop_set_percentage = null;
+      }
+      if (value) {
+        updatedExercises[index].negative = false;
+      }
+    } else if (field === 'drop_set_percentage') {
+      updatedExercises[index].drop_set_percentage = value;
+    } else if (field === 'superset_id') {
+      updatedExercises[index].superset_id = value;
     } else {
       updatedExercises[index][field] = value;
     }
     setRoutineExercises(updatedExercises);
   };
+
 
   const handleRemoveExercise = (index) => {
     const updatedExercises = routineExercises.filter((_, i) => i !== index);
@@ -313,7 +349,11 @@ function EditRoutinePage() {
       target_sets: Math.max(1, Number(ex.sets) || 1),
       target_reps: ex.reps || '8-12',
       exercise_order: index,
-      is_warmup: ex.is_warmup || false
+      is_warmup: ex.is_warmup || false,
+      negative: ex.negative || false,
+      drop_set: ex.drop_set || false,
+      drop_set_percentage: ex.drop_set ? (ex.drop_set_percentage !== null && ex.drop_set_percentage !== undefined ? ex.drop_set_percentage : null) : null,
+      superset_id: ex.superset_id || null
     }));
 
     try {
@@ -435,58 +475,117 @@ function EditRoutinePage() {
         )}
       </div>
 
+
       <h3>Exercises in this Routine</h3>
       <div className="exercise-list">
-        {routineExercises.map((ex, index) => (
-          <div key={ex.id || ex.name || index} className="exercise-card">
-            <div className="reorder-controls">
-              <button onClick={() => moveExercise(index, 'up')} disabled={index === 0}><ArrowUpCircle size={24} /></button>
-              <button onClick={() => moveExercise(index, 'down')} disabled={index === routineExercises.length - 1}><ArrowDownCircle size={24} /></button>
-            </div>
-            <img
-              src={ex.thumbnail_url || 'https://placehold.co/50x50/4a5568/ffffff?text=IMG'}
-              alt={ex.name}
-              className="exercise-thumbnail"
-              width="50"
-              height="50"
-              loading="lazy"
-            />
-            <div className="exercise-details">
-              <h4>{ex.name}</h4>
-              <div className="exercise-inputs">
-                <input 
-                  type="number" 
-                  min="1" 
-                  step="1" 
-                  value={ex.sets} 
-                  onChange={(e) => handleExerciseChange(index, 'sets', e.target.value)}
-                  placeholder="Sets"
-                  required
-                />
-                <span>sets</span>
-                <input 
-                  type="text" 
-                  value={ex.reps} 
-                  onChange={(e) => handleExerciseChange(index, 'reps', e.target.value)}
-                  placeholder="e.g., 8-12"
-                  required
-                />
-                <span>reps</span>
+        {routineExercises.map((ex, index) => {
+          // Find all unique superset IDs for dropdown
+          const supersetOptions = Array.from(new Set(routineExercises.filter(e => e.superset_id && e.superset_id !== null).map(e => e.superset_id)));
+          const isInSuperset = !!ex.superset_id;
+          return (
+            <div key={ex.id || ex.name || index} className={`exercise-card${ex.negative ? ' negative-exercise' : ''}${isInSuperset ? ' superset-exercise' : ''}`}>
+              <div className="reorder-controls">
+                <button onClick={() => moveExercise(index, 'up')} disabled={index === 0}><ArrowUpCircle size={24} /></button>
+                <button onClick={() => moveExercise(index, 'down')} disabled={index === routineExercises.length - 1}><ArrowDownCircle size={24} /></button>
               </div>
-              <div className="exercise-warmup-toggle">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={ex.is_warmup || false}
-                    onChange={(e) => handleExerciseChange(index, 'is_warmup', e.target.checked)}
+              <img
+                src={ex.thumbnail_url || 'https://placehold.co/50x50/4a5568/ffffff?text=IMG'}
+                alt={ex.name}
+                className="exercise-thumbnail"
+                width="50"
+                height="50"
+                loading="lazy"
+              />
+              <div className="exercise-details">
+                <h4>{ex.name}</h4>
+                <div className="exercise-inputs">
+                  <input 
+                    type="number" 
+                    min="1" 
+                    step="1" 
+                    value={ex.sets} 
+                    onChange={(e) => handleExerciseChange(index, 'sets', e.target.value)}
+                    placeholder="Sets"
+                    required
                   />
-                  <span>Warmup Exercise</span>
-                </label>
+                  <span>sets</span>
+                  <input 
+                    type="text" 
+                    value={ex.reps} 
+                    onChange={(e) => handleExerciseChange(index, 'reps', e.target.value)}
+                    placeholder="e.g., 8-12"
+                    required
+                  />
+                  <span>reps</span>
+                </div>
+                <div className="exercise-warmup-toggle">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={ex.is_warmup || false}
+                      onChange={(e) => handleExerciseChange(index, 'is_warmup', e.target.checked)}
+                    />
+                    <span>Warmup Exercise</span>
+                  </label>
+                </div>
+                <div className="exercise-advanced-controls">
+                  <label style={{ marginRight: '1em' }}>
+                    <input
+                      type="checkbox"
+                      checked={ex.negative || false}
+                      onChange={e => handleExerciseChange(index, 'negative', e.target.checked)}
+                      disabled={ex.drop_set}
+                    />
+                    <span style={{ color: ex.negative ? '#f87171' : undefined }}>Negative</span>
+                  </label>
+                  <label style={{ marginRight: '1em' }}>
+                    <input
+                      type="checkbox"
+                      checked={ex.drop_set || false}
+                      onChange={e => handleExerciseChange(index, 'drop_set', e.target.checked)}
+                      disabled={ex.negative}
+                    />
+                    <span style={{ color: ex.drop_set ? '#fbbf24' : undefined }}>Drop Set</span>
+                  </label>
+                  {ex.drop_set && !ex.negative && (
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={ex.drop_set_percentage || ''}
+                      onChange={e => handleExerciseChange(index, 'drop_set_percentage', e.target.value)}
+                      placeholder="Drop %"
+                      style={{ width: '5em', marginLeft: '0.5em' }}
+                    />
+                  )}
+                  <label style={{ marginLeft: '1em' }}>
+                    <span>Superset:</span>
+                    <select
+                      value={ex.superset_id || ''}
+                      onChange={e => handleExerciseChange(index, 'superset_id', e.target.value === '' ? null : e.target.value)}
+                      style={{ marginLeft: '0.5em' }}
+                    >
+                      <option value="">None</option>
+                      {supersetOptions.map(id => (
+                        <option key={id} value={id}>{id.slice(0, 8)}...</option>
+                      ))}
+                      <option value="__new__">New Superset</option>
+                    </select>
+                  </label>
+                  {/* If user selects New Superset, assign a new UUID */}
+                  {ex.superset_id === '__new__' && handleExerciseChange(index, 'superset_id', generateUUID())}
+                </div>
+                {ex.negative && (
+                  <div className="negative-label" style={{ color: '#f87171', fontWeight: 'bold' }}>Negative</div>
+                )}
+                {isInSuperset && (
+                  <div className="superset-label" style={{ color: '#38bdf8', fontWeight: 'bold' }}>Superset</div>
+                )}
               </div>
+              <button onClick={() => handleRemoveExercise(index)} className="remove-exercise-button"><Trash2 size={20} /></button>
             </div>
-            <button onClick={() => handleRemoveExercise(index)} className="remove-exercise-button"><Trash2 size={20} /></button>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="action-footer">
