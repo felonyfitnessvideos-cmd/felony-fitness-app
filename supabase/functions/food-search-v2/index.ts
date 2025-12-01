@@ -28,7 +28,8 @@ const NUTRITIONAL_LIMITS = {
 const VALID_CATEGORIES = [
   "Vegetables", "Fruits", "Meat & Poultry", "Seafood",
   "Dairy & Eggs", "Grains, Bread & Pasta", "Protein & Supplements",
-  "Beverages", "Breakfast & Cereals", "Desserts & Sweets"
+  "Beverages", "Breakfast & Cereals", "Desserts & Sweets",
+  "Snacks & Treats", "Fats & Oils", "Other"
 ];
 
 const SERVING_PATTERNS = [
@@ -147,8 +148,21 @@ function validateCategory(food: any): string {
   }
 
   if (foodName.includes('coffee') || foodName.includes('tea') || foodName.includes('water') ||
-    foodName.includes('juice') || foodName.includes('soda')) {
+    foodName.includes('juice') || foodName.includes('soda') || foodName.includes('beer') ||
+    foodName.includes('wine') || foodName.includes('whiskey') || foodName.includes('vodka') ||
+    foodName.includes('rum') || foodName.includes('gin') || foodName.includes('tequila') ||
+    foodName.includes('cocktail') || foodName.includes('margarita') || foodName.includes('mojito')) {
     return "Beverages";
+  }
+
+  if (foodName.includes('oil') || foodName.includes('lard') || foodName.includes('shortening') ||
+    foodName.includes('ghee') || foodName.includes('margarine')) {
+    return "Fats & Oils";
+  }
+
+  if (foodName.includes('turnip') || foodName.includes('greens') || foodName.includes('collard') ||
+    foodName.includes('mustard greens') || foodName.includes('chard') || foodName.includes('kale')) {
+    return "Vegetables";
   }
 
   if (foodName.includes('cake') || foodName.includes('cookie') || foodName.includes('ice cream') ||
@@ -156,8 +170,8 @@ function validateCategory(food: any): string {
     return "Desserts & Sweets";
   }
 
-  // Default fallback
-  return "Grains, Bread & Pasta";
+  // Default fallback - require manual categorization for unknown items
+  return "Other";
 }
 
 /**

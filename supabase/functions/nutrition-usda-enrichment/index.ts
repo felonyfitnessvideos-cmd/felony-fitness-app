@@ -118,13 +118,38 @@ function detectPrimaryCategory(foodName: string, description: string): string {
     return 'Dairy & Eggs';
   }
   
+  // Beverages (including alcohol) - CHECK BEFORE VEGETABLES
+  if (/(beer|wine|whiskey|whisky|vodka|rum|gin|tequila|bourbon|scotch|brandy|liqueur|cocktail)/i.test(text)) {
+    return 'Beverages';
+  }
+  if (/(margarita|martini|mojito|daiquiri|cosmopolitan|manhattan|old fashioned|bloody mary)/i.test(text)) {
+    return 'Beverages';
+  }
+  if (/(juice|soda|pop|cola|sprite|coffee|tea|latte|cappuccino|espresso|smoothie|shake|energy drink|sports drink|gatorade|powerade)/i.test(text)) {
+    return 'Beverages';
+  }
+  
+  // Fats & Oils - CHECK BEFORE VEGETABLES
+  if (/(oil|olive oil|coconut oil|vegetable oil|canola oil|avocado oil|sesame oil|peanut oil|sunflower oil)/i.test(text)) {
+    return 'Fats & Oils';
+  }
+  if (/(lard|shortening|margarine|ghee|schmaltz|tallow)/i.test(text)) {
+    return 'Fats & Oils';
+  }
+  if (/(whipped topping|cool whip|whipped cream)/i.test(text) && /(fat free|nonfat|light)/i.test(text)) {
+    return 'Fats & Oils'; // Fat-free whipped topping is mostly oil-based
+  }
+  
   // Fruits
   if (/(apple|banana|orange|grape|berry|strawberry|blueberry|raspberry|peach|pear|plum|cherry|melon|watermelon|cantaloupe|pineapple|mango|kiwi|papaya|avocado)/i.test(text)) {
     return 'Fruits';
   }
   
-  // Vegetables
+  // Vegetables (including turnip greens, collard greens, etc.)
   if (/(broccoli|carrot|spinach|kale|lettuce|tomato|cucumber|pepper|onion|garlic|celery|asparagus|cauliflower|cabbage|brussels sprout|zucchini|squash|potato|sweet potato|bean|peas|corn)/i.test(text)) {
+    return 'Vegetables';
+  }
+  if (/(turnip|collard|mustard greens|chard|arugula|bok choy|endive|radicchio)/i.test(text)) {
     return 'Vegetables';
   }
   
@@ -144,11 +169,11 @@ function detectPrimaryCategory(foodName: string, description: string): string {
     return 'Breakfast & Cereals';
   }
   
-  // Snacks & Treats
-  if (/(chip|crisp|popcorn|pretzel|cracker|nacho|dorito|frito|cheeto|lay)/i.test(text)) {
+  // Snacks & Treats (Chips, pretzels, nuts - NOT cheese as main ingredient)
+  if (/(tortilla chip|potato chip|corn chip|dorito|frito|lay|cheeto|nacho|crisp|popcorn|pretzel|cracker)/i.test(text)) {
     return 'Snacks & Treats';
   }
-  if (/(nut|almond|cashew|peanut|walnut|pecan|pistachio|trail mix|seed|sunflower)/i.test(text)) {
+  if (/(nut|almond|cashew|peanut|walnut|pecan|pistachio|trail mix|seed|sunflower)/i.test(text) && !/(butter)/i.test(text)) {
     return 'Snacks & Treats';
   }
   
@@ -161,11 +186,6 @@ function detectPrimaryCategory(foodName: string, description: string): string {
   }
   if (/(ice cream|gelato|sorbet|popsicle|frozen yogurt)/i.test(text)) {
     return 'Desserts & Sweets';
-  }
-  
-  // Beverages
-  if (/(juice|soda|pop|cola|sprite|coffee|tea|latte|cappuccino|espresso|smoothie|shake|energy drink|sports drink)/i.test(text)) {
-    return 'Beverages';
   }
   
   // Supplements
@@ -182,8 +202,8 @@ function detectPrimaryCategory(foodName: string, description: string): string {
   if (/(soup|stew|chili)/i.test(text)) return 'Vegetables'; // Soups typically vegetable-based unless clearly meat
   if (/(salad)/i.test(text)) return 'Vegetables';
   
-  // Final fallback
-  return 'Grains, Bread & Pasta'; // Neutral default
+  // Final fallback - don't assume everything is grains!
+  return 'Other'; // Requires manual categorization
 }
 
 /**

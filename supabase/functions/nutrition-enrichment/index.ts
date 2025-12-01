@@ -171,14 +171,20 @@ Available categories:
 - Dairy & Eggs
 - Grains, Bread & Pasta
 - Protein & Supplements
-- Beverages
+- Beverages (including alcohol)
 - Breakfast & Cereals
 - Desserts & Sweets
+- Snacks & Treats
+- Fats & Oils
+- Other (for items that don't fit above)
 
 Rules:
 1. Categorize by PRIMARY ingredient, not preparation method
 2. If mixed dish, choose category of main component
 3. If supplements/protein powder, use "Protein & Supplements"
+4. If alcoholic beverages (beer, wine, whiskey, cocktails), use "Beverages"
+5. If cooking oils or fats (vegetable oil, olive oil, lard), use "Fats & Oils"
+6. If chips/snacks, use "Snacks & Treats" (NOT Grains or Dairy)
 
 Return JSON:
 {

@@ -70,13 +70,19 @@ interface CorrectionResult {
 
 /**
  * DETERMINISTIC CHECK 1: Atwater Check
+ * Note: Alcohol provides 7 cal/g but isn't tracked in standard macros
  */
 function atwaterCheck(food: FoodServing): VerificationResult {
   const calculatedCalories = (food.protein_g * 4) + (food.carbs_g * 4) + (food.fat_g * 9)
   const difference = Math.abs(food.calories - calculatedCalories)
   const percentDifference = food.calories > 0 ? (difference / food.calories) * 100 : 0
 
-  if (percentDifference > 20 && food.calories > 10) {
+  // Alcohol exception: Allow higher tolerance for beverages
+  // Alcohol = 7 cal/g but isn't tracked in protein/carbs/fat
+  const isAlcoholic = /whiskey|vodka|rum|gin|tequila|beer|wine|bourbon|scotch|brandy|cocktail/i.test(food.food_name || '')
+  const tolerance = isAlcoholic ? 50 : 20 // 50% for alcohol, 20% for regular food
+
+  if (percentDifference > tolerance && food.calories > 10) {
     return {
       passed: false,
       flags: ['ATWATER_MISMATCH'],
@@ -85,7 +91,8 @@ function atwaterCheck(food: FoodServing): VerificationResult {
         listed_calories: food.calories,
         calculated_calories: calculatedCalories.toFixed(1),
         difference: difference.toFixed(1),
-        percent_difference: percentDifference.toFixed(1) + '%'
+        percent_difference: percentDifference.toFixed(1) + '%',
+        note: isAlcoholic ? 'Alcohol contains ~7 cal/g not accounted for in standard macros' : undefined
       }
     }
   }
@@ -118,21 +125,52 @@ function physicsCheck(food: FoodServing): VerificationResult {
 
 /**
  * DETERMINISTIC CHECK 3: Outlier Check
+ * Catches categorization errors and nutritional anomalies
  */
 function outlierCheck(food: FoodServing): VerificationResult {
   const flags: string[] = []
   const category = food.category?.toLowerCase() || ''
+  const foodName = food.food_name?.toLowerCase() || ''
 
+  // CATEGORIZATION ERROR DETECTION
+  
+  // Alcohol miscategorized as Grains
+  if (category.includes('grain') || category.includes('bread') || category.includes('pasta')) {
+    if (/whiskey|vodka|rum|gin|tequila|beer|wine|bourbon|scotch|brandy|cocktail|margarita|mojito/i.test(foodName)) {
+      flags.push('ALCOHOL_MISCATEGORIZED_AS_GRAINS')
+    }
+    if (/vegetable oil|olive oil|canola oil|coconut oil|oil/i.test(foodName)) {
+      flags.push('OIL_MISCATEGORIZED_AS_GRAINS')
+    }
+    if (/turnip|collard|mustard greens|chard|kale|spinach/i.test(foodName)) {
+      flags.push('VEGETABLE_MISCATEGORIZED_AS_GRAINS')
+    }
+  }
+  
+  // Chips miscategorized as Dairy
+  if (category.includes('dairy')) {
+    if (/chip|dorito|frito|nacho|tortilla chip|potato chip/i.test(foodName)) {
+      flags.push('CHIPS_MISCATEGORIZED_AS_DAIRY')
+    }
+  }
+  
+  // Oil/fat products miscategorized
+  if (/oil|lard|shortening|ghee/i.test(foodName) && !category.includes('fat') && !category.includes('oil')) {
+    flags.push('OIL_WRONG_CATEGORY')
+  }
+
+  // NUTRITIONAL OUTLIER DETECTION
+  
   // Vegetables: High fat or calorie check
   if (category.includes('vegetable')) {
     if (food.fat_g > 10) flags.push('VEGETABLE_HIGH_FAT')
     if (food.calories > 150) flags.push('VEGETABLE_HIGH_CALORIE')
   }
 
-  // Fruits: High protein or fat
+  // Fruits: High protein or fat (except avocados)
   if (category.includes('fruit')) {
-    if (food.protein_g > 5) flags.push('FRUIT_HIGH_PROTEIN')
-    if (food.fat_g > 5) flags.push('FRUIT_HIGH_FAT')
+    if (food.protein_g > 5 && !foodName.includes('avocado')) flags.push('FRUIT_HIGH_PROTEIN')
+    if (food.fat_g > 15 && !foodName.includes('avocado')) flags.push('FRUIT_HIGH_FAT')
   }
 
   // Protein sources: Low protein
@@ -140,14 +178,37 @@ function outlierCheck(food: FoodServing): VerificationResult {
     if (food.protein_g < 10) flags.push('PROTEIN_SOURCE_LOW_PROTEIN')
   }
 
-  // Grains: Low carbs
+  // Grains: Low carbs (but not if it's actually alcohol!)
   if (category.includes('grain') || category.includes('bread') || category.includes('pasta')) {
-    if (food.carbs_g < 20) flags.push('GRAIN_LOW_CARB')
+    if (food.carbs_g < 20 && !flags.includes('ALCOHOL_MISCATEGORIZED_AS_GRAINS')) {
+      flags.push('GRAIN_LOW_CARB')
+    }
   }
 
   // Fats/Oils: Low fat
   if (category.includes('oil') || category.includes('butter') || category.includes('fat')) {
     if (food.fat_g < 50) flags.push('FAT_SOURCE_LOW_FAT')
+  }
+  
+  // Beverages: Alcohol calorie check
+  if (category.includes('beverage')) {
+    const isAlcoholic = /whiskey|vodka|rum|gin|tequila|beer|wine|bourbon|scotch|brandy|cocktail/i.test(foodName)
+    const isDiet = /diet|zero|light|low cal/i.test(foodName)
+    
+    // Diet paradox: Diet version should have FEWER calories than regular
+    if (isDiet && food.calories > 100) {
+      flags.push('DIET_BEVERAGE_HIGH_CALORIE')
+    }
+    
+    // Alcohol with impossibly low calories (should be at least 60-80 cal for standard drink)
+    if (isAlcoholic && food.calories < 50 && food.serving_amount >= 100) {
+      flags.push('ALCOHOL_SUSPICIOUSLY_LOW_CALORIE')
+    }
+    
+    // Alcohol with zero macros but has calories = missing alcohol content
+    if (isAlcoholic && food.calories > 50 && food.protein_g === 0 && food.carbs_g < 5 && food.fat_g === 0) {
+      flags.push('ALCOHOL_CALORIES_WITHOUT_MACROS')
+    }
   }
 
   return {
@@ -189,15 +250,37 @@ MICRONUTRIENTS:
 IDENTIFIED ISSUES:
 ${issues.join('\n')}
 
+IMPORTANT RULES:
+1. ALCOHOL: Alcohol provides 7 calories per gram but is NOT tracked in protein/carbs/fat
+   - Whiskey, vodka, rum, gin (80 proof) = ~64 cal per 1 oz (pure alcohol)
+   - Beer = ~12g carbs + alcohol per 12 oz (~150 cal)
+   - Wine = ~4g carbs + alcohol per 5 oz (~120 cal)
+   - Mixed drinks = mixer carbs/sugar + alcohol calories
+   - Diet mixers should have FEWER calories than regular versions
+
+2. CATEGORIZATION CORRECTIONS:
+   - Alcoholic beverages → "Beverages" (NOT "Grains, Bread & Pasta")
+   - Cooking oils (vegetable oil, olive oil) → "Fats & Oils" (NOT "Grains")
+   - Leafy greens (turnip greens, collards) → "Vegetables" (NOT "Grains")
+   - Chips (Doritos, tortilla chips) → "Snacks & Treats" (NOT "Dairy & Eggs")
+   - Whipped topping, fat-free → "Fats & Oils" (NOT "Grains")
+
+3. MACRO VALIDATION:
+   - Calories should ≈ (Protein×4) + (Carbs×4) + (Fat×9) + (Alcohol×7 if present)
+   - If sugar is present, there MUST be corresponding carbs and calories
+   - Total macros (P+C+F) cannot exceed serving weight by more than 10%
+
 TASK:
-1. Determine if these values are accurate for this food and serving size
-2. If INACCURATE: Provide corrected values based on USDA/reliable nutrition databases
-3. If ACCURATE: Confirm they are correct
+1. Check if category is correct - fix if miscategorized
+2. Determine if nutritional values are accurate for this food and serving size
+3. If INACCURATE: Provide corrected values based on USDA/reliable nutrition databases
+4. If ACCURATE: Confirm they are correct
 
 Return JSON in this EXACT format:
 {
   "needsCorrection": true/false,
   "correctedValues": {
+    "category": "<correct category>",
     "calories": <number>,
     "protein_g": <number>,
     "carbs_g": <number>,
