@@ -154,9 +154,6 @@ $pgDumpArgs = @(
     # Connection reliability settings
     "--no-password",                    # Use PGPASSWORD env var
     
-    # Connection timeout and keepalive (prevents timeouts on large DBs)
-    "--connect-timeout=30",             # Wait up to 30 seconds for connection
-    
     # Backup options
     "--format=plain",                   # SQL text format (easiest to restore)
     "--no-owner",                       # Don't include ownership commands
@@ -170,7 +167,6 @@ $pgDumpArgs = @(
     "--no-tablespaces",                 # Don't include tablespace assignments
     
     # Data options
-    "--data-only=false",                # Include both schema and data
     "--inserts",                        # Use INSERT commands (slower but more compatible)
     
     # Output

@@ -1,5 +1,21 @@
 .mesocycles-page { padding: 1rem; }
-.mesocycles-actions { margin-bottom: 1rem; }
+.mesocycles-actions { 
+	margin-bottom: 1rem; 
+	display: flex; 
+	gap: 1rem; 
+	align-items: center;
+	flex-wrap: wrap;
+}
+.show-inactive-toggle {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	cursor: pointer;
+	user-select: none;
+}
+.show-inactive-toggle input[type="checkbox"] {
+	cursor: pointer;
+}
 .mesocycles-list { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 .mesocycle-card {
 	padding: .75rem;
@@ -8,8 +24,55 @@
 	background: var(--card-color, #fff);
 	color: var(--text-primary);
 	box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
 }
-.mesocycle-card h3 { margin: 0 0 .25rem 0; }
+.mesocycle-card.inactive {
+	opacity: 0.6;
+	border-color: var(--border-color, #ccc);
+}
+.mesocycle-card .card-content {
+	text-decoration: none;
+	color: inherit;
+	flex: 1;
+}
+.mesocycle-card .card-content:hover h3 {
+	color: var(--primary-color, #007bff);
+}
+.mesocycle-card h3 { margin: 0 0 .25rem 0; transition: color 0.2s; }
 .mesocycle-card p { margin: 0; color: var(--text-secondary); font-size: 0.9rem; }
-.card-actions { margin-top: 0.6rem; display: flex; gap: 0.5rem; align-items: center; }
+.inactive-badge {
+	display: inline-block;
+	padding: 0.15rem 0.4rem;
+	background: var(--warning-bg, #fef3cd);
+	color: var(--warning-text, #856404);
+	font-size: 0.75rem;
+	border-radius: 0.25rem;
+	margin-top: 0.25rem;
+	font-weight: 500;
+}
+.card-actions { margin-top: 0.6rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 .btn.small { padding: 0.2rem 0.45rem; font-size: 0.85rem; }
+
+/* Button variants */
+.mesocycle-card .btn-secondary {
+	background: var(--secondary-bg, #6c757d);
+	color: #fff;
+	border: none;
+	padding: 0.35rem 0.65rem;
+	font-size: 0.85rem;
+}
+.mesocycle-card .btn-secondary:hover {
+	background: var(--secondary-hover, #5a6268);
+}
+.mesocycle-card .btn-danger {
+	background: var(--danger, #dc3545);
+	color: #fff;
+	border: none;
+	padding: 0.35rem 0.65rem;
+	font-size: 0.85rem;
+}
+.mesocycle-card .btn-danger:hover {
+	background: var(--danger-hover, #c82333);
+}

@@ -402,6 +402,7 @@ export type Database = {
           data_sources: string | null
           enrichment_status: string | null
           fat_g: number | null
+          fdc_id: string | null
           fiber_g: number | null
           folate_mcg: number | null
           food_name: string
@@ -409,13 +410,17 @@ export type Database = {
           iron_mg: number | null
           is_verified: boolean | null
           last_enrichment: string | null
+          last_verification: string | null
           magnesium_mg: number | null
+          needs_review: boolean | null
           niacin_mg: number | null
           pdcaas_score: number | null
           phosphorus_mg: number | null
           potassium_mg: number | null
           protein_g: number | null
           quality_score: number | null
+          review_details: Json | null
+          review_flags: string[] | null
           riboflavin_mg: number | null
           selenium_mcg: number | null
           serving_description: string | null
@@ -424,6 +429,7 @@ export type Database = {
           sugar_g: number | null
           thiamin_mg: number | null
           updated_at: string | null
+          verification_details: Json | null
           vitamin_a_mcg: number | null
           vitamin_b12_mcg: number | null
           vitamin_b6_mg: number | null
@@ -443,6 +449,7 @@ export type Database = {
           data_sources?: string | null
           enrichment_status?: string | null
           fat_g?: number | null
+          fdc_id?: string | null
           fiber_g?: number | null
           folate_mcg?: number | null
           food_name: string
@@ -450,13 +457,17 @@ export type Database = {
           iron_mg?: number | null
           is_verified?: boolean | null
           last_enrichment?: string | null
+          last_verification?: string | null
           magnesium_mg?: number | null
+          needs_review?: boolean | null
           niacin_mg?: number | null
           pdcaas_score?: number | null
           phosphorus_mg?: number | null
           potassium_mg?: number | null
           protein_g?: number | null
           quality_score?: number | null
+          review_details?: Json | null
+          review_flags?: string[] | null
           riboflavin_mg?: number | null
           selenium_mcg?: number | null
           serving_description?: string | null
@@ -465,6 +476,7 @@ export type Database = {
           sugar_g?: number | null
           thiamin_mg?: number | null
           updated_at?: string | null
+          verification_details?: Json | null
           vitamin_a_mcg?: number | null
           vitamin_b12_mcg?: number | null
           vitamin_b6_mg?: number | null
@@ -484,6 +496,7 @@ export type Database = {
           data_sources?: string | null
           enrichment_status?: string | null
           fat_g?: number | null
+          fdc_id?: string | null
           fiber_g?: number | null
           folate_mcg?: number | null
           food_name?: string
@@ -491,13 +504,17 @@ export type Database = {
           iron_mg?: number | null
           is_verified?: boolean | null
           last_enrichment?: string | null
+          last_verification?: string | null
           magnesium_mg?: number | null
+          needs_review?: boolean | null
           niacin_mg?: number | null
           pdcaas_score?: number | null
           phosphorus_mg?: number | null
           potassium_mg?: number | null
           protein_g?: number | null
           quality_score?: number | null
+          review_details?: Json | null
+          review_flags?: string[] | null
           riboflavin_mg?: number | null
           selenium_mcg?: number | null
           serving_description?: string | null
@@ -506,6 +523,7 @@ export type Database = {
           sugar_g?: number | null
           thiamin_mg?: number | null
           updated_at?: string | null
+          verification_details?: Json | null
           vitamin_a_mcg?: number | null
           vitamin_b12_mcg?: number | null
           vitamin_b6_mg?: number | null
@@ -625,6 +643,20 @@ export type Database = {
             columns: ["food_servings_id"]
             isOneToOne: false
             referencedRelation: "food_servings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_foods_food_serving_id_fkey"
+            columns: ["food_servings_id"]
+            isOneToOne: false
+            referencedRelation: "foods_needing_review"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_foods_food_serving_id_fkey"
+            columns: ["food_servings_id"]
+            isOneToOne: false
+            referencedRelation: "verification_queue"
             referencedColumns: ["id"]
           },
           {
@@ -873,6 +905,20 @@ export type Database = {
             referencedRelation: "food_servings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "nutrition_enrichment_queue_food_id_fkey"
+            columns: ["food_id"]
+            isOneToOne: false
+            referencedRelation: "foods_needing_review"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nutrition_enrichment_queue_food_id_fkey"
+            columns: ["food_id"]
+            isOneToOne: false
+            referencedRelation: "verification_queue"
+            referencedColumns: ["id"]
+          },
         ]
       }
       nutrition_logs: {
@@ -992,6 +1038,20 @@ export type Database = {
             referencedRelation: "food_servings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "nutrition_logs_food_serving_id_fkey"
+            columns: ["food_serving_id"]
+            isOneToOne: false
+            referencedRelation: "foods_needing_review"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nutrition_logs_food_serving_id_fkey"
+            columns: ["food_serving_id"]
+            isOneToOne: false
+            referencedRelation: "verification_queue"
+            referencedColumns: ["id"]
+          },
         ]
       }
       nutrition_pipeline_status: {
@@ -1059,6 +1119,72 @@ export type Database = {
           plan_name?: string | null
         }
         Relationships: []
+      }
+      pro_routine_exercises: {
+        Row: {
+          created_at: string | null
+          exercise_id: string
+          exercise_order: number
+          id: string
+          is_warmup: boolean | null
+          notes: string | null
+          reps: string | null
+          rest_seconds: number | null
+          routine_id: string
+          sets: number | null
+          target_intensity_pct: number | null
+          target_reps: string | null
+          target_sets: number
+          weight_kg: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          exercise_id: string
+          exercise_order?: number
+          id?: string
+          is_warmup?: boolean | null
+          notes?: string | null
+          reps?: string | null
+          rest_seconds?: number | null
+          routine_id: string
+          sets?: number | null
+          target_intensity_pct?: number | null
+          target_reps?: string | null
+          target_sets?: number
+          weight_kg?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          exercise_id?: string
+          exercise_order?: number
+          id?: string
+          is_warmup?: boolean | null
+          notes?: string | null
+          reps?: string | null
+          rest_seconds?: number | null
+          routine_id?: string
+          sets?: number | null
+          target_intensity_pct?: number | null
+          target_reps?: string | null
+          target_sets?: number
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pro_routine_exercises_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pro_routine_exercises_routine_id_fkey"
+            columns: ["routine_id"]
+            isOneToOne: false
+            referencedRelation: "pro_routines"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pro_routines: {
         Row: {
@@ -1162,15 +1288,19 @@ export type Database = {
       routine_exercises: {
         Row: {
           created_at: string | null
+          drop_set: boolean | null
+          drop_set_percentage: number | null
           exercise_id: string | null
           exercise_order: number
           id: string
           is_warmup: boolean | null
+          negative: boolean | null
           notes: string | null
           reps: string | null
           rest_seconds: number | null
           routine_id: string | null
           sets: number | null
+          superset_id: string | null
           target_intensity_pct: number | null
           target_reps: string | null
           target_sets: number
@@ -1178,15 +1308,19 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          drop_set?: boolean | null
+          drop_set_percentage?: number | null
           exercise_id?: string | null
           exercise_order?: number
           id?: string
           is_warmup?: boolean | null
+          negative?: boolean | null
           notes?: string | null
           reps?: string | null
           rest_seconds?: number | null
           routine_id?: string | null
           sets?: number | null
+          superset_id?: string | null
           target_intensity_pct?: number | null
           target_reps?: string | null
           target_sets?: number
@@ -1194,15 +1328,19 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          drop_set?: boolean | null
+          drop_set_percentage?: number | null
           exercise_id?: string | null
           exercise_order?: number
           id?: string
           is_warmup?: boolean | null
+          negative?: boolean | null
           notes?: string | null
           reps?: string | null
           rest_seconds?: number | null
           routine_id?: string | null
           sets?: number | null
+          superset_id?: string | null
           target_intensity_pct?: number | null
           target_reps?: string | null
           target_sets?: number
@@ -1485,6 +1623,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "user_meal_foods_food_servings_id_fkey"
+            columns: ["food_servings_id"]
+            isOneToOne: false
+            referencedRelation: "foods_needing_review"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_meal_foods_food_servings_id_fkey"
+            columns: ["food_servings_id"]
+            isOneToOne: false
+            referencedRelation: "verification_queue"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "user_meal_foods_user_meal_id_fkey"
             columns: ["user_meal_id"]
             isOneToOne: false
@@ -1586,6 +1738,8 @@ export type Database = {
           theme: string | null
           timezone: string | null
           updated_at: string | null
+          use_rest_timer: boolean | null
+          use_rpe: boolean | null
           user_id: string | null
           weight_lbs: number | null
           zip_code: string | null
@@ -1625,6 +1779,8 @@ export type Database = {
           theme?: string | null
           timezone?: string | null
           updated_at?: string | null
+          use_rest_timer?: boolean | null
+          use_rpe?: boolean | null
           user_id?: string | null
           weight_lbs?: number | null
           zip_code?: string | null
@@ -1664,6 +1820,8 @@ export type Database = {
           theme?: string | null
           timezone?: string | null
           updated_at?: string | null
+          use_rest_timer?: boolean | null
+          use_rpe?: boolean | null
           user_id?: string | null
           weight_lbs?: number | null
           zip_code?: string | null
@@ -2032,7 +2190,66 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      foods_needing_review: {
+        Row: {
+          calories: number | null
+          carbs_g: number | null
+          category: string | null
+          fat_g: number | null
+          food_name: string | null
+          id: string | null
+          last_verification: string | null
+          needs_review: boolean | null
+          protein_g: number | null
+          quality_score: number | null
+          review_details: Json | null
+          review_flags: string[] | null
+          serving_description: string | null
+        }
+        Insert: {
+          calories?: number | null
+          carbs_g?: number | null
+          category?: string | null
+          fat_g?: number | null
+          food_name?: string | null
+          id?: string | null
+          last_verification?: string | null
+          needs_review?: boolean | null
+          protein_g?: number | null
+          quality_score?: number | null
+          review_details?: Json | null
+          review_flags?: string[] | null
+          serving_description?: string | null
+        }
+        Update: {
+          calories?: number | null
+          carbs_g?: number | null
+          category?: string | null
+          fat_g?: number | null
+          food_name?: string | null
+          id?: string | null
+          last_verification?: string | null
+          needs_review?: boolean | null
+          protein_g?: number | null
+          quality_score?: number | null
+          review_details?: Json | null
+          review_flags?: string[] | null
+          serving_description?: string | null
+        }
+        Relationships: []
+      }
+      verification_queue: {
+        Row: {
+          enrichment_status: string | null
+          food_name: string | null
+          id: string | null
+          is_verified: boolean | null
+          last_verification: string | null
+          quality_score: number | null
+          serving_description: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_tag_to_client: {
@@ -2093,6 +2310,16 @@ export type Database = {
           tag_description: string
           tag_id: string
           tag_name: string
+        }[]
+      }
+      get_verification_stats: {
+        Args: never
+        Returns: {
+          needs_review_foods: number
+          pending_verification_foods: number
+          total_foods: number
+          verification_rate: number
+          verified_foods: number
         }[]
       }
       log_food_item: {

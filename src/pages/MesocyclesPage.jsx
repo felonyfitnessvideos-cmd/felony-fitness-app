@@ -61,6 +61,7 @@ function MesocyclesPage() {
   // Placeholder state; will be replaced by Supabase fetch in next iteration
   const [mesocycles, setMesocycles] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
   const { user, loading } = useAuth();
 
   useEffect(() => {
@@ -75,11 +76,17 @@ function MesocyclesPage() {
           return;
         }
 
-        const { data, error } = await supabase
+        let query = supabase
           .from('mesocycles')
           .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .eq('user_id', user.id);
+        
+        // Filter by active status unless showing inactive
+        if (!showInactive) {
+          query = query.or('is_active.eq.true,is_active.is.null');
+        }
+        
+        const { data, error } = await query.order('created_at', { ascending: false });
 
         if (error) throw error;
         if (mounted) setMesocycles(data || []);
@@ -93,7 +100,55 @@ function MesocyclesPage() {
       }
     })();
     return () => { mounted = false };
-  }, [loading, user]);
+  }, [loading, user, showInactive]);
+
+  const handleToggleActive = async (mesocycleId, currentStatus, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      const { error } = await supabase
+        .from('mesocycles')
+        .update({ is_active: !currentStatus })
+        .eq('id', mesocycleId)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      // Refresh the list
+      setMesocycles(prev => prev.map(m => 
+        m.id === mesocycleId ? { ...m, is_active: !currentStatus } : m
+      ));
+    } catch (err) {
+      console.error('Failed to toggle mesocycle status:', err);
+      alert(`Failed to ${currentStatus ? 'deactivate' : 'activate'} mesocycle: ${err.message}`);
+    }
+  };
+
+  const handleDelete = async (mesocycleId, mesocycleName, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!confirm(`Are you sure you want to delete "${mesocycleName}"? This will also delete all associated weeks and sessions. This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('mesocycles')
+        .delete()
+        .eq('id', mesocycleId)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      // Remove from list
+      setMesocycles(prev => prev.filter(m => m.id !== mesocycleId));
+    } catch (err) {
+      console.error('Failed to delete mesocycle:', err);
+      alert(`Failed to delete mesocycle: ${err.message}`);
+    }
+  };
 
   // Render any fetch error in the UI so the user knows why the list might be empty
   const errorBanner = errorMessage ? <div className="error-message" style={{ color: 'var(--danger)', marginTop: '0.5rem' }}>{errorMessage}</div> : null;
@@ -104,22 +159,51 @@ function MesocyclesPage() {
 
       <div className="mesocycles-actions">
         <Link className="btn" to="/mesocycles/new">Create Mesocycle</Link>
+        <label className="show-inactive-toggle">
+          <input 
+            type="checkbox" 
+            checked={showInactive} 
+            onChange={(e) => setShowInactive(e.target.checked)} 
+          />
+          <span>Show Inactive</span>
+        </label>
       </div>
 
       {errorBanner}
       <div className="mesocycles-list">
         {mesocycles.length === 0 && <p>No mesocycles yet.</p>}
-        {mesocycles.map((m) => (
-          <Link
-            key={m.id}
-            to={`/mesocycles/${m.id}`}
-            className="mesocycle-card"
-            aria-label={`Open mesocycle ${m.name || 'Untitled Mesocycle'}`}
-          >
-            <h3>{m.name || 'Untitled Mesocycle'}</h3>
-            <p>Focus: {m.focus || 'General'} — {m.weeks ?? 'n/a'} weeks</p>
-          </Link>
-        ))}
+        {mesocycles.map((m) => {
+          const isActive = m.is_active !== false; // null or true = active
+          return (
+            <div key={m.id} className={`mesocycle-card ${!isActive ? 'inactive' : ''}`}>
+              <Link
+                to={`/mesocycles/${m.id}`}
+                className="card-content"
+                aria-label={`Open mesocycle ${m.name || 'Untitled Mesocycle'}`}
+              >
+                <h3>{m.name || 'Untitled Mesocycle'}</h3>
+                <p>Focus: {m.focus || 'General'} — {m.weeks ?? 'n/a'} weeks</p>
+                {!isActive && <span className="inactive-badge">Inactive</span>}
+              </Link>
+              <div className="card-actions">
+                <button 
+                  className="btn btn-secondary"
+                  onClick={(e) => handleToggleActive(m.id, isActive, e)}
+                  title={isActive ? 'Deactivate' : 'Activate'}
+                >
+                  {isActive ? 'Deactivate' : 'Activate'}
+                </button>
+                <button 
+                  className="btn btn-danger"
+                  onClick={(e) => handleDelete(m.id, m.name, e)}
+                  title="Delete mesocycle"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

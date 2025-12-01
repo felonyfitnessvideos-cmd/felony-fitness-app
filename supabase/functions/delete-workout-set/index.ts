@@ -121,7 +121,7 @@ serve(async (req) => {
     // This query will fail via RLS if user doesn't own the parent workout log
     const { data: entry, error: fetchError } = await supabase
       .from("workout_log_entries")
-      .select("id, log_id")
+      .select("id, workout_log_id")
       .eq("id", entry_id)
       .maybeSingle();
 
@@ -143,7 +143,7 @@ serve(async (req) => {
     const { data: workoutLog, error: logError } = await supabase
       .from("workout_logs")
       .select("user_id")
-      .eq("id", entry.log_id)
+      .eq("id", entry.workout_log_id)
       .single();
 
     if (logError || !workoutLog || workoutLog.user_id !== user.id) {
