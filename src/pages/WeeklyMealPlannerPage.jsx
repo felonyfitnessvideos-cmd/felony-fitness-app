@@ -40,7 +40,7 @@ const WeeklyMealPlannerPage = () => {
   /** @type {[Array, Function]} Meal entries for the current week/plan */
   const [planEntries, setPlanEntries] = useState([]);
   // Feature detection: whether weekly_meal_plan_entries has user_meal_id and user_meals relation is queryable
-  const [supportsUserMealEntries, setSupportsUserMealEntries] = useState(true);
+  const [supportsUserMealEntries, _setSupportsUserMealEntries] = useState(true);
 
   /** @type {[Array, Function]} User's saved meals library */
   const [userMeals, setUserMeals] = useState([]);

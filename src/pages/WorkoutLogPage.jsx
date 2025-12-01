@@ -135,7 +135,7 @@ function WorkoutLogPage() {
 
   // DEBUG: Log at render to verify keys and selected exercise
   if (typeof window !== 'undefined' && selectedExercise) {
-    // eslint-disable-next-line no-console
+     
     console.log('[RENDER DEBUG] selectedExercise.id:', selectedExercise.id, 'todaysLog keys:', Object.keys(todaysLog), 'todaysLog[selectedExercise.id]:', todaysLog[String(selectedExercise.id)], 'FULL todaysLog:', todaysLog);
   }
 
@@ -214,7 +214,7 @@ function WorkoutLogPage() {
       const todayLocalDate = `${year}-${month}-${day}`;
       
       // DEBUG: Log the date for today's log search
-      // eslint-disable-next-line no-console
+       
       console.log('[DEBUG] Searching for logs with log_date:', todayLocalDate, 'Local time:', now.toString());
 
       // 3. Try to find an existing workout log for today using log_date (much simpler and reliable)
@@ -230,14 +230,14 @@ function WorkoutLogPage() {
         .limit(1);
 
       // DEBUG: Log search result
-      // eslint-disable-next-line no-console
+       
       console.log('[DEBUG] Log search result - logs:', logs, 'error:', logError);
       
       const log = logs && logs.length > 0 ? logs[0] : null;
 
       let logId = log?.id;
       // DEBUG: Log the logId being used to fetch entries
-      // eslint-disable-next-line no-console
+       
       console.log('[DEBUG] fetchAndStartWorkout: logId for today:', logId, 'log found:', log, 'routineId:', routineId, 'userId:', userId);
       if (!logId) {
         // 4. If not found, create a new workout log
@@ -260,7 +260,7 @@ function WorkoutLogPage() {
         if (newLogError) throw newLogError;
         logId = newLog.id;
         // DEBUG: Log the new logId created
-        // eslint-disable-next-line no-console
+         
         console.log('[DEBUG] fetchAndStartWorkout: created new logId:', logId, 'payload:', payload);
       }
       setWorkoutLogId(logId);
@@ -274,7 +274,7 @@ function WorkoutLogPage() {
         .eq('workout_log_id', logId);
       if (todayEntriesError) throw todayEntriesError;
       // DEBUG: Log raw todayEntries from DB
-      // eslint-disable-next-line no-console
+       
       console.log('[DEBUG] todayEntries from DB:', todayEntries);
       // Group by exercise_id (normalize to string)
       const todaysLogMap = {};
@@ -286,7 +286,7 @@ function WorkoutLogPage() {
       setTodaysLog(todaysLogMap);
       // DEBUG: Log keys and selectedExercise.id to troubleshoot UI mismatch
       setTimeout(() => {
-        // eslint-disable-next-line no-console
+         
         console.log('[DEBUG] todaysLog keys:', Object.keys(todaysLogMap), 'selectedExerciseId:', selectedExercise?.id);
       }, 100);
 
@@ -516,11 +516,11 @@ function WorkoutLogPage() {
         weight_lbs: parseInt(currentSet.weight, 10),
       };
       // DEBUG: Log the payload and logId used for set insert
-      // eslint-disable-next-line no-console
+       
       console.log('[DEBUG] handleSaveSet: inserting set with workout_log_id:', logIdToUse, 'payload:', newSetPayload);
       const { data: newEntry, error } = await supabase.from('workout_log_entries').insert(newSetPayload).select().single();
       // DEBUG: Log the result of the insert
-      // eslint-disable-next-line no-console
+       
       console.log('[DEBUG] handleSaveSet: insert result:', newEntry, 'error:', error);
       if (error) {
         console.error('[WorkoutLog] Failed to save set:', error);
@@ -644,7 +644,7 @@ function WorkoutLogPage() {
     }
     setIsRpeModalOpen(false);
     // Only show rest timer if flagged by advancement logic and settings allow
-    // eslint-disable-next-line no-console
+     
     console.log('[DEBUG] handleRpeRating: pendingSetForRpe?', !!pendingSetForRpe, '_showRestTimer?', pendingSetForRpe?._showRestTimer, 'userSettingsLoaded?', userSettingsLoaded, 'showRestTimer?', showRestTimer);
     if (
       pendingSetForRpe &&
@@ -664,7 +664,7 @@ function WorkoutLogPage() {
   const handleSkipRpe = () => {
     setIsRpeModalOpen(false);
     // Only show rest timer if flagged by advancement logic and settings allow
-    // eslint-disable-next-line no-console
+     
     console.log('[DEBUG] handleSkipRpe: pendingSetForRpe?', !!pendingSetForRpe, '_showRestTimer?', pendingSetForRpe?._showRestTimer, 'userSettingsLoaded?', userSettingsLoaded, 'showRestTimer?', showRestTimer);
     if (
       pendingSetForRpe &&

@@ -11,25 +11,28 @@
 
 /**
  * Main container for the Edit Routine Page.
- * `padding-bottom` is crucial to create space at the bottom, preventing the
- * fixed footer and the main app navbar from hiding the last items in the exercise list.
+ * Padding provides spacing for content, footer is now sticky within this container.
  */
 .edit-routine-page-container {
   padding: 1rem;
-  /* (Footer Height + Navbar Height + Buffer) -> ~80px + 60px + 40px = 180px */
-  padding-bottom: 180px; 
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /**
  * Shared styles for form groups and the main exercise search section.
  */
-.form-group, .add-exercise-section {
+.form-group,
+.add-exercise-section {
   margin-bottom: 1.5rem;
 }
 
-.form-group label, .add-exercise-section h3, h3 {
+.form-group label,
+.add-exercise-section h3,
+h3 {
   display: block;
-  margin-bottom: .5rem;
+  margin-bottom: 0.5rem;
   font-size: 0.9rem;
   font-weight: 600;
   color: #a0aec0;
@@ -116,14 +119,14 @@
 }
 
 .custom-exercise-prompt button {
-    background: none;
-    border: none;
-    color: #f97316;
-    padding: 1rem;
-    width: 100%;
-    text-align: left;
-    cursor: pointer;
-    font-size: 0.9rem;
+  background: none;
+  border: none;
+  color: #f97316;
+  padding: 1rem;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
 }
 
 /**
@@ -230,14 +233,13 @@
 
 /**
  * The fixed footer containing the "Save" and "Cancel" buttons.
+ * Uses sticky positioning to stay at the bottom of the content area.
  */
 .action-footer {
-  position: fixed;
-  bottom: 60px; /* Sits directly on top of the main 60px navbar */
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 450px;
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
   background-color: var(--background-color);
   padding: 1rem;
   border-top: 1px solid var(--border-color);
@@ -247,6 +249,15 @@
   justify-content: flex-end;
   gap: 1rem;
   align-items: center;
+  margin-top: 2rem;
+}
+
+/* Mobile: Account for bottom nav height + safe area */
+@media (max-width: 767px) {
+  .action-footer {
+    /* Add margin to ensure it's visible above the bottom nav */
+    margin-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .action-footer button {
@@ -280,10 +291,10 @@
 }
 
 .modal-action-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
 }
 
 /**
@@ -318,7 +329,7 @@
 .custom-modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0,0,0,0.75);
+  background-color: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -341,7 +352,7 @@
 
 /* Focus ring for modal interactive elements */
 .custom-modal-content :is(button, a, input, select, textarea):focus-visible {
-  outline: 3px solid rgba(249,115,22,0.8);
+  outline: 3px solid rgba(249, 115, 22, 0.8);
   outline-offset: 2px;
 }
 
