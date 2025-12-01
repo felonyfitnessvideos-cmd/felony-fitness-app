@@ -115,18 +115,19 @@ function atwaterCheck(food: FoodServing): VerificationResult {
  * DETERMINISTIC CHECK 2: Physics Check
  */
 function physicsCheck(food: FoodServing): VerificationResult {
-  const servingWeightG = food.serving_weight_g || (food.serving_amount * 100)
+  // Note: Since we don't have serving_weight_g, we'll use 100g as baseline
+  // Most entries in food_servings are normalized to 100g portions
   const totalMacrosG = food.protein_g + food.carbs_g + food.fat_g
 
-  if (totalMacrosG > servingWeightG * 1.1) {
+  // Total macros cannot exceed 110g per 100g serving (allowing 10% tolerance for water/ash)
+  if (totalMacrosG > 110) {
     return {
       passed: false,
       flags: ['PHYSICS_VIOLATION'],
       severity: 'critical',
       details: {
-        serving_weight_g: servingWeightG,
         total_macros_g: totalMacrosG.toFixed(1),
-        reason: 'Sum of macros exceeds serving weight (impossible)'
+        reason: 'Sum of macros exceeds 110g per 100g serving (impossible)'
       }
     }
   }
@@ -211,8 +212,9 @@ function outlierCheck(food: FoodServing): VerificationResult {
       flags.push('DIET_BEVERAGE_HIGH_CALORIE')
     }
     
-    // Alcohol with impossibly low calories (should be at least 60-80 cal for standard drink)
-    if (isAlcoholic && food.calories < 50 && food.serving_amount >= 100) {
+    // Alcohol with impossibly low calories
+    // Note: Can't check serving size since serving_description is text
+    if (isAlcoholic && food.calories < 50) {
       flags.push('ALCOHOL_SUSPICIOUSLY_LOW_CALORIE')
     }
     
@@ -239,7 +241,7 @@ async function getCorrectionFromGPT(food: FoodServing, issues: string[]): Promis
 
 CURRENT DATA:
 Food: ${food.food_name}
-Serving: ${food.serving_description} (${food.serving_amount} ${food.serving_unit})
+Serving: ${food.serving_description}
 Category: ${food.category}
 
 CURRENT VALUES:

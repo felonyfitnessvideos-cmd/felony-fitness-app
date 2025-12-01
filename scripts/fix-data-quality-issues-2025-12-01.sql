@@ -196,6 +196,7 @@ LIMIT 20;
 -- ============================================================================
 
 -- Alcohol with impossibly low calories
+-- Note: Checking calories only since serving_description is text (can't compare numerically)
 SELECT 
   id,
   food_name,
@@ -213,7 +214,6 @@ WHERE (
     food_name ILIKE '%wine%' OR food_name ILIKE '%beer%'
   )
   AND calories < 50
-  AND serving_amount >= 100
 ORDER BY calories ASC;
 
 -- Diet drinks with MORE calories than non-diet
