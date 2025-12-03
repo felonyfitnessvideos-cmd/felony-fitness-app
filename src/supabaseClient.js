@@ -59,7 +59,27 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 	auth: {
 		detectSessionInUrl: false,
 	},
-});
+})
+
+// TEMPORARILY DISABLE REALTIME: Prevent automatic WebSocket connections
+// This disables all realtime functionality to stop console errors
+if (supabase.realtime) {
+	supabase.realtime.disconnect();
+	// Override channel method to prevent new subscriptions
+	supabase.channel = function() {
+		console.warn('⚠️ Realtime subscriptions are temporarily disabled');
+		// Return a mock channel that does nothing
+		return {
+			on: function() { return this; },
+			subscribe: function() { 
+				console.warn('⚠️ Attempted to subscribe to realtime channel - operation skipped');
+				return Promise.resolve({ error: null }); 
+			},
+			unsubscribe: function() { return Promise.resolve({ error: null }); },
+			send: function() { return Promise.resolve({ error: null }); },
+		};
+	};
+}
 
 // Listen for auth state changes and handle token-refresh failures gracefully.
 // If the client attempts to refresh and fails (invalid refresh token), clear
