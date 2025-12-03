@@ -27,7 +27,7 @@ import {
     handleMessagingError,
     markMessagesAsRead,
     sendMessage,
-    subscribeToMessages,
+    // subscribeToMessages, // TEMPORARILY DISABLED - WebSocket causing errors
     validateMessageContent
 } from '../../utils/messagingUtils';
 import './TrainerMessages.css';
@@ -158,15 +158,15 @@ const TrainerMessages = () => {
     let subscription;
     const setupSubscription = async () => {
       try {
-        subscription = await subscribeToMessages((payload) => {
-          loadConversations();
+        // subscription = await subscribeToMessages((payload) => {
+        //   loadConversations();
 
-          if (expandedClientId &&
-            (payload.new.sender_id === expandedClientId ||
-              payload.new.recipient_id === expandedClientId)) {
-            loadMessagesForClient(expandedClientId);
-          }
-        });
+        //   if (expandedClientId &&
+        //     (payload.new.sender_id === expandedClientId ||
+        //       payload.new.recipient_id === expandedClientId)) {
+        //     loadMessagesForClient(expandedClientId);
+        //   }
+        // }); // TEMPORARILY DISABLED - WebSocket causing console errors
       } catch (error) {
         console.error('Failed to setup message subscription:', error);
       }

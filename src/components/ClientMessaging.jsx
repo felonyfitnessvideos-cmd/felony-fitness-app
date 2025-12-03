@@ -9,7 +9,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { supabase } from '../supabaseClient.js';
-import { getUnreadMessageCount, subscribeToMessages } from '../utils/messagingUtils';
+import { getUnreadMessageCount } from '../utils/messagingUtils';
+// import { subscribeToMessages } from '../utils/messagingUtils'; // TEMPORARILY DISABLED - WebSocket causing errors
 
 const ClientMessaging = () => {
     const { user } = useAuth();
@@ -160,10 +161,10 @@ const ClientMessaging = () => {
             loadUnreadCount();
 
             // Subscribe to new messages (returns a Promise)
-            subscription = await subscribeToMessages(() => {
-                // Reload count when new message arrives
-                loadUnreadCount();
-            });
+            // subscription = await subscribeToMessages(() => {
+            //     // Reload count when new message arrives
+            //     loadUnreadCount();
+            // }); // TEMPORARILY DISABLED - WebSocket causing console errors
         };
 
         setupSubscription();

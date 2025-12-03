@@ -28,7 +28,7 @@ import {
     handleBugReportError,
     replyToBugReport,
     submitBugReport,
-    subscribeToBugReports,
+    // subscribeToBugReports, // TEMPORARILY DISABLED - WebSocket causing errors
     updateBugReportPriority,
     updateBugReportStatus
 } from '../utils/bugReportingUtils';
@@ -115,9 +115,9 @@ const BugReportMessaging = ({ isAdmin = false, isBeta = false }) => {
         let subscription = null;
 
         const setupSubscription = async () => {
-            subscription = await subscribeToBugReports(() => {
-                loadBugReports();
-            });
+            // subscription = await subscribeToBugReports(() => {
+            //     loadBugReports();
+            // }); // TEMPORARILY DISABLED - WebSocket causing console errors
         };
 
         setupSubscription();

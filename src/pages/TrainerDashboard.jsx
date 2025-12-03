@@ -31,7 +31,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import useResponsive from '../hooks/useResponsive.jsx';
-import { getUnreadMessageCount, subscribeToMessages } from '../utils/messagingUtils';
+import { getUnreadMessageCount } from '../utils/messagingUtils';
+// import { subscribeToMessages } from '../utils/messagingUtils'; // TEMPORARILY DISABLED - WebSocket causing errors
 import SmartScheduling from '../components/SmartScheduling.jsx';
 import ClientProgress from '../components/trainer/ClientProgress.jsx';
 import WorkoutBuilder from '../components/trainer/WorkoutBuilder.jsx';
@@ -162,10 +163,10 @@ const TrainerDashboard = () => {
       loadUnreadCount();
 
       // Subscribe to new messages (returns a Promise)
-      subscription = await subscribeToMessages(() => {
-        // Reload count when new message arrives
-        loadUnreadCount();
-      });
+      // subscription = await subscribeToMessages(() => {
+      //   // Reload count when new message arrives
+      //   loadUnreadCount();
+      // }); // TEMPORARILY DISABLED - WebSocket causing console errors
     };
 
     setupSubscription();
