@@ -697,6 +697,9 @@ export async function subscribeToMessages(callback) {
       return null;
     }
 
+    // REALTIME DISABLED: Commenting out to stop console spam and reduce resource usage
+    // The subscription will fail since Realtime is disabled on backend
+    /*
     const subscription = supabase
       .channel('message_changes')
       .on(
@@ -730,6 +733,11 @@ export async function subscribeToMessages(callback) {
       });
 
     return subscription;
+    */
+    
+    // Return null instead of subscription
+    console.log('⚠️ Message real-time subscription disabled');
+    return null;
   } catch (error) {
     console.error('Error setting up message subscription:', error);
     throw error;
@@ -759,6 +767,9 @@ export function subscribeToMessageUpdates(callback) {
       throw new Error('Callback must be a function');
     }
 
+    // REALTIME DISABLED: Commenting out to stop console spam and reduce resource usage
+    // The subscription will fail since Realtime is disabled on backend
+    /*
     const subscription = supabase
       .channel('message_updates')
       .on(
@@ -778,6 +789,11 @@ export function subscribeToMessageUpdates(callback) {
       });
 
     return subscription;
+    */
+    
+    // Return null instead of subscription
+    console.log('⚠️ Message updates real-time subscription disabled');
+    return null;
   } catch (error) {
     console.error('Error setting up message update subscription:', error);
     throw error;

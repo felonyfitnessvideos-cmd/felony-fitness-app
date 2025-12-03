@@ -862,8 +862,11 @@ export async function addAdminNotes(bugReportId, notes) {
  * // Later, clean up
  * subscription.unsubscribe();
  */
-export async function subscribeToBugReports(callback) {
+export async function subscribeToBugReports(_callback) {
   try {
+    // REALTIME DISABLED: Commenting out to stop console spam and reduce resource usage
+    // The subscription will fail since Realtime is disabled on backend
+    /*
     const subscription = supabase
       .channel('bug_reports_channel')
       .on(
@@ -875,12 +878,17 @@ export async function subscribeToBugReports(callback) {
         },
         (payload) => {
 
-          callback(payload);
+          _callback(payload);
         }
       )
       .subscribe();
 
     return subscription;
+    */
+   
+    // Return null instead of subscription
+    console.log('⚠️ Bug reports real-time subscription disabled');
+    return null;
   } catch (error) {
     console.error('❌ Error subscribing to bug reports:', error);
     throw error;
@@ -903,8 +911,11 @@ export async function subscribeToBugReports(callback) {
  *   loadReplies();
  * });
  */
-export async function subscribeToBugReportReplies(bugReportId, callback) {
+export async function subscribeToBugReportReplies(_bugReportId, _callback) {
   try {
+    // REALTIME DISABLED: Commenting out to stop console spam and reduce resource usage
+    // The subscription will fail since Realtime is disabled on backend
+    /*
     let channel = supabase
       .channel('bug_report_replies_channel')
       .on(
@@ -913,16 +924,21 @@ export async function subscribeToBugReportReplies(bugReportId, callback) {
           event: 'INSERT',
           schema: 'public',
           table: 'bug_report_replies',
-          ...(bugReportId && { filter: `bug_report_id=eq.${bugReportId}` })
+          ...(_bugReportId && { filter: `bug_report_id=eq.${_bugReportId}` })
         },
         (payload) => {
 
-          callback(payload);
+          _callback(payload);
         }
       )
       .subscribe();
 
     return channel;
+    */
+    
+    // Return null instead of subscription
+    console.log('⚠️ Bug report replies real-time subscription disabled');
+    return null;
   } catch (error) {
     console.error('❌ Error subscribing to bug report replies:', error);
     throw error;

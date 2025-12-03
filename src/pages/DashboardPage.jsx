@@ -113,10 +113,11 @@ const motivationalQuotes = [
  * @see {@link supabaseClient} for data fetching
  */
 function DashboardPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const userId = user?.id;
 
+  // ALL HOOKS MUST BE DECLARED BEFORE ANY CONDITIONAL RETURNS
   const [quote, setQuote] = useState('');
   /** @type {[DailyGoals, React.Dispatch<React.SetStateAction<DailyGoals>>]} */
   const [goals, setGoals] = useState({ calories: 0, protein: 0, water: 0 });
@@ -233,6 +234,13 @@ function DashboardPage() {
     }
   }, []);
 
+  // Authentication guard effect
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login', { replace: true });
+    }
+  }, [authLoading, user, navigate]);
+
   // Only depend on the user's id and the stable fetchDashboardData callback.
   // Rationale: including the whole `user` object can cause unnecessary
   // re-fetches if its reference changes while identity (id) remains the same.
@@ -266,6 +274,24 @@ function DashboardPage() {
   const calorieProgress = adjustedCalorieGoal > 0 ? (nutrition.calories / adjustedCalorieGoal) * 100 : 0;
   const proteinProgress = goals.protein > 0 ? (nutrition.protein / goals.protein) * 100 : 0;
   const waterProgress = goals.water > 0 ? (nutrition.water / goals.water) * 100 : 0;
+
+  // ===================================================
+  // GUARDS - Must be after all hooks
+  // ===================================================
+
+  // LOADING GUARD: Show loading state during authentication
+  if (authLoading) {
+    return (
+      <div className="dashboard-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <div style={{ color: 'white' }}>Loading...</div>
+      </div>
+    );
+  }
+
+  // AUTHENTICATION GUARD: Don't render if not logged in (redirect happens in useEffect)
+  if (!user) {
+    return null;
+  }
 
   if (loading) {
     return <div style={{ color: 'white', padding: '2rem' }}>Loading Dashboard...</div>;
