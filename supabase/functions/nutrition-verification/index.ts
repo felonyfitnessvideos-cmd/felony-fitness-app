@@ -17,10 +17,10 @@
  * 4. Insert discovered portions into food_portions table
  * 5. Mark as verified with quality_score = 100
  * 
- * BATCH SIZE: Configurable (default: 3, recommended: 2-5 to avoid timeout)
+ * BATCH SIZE: Configurable (default: 1, recommended: 1-2 to avoid timeout)
  * FREQUENCY: Single-threaded via GitHub Action concurrency control  
- * PERFORMANCE: ~2-3 foods per run, gentle on database, stays under 150s limit
- * TIMEOUT: 150s edge function limit, 120s processing budget (30s buffer for DB)
+ * PERFORMANCE: 1 food per run = 12 foods/hour, absolutely safe under 150s limit
+ * TIMEOUT: 150s edge function limit, each food takes ~20-30s (120s buffer)
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
@@ -290,12 +290,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Parse batch size from request body (default to 3 to prevent timeout)
+    // Parse batch size from request body (default to 1 - ultra conservative)
     const requestBody = await req.json().catch(() => ({}))
-    const batchSize = requestBody.batch_size || 3
+    const batchSize = requestBody.batch_size || 1
 
     console.log(`\n🚀 Starting Portion Miner - Batch size: ${batchSize}`)
     console.log(`⏱️  Edge Function timeout: 150 seconds max`)
+    console.log(`🐌 Ultra-conservative mode: 1 food per run = ~30s total`)
 
     // =====================================================================
     // STEP 1: FETCH & DISCONNECT (Get data and close connection FAST)
