@@ -192,11 +192,14 @@ Return JSON in this EXACT format:
 
 /**
  * Process a single food: normalize to 100g and mine portions
+ * This function only processes in memory - no database operations
  */
-async function processFood(supabaseAdmin: any, food: FoodServing): Promise<{
+async function processFood(food: FoodServing): Promise<{
   success: boolean
   verified: boolean
   portions_found: number
+  updatedFood?: Partial<FoodServing> & { id: string }
+  discoveredPortions?: Array<{ food_id: string, portion_name: string, gram_weight: number }>
   error?: string
 }> {
   console.log(`\n🔍 Processing: ${food.food_name}`)
@@ -218,91 +221,52 @@ async function processFood(supabaseAdmin: any, food: FoodServing): Promise<{
     console.log(`   ✅ GPT Result (confidence: ${result.confidence}%)`)
     console.log(`   📝 ${result.reasoning}`)
 
-    // CRITICAL: Update food_servings with 100g normalized values
-    // Hardcode serving_description to '100g'
-    const { error: updateError } = await supabaseAdmin
-      .from('food_servings')
-      .update({
-        serving_description: '100g',  // HARDCODED: Always 100g baseline
-        category: result.verified_100g_values.category,
-        calories: result.verified_100g_values.calories,
-        protein_g: result.verified_100g_values.protein_g,
-        carbs_g: result.verified_100g_values.carbs_g,
-        fat_g: result.verified_100g_values.fat_g,
-        fiber_g: result.verified_100g_values.fiber_g,
-        sugar_g: result.verified_100g_values.sugar_g,
-        sodium_mg: result.verified_100g_values.sodium_mg,
-        calcium_mg: result.verified_100g_values.calcium_mg,
-        iron_mg: result.verified_100g_values.iron_mg,
-        vitamin_c_mg: result.verified_100g_values.vitamin_c_mg,
-        vitamin_a_mcg: result.verified_100g_values.vitamin_a_mcg,
-        potassium_mg: result.verified_100g_values.potassium_mg,
-        is_verified: true,
-        quality_score: 100,
-        enrichment_status: 'verified',
-        needs_review: false,
-        review_flags: null,
-        last_verification: new Date().toISOString(),
-        verification_details: {
-          method: 'portion_miner',
-          confidence: result.confidence,
-          reasoning: result.reasoning,
-          timestamp: new Date().toISOString()
-        }
-      })
-      .eq('id', food.id)
-
-    if (updateError) {
-      console.error(`   ❌ Database update failed:`, updateError)
-      return { success: false, verified: false, portions_found: 0, error: 'DB_UPDATE_FAILED' }
-    }
-
-    console.log(`   ✅ Updated food_servings with 100g baseline`)
-
-    // Insert discovered portions into food_portions table
-    let portionsInserted = 0
-    
-    if (result.common_portions && result.common_portions.length > 0) {
-      console.log(`   🔍 Found ${result.common_portions.length} common portions`)
-      
-      for (const portion of result.common_portions) {
-        // Check if portion already exists (prevent duplicates)
-        const { data: existing } = await supabaseAdmin
-          .from('food_portions')
-          .select('id')
-          .eq('food_id', food.id)
-          .eq('portion_name', portion.portion_name)
-          .single()
-
-        if (existing) {
-          console.log(`   ⏭️  Portion "${portion.portion_name}" already exists - skipping`)
-          continue
-        }
-
-        // Insert new portion
-        const { error: portionError } = await supabaseAdmin
-          .from('food_portions')
-          .insert({
-            food_id: food.id,
-            portion_name: portion.portion_name,
-            gram_weight: portion.gram_weight
-          })
-
-        if (portionError) {
-          console.error(`   ⚠️  Failed to insert portion "${portion.portion_name}":`, portionError)
-        } else {
-          console.log(`   ✅ Inserted: ${portion.portion_name} = ${portion.gram_weight}g`)
-          portionsInserted++
-        }
+    // Build update object in memory (no database operation yet)
+    const updatedFood = {
+      id: food.id,
+      serving_description: '100g',  // HARDCODED: Always 100g baseline
+      category: result.verified_100g_values.category,
+      calories: result.verified_100g_values.calories,
+      protein_g: result.verified_100g_values.protein_g,
+      carbs_g: result.verified_100g_values.carbs_g,
+      fat_g: result.verified_100g_values.fat_g,
+      fiber_g: result.verified_100g_values.fiber_g,
+      sugar_g: result.verified_100g_values.sugar_g,
+      sodium_mg: result.verified_100g_values.sodium_mg,
+      calcium_mg: result.verified_100g_values.calcium_mg,
+      iron_mg: result.verified_100g_values.iron_mg,
+      vitamin_c_mg: result.verified_100g_values.vitamin_c_mg,
+      vitamin_a_mcg: result.verified_100g_values.vitamin_a_mcg,
+      potassium_mg: result.verified_100g_values.potassium_mg,
+      is_verified: true,
+      quality_score: 100,
+      enrichment_status: 'verified',
+      needs_review: false,
+      review_flags: null,
+      last_verification: new Date().toISOString(),
+      verification_details: {
+        method: 'portion_miner',
+        confidence: result.confidence,
+        reasoning: result.reasoning,
+        timestamp: new Date().toISOString()
       }
-    } else {
-      console.log(`   ℹ️  No common portions found for this food`)
     }
+
+    // Build portions array in memory (no database operation yet)
+    const discoveredPortions = (result.common_portions || []).map(portion => ({
+      food_id: food.id,
+      portion_name: portion.portion_name,
+      gram_weight: portion.gram_weight
+    }))
+
+    console.log(`   ✅ Prepared update with ${discoveredPortions.length} portions`)
 
     return { 
       success: true, 
       verified: true, 
-      portions_found: portionsInserted 
+      portions_found: discoveredPortions.length,
+      updatedFood,
+      discoveredPortions
     }
 
   } catch (error) {
@@ -317,7 +281,7 @@ async function processFood(supabaseAdmin: any, food: FoodServing): Promise<{
 }
 
 /**
- * Main handler
+ * Main handler - 3-STEP PATTERN to prevent database timeouts
  */
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -325,16 +289,20 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
-
     // Parse batch size from request body (default to 5)
     const requestBody = await req.json().catch(() => ({}))
     const batchSize = requestBody.batch_size || 5
 
     console.log(`\n🚀 Starting Portion Miner - Batch size: ${batchSize}`)
 
+    // =====================================================================
+    // STEP 1: FETCH & DISCONNECT (Get data and close connection FAST)
+    // =====================================================================
+    console.log('\n📥 STEP 1: Fetching foods from database...')
+    
+    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
+    
     // Get next batch of unverified foods
-    // Prioritize: not verified, low quality scores first
     const { data: foods, error } = await supabaseAdmin
       .from('food_servings')
       .select('*')
@@ -358,18 +326,33 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Process all foods in batch (GENTLE - one at a time)
+    // Store foods in local memory
+    const localFoods = [...foods]
+    console.log(`✅ Fetched ${localFoods.length} foods - DATABASE CONNECTION CLOSED`)
+
+    // =====================================================================
+    // STEP 2: PROCESS IN MEMORY (OpenAI calls, no database connection)
+    // =====================================================================
+    console.log('\n🤖 STEP 2: Processing with OpenAI (database is idle)...')
+    
+    const updates: Array<Partial<FoodServing> & { id: string }> = []
+    const allPortions: Array<{ food_id: string, portion_name: string, gram_weight: number }> = []
     let verifiedCount = 0
-    let totalPortions = 0
     let errorCount = 0
     const results = []
 
-    for (const food of foods) {
-      const result = await processFood(supabaseAdmin, food)
+    for (const food of localFoods) {
+      const result = await processFood(food)
       
-      if (result.verified) verifiedCount++
+      if (result.verified && result.updatedFood) {
+        verifiedCount++
+        updates.push(result.updatedFood)
+        if (result.discoveredPortions) {
+          allPortions.push(...result.discoveredPortions)
+        }
+      }
+      
       if (!result.success) errorCount++
-      totalPortions += result.portions_found
       
       results.push({ 
         food_name: food.food_name, 
@@ -377,20 +360,78 @@ Deno.serve(async (req) => {
         portions_found: result.portions_found,
         error: result.error
       })
+    }
 
-      // Gentle pause between foods to prevent database stampede
-      await new Promise(resolve => setTimeout(resolve, 100))
+    console.log(`\n✅ Processing complete:`)
+    console.log(`   Updates prepared: ${updates.length}`)
+    console.log(`   Portions prepared: ${allPortions.length}`)
+    console.log(`   Errors: ${errorCount}`)
+
+    // =====================================================================
+    // STEP 3: RECONNECT & SAVE (Bulk save, fast database operation)
+    // =====================================================================
+    console.log('\n💾 STEP 3: Saving to database (bulk operation)...')
+
+    // Reconnect for bulk save
+    const supabaseAdmin2 = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
+
+    // Bulk update food_servings
+    if (updates.length > 0) {
+      for (const update of updates) {
+        const { error: updateError } = await supabaseAdmin2
+          .from('food_servings')
+          .update(update)
+          .eq('id', update.id)
+
+        if (updateError) {
+          console.error(`❌ Failed to update ${update.id}:`, updateError)
+        }
+      }
+      console.log(`✅ Updated ${updates.length} foods in food_servings`)
+    }
+
+    // Bulk insert portions (with duplicate checking)
+    if (allPortions.length > 0) {
+      let insertedCount = 0
+      
+      for (const portion of allPortions) {
+        // Check if portion already exists
+        const { data: existing } = await supabaseAdmin2
+          .from('food_portions')
+          .select('id')
+          .eq('food_id', portion.food_id)
+          .eq('portion_name', portion.portion_name)
+          .maybeSingle()
+
+        if (existing) {
+          console.log(`   ⏭️  Portion "${portion.portion_name}" already exists - skipping`)
+          continue
+        }
+
+        // Insert new portion
+        const { error: portionError } = await supabaseAdmin2
+          .from('food_portions')
+          .insert(portion)
+
+        if (portionError) {
+          console.error(`   ⚠️  Failed to insert portion "${portion.portion_name}":`, portionError)
+        } else {
+          insertedCount++
+        }
+      }
+      
+      console.log(`✅ Inserted ${insertedCount} new portions into food_portions`)
     }
 
     // Count remaining unverified foods
-    const { count } = await supabaseAdmin
+    const { count } = await supabaseAdmin2
       .from('food_servings')
       .select('*', { count: 'exact', head: true })
       .or('is_verified.is.null,is_verified.eq.false')
 
     console.log(`\n✅ Batch complete:`)
     console.log(`   Verified: ${verifiedCount}`)
-    console.log(`   Portions found: ${totalPortions}`)
+    console.log(`   Portions found: ${allPortions.length}`)
     console.log(`   Errors: ${errorCount}`)
     console.log(`   Remaining: ${count || 0}`)
 
@@ -398,10 +439,10 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         verified: verifiedCount,
-        portions_found: totalPortions,
+        portions_found: allPortions.length,
         errors: errorCount,
         remaining: count || 0,
-        batch_size: foods.length,
+        batch_size: localFoods.length,
         results: results
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
