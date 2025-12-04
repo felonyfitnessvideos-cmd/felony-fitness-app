@@ -26,59 +26,30 @@ jobs:
     timeout-minutes: 10
     
     steps:
-      - name: Verify Nutrition Data (Serial)
+      - name: Trigger Nutrition Verification (Fire & Forget)
         id: verify
         run: |
-          echo "🔍 Starting gentle nutrition verification..."
-          echo "⚙️  Mode: Single-threaded (no parallel workers)"
+          echo "🔍 Triggering background verification..."
+          echo "⚙️  Mode: Fire & Forget (1-second timeout)"
           
-          # Batch size of 1 to prevent edge function timeout (150s limit)
-          # Ultra-conservative: process one food at a time (~30s each)
-          BATCH_SIZE="1"
+          # Fire & Forget Pattern:
+          # 1. Send request with 1-second timeout (--max-time 1)
+          # 2. Ignore curl "failure" (|| true) since it will timeout
+          # 3. Supabase starts the work and runs in background
+          # 4. GitHub doesn't wait for completion (prevents 522 timeout)
           
-          response=$(curl -s -X POST \
+          curl -X POST \
+            --max-time 1 \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-            -d "{\"batch_size\": ${BATCH_SIZE}}" \
-            "${{ secrets.SUPABASE_URL }}/functions/v1/nutrition-verification")
-          
-          echo "Response: $response"
-          
-          if [ -z "$response" ]; then
-            echo "✅ Empty response - no foods to verify"
-            exit 0
-          fi
-          
-          if echo "$response" | jq . > /dev/null 2>&1; then
-            verified=$(echo "$response" | jq -r '.verified // 0')
-            portions=$(echo "$response" | jq -r '.portions_found // 0')
-            errors=$(echo "$response" | jq -r '.errors // 0')
-            remaining=$(echo "$response" | jq -r '.remaining // 0')
+            -d "{\"batch_size\": 1}" \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/nutrition-verification" || true
             
-            echo "✅ Verified: $verified foods"
-            echo "🔍 Portions discovered: $portions"
-            echo "❌ Errors: $errors"
-            echo "📊 Remaining: $remaining foods"
-            
-            # Log success
-            if [ "$verified" -gt 0 ]; then
-              echo "🎉 Successfully normalized $verified foods to 100g baseline"
-            fi
-            
-            if [ "$portions" -gt 0 ]; then
-              echo "🎉 Discovered $portions new serving portions"
-            fi
-            
-            if [ "$remaining" -eq 0 ]; then
-              echo "🏆 DATABASE FULLY VERIFIED! All foods normalized to 100g."
-            fi
-          else
-            echo "⚠️  Invalid JSON response"
-            exit 0
-          fi
+          echo "✅ Signal sent! The worker is now running in the background on Supabase."
+          echo "🔄 Next trigger: +5 minutes (cron schedule)"
 
       - name: Report Status
         if: always()
         run: |
-          echo "✅ Serial verification worker completed"
-          echo "ℹ️  Next run: +5 minutes (cron schedule)"
+          echo "✅ Fire & Forget trigger completed"
+          echo "ℹ️  Worker is processing in background (check Supabase logs)"
