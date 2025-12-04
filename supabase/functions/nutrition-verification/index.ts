@@ -17,9 +17,10 @@
  * 4. Insert discovered portions into food_portions table
  * 5. Mark as verified with quality_score = 100
  * 
- * BATCH SIZE: Configurable (default: 5, recommended: 5-10 for gentle operation)
- * FREQUENCY: Single-threaded via GitHub Action concurrency control
- * PERFORMANCE: ~5-10 foods per run, gentle on database
+ * BATCH SIZE: Configurable (default: 3, recommended: 2-5 to avoid timeout)
+ * FREQUENCY: Single-threaded via GitHub Action concurrency control  
+ * PERFORMANCE: ~2-3 foods per run, gentle on database, stays under 150s limit
+ * TIMEOUT: 150s edge function limit, 120s processing budget (30s buffer for DB)
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
@@ -289,18 +290,26 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Parse batch size from request body (default to 5)
+    // Parse batch size from request body (default to 3 to prevent timeout)
     const requestBody = await req.json().catch(() => ({}))
-    const batchSize = requestBody.batch_size || 5
+    const batchSize = requestBody.batch_size || 3
 
     console.log(`\n🚀 Starting Portion Miner - Batch size: ${batchSize}`)
+    console.log(`⏱️  Edge Function timeout: 150 seconds max`)
 
     // =====================================================================
     // STEP 1: FETCH & DISCONNECT (Get data and close connection FAST)
     // =====================================================================
     console.log('\n📥 STEP 1: Fetching foods from database...')
     
-    const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
+    const supabaseAdmin = createClient(
+      SUPABASE_URL!, 
+      SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        db: { schema: 'public' },
+        global: { fetch }
+      }
+    )
     
     // Get next batch of unverified foods
     const { data: foods, error } = await supabaseAdmin
@@ -326,14 +335,21 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Store foods in local memory
+    // Store foods in local memory and clear reference
     const localFoods = [...foods]
-    console.log(`✅ Fetched ${localFoods.length} foods - DATABASE CONNECTION CLOSED`)
+    console.log(`✅ Fetched ${localFoods.length} foods - releasing connection...`)
+    
+    // Force garbage collection of first client
+    await supabaseAdmin.removeAllChannels()
+    console.log(`✅ Connection released - DATABASE IDLE`)
 
     // =====================================================================
     // STEP 2: PROCESS IN MEMORY (OpenAI calls, no database connection)
     // =====================================================================
     console.log('\n🤖 STEP 2: Processing with OpenAI (database is idle)...')
+    
+    const startTime = Date.now()
+    const TIMEOUT_MS = 120000 // 120 seconds (leave 30s buffer for Step 3)
     
     const updates: Array<Partial<FoodServing> & { id: string }> = []
     const allPortions: Array<{ food_id: string, portion_name: string, gram_weight: number }> = []
@@ -342,6 +358,14 @@ Deno.serve(async (req) => {
     const results = []
 
     for (const food of localFoods) {
+      // Check if we're approaching timeout
+      const elapsed = Date.now() - startTime
+      if (elapsed > TIMEOUT_MS) {
+        console.log(`⚠️  Approaching timeout (${elapsed}ms) - stopping early`)
+        console.log(`   Processed ${verifiedCount} of ${localFoods.length} foods`)
+        break
+      }
+      
       const result = await processFood(food)
       
       if (result.verified && result.updatedFood) {

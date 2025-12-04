@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       batch_size:
-        description: 'Batch size (default 5, max 10 recommended)'
+        description: 'Batch size (default 3, max 5 to avoid timeout)'
         required: false
-        default: '5'
+        default: '3'
 
 # CRITICAL: Concurrency control ensures only ONE run at a time
 # No parallel execution, no database stampede
@@ -32,8 +32,9 @@ jobs:
           echo "🔍 Starting gentle nutrition verification..."
           echo "⚙️  Mode: Single-threaded (no parallel workers)"
           
-          # Hardcoded batch size of 5 for gentle operation
-          BATCH_SIZE="5"
+          # Batch size of 3 to prevent edge function timeout (150s limit)
+          # Each food takes ~20-30s with OpenAI, so 3 foods = ~90s (safe margin)
+          BATCH_SIZE="3"
           
           response=$(curl -s -X POST \
             -H "Content-Type: application/json" \
