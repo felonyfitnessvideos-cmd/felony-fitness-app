@@ -1,30 +1,30 @@
 /**
  * @file supabase/functions/nutrition-verification/index.ts
- * @description AUTO-CORRECTING Nutrition Verification Worker
+ * @description PORTION MINER - Nutrition Verification & Portion Discovery Worker
  * 
- * UPDATED VERIFICATION FLOW (2025-11-28):
- * - Process ALL unverified foods (including flagged and low quality)
- * - Prioritize low quality scores first (ascending order)
- * - Re-verify foods marked needs_review=TRUE (give them another chance)
- * - Target: Get everything to is_verified=TRUE with quality_score=100
+ * NEW ARCHITECTURE (2025-12-04):
+ * This worker acts as a "Portion Miner" that:
+ * 1. Normalizes ALL nutrition data to 100g baseline (stored in food_servings)
+ * 2. Extracts common serving portions (packets, cups, etc.) and stores in food_portions
+ * 3. Runs gentle, single-threaded to prevent database stampedes
  * 
  * VERIFICATION PROCESS:
- * 1. Initial deterministic checks (Atwater, Physics, Outliers)
- * 2. If issues found → Ask GPT-4 for corrections
- * 3. Apply corrections to database
- * 4. Re-verify corrected values
- * 5. Loop until verified OR max attempts (3) reached
- * 6. Mark as verified (100%) OR flag for human review
+ * 1. Get food from database
+ * 2. Ask GPT-4 to provide:
+ *    - Verified nutrition values normalized to 100g
+ *    - Common serving portions (e.g., "1 packet = 28g", "1 cup = 240g")
+ * 3. Update food_servings with 100g values (serving_description = '100g')
+ * 4. Insert discovered portions into food_portions table
+ * 5. Mark as verified with quality_score = 100
  * 
- * BATCH SIZE: Configurable (default: 5 per worker)
- * FREQUENCY: Every 2 minutes = 5 workers × 5 foods = 25 foods per run
- * PERFORMANCE: 750 foods/hour with 5 parallel workers
+ * BATCH SIZE: Configurable (default: 5, recommended: 5-10 for gentle operation)
+ * FREQUENCY: Single-threaded via GitHub Action concurrency control
+ * PERFORMANCE: ~5-10 foods per run, gentle on database
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
 
-const MAX_CORRECTION_ATTEMPTS = 3
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -33,8 +33,6 @@ interface FoodServing {
   id: string
   food_name: string
   serving_description: string
-  serving_amount: number
-  serving_unit: string
   calories: number
   protein_g: number
   carbs_g: number
@@ -57,202 +55,55 @@ interface FoodServing {
   category: string
   data_sources: string
   quality_score: number
-  serving_weight_g?: number
 }
 
-interface VerificationResult {
-  passed: boolean
-  flags: string[]
-  severity: 'pass' | 'warning' | 'critical'
-  details: Record<string, any>
+interface CommonPortion {
+  portion_name: string  // e.g., "1 packet", "1 cup", "1 slice"
+  gram_weight: number   // Weight in grams
 }
 
-interface CorrectionResult {
-  needsCorrection: boolean
-  correctedValues?: Partial<FoodServing>
-  reasoning?: string
-  confidence?: number
-}
-
-/**
- * DETERMINISTIC CHECK 1: Atwater Check
- * Note: Alcohol provides 7 cal/g but isn't tracked in standard macros
- */
-function atwaterCheck(food: FoodServing): VerificationResult {
-  const calculatedCalories = (food.protein_g * 4) + (food.carbs_g * 4) + (food.fat_g * 9)
-  const difference = Math.abs(food.calories - calculatedCalories)
-  const percentDifference = food.calories > 0 ? (difference / food.calories) * 100 : 0
-
-  // Alcohol exception: Allow higher tolerance for beverages
-  // Alcohol = 7 cal/g but isn't tracked in protein/carbs/fat
-  const isAlcoholic = /whiskey|vodka|rum|gin|tequila|beer|wine|bourbon|scotch|brandy|cocktail/i.test(food.food_name || '')
-  const tolerance = isAlcoholic ? 50 : 20 // 50% for alcohol, 20% for regular food
-
-  if (percentDifference > tolerance && food.calories > 10) {
-    return {
-      passed: false,
-      flags: ['ATWATER_MISMATCH'],
-      severity: 'warning',
-      details: {
-        listed_calories: food.calories,
-        calculated_calories: calculatedCalories.toFixed(1),
-        difference: difference.toFixed(1),
-        percent_difference: percentDifference.toFixed(1) + '%',
-        note: isAlcoholic ? 'Alcohol contains ~7 cal/g not accounted for in standard macros' : undefined
-      }
-    }
+interface GPTPortionMinerResult {
+  verified_100g_values: {
+    category: string
+    calories: number
+    protein_g: number
+    carbs_g: number
+    fat_g: number
+    fiber_g: number
+    sugar_g: number
+    sodium_mg: number
+    calcium_mg: number
+    iron_mg: number
+    vitamin_c_mg: number
+    vitamin_a_mcg: number
+    potassium_mg: number
   }
-
-  return { passed: true, flags: [], severity: 'pass', details: {} }
-}
-    }
-  }
-
-  return { passed: true, flags: [], severity: 'pass', details: {} }
+  common_portions: CommonPortion[]
+  reasoning: string
+  confidence: number
 }
 
 /**
- * DETERMINISTIC CHECK 2: Physics Check
+ * Ask GPT-4 to normalize to 100g and discover common portions
  */
-function physicsCheck(food: FoodServing): VerificationResult {
-  // Note: Since we don't have serving_weight_g, we'll use 100g as baseline
-  // Most entries in food_servings are normalized to 100g portions
-  const totalMacrosG = food.protein_g + food.carbs_g + food.fat_g
-
-  // Total macros cannot exceed 110g per 100g serving (allowing 10% tolerance for water/ash)
-  if (totalMacrosG > 110) {
-    return {
-      passed: false,
-      flags: ['PHYSICS_VIOLATION'],
-      severity: 'critical',
-      details: {
-        total_macros_g: totalMacrosG.toFixed(1),
-        reason: 'Sum of macros exceeds 110g per 100g serving (impossible)'
-      }
-    }
-  }
-
-  return { passed: true, flags: [], severity: 'pass', details: {} }
-}
-
-/**
- * DETERMINISTIC CHECK 3: Outlier Check
- * Catches categorization errors and nutritional anomalies
- */
-function outlierCheck(food: FoodServing): VerificationResult {
-  const flags: string[] = []
-  const category = food.category?.toLowerCase() || ''
-  const foodName = food.food_name?.toLowerCase() || ''
-
-  // CATEGORIZATION ERROR DETECTION
-  
-  // Alcohol miscategorized as Grains
-  if (category.includes('grain') || category.includes('bread') || category.includes('pasta')) {
-    if (/whiskey|vodka|rum|gin|tequila|beer|wine|bourbon|scotch|brandy|cocktail|margarita|mojito/i.test(foodName)) {
-      flags.push('ALCOHOL_MISCATEGORIZED_AS_GRAINS')
-    }
-    if (/vegetable oil|olive oil|canola oil|coconut oil|oil/i.test(foodName)) {
-      flags.push('OIL_MISCATEGORIZED_AS_GRAINS')
-    }
-    if (/turnip|collard|mustard greens|chard|kale|spinach/i.test(foodName)) {
-      flags.push('VEGETABLE_MISCATEGORIZED_AS_GRAINS')
-    }
-  }
-  
-  // Chips miscategorized as Dairy
-  if (category.includes('dairy')) {
-    if (/chip|dorito|frito|nacho|tortilla chip|potato chip/i.test(foodName)) {
-      flags.push('CHIPS_MISCATEGORIZED_AS_DAIRY')
-    }
-  }
-  
-  // Oil/fat products miscategorized
-  if (/oil|lard|shortening|ghee/i.test(foodName) && !category.includes('fat') && !category.includes('oil')) {
-    flags.push('OIL_WRONG_CATEGORY')
-  }
-
-  // NUTRITIONAL OUTLIER DETECTION
-  
-  // Vegetables: High fat or calorie check
-  if (category.includes('vegetable')) {
-    if (food.fat_g > 10) flags.push('VEGETABLE_HIGH_FAT')
-    if (food.calories > 150) flags.push('VEGETABLE_HIGH_CALORIE')
-  }
-
-  // Fruits: High protein or fat (except avocados)
-  if (category.includes('fruit')) {
-    if (food.protein_g > 5 && !foodName.includes('avocado')) flags.push('FRUIT_HIGH_PROTEIN')
-    if (food.fat_g > 15 && !foodName.includes('avocado')) flags.push('FRUIT_HIGH_FAT')
-  }
-
-  // Protein sources: Low protein
-  if (category.includes('meat') || category.includes('fish') || category.includes('poultry')) {
-    if (food.protein_g < 10) flags.push('PROTEIN_SOURCE_LOW_PROTEIN')
-  }
-
-  // Grains: Low carbs (but not if it's actually alcohol!)
-  if (category.includes('grain') || category.includes('bread') || category.includes('pasta')) {
-    if (food.carbs_g < 20 && !flags.includes('ALCOHOL_MISCATEGORIZED_AS_GRAINS')) {
-      flags.push('GRAIN_LOW_CARB')
-    }
-  }
-
-  // Fats/Oils: Low fat
-  if (category.includes('oil') || category.includes('butter') || category.includes('fat')) {
-    if (food.fat_g < 50) flags.push('FAT_SOURCE_LOW_FAT')
-  }
-  
-  // Beverages: Alcohol calorie check
-  if (category.includes('beverage')) {
-    const isAlcoholic = /whiskey|vodka|rum|gin|tequila|beer|wine|bourbon|scotch|brandy|cocktail/i.test(foodName)
-    const isDiet = /diet|zero|light|low cal/i.test(foodName)
-    
-    // Diet paradox: Diet version should have FEWER calories than regular
-    if (isDiet && food.calories > 100) {
-      flags.push('DIET_BEVERAGE_HIGH_CALORIE')
-    }
-    
-    // Alcohol with impossibly low calories
-    // Note: Can't check serving size since serving_description is text
-    if (isAlcoholic && food.calories < 50) {
-      flags.push('ALCOHOL_SUSPICIOUSLY_LOW_CALORIE')
-    }
-    
-    // Alcohol with zero macros but has calories = missing alcohol content
-    if (isAlcoholic && food.calories > 50 && food.protein_g === 0 && food.carbs_g < 5 && food.fat_g === 0) {
-      flags.push('ALCOHOL_CALORIES_WITHOUT_MACROS')
-    }
-  }
-
-  return {
-    passed: flags.length === 0,
-    flags,
-    severity: flags.length > 0 ? 'warning' : 'pass',
-    details: flags.length > 0 ? { category, triggered_rules: flags } : {}
-  }
-}
-
-/**
- * Ask GPT-4 to provide corrected nutrition values
- */
-async function getCorrectionFromGPT(food: FoodServing, issues: string[]): Promise<CorrectionResult> {
+async function minePortionsFromGPT(food: FoodServing): Promise<GPTPortionMinerResult | null> {
   try {
-    const prompt = `You are a nutrition data expert. Review this food entry and provide CORRECTED values if needed.
+    const prompt = `You are a nutrition data expert and portion discovery specialist. Your task is to:
+1. Normalize nutrition values to 100g baseline
+2. Discover common serving portions for this food
 
-CURRENT DATA:
-Food: ${food.food_name}
-Serving: ${food.serving_description}
+FOOD TO ANALYZE:
+Name: ${food.food_name}
+Current Serving: ${food.serving_description}
 Category: ${food.category}
 
-CURRENT VALUES:
+CURRENT VALUES (may not be 100g):
 - Calories: ${food.calories} kcal
 - Protein: ${food.protein_g}g
 - Carbs: ${food.carbs_g}g
 - Fat: ${food.fat_g}g
 - Fiber: ${food.fiber_g}g
 - Sugar: ${food.sugar_g}g
-
-MICRONUTRIENTS:
 - Sodium: ${food.sodium_mg}mg
 - Calcium: ${food.calcium_mg}mg
 - Iron: ${food.iron_mg}mg
@@ -260,54 +111,51 @@ MICRONUTRIENTS:
 - Vitamin A: ${food.vitamin_a_mcg}mcg
 - Potassium: ${food.potassium_mg}mg
 
-IDENTIFIED ISSUES:
-${issues.join('\n')}
+TASK 1: NORMALIZE TO 100G
+Provide accurate nutrition values per 100 grams using USDA/reliable databases.
+Apply physics-based validation:
+- Total macros (P+C+F) cannot exceed ~100g
+- Calories should ≈ (Protein×4) + (Carbs×4) + (Fat×9) + (Alcohol×7 if alcoholic)
+- Ensure proper categorization (alcoholic beverages → "Beverages", not "Grains")
 
-IMPORTANT RULES:
-1. ALCOHOL: Alcohol provides 7 calories per gram but is NOT tracked in protein/carbs/fat
-   - Whiskey, vodka, rum, gin (80 proof) = ~64 cal per 1 oz (pure alcohol)
-   - Beer = ~12g carbs + alcohol per 12 oz (~150 cal)
-   - Wine = ~4g carbs + alcohol per 5 oz (~120 cal)
-   - Mixed drinks = mixer carbs/sugar + alcohol calories
-   - Diet mixers should have FEWER calories than regular versions
+TASK 2: DISCOVER COMMON PORTIONS
+Research and list typical serving sizes for this food. Examples:
+- Chips: "1 packet", "1 serving (28g)"
+- Whiskey: "1 shot (1.5 fl oz)", "1 jigger (44ml)"
+- Bread: "1 slice", "2 slices"
+- Cereal: "1 cup", "1 serving"
+- Vegetables: "1 cup chopped", "100g"
 
-2. CATEGORIZATION CORRECTIONS:
-   - Alcoholic beverages → "Beverages" (NOT "Grains, Bread & Pasta")
-   - Cooking oils (vegetable oil, olive oil) → "Fats & Oils" (NOT "Grains")
-   - Leafy greens (turnip greens, collards) → "Vegetables" (NOT "Grains")
-   - Chips (Doritos, tortilla chips) → "Snacks & Treats" (NOT "Dairy & Eggs")
-   - Whipped topping, fat-free → "Fats & Oils" (NOT "Grains")
-
-3. MACRO VALIDATION:
-   - Calories should ≈ (Protein×4) + (Carbs×4) + (Fat×9) + (Alcohol×7 if present)
-   - If sugar is present, there MUST be corresponding carbs and calories
-   - Total macros (P+C+F) cannot exceed serving weight by more than 10%
-
-TASK:
-1. Check if category is correct - fix if miscategorized
-2. Determine if nutritional values are accurate for this food and serving size
-3. If INACCURATE: Provide corrected values based on USDA/reliable nutrition databases
-4. If ACCURATE: Confirm they are correct
+Include ONLY portions you're confident about. If no standard portions exist, return empty array.
 
 Return JSON in this EXACT format:
 {
-  "needsCorrection": true/false,
-  "correctedValues": {
+  "verified_100g_values": {
     "category": "<correct category>",
-    "calories": <number>,
-    "protein_g": <number>,
-    "carbs_g": <number>,
-    "fat_g": <number>,
-    "fiber_g": <number>,
-    "sugar_g": <number>,
-    "sodium_mg": <number>,
-    "calcium_mg": <number>,
-    "iron_mg": <number>,
-    "vitamin_c_mg": <number>,
-    "vitamin_a_mcg": <number>,
-    "potassium_mg": <number>
+    "calories": <number per 100g>,
+    "protein_g": <number per 100g>,
+    "carbs_g": <number per 100g>,
+    "fat_g": <number per 100g>,
+    "fiber_g": <number per 100g>,
+    "sugar_g": <number per 100g>,
+    "sodium_mg": <number per 100g>,
+    "calcium_mg": <number per 100g>,
+    "iron_mg": <number per 100g>,
+    "vitamin_c_mg": <number per 100g>,
+    "vitamin_a_mcg": <number per 100g>,
+    "potassium_mg": <number per 100g>
   },
-  "reasoning": "Brief explanation of corrections",
+  "common_portions": [
+    {
+      "portion_name": "1 packet",
+      "gram_weight": 28
+    },
+    {
+      "portion_name": "1 cup",
+      "gram_weight": 240
+    }
+  ],
+  "reasoning": "Brief explanation of normalization and portions found",
   "confidence": 0-100
 }`
 
@@ -325,182 +173,147 @@ Return JSON in this EXACT format:
       })
     })
 
-    const data = await response.json()
-    const result = JSON.parse(data.choices[0].message.content)
-    
-    return result as CorrectionResult
-
-  } catch (error) {
-    console.error('GPT correction failed:', error)
-    return { needsCorrection: false }
-  }
-}
-
-/**
- * Verify corrected values with GPT-4
- */
-async function verifyCorrectionsWithGPT(food: FoodServing): Promise<boolean> {
-  try {
-    const prompt = `You are a nutrition data validator. Verify if these nutrition values are ACCURATE.
-
-Food: ${food.food_name}
-Serving: ${food.serving_description}
-
-VALUES TO VERIFY:
-- Calories: ${food.calories} kcal
-- Protein: ${food.protein_g}g, Carbs: ${food.carbs_g}g, Fat: ${food.fat_g}g
-- Fiber: ${food.fiber_g}g, Sugar: ${food.sugar_g}g
-- Sodium: ${food.sodium_mg}mg, Calcium: ${food.calcium_mg}mg
-- Iron: ${food.iron_mg}mg, Vitamin C: ${food.vitamin_c_mg}mg
-
-QUESTIONS:
-1. Do calories match the Atwater formula? (P×4 + C×4 + F×9)
-2. Are macros realistic for this food and serving size?
-3. Are micronutrients reasonable for this food type?
-4. Is this overall a high-quality, accurate nutrition entry?
-
-Return JSON: {"accurate": true/false, "confidence": 0-100, "issues": [list any remaining issues]}`
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.1
-      })
-    })
+    if (!response.ok) {
+      console.error(`OpenAI API error: ${response.status}`)
+      return null
+    }
 
     const data = await response.json()
     const result = JSON.parse(data.choices[0].message.content)
     
-    // Lowered confidence threshold from 80 to 65 to reduce false flags
-    // If deterministic checks pass, GPT just confirms reasonableness
-    return result.accurate && result.confidence >= 65
+    return result as GPTPortionMinerResult
 
   } catch (error) {
-    console.error('GPT verification failed:', error)
-    return false
+    console.error('GPT portion mining failed:', error)
+    return null
   }
 }
 
+
 /**
- * Main auto-correction loop for a single food
+ * Process a single food: normalize to 100g and mine portions
  */
-async function autoCorrectFood(supabaseAdmin: any, food: FoodServing): Promise<{
+async function processFood(supabaseAdmin: any, food: FoodServing): Promise<{
   success: boolean
   verified: boolean
-  flagged: boolean
-  attempts: number
-  finalValues?: Partial<FoodServing>
+  portions_found: number
+  error?: string
 }> {
-  console.log(`\n🔄 Auto-correcting: ${food.food_name}`)
+  console.log(`\n🔍 Processing: ${food.food_name}`)
   
-  let currentFood = { ...food }
-  let attempt = 0
+  try {
+    // Ask GPT to normalize to 100g and find common portions
+    const result = await minePortionsFromGPT(food)
+    
+    if (!result) {
+      console.log(`   ❌ Failed to get GPT response`)
+      return { success: false, verified: false, portions_found: 0, error: 'GPT_FAILED' }
+    }
 
-  while (attempt < MAX_CORRECTION_ATTEMPTS) {
-    attempt++
-    console.log(`\n   Attempt ${attempt}/${MAX_CORRECTION_ATTEMPTS}`)
+    if (result.confidence < 70) {
+      console.log(`   ⚠️  Low confidence (${result.confidence}%) - skipping`)
+      return { success: false, verified: false, portions_found: 0, error: 'LOW_CONFIDENCE' }
+    }
 
-    // Run deterministic checks
-    const atwaterResult = atwaterCheck(currentFood)
-    const physicsResult = physicsCheck(currentFood)
-    const outlierResult = outlierCheck(currentFood)
+    console.log(`   ✅ GPT Result (confidence: ${result.confidence}%)`)
+    console.log(`   📝 ${result.reasoning}`)
 
-    const allFlags = [
-      ...atwaterResult.flags,
-      ...physicsResult.flags,
-      ...outlierResult.flags
-    ]
+    // CRITICAL: Update food_servings with 100g normalized values
+    // Hardcode serving_description to '100g'
+    const { error: updateError } = await supabaseAdmin
+      .from('food_servings')
+      .update({
+        serving_description: '100g',  // HARDCODED: Always 100g baseline
+        category: result.verified_100g_values.category,
+        calories: result.verified_100g_values.calories,
+        protein_g: result.verified_100g_values.protein_g,
+        carbs_g: result.verified_100g_values.carbs_g,
+        fat_g: result.verified_100g_values.fat_g,
+        fiber_g: result.verified_100g_values.fiber_g,
+        sugar_g: result.verified_100g_values.sugar_g,
+        sodium_mg: result.verified_100g_values.sodium_mg,
+        calcium_mg: result.verified_100g_values.calcium_mg,
+        iron_mg: result.verified_100g_values.iron_mg,
+        vitamin_c_mg: result.verified_100g_values.vitamin_c_mg,
+        vitamin_a_mcg: result.verified_100g_values.vitamin_a_mcg,
+        potassium_mg: result.verified_100g_values.potassium_mg,
+        is_verified: true,
+        quality_score: 100,
+        enrichment_status: 'verified',
+        needs_review: false,
+        review_flags: null,
+        last_verification: new Date().toISOString(),
+        verification_details: {
+          method: 'portion_miner',
+          confidence: result.confidence,
+          reasoning: result.reasoning,
+          timestamp: new Date().toISOString()
+        }
+      })
+      .eq('id', food.id)
 
-    console.log(`   Atwater: ${atwaterResult.passed ? '✅' : '⚠️'}`)
-    console.log(`   Physics: ${physicsResult.passed ? '✅' : '⚠️'}`)
-    console.log(`   Outlier: ${outlierResult.passed ? '✅' : '⚠️'}`)
+    if (updateError) {
+      console.error(`   ❌ Database update failed:`, updateError)
+      return { success: false, verified: false, portions_found: 0, error: 'DB_UPDATE_FAILED' }
+    }
 
-    // If all deterministic checks pass, do final GPT verification
-    if (allFlags.length === 0) {
-      console.log(`   🤖 Final GPT-4 verification...`)
-      const gptVerified = await verifyCorrectionsWithGPT(currentFood)
+    console.log(`   ✅ Updated food_servings with 100g baseline`)
+
+    // Insert discovered portions into food_portions table
+    let portionsInserted = 0
+    
+    if (result.common_portions && result.common_portions.length > 0) {
+      console.log(`   🔍 Found ${result.common_portions.length} common portions`)
       
-      if (gptVerified) {
-        console.log(`   ✅ VERIFIED! All checks passed.`)
-        
-        // Update database with verified values
-        await supabaseAdmin
-          .from('food_servings')
-          .update({
-            ...currentFood,
-            is_verified: true,
-            quality_score: 100,
-            enrichment_status: 'verified',
-            needs_review: false,
-            review_flags: null,
-            verification_details: {
-              attempts: attempt,
-              final_check: 'all_passed',
-              timestamp: new Date().toISOString()
-            },
-            last_verification: new Date().toISOString()
+      for (const portion of result.common_portions) {
+        // Check if portion already exists (prevent duplicates)
+        const { data: existing } = await supabaseAdmin
+          .from('food_portions')
+          .select('id')
+          .eq('food_id', food.id)
+          .eq('portion_name', portion.portion_name)
+          .single()
+
+        if (existing) {
+          console.log(`   ⏭️  Portion "${portion.portion_name}" already exists - skipping`)
+          continue
+        }
+
+        // Insert new portion
+        const { error: portionError } = await supabaseAdmin
+          .from('food_portions')
+          .insert({
+            food_id: food.id,
+            portion_name: portion.portion_name,
+            gram_weight: portion.gram_weight
           })
-          .eq('id', food.id)
 
-        return { success: true, verified: true, flagged: false, attempts: attempt }
+        if (portionError) {
+          console.error(`   ⚠️  Failed to insert portion "${portion.portion_name}":`, portionError)
+        } else {
+          console.log(`   ✅ Inserted: ${portion.portion_name} = ${portion.gram_weight}g`)
+          portionsInserted++
+        }
       }
+    } else {
+      console.log(`   ℹ️  No common portions found for this food`)
     }
 
-    // Issues found - ask GPT for corrections
-    console.log(`   🤖 Asking GPT-4 for corrections...`)
-    const correction = await getCorrectionFromGPT(currentFood, allFlags)
-
-    if (!correction.needsCorrection) {
-      console.log(`   ⚠️  GPT says values are actually correct, but deterministic checks failed`)
-      // This is a conflict - flag for human review
-      break
+    return { 
+      success: true, 
+      verified: true, 
+      portions_found: portionsInserted 
     }
 
-    console.log(`   🔧 Applying corrections (confidence: ${correction.confidence}%)`)
-    console.log(`   📝 ${correction.reasoning}`)
-
-    // Apply corrections
-    currentFood = {
-      ...currentFood,
-      ...correction.correctedValues
+  } catch (error) {
+    console.error(`   ❌ Error processing food:`, error)
+    return { 
+      success: false, 
+      verified: false, 
+      portions_found: 0, 
+      error: error.message 
     }
-
-    // Log the changes
-    console.log(`   Updated values:`)
-    console.log(`      Calories: ${food.calories} → ${currentFood.calories}`)
-    console.log(`      Protein: ${food.protein_g}g → ${currentFood.protein_g}g`)
-    console.log(`      Carbs: ${food.carbs_g}g → ${currentFood.carbs_g}g`)
-    console.log(`      Fat: ${food.fat_g}g → ${currentFood.fat_g}g`)
-
-    // Loop will re-check with new values
   }
-
-  // Max attempts reached without verification - flag for human review
-  console.log(`   ❌ Could not verify after ${MAX_CORRECTION_ATTEMPTS} attempts - flagging for review`)
-  
-  await supabaseAdmin
-    .from('food_servings')
-    .update({
-      needs_review: true,
-      review_flags: ['MAX_CORRECTION_ATTEMPTS_EXCEEDED'],
-      review_details: {
-        attempts: attempt,
-        original_values: food,
-        last_attempted_values: currentFood,
-        reason: 'Could not achieve verified status after corrections'
-      },
-      last_verification: new Date().toISOString()
-    })
-    .eq('id', food.id)
-
-  return { success: true, verified: false, flagged: true, attempts: attempt, finalValues: currentFood }
 }
 
 /**
@@ -514,64 +327,79 @@ Deno.serve(async (req) => {
   try {
     const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
-    // Parse batch size from request body (default to 1)
+    // Parse batch size from request body (default to 5)
     const requestBody = await req.json().catch(() => ({}))
-    const batchSize = requestBody.batch_size || 1
+    const batchSize = requestBody.batch_size || 5
 
-    // Get next batch of foods to verify
-    // UPDATED LOGIC: Process foods that need verification OR re-verification
-    // 1. Not yet verified (is_verified IS NULL OR FALSE)
-    // 2. Include foods flagged for review (needs_review=TRUE) - recheck them
-    // 3. Include low quality scores (<100) - verify to 100
-    // 4. Prioritize: bad_enrichment_data flags first, then low quality, then unverified
+    console.log(`\n🚀 Starting Portion Miner - Batch size: ${batchSize}`)
+
+    // Get next batch of unverified foods
+    // Prioritize: not verified, low quality scores first
     const { data: foods, error } = await supabaseAdmin
       .from('food_servings')
       .select('*')
-      .in('enrichment_status', ['completed', 'verified'])
-      .or('is_verified.is.null,is_verified.eq.false')  // Not verified yet
-      .order('quality_score', { ascending: true, nullsFirst: true })  // Low quality first
+      .or('is_verified.is.null,is_verified.eq.false')
+      .order('quality_score', { ascending: true, nullsFirst: true })
       .limit(batchSize)
 
     if (error) throw error
 
     if (!foods || foods.length === 0) {
+      console.log('✅ No foods to process - database is clean!')
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'No foods to verify',
           verified: 0,
-          flagged: 0,
+          portions_found: 0,
           remaining: 0
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Process all foods in batch
+    // Process all foods in batch (GENTLE - one at a time)
     let verifiedCount = 0
-    let flaggedCount = 0
+    let totalPortions = 0
+    let errorCount = 0
     const results = []
 
     for (const food of foods) {
-      const result = await autoCorrectFood(supabaseAdmin, food)
+      const result = await processFood(supabaseAdmin, food)
+      
       if (result.verified) verifiedCount++
-      if (result.flagged) flaggedCount++
-      results.push({ food_name: food.food_name, ...result })
+      if (!result.success) errorCount++
+      totalPortions += result.portions_found
+      
+      results.push({ 
+        food_name: food.food_name, 
+        verified: result.verified,
+        portions_found: result.portions_found,
+        error: result.error
+      })
+
+      // Gentle pause between foods to prevent database stampede
+      await new Promise(resolve => setTimeout(resolve, 100))
     }
 
-    // Count remaining foods (exclude only verified foods)
+    // Count remaining unverified foods
     const { count } = await supabaseAdmin
       .from('food_servings')
       .select('*', { count: 'exact', head: true })
-      .in('enrichment_status', ['completed', 'verified'])
-      .or('is_verified.is.null,is_verified.eq.false')  // Include flagged and low quality foods
+      .or('is_verified.is.null,is_verified.eq.false')
+
+    console.log(`\n✅ Batch complete:`)
+    console.log(`   Verified: ${verifiedCount}`)
+    console.log(`   Portions found: ${totalPortions}`)
+    console.log(`   Errors: ${errorCount}`)
+    console.log(`   Remaining: ${count || 0}`)
 
     return new Response(
       JSON.stringify({
         success: true,
         verified: verifiedCount,
-        flagged: flaggedCount,
-        errors: 0,
+        portions_found: totalPortions,
+        errors: errorCount,
         remaining: count || 0,
         batch_size: foods.length,
         results: results
@@ -580,7 +408,7 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('❌ Fatal error:', error)
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       { 
