@@ -123,7 +123,7 @@ function NutritionLogPage() {
       const [logsResponse, profileResponse] = await Promise.all([
         supabase
           .from('nutrition_logs')
-          .select('*, food_servings(food_name, serving_description)')
+          .select('*, foods(name, brand_owner)')
           .eq('user_id', userId)
           .eq('log_date', todayDateString),
         supabase
@@ -302,6 +302,7 @@ function NutritionLogPage() {
         console.log('[DEBUG] Searching for:', term);
         
         // Direct Supabase search - foods table with portions
+        // Order by: non-alcoholic first, then by name
         const { data: results, error: searchError } = await supabase
           .from('foods')
           .select(`
@@ -310,9 +311,35 @@ function NutritionLogPage() {
           `)
           .or(`name.ilike.%${term}%,brand_owner.ilike.%${term}%`)
           .order('name')
-          .limit(50);
-
-        console.log('[DEBUG] Search results:', results?.length || 0, 'foods found');
+          .limit(100);
+        
+        // Filter out alcoholic beverages and sort better matches first
+        const filtered = (results || []).filter(food => 
+          !food.name.toLowerCase().includes('alcoholic') &&
+          !food.name.toLowerCase().includes('liqueur') &&
+          !food.name.toLowerCase().includes('wine') &&
+          !food.name.toLowerCase().includes('beer')
+        );
+        
+        // Sort: exact matches first, then starts with, then contains
+        const termLower = term.toLowerCase();
+        const sorted = filtered.sort((a, b) => {
+          const aName = a.name.toLowerCase();
+          const bName = b.name.toLowerCase();
+          
+          // Exact match
+          if (aName === termLower && bName !== termLower) return -1;
+          if (bName === termLower && aName !== termLower) return 1;
+          
+          // Starts with
+          if (aName.startsWith(termLower) && !bName.startsWith(termLower)) return -1;
+          if (bName.startsWith(termLower) && !aName.startsWith(termLower)) return 1;
+          
+          // Alphabetical
+          return aName.localeCompare(bName);
+        }).slice(0, 50);
+        
+        console.log('[DEBUG] Search results:', sorted.length, 'foods found (filtered from', results?.length || 0, ')');
         
         if (searchError) {
           console.error('Food search error:', searchError);
@@ -321,7 +348,7 @@ function NutritionLogPage() {
         }
 
         // Format results for UI
-        const standardizedResults = (results || []).map(food => {
+        const standardizedResults = (sorted || []).map(food => {
           // Get default portion (first one or 100g equivalent)
           const defaultPortion = food.portions?.[0] || {
             gram_weight: 100,
