@@ -299,6 +299,8 @@ function NutritionLogPage() {
 
       setIsSearching(true);
       try {
+        console.log('[DEBUG] Searching for:', term);
+        
         // Direct Supabase search - foods table with portions
         const { data: results, error: searchError } = await supabase
           .from('foods')
@@ -310,6 +312,8 @@ function NutritionLogPage() {
           .order('name')
           .limit(50);
 
+        console.log('[DEBUG] Search results:', results?.length || 0, 'foods found');
+        
         if (searchError) {
           console.error('Food search error:', searchError);
           setSearchResults([]);
@@ -367,6 +371,7 @@ function NutritionLogPage() {
           };
         });
 
+        console.log('[DEBUG] Standardized results:', standardizedResults.length);
         setSearchResults(standardizedResults);
       } catch (error) {
         if (error?.name === 'AbortError') {
