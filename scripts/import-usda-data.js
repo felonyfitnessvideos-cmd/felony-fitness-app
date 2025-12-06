@@ -24,10 +24,15 @@
  *   - food_category.csv      (optional: food categories)
  */
 
-const fs = require('fs');
-const path = require('path');
-const { parse } = require('csv-parse/sync');
-const { createClient } = require('@supabase/supabase-js');
+import fs from 'fs';
+import path from 'path';
+import { parse } from 'csv-parse';
+import { createClient } from '@supabase/supabase-js';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // ============================================================================
 // CONFIGURATION
