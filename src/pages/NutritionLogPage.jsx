@@ -327,13 +327,32 @@ function NutritionLogPage() {
           const aName = a.name.toLowerCase();
           const bName = b.name.toLowerCase();
           
+          // Prioritize simpler names (fewer words/commas = more basic food)
+          const aWords = aName.split(/[,\s]+/).length;
+          const bWords = bName.split(/[,\s]+/).length;
+          
           // Exact match
           if (aName === termLower && bName !== termLower) return -1;
           if (bName === termLower && aName !== termLower) return 1;
           
-          // Starts with
-          if (aName.startsWith(termLower) && !bName.startsWith(termLower)) return -1;
-          if (bName.startsWith(termLower) && !aName.startsWith(termLower)) return 1;
+          // Starts with search term
+          const aStarts = aName.startsWith(termLower);
+          const bStarts = bName.startsWith(termLower);
+          if (aStarts && !bStarts) return -1;
+          if (bStarts && !aStarts) return 1;
+          
+          // If both start with term, prefer simpler (brewed coffee > coffee cake)
+          if (aStarts && bStarts) {
+            if (aWords !== bWords) return aWords - bWords;
+          }
+          
+          // Prefer foods where term appears early
+          const aIndex = aName.indexOf(termLower);
+          const bIndex = bName.indexOf(termLower);
+          if (aIndex !== bIndex) return aIndex - bIndex;
+          
+          // Prefer simpler foods overall
+          if (aWords !== bWords) return aWords - bWords;
           
           // Alphabetical
           return aName.localeCompare(bName);
