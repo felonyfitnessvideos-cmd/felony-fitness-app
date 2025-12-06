@@ -299,64 +299,71 @@ function NutritionLogPage() {
 
       setIsSearching(true);
       try {
-        // Call the hybrid food-search-v2 Edge Function (enhanced with AI guardrails)
-        const { data: searchData, error: functionError } = await supabase.functions.invoke('food-search-v2', {
-          body: { query: term }
-        });
+        // Direct Supabase search - foods table with portions
+        const { data: results, error: searchError } = await supabase
+          .from('foods')
+          .select(`
+            *,
+            portions (*)
+          `)
+          .or(`name.ilike.%${term}%,brand_owner.ilike.%${term}%`)
+          .order('name')
+          .limit(50);
 
-        if (functionError) {
-          console.error('Food search error:', functionError);
-          console.error('Search data received:', searchData);
+        if (searchError) {
+          console.error('Food search error:', searchError);
           setSearchResults([]);
           return;
         }
 
-        const results = searchData?.results || [];
-        const source = searchData?.source || 'unknown';
+        // Format results for UI
+        const standardizedResults = (results || []).map(food => {
+          // Get default portion (first one or 100g equivalent)
+          const defaultPortion = food.portions?.[0] || {
+            gram_weight: 100,
+            portion_description: '100g'
+          };
 
-        // Standardize results format for both local and external sources
-        // food-search-v2 now returns flat arrays for both local and external
-        const standardizedResults = results.map(item => {
-          const isExternal = source === 'external';
-          
+          const portionGrams = defaultPortion.gram_weight || 100;
+          const multiplier = portionGrams / 100;
+
           return {
-            is_external: isExternal,
-            food_id: item.id || null,
-            name: item.food_name || item.name, // local has food_name, external has name
-            serving_id: isExternal ? null : item.id, // External foods don't have IDs yet
-            serving_description: item.serving_description,
-            // Core macronutrients
-            calories: item.calories || 0,
-            protein_g: item.protein_g || 0,
-            carbs_g: item.carbs_g || 0,
-            fat_g: item.fat_g || 0,
-            fiber_g: item.fiber_g || 0,
-            sugar_g: item.sugar_g || 0,
-            // Micronutrients - all default to 0
-            sodium_mg: item.sodium_mg || 0,
-            calcium_mg: item.calcium_mg || 0,
-            iron_mg: item.iron_mg || 0,
-            vitamin_c_mg: item.vitamin_c_mg || 0,
-            potassium_mg: item.potassium_mg || 0,
-            vitamin_a_mcg: item.vitamin_a_mcg || 0,
-            vitamin_e_mg: item.vitamin_e_mg || 0,
-            vitamin_k_mcg: item.vitamin_k_mcg || 0,
-            thiamin_mg: item.thiamin_mg || 0,
-            riboflavin_mg: item.riboflavin_mg || 0,
-            niacin_mg: item.niacin_mg || 0,
-            vitamin_b6_mg: item.vitamin_b6_mg || 0,
-            folate_mcg: item.folate_mcg || 0,
-            vitamin_b12_mcg: item.vitamin_b12_mcg || 0,
-            magnesium_mg: item.magnesium_mg || 0,
-            phosphorus_mg: item.phosphorus_mg || 0,
-            zinc_mg: item.zinc_mg || 0,
-            copper_mg: item.copper_mg || 0,
-            selenium_mcg: item.selenium_mcg || 0,
+            is_external: false,
+            food_id: food.id,
+            name: food.name,
+            brand: food.brand_owner || food.data_type || '',
+            serving_id: food.id,
+            serving_description: defaultPortion.portion_description || `${portionGrams}g`,
+            portions: food.portions || [],
+            // Nutrition (scaled from 100g base to portion size)
+            calories: Math.round((food.calories || 0) * multiplier),
+            protein_g: Math.round((food.protein_g || 0) * multiplier * 10) / 10,
+            carbs_g: Math.round((food.carbs_g || 0) * multiplier * 10) / 10,
+            fat_g: Math.round((food.fat_g || 0) * multiplier * 10) / 10,
+            fiber_g: Math.round((food.fiber_g || 0) * multiplier * 10) / 10,
+            sugar_g: Math.round((food.sugar_g || 0) * multiplier * 10) / 10,
+            sodium_mg: Math.round((food.sodium_mg || 0) * multiplier),
+            calcium_mg: Math.round((food.calcium_mg || 0) * multiplier),
+            iron_mg: Math.round((food.iron_mg || 0) * multiplier * 10) / 10,
+            vitamin_c_mg: Math.round((food.vitamin_c_mg || 0) * multiplier * 10) / 10,
+            potassium_mg: Math.round((food.potassium_mg || 0) * multiplier),
+            vitamin_a_mcg: Math.round((food.vitamin_a_mcg || 0) * multiplier),
+            vitamin_e_mg: Math.round((food.vitamin_e_mg || 0) * multiplier * 10) / 10,
+            vitamin_k_mcg: Math.round((food.vitamin_k_mcg || 0) * multiplier * 10) / 10,
+            thiamin_mg: Math.round((food.thiamin_mg || 0) * multiplier * 100) / 100,
+            riboflavin_mg: Math.round((food.riboflavin_mg || 0) * multiplier * 100) / 100,
+            niacin_mg: Math.round((food.niacin_mg || 0) * multiplier * 10) / 10,
+            vitamin_b6_mg: Math.round((food.vitamin_b6_mg || 0) * multiplier * 100) / 100,
+            folate_mcg: Math.round((food.folate_mcg || 0) * multiplier),
+            vitamin_b12_mcg: Math.round((food.vitamin_b12_mcg || 0) * multiplier * 100) / 100,
+            magnesium_mg: Math.round((food.magnesium_mg || 0) * multiplier),
+            phosphorus_mg: Math.round((food.phosphorus_mg || 0) * multiplier),
+            zinc_mg: Math.round((food.zinc_mg || 0) * multiplier * 10) / 10,
+            copper_mg: Math.round((food.copper_mg || 0) * multiplier * 100) / 100,
+            selenium_mcg: Math.round((food.selenium_mcg || 0) * multiplier),
+            cholesterol_mg: Math.round((food.cholesterol_mg || 0) * multiplier),
             // Metadata
-            brand: item.brand || null,
-            category: item.category || null,
-            pdcaas_score: item.pdcaas_score || 0,
-            quality_score: item.quality_score || 0,
+            category: food.category || null,
           };
         });
 
@@ -376,38 +383,42 @@ function NutritionLogPage() {
 
   const openLogModal = async (food) => {
     if (food.needs_serving_fetch) {
-      // Fetch servings for this food
+      // Fetch portions for this food from new structure
       try {
-        const { data: servings, error } = await supabase
-          .from('food_servings')
-          .select('*')
-          .eq('food_id', food.food_id);
+        const { data: foodData, error } = await supabase
+          .from('foods')
+          .select('*, portions(*)')
+          .eq('id', food.food_id)
+          .single();
 
         if (error) {
-          console.error('Error fetching servings:', error);
+          console.error('Error fetching food data:', error);
           return;
         }
 
-        if (servings && servings.length > 0) {
-          // Use the first serving as default, or show a selection if multiple
-          const defaultServing = servings[0];
+        if (foodData && foodData.portions && foodData.portions.length > 0) {
+          // Use the first portion as default
+          const defaultPortion = foodData.portions[0];
+          // Calculate nutrition for this portion size (base is per 100g)
+          const multiplier = defaultPortion.gram_weight / 100;
           const updatedFood = {
             ...food,
-            serving_id: defaultServing.id,
-            serving_description: defaultServing.serving_description,
-            calories: defaultServing.calories,
-            protein_g: defaultServing.protein_g,
-            carbs_g: defaultServing.carbs_g,
-            fat_g: defaultServing.fat_g,
+            food_id: foodData.id,
+            portion_id: defaultPortion.id,
+            portion_description: defaultPortion.portion_description || `${defaultPortion.amount} ${defaultPortion.measure_unit}`,
+            calories: (foodData.calories * multiplier).toFixed(1),
+            protein_g: (foodData.protein_g * multiplier).toFixed(1),
+            carbs_g: (foodData.carbs_g * multiplier).toFixed(1),
+            fat_g: (foodData.fat_g * multiplier).toFixed(1),
             needs_serving_fetch: false
           };
           setSelectedFood(updatedFood);
         } else {
-          console.error('No servings found for food:', food.name);
+          console.error('No portions found for food:', food.name);
           return;
         }
       } catch (error) {
-        console.error('Error fetching food servings:', error);
+        console.error('Error fetching food portions:', error);
         return;
       }
     } else {
@@ -432,14 +443,16 @@ function NutritionLogPage() {
     try {
       let servingId = selectedFood.serving_id;
 
-      // If this is an external food without a serving_id, create a food_servings record first
+      // If this is an external food without a food_id, create a foods record first
       if (!servingId && selectedFood.is_external) {
-        const { data: newServing, error: servingError } = await supabase
-          .from('food_servings')
+        const { data: newFood, error: foodError } = await supabase
+          .from('foods')
           .insert({
-            food_name: selectedFood.name,
-            serving_description: selectedFood.serving_description || '1 serving',
-            // Core macronutrients
+            name: selectedFood.name,
+            brand_owner: selectedFood.brand || null,
+            category: selectedFood.category || 'custom',
+            data_source: 'USER_CUSTOM',
+            // Core macronutrients (stored per 100g, but user entered as-is, so we'll treat as 1 serving = 100g)
             calories: selectedFood.calories || 0,
             protein_g: selectedFood.protein_g || 0,
             carbs_g: selectedFood.carbs_g || 0,
@@ -465,28 +478,34 @@ function NutritionLogPage() {
             phosphorus_mg: selectedFood.phosphorus_mg || 0,
             zinc_mg: selectedFood.zinc_mg || 0,
             copper_mg: selectedFood.copper_mg || 0,
-            selenium_mcg: selectedFood.selenium_mcg || 0,
-            // Metadata
-            brand: selectedFood.brand || null,
-            category: selectedFood.category || null,
-            pdcaas_score: selectedFood.pdcaas_score || 0,
-            data_sources: 'openai',
-            quality_score: selectedFood.quality_score || 70,
-            enrichment_status: 'completed',
-            last_enrichment: new Date().toISOString(),
-            is_verified: false,
-            source: 'external_api'
+            selenium_mcg: selectedFood.selenium_mcg || 0
           })
           .select()
           .single();
 
-        if (servingError) {
-          console.error('Error creating food_servings record:', servingError);
-          alert(`Error saving food: ${servingError.message}`);
+        if (foodError) {
+          console.error('Error creating food record:', foodError);
+          alert(`Error saving food: ${foodError.message}`);
           return;
         }
 
-        servingId = newServing.id;
+        // Create a default portion for this food (assume 100g = 1 serving)
+        const { error: portionError } = await supabase
+          .from('portions')
+          .insert({
+            food_id: newFood.id,
+            amount: 1,
+            measure_unit: selectedFood.serving_description || 'serving',
+            gram_weight: 100, // Default 100g
+            portion_description: selectedFood.serving_description || '1 serving'
+          });
+
+        if (portionError) {
+          console.error('Error creating portion record:', portionError);
+          // Continue anyway, we have the food
+        }
+
+        servingId = newFood.id;
       }
 
       // Now insert the nutrition log
@@ -498,7 +517,7 @@ function NutritionLogPage() {
         .from('nutrition_logs')
         .insert({
           user_id: user.id,
-          food_serving_id: servingId,
+          food_id: servingId,
           meal_type: activeMeal,
           quantity_consumed: qty,
           log_date: logDate
@@ -555,7 +574,7 @@ function NutritionLogPage() {
       // Fetch all user_meal_foods for this meal
       const { data: mealFoods, error: mealFoodsError } = await supabase
         .from('user_meal_foods')
-        .select('food_servings_id, quantity')
+        .select('food_id, quantity')
         .eq('user_meal_id', scheduledMeal.mealId);
 
       if (mealFoodsError) {
@@ -576,7 +595,7 @@ function NutritionLogPage() {
       
       const nutritionLogs = mealFoods.map(mealFood => ({
         user_id: user.id,
-        food_serving_id: mealFood.food_servings_id,
+        food_id: mealFood.food_id,
         meal_type: activeMeal,
         quantity_consumed: mealFood.quantity * (scheduledMeal.servings || 1),
         log_date: logDate

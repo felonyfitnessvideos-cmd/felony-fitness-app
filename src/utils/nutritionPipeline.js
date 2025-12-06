@@ -276,44 +276,13 @@ class NutritionPipeline {
         };
       }
 
-      // Get foods needing attention
-      const { data: needsAttention, error: attentionError } = await supabase
-        .from('food_servings')
-        .select('id, food_name, quality_score, enrichment_status, last_enrichment')
-        .lt('quality_score', 70)
-        .order('quality_score', { ascending: true })
-        .limit(20);
+      // Get foods needing attention (quality_score not available in foods table)
+      // This feature would require a separate quality tracking table
+      const needsAttention = [];
 
-      if (attentionError) {
-        console.error('Needs attention query error:', attentionError);
-        return {
-          success: false,
-          error: `Failed to get foods needing attention: ${attentionError.message}`,
-          quality_distribution: qualityDistribution || [],
-          needs_attention: [],
-          recent_improvements: []
-        };
-      }
-
-      // Get recent improvements
-      const { data: recentImprovements, error: improvementsError } = await supabase
-        .from('food_servings')
-        .select('id, food_name, quality_score, last_enrichment')
-        .not('last_enrichment', 'is', null)
-        .gte('quality_score', 80)
-        .order('last_enrichment', { ascending: false })
-        .limit(10);
-
-      if (improvementsError) {
-        console.error('Recent improvements query error:', improvementsError);
-        return {
-          success: false,
-          error: `Failed to get recent improvements: ${improvementsError.message}`,
-          quality_distribution: qualityDistribution || [],
-          needs_attention: needsAttention || [],
-          recent_improvements: []
-        };
-      }
+      // Get recent improvements (quality_score not available in foods table)
+      // This feature would require a separate quality tracking table
+      const recentImprovements = [];
 
       return {
         success: true,

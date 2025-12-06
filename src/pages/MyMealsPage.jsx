@@ -111,7 +111,7 @@ const MyMealsPage = () => {
           *,
           user_meal_foods (
             id,
-            food_servings_id,
+            food_id,
             quantity,
             notes,
             food_servings (
@@ -183,7 +183,7 @@ const MyMealsPage = () => {
           *,
           meal_foods (
             id,
-            food_servings_id,
+            food_id,
             quantity,
             notes,
             food_servings (
@@ -328,22 +328,22 @@ const MyMealsPage = () => {
       // Step 2: Copy meal foods to user_meal_foods table
       if (meal.user_meal_foods && meal.user_meal_foods.length > 0) {
 
-        // Filter out any foods that still have missing food_servings_id
+        // Filter out any foods that still have missing food_id
         const validFoods = meal.user_meal_foods.filter(food => {
-          const isValid = food.food_servings_id && food.food_servings_id !== null;
+          const isValid = food.food_id && food.food_id !== null;
           if (!isValid) {
-            console.warn('[MyMealsPage] Skipping food with missing food_servings_id:', food);
+            console.warn('[MyMealsPage] Skipping food with missing food_id:', food);
           }
           return isValid;
         });
 
         if (validFoods.length === 0) {
           // No valid foods to copy
-          console.warn('[MyMealsPage] No valid foods to copy - all foods missing food_servings_id');
+          console.warn('[MyMealsPage] No valid foods to copy - all foods missing food_id');
         } else {
           const mealFoodsCopy = validFoods.map(food => ({
             user_meal_id: newMeal.id, // Link to user_meals table
-            food_servings_id: food.food_servings_id,
+            food_id: food.food_id,
             quantity: food.quantity,
             notes: food.notes || ''
           }));
@@ -431,7 +431,7 @@ const MyMealsPage = () => {
       if (meal.meal_foods && meal.meal_foods.length > 0) {
         const mealFoodsCopy = meal.meal_foods.map(food => ({
           user_meal_id: newMeal.id,
-          food_servings_id: food.food_servings_id,
+          food_id: food.food_id,
           quantity: food.quantity,
           notes: food.notes || ''
         }));

@@ -82,39 +82,44 @@ const NutritionPlanner = ({ client }) => {
 
       setIsSearching(true);
       try {
-        const { data, error } = await supabase.functions.invoke('food-search-v2', {
-          body: { query: searchTerm },
-          signal: controller.signal,
-        });
+        // Direct Supabase search - foods table with portions
+        const { data: results, error } = await supabase
+          .from('foods')
+          .select(`
+            *,
+            portions (*)
+          `)
+          .or(`name.ilike.%${searchTerm}%,brand_owner.ilike.%${searchTerm}%`)
+          .order('name')
+          .limit(50);
 
         if (error) throw error;
         if (controller.signal.aborted) return;
 
-        let standardizedResults = [];
-        if (data?.source === 'local') {
-          standardizedResults = (data.results || []).map(serving => ({
-            id: serving.id,
-            food_name: serving.food_name,
-            serving_size: serving.serving_size,
-            calories: serving.calories || 0,
-            protein: serving.protein_g || serving.protein || 0,
-            carbs: serving.carbs_g || serving.carbs || 0,
-            fat: serving.fat_g || serving.fat || 0,
+        // Format results for UI
+        const standardizedResults = (results || []).map(food => {
+          const defaultPortion = food.portions?.[0] || {
+            gram_weight: 100,
+            portion_description: '100g'
+          };
+
+          const portionGrams = defaultPortion.gram_weight || 100;
+          const multiplier = portionGrams / 100;
+
+          return {
+            id: food.id,
+            food_name: food.name,
+            serving_size: portionGrams,
+            calories: Math.round((food.calories || 0) * multiplier),
+            protein: Math.round((food.protein_g || 0) * multiplier * 10) / 10,
+            carbs: Math.round((food.carbs_g || 0) * multiplier * 10) / 10,
+            fat: Math.round((food.fat_g || 0) * multiplier * 10) / 10,
             is_external: false,
-            food_id: serving.food_id
-          }));
-        } else if (data?.source === 'external') {
-          standardizedResults = (data.results || []).map((item, index) => ({
-            id: `ext_${Date.now()}_${index}`,
-            food_name: item.name,
-            serving_size: item.serving_size,
-            calories: item.calories || 0,
-            protein: item.protein_g || 0,
-            carbs: item.carbs_g || 0,
-            fat: item.fat_g || 0,
-            is_external: true
-          }));
-        }
+            food_id: food.id,
+            portions: food.portions || [],
+            brand: food.brand_owner || food.data_type || ''
+          };
+        });
 
         setSearchResults(standardizedResults);
       } catch (error) {
@@ -252,14 +257,14 @@ const NutritionPlanner = ({ client }) => {
           if (food.is_external) {
             // First, try to find existing food with same name and macros
             const { data: existingFoods } = await supabase
-              .from('food_servings')
+              .from('foods')
               .select('id')
-              .eq('food_name', food.name)
+              .eq('name', food.name)
               .eq('calories', food.calories)
               .eq('protein_g', food.protein)
               .eq('carbs_g', food.carbs)
               .eq('fat_g', food.fat)
-              .eq('source', 'external_api')
+              .eq('data_source', 'USER_CUSTOM')
               .limit(1);
             
             // If found, use existing
@@ -271,26 +276,42 @@ const NutritionPlanner = ({ client }) => {
             }
             
             // If not found, create new
-            const { data: newServing, error: servingError } = await supabase
-              .from('food_servings')
+            const { data: newFood, error: foodError } = await supabase
+              .from('foods')
               .insert({
-                food_name: food.name,
-                serving_description: food.serving_size,
+                name: food.name,
+                brand_owner: food.brand || null,
+                category: food.category || 'custom',
+                data_source: 'USER_CUSTOM',
                 calories: food.calories,
                 protein_g: food.protein,
                 carbs_g: food.carbs,
-                fat_g: food.fat,
-                source: 'external_api',
-                is_verified: false
+                fat_g: food.fat
               })
               .select()
               .single();
 
-            if (servingError) throw servingError;
+            if (foodError) throw foodError;
+
+            // Create default portion for this food (assume 100g)
+            const { error: portionError } = await supabase
+              .from('portions')
+              .insert({
+                food_id: newFood.id,
+                amount: 1,
+                measure_unit: food.serving_size || 'serving',
+                gram_weight: 100,
+                portion_description: food.serving_size || '1 serving'
+              });
+
+            if (portionError) {
+              console.error('Error creating portion:', portionError);
+              // Continue anyway, we have the food
+            }
             
             return {
               ...food,
-              id: newServing.id
+              id: newFood.id
             };
           }
           
@@ -315,7 +336,7 @@ const NutritionPlanner = ({ client }) => {
       // Insert meal foods into user_meal_foods with real UUIDs
       const mealFoodInserts = foodsWithIds.map(food => ({
         user_meal_id: mealData.id,
-        food_servings_id: food.id,
+        food_id: food.id,
         quantity: food.quantity,
         notes: `${food.name} - ${food.serving_size}`
       }));

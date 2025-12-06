@@ -342,7 +342,7 @@ const WeeklyMealPlannerPage = () => {
           *,
           user_meal_foods (
             id,
-            food_servings_id,
+            food_id,
             quantity,
             notes,
             food_servings (

@@ -197,7 +197,7 @@ const MealBuilder = ({
       // Map the data to match the expected structure
       const mappedFoods = data.map(item => ({
         id: item.id,
-        food_servings_id: item.food_servings_id,
+        food_id: item.food_id,
         quantity: item.quantity,
         notes: item.notes,
         food_servings: {
@@ -259,55 +259,50 @@ const MealBuilder = ({
 
       setIsSearching(true);
       try {
-        const { data, error } = await supabase.functions.invoke('food-search-v2', {
-          body: { query: searchTerm },
-          signal: controller.signal,
-        });
+        // Direct Supabase search - foods table with portions
+        const { data: results, error } = await supabase
+          .from('foods')
+          .select(`
+            *,
+            portions (*)
+          `)
+          .or(`name.ilike.%${searchTerm}%,brand_owner.ilike.%${searchTerm}%`)
+          .order('name')
+          .limit(50);
 
         if (error) throw error;
         if (controller.signal.aborted) return;
 
-        let standardizedResults = [];
-        if (data?.source === 'local') {
-          // Database results - already in flat format from food-search-v2
-          // Each result is a food_servings object with all necessary fields
-          standardizedResults = (data.results || []).map(serving => ({
-            id: serving.id,
-            food_name: serving.food_name,
-            serving_size: serving.serving_size,
-            serving_unit: serving.serving_unit,
-            calories: serving.calories,
-            protein: serving.protein_g || serving.protein,
-            carbs: serving.carbs_g || serving.carbs,
-            fat: serving.fat_g || serving.fat,
-            fiber: serving.fiber_g || serving.fiber,
-            sugar: serving.sugar_g || serving.sugar,
+        // Format results for UI
+        const standardizedResults = (results || []).map(food => {
+          // Get default portion (first one or 100g equivalent)
+          const defaultPortion = food.portions?.[0] || {
+            gram_weight: 100,
+            portion_description: '100g'
+          };
+
+          const portionGrams = defaultPortion.gram_weight || 100;
+          const multiplier = portionGrams / 100;
+
+          return {
+            id: food.id,
+            food_name: food.name,
+            serving_size: portionGrams,
+            serving_unit: 'g',
+            calories: Math.round((food.calories || 0) * multiplier),
+            protein: Math.round((food.protein_g || 0) * multiplier * 10) / 10,
+            carbs: Math.round((food.carbs_g || 0) * multiplier * 10) / 10,
+            fat: Math.round((food.fat_g || 0) * multiplier * 10) / 10,
+            fiber: Math.round((food.fiber_g || 0) * multiplier * 10) / 10,
+            sugar: Math.round((food.sugar_g || 0) * multiplier * 10) / 10,
             is_external: false,
-            food_id: serving.food_id,
-            serving_id: serving.id,
-            serving_description: serving.serving_description
-          }));
-        } else if (data?.source === 'external') {
-          // OpenAI API results - need to generate serving_id for external results
-          standardizedResults = (data.results || []).map((item, index) => {
-            // Generate a unique serving_id for external results using timestamp + index
-            const generatedServingId = `ext_${Date.now()}_${index}`;
-            const result = {
-              ...item,
-              is_external: true,
-              food_name: item.name,
-              // Generate serving_id for external results since they don't have database IDs
-              id: generatedServingId,
-              serving_id: generatedServingId,
-              protein: item.protein_g,
-              carbs: item.carbs_g,
-              fat: item.fat_g,
-              fiber: item.fiber_g,
-              sugar: item.sugar_g
-            };
-            return result;
-          });
-        }
+            food_id: food.id,
+            serving_id: food.id,
+            serving_description: defaultPortion.portion_description || `${portionGrams}g`,
+            portions: food.portions || [],
+            brand: food.brand_owner || food.data_type || ''
+          };
+        });
 
         setSearchResults(standardizedResults);
       } catch (error) {
@@ -365,7 +360,7 @@ const MealBuilder = ({
     }
 
 
-    const existingIndex = mealFoods.findIndex(item => item.food_servings_id === servingId);
+    const existingIndex = mealFoods.findIndex(item => item.food_id === servingId);
 
     if (existingIndex >= 0) {
       // Increase quantity if food already exists
@@ -388,7 +383,7 @@ const MealBuilder = ({
       // Add new food
       const newMealFood = {
         id: null, // New item, no ID yet
-        food_servings_id: servingId,
+        food_id: servingId,
         quantity: quantity,
         notes: '',
         food_servings: foodServingData
@@ -503,51 +498,60 @@ const MealBuilder = ({
         mealId = mealResult.id;
       }
 
-      // Process external foods first - save them to food_servings table to get real IDs
+      // Process external foods first - save them to foods table to get real IDs
       const processedMealFoods = [];
 
       for (const item of mealFoods) {
-        let finalFoodServingsId = item.food_servings_id;
+        let finalFoodId = item.food_id;
 
         // Check if this is an external food (string ID starting with "ext_")
-        if (typeof item.food_servings_id === 'string' && item.food_servings_id.startsWith('ext_')) {
+        if (typeof item.food_id === 'string' && item.food_id.startsWith('ext_')) {
           
-          // Create food_servings record directly (no foods table needed)
-          const { data: servingData, error: servingError } = await supabase
-            .from('food_servings')
+          // Create foods record directly
+          const { data: foodData, error: foodError } = await supabase
+            .from('foods')
             .insert([{
-              food_name: item.food_servings.food_name || item.food_servings.name,
-              serving_description: item.food_servings.serving_description,
+              name: item.food_servings.food_name || item.food_servings.name,
+              brand_owner: item.food_servings.brand || null,
+              category: item.food_servings.category || 'custom',
+              data_source: 'USER_CUSTOM',
               calories: item.food_servings.calories || 0,
               protein_g: item.food_servings.protein_g || 0,
               carbs_g: item.food_servings.carbs_g || 0,
               fat_g: item.food_servings.fat_g || 0,
               fiber_g: item.food_servings.fiber_g || 0,
-              sugar_g: item.food_servings.sugar_g || 0,
-              // Metadata
-              brand: item.food_servings.brand || null,
-              category: item.food_servings.category || null,
-              data_sources: 'openai',
-              quality_score: 70,
-              enrichment_status: 'completed',
-              last_enrichment: new Date().toISOString(),
-              is_verified: false,
-              source: 'external_api'
+              sugar_g: item.food_servings.sugar_g || 0
             }])
             .select()
             .single();
 
-          if (servingError) {
-            console.error('[MealBuilder] Error creating food_servings:', servingError);
-            throw servingError;
+          if (foodError) {
+            console.error('[MealBuilder] Error creating food:', foodError);
+            throw foodError;
           }
 
-          finalFoodServingsId = servingData.id;
+          // Create default portion (assume 100g)
+          const { error: portionError } = await supabase
+            .from('portions')
+            .insert([{
+              food_id: foodData.id,
+              amount: 1,
+              measure_unit: item.food_servings.serving_description || 'serving',
+              gram_weight: 100,
+              portion_description: item.food_servings.serving_description || '1 serving'
+            }]);
+
+          if (portionError) {
+            console.error('[MealBuilder] Error creating portion:', portionError);
+            // Continue anyway, we have the food
+          }
+
+          finalFoodId = foodData.id;
         }
 
         processedMealFoods.push({
           user_meal_id: mealId,  // Changed from meal_id to user_meal_id
-          food_servings_id: finalFoodServingsId,
+          food_id: finalFoodId,
           quantity: item.quantity,
           notes: item.notes || ''
         });
@@ -694,7 +698,7 @@ const MealBuilder = ({
             {/* Selected Foods List */}
             <div className="selected-foods">
               {mealFoods.map((item, index) => (
-                <div key={`${item.food_servings_id || 'missing'}-${index}`} className="food-item">
+                <div key={`${item.food_id || 'missing'}-${index}`} className="food-item">
                   <div className="food-display">
                     <input
                       type="number"

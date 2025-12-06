@@ -69,38 +69,48 @@ export class NutritionAPI {
    */
   async searchFood(query) {
     try {
-      const { data, error } = await supabase.functions.invoke('food-search-v2', {
-        body: { query }
-      });
+      // Direct Supabase search - foods table with portions
+      const { data: results, error } = await supabase
+        .from('foods')
+        .select(`
+          *,
+          portions (*)
+        `)
+        .or(`name.ilike.%${query}%,brand_owner.ilike.%${query}%`)
+        .order('name')
+        .limit(50);
 
       if (error) throw error;
 
-      // Handle different response types
-      switch (data.source) {
-        case 'local':
-          return {
-            ...data,
-            message: '✅ Found in your database',
-            quality: 'verified'
-          };
+      // Format results
+      const foods = (results || []).map(food => {
+        const defaultPortion = food.portions?.[0] || {
+          gram_weight: 100,
+          portion_description: '100g'
+        };
 
-        case 'duplicate_check':
-          return {
-            ...data,
-            message: '⚠️ Similar foods exist',
-            quality: 'duplicate_warning'
-          };
+        const portionGrams = defaultPortion.gram_weight || 100;
+        const multiplier = portionGrams / 100;
 
-        case 'external':
-          return {
-            ...data,
-            message: this.getQualityMessage(data.quality_score),
-            quality: data.quality_score
-          };
+        return {
+          id: food.id,
+          name: food.name,
+          brand: food.brand_owner || food.data_type || '',
+          calories: Math.round((food.calories || 0) * multiplier),
+          protein_g: Math.round((food.protein_g || 0) * multiplier * 10) / 10,
+          carbs_g: Math.round((food.carbs_g || 0) * multiplier * 10) / 10,
+          fat_g: Math.round((food.fat_g || 0) * multiplier * 10) / 10,
+          portions: food.portions || [],
+          serving_description: defaultPortion.portion_description
+        };
+      });
 
-        default:
-          return data;
-      }
+      return {
+        results: foods,
+        source: 'local',
+        message: '✅ Found in database',
+        quality: 'verified'
+      };
     } catch (error) {
       console.error('Food search error:', error);
       throw new Error('Search failed. Please try again.');
