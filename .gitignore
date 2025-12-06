@@ -64,4 +64,7 @@ remaining-nulls.json
 # HTTP request files with credentials
 *.http
 
+# USDA data files (large CSV files, already imported)
+FoodData_Central_csv_*/
+
 .env.local
