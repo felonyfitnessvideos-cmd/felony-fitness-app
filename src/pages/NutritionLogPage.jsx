@@ -326,6 +326,17 @@ function NutritionLogPage() {
           const aName = a.name.toLowerCase();
           const bName = b.name.toLowerCase();
           
+          // Penalize uncommon/specialty foods Americans don't typically consume
+          const getUncommonPenalty = (name) => {
+            const uncommon = [
+              'human', 'breast', 'goat', 'sheep', 'donkey', 'camel', 
+              'buffalo', 'yak', 'reindeer', 'mare',
+              'malted', 'condensed', 'evaporated', 'powdered', 'dried',
+              'shake', 'smoothie', 'latte', 'frappe', 'frappuccino'
+            ];
+            return uncommon.some(u => name.includes(u)) ? 100 : 0;
+          };
+          
           // Calculate complexity score (fewer words and punctuation = simpler)
           const getComplexity = (name) => {
             const words = name.split(/[,\s]+/).length;
@@ -334,8 +345,32 @@ function NutritionLogPage() {
             return words + hasComma + hasParens;
           };
           
-          const aComplexity = getComplexity(aName);
-          const bComplexity = getComplexity(bName);
+          const aPenalty = getUncommonPenalty(aName);
+          const bPenalty = getUncommonPenalty(bName);
+          const aComplexity = getComplexity(aName) + aPenalty;
+          const bComplexity = getComplexity(bName) + bPenalty;
+          
+          // Boost for most common foods (exact matches)
+          const getCommonBoost = (name) => {
+            const common = {
+              'milk, whole': -50,
+              'milk, nfs': -40,  // NFS = "not further specified" = generic
+              'milk, low fat': -35,
+              'milk, reduced fat': -35,
+              'milk, skim': -35,
+              'milk, nonfat': -35,
+              'chicken breast': -50,
+              'ground beef': -50,
+              'white rice': -50,
+              'brown rice': -50,
+              'whole egg': -50,
+              'egg white': -45
+            };
+            return common[name] || 0;
+          };
+          
+          const aBoost = getCommonBoost(aName);
+          const bBoost = getCommonBoost(bName);
           
           // Exact match beats everything
           const aExact = aName === termLower;
@@ -347,8 +382,9 @@ function NutritionLogPage() {
           const aStarts = aName.startsWith(termLower);
           const bStarts = bName.startsWith(termLower);
           
-          // If both start with term, STRONGLY prefer simpler
+          // If both start with term, apply common food boost then prefer simpler
           if (aStarts && bStarts) {
+            if (aBoost !== bBoost) return aBoost - bBoost; // Common foods first
             const complexityDiff = aComplexity - bComplexity;
             if (complexityDiff !== 0) return complexityDiff * 3; // Triple weight for simplicity
           }
@@ -361,8 +397,9 @@ function NutritionLogPage() {
           const aIndex = aName.indexOf(termLower);
           const bIndex = bName.indexOf(termLower);
           
-          // If term appears at same position, prefer simpler food
+          // If term appears at same position, apply boost then prefer simpler
           if (aIndex === bIndex) {
+            if (aBoost !== bBoost) return aBoost - bBoost;
             const complexityDiff = aComplexity - bComplexity;
             if (complexityDiff !== 0) return complexityDiff * 2; // Double weight
           }
