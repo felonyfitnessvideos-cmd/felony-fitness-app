@@ -41,12 +41,11 @@ import './NutritionLogPage.css';
  * @property {string} meal_type
  * @property {number} quantity_consumed
  * @property {number} [water_oz_consumed]
- * @property {object} food_servings
- * @property {object} food_servings.foods
- * @property {string} food_servings.food_name
- * @property {string} food_servings.serving_description
- * @property {number} food_servings.calories
- * @property {number} food_servings.protein_g
+ * @property {object} foods - Food details from foods table
+ * @property {string} foods.name - Food name
+ * @property {string} foods.brand_owner - Brand or manufacturer
+ * @property {number} foods.calories - Calculated calories for this log entry
+ * @property {number} foods.protein_g - Calculated protein for this log entry
  */
 
 /**
@@ -105,7 +104,7 @@ function NutritionLogPage() {
    * 
    * PERFORMANCE OPTIMIZED: Uses pre-calculated nutritional values from nutrition_logs table.
    * Values are auto-populated by database trigger (calculate_nutrition_log_values) which
-   * multiplies food_servings data by quantity_consumed on INSERT/UPDATE.
+   * multiplies foods data by quantity_consumed on INSERT/UPDATE.
    * 
    * @param {string} userId - The UUID of the authenticated user.
    * @async
@@ -827,11 +826,11 @@ function NutritionLogPage() {
           <p className="no-items-message">No items logged for {activeMeal} yet.</p>
         )}
         {user && !loading && mealLogs.map(log => (
-          log.food_servings ? (
+          log.foods ? (
             <div key={log.id} className="food-item-card">
               <div className="food-item-details">
-                <h4>{log.food_servings.food_name}</h4>
-                <span>{log.quantity_consumed} x {log.food_servings.serving_description}</span>
+                <h4>{log.foods.name}</h4>
+                <span>{log.quantity_consumed} x serving{log.quantity_consumed !== 1 ? 's' : ''} ({log.foods.brand_owner || 'No brand'})</span>
               </div>
               <div className="food-item-actions">
                 <span className="food-item-calories">
