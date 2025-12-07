@@ -320,41 +320,58 @@ function NutritionLogPage() {
           !food.name.toLowerCase().includes('beer')
         );
         
-        // Sort: exact matches first, then starts with, then contains
+        // Sort: prioritize simple, basic foods that people actually want
         const termLower = term.toLowerCase();
         const sorted = filtered.sort((a, b) => {
           const aName = a.name.toLowerCase();
           const bName = b.name.toLowerCase();
           
-          // Prioritize simpler names (fewer words/commas = more basic food)
-          const aWords = aName.split(/[,\s]+/).length;
-          const bWords = bName.split(/[,\s]+/).length;
+          // Calculate complexity score (fewer words and punctuation = simpler)
+          const getComplexity = (name) => {
+            const words = name.split(/[,\s]+/).length;
+            const hasComma = name.includes(',') ? 10 : 0;
+            const hasParens = name.includes('(') ? 5 : 0;
+            return words + hasComma + hasParens;
+          };
           
-          // Exact match
-          if (aName === termLower && bName !== termLower) return -1;
-          if (bName === termLower && aName !== termLower) return 1;
+          const aComplexity = getComplexity(aName);
+          const bComplexity = getComplexity(bName);
           
-          // Starts with search term
+          // Exact match beats everything
+          const aExact = aName === termLower;
+          const bExact = bName === termLower;
+          if (aExact && !bExact) return -1;
+          if (bExact && !aExact) return 1;
+          
+          // Starts with term
           const aStarts = aName.startsWith(termLower);
           const bStarts = bName.startsWith(termLower);
+          
+          // If both start with term, STRONGLY prefer simpler
+          if (aStarts && bStarts) {
+            const complexityDiff = aComplexity - bComplexity;
+            if (complexityDiff !== 0) return complexityDiff * 3; // Triple weight for simplicity
+          }
+          
+          // One starts, one doesn't
           if (aStarts && !bStarts) return -1;
           if (bStarts && !aStarts) return 1;
           
-          // If both start with term, prefer simpler (brewed coffee > coffee cake)
-          if (aStarts && bStarts) {
-            if (aWords !== bWords) return aWords - bWords;
-          }
-          
-          // Prefer foods where term appears early
+          // Neither starts with term - prefer term appearing early
           const aIndex = aName.indexOf(termLower);
           const bIndex = bName.indexOf(termLower);
+          
+          // If term appears at same position, prefer simpler food
+          if (aIndex === bIndex) {
+            const complexityDiff = aComplexity - bComplexity;
+            if (complexityDiff !== 0) return complexityDiff * 2; // Double weight
+          }
+          
+          // Different positions - closer to start wins
           if (aIndex !== bIndex) return aIndex - bIndex;
           
-          // Prefer simpler foods overall
-          if (aWords !== bWords) return aWords - bWords;
-          
-          // Alphabetical
-          return aName.localeCompare(bName);
+          // Final tiebreaker: simpler foods first
+          return aComplexity - bComplexity;
         }).slice(0, 50);
         
         console.log('[DEBUG] Search results:', sorted.length, 'foods found (filtered from', results?.length || 0, ')');
