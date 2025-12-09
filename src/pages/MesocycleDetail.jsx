@@ -152,12 +152,25 @@ function MesocycleDetail() {
           const end = new Date(start);
           end.setDate(end.getDate() + totalDays - 1);
           const { data: logs } = await supabase.from('workout_logs').select('id,routine_id,created_at,is_complete').eq('user_id', user.id).gte('created_at', start.toISOString()).lte('created_at', new Date(end.getTime() + 24*3600*1000).toISOString());
+          console.log('🔍 Mesocycle workout_logs query results:', {
+            startDate: start.toISOString(),
+            endDate: end.toISOString(),
+            logsCount: logs?.length || 0,
+            logs: logs?.map(l => ({
+              id: l.id,
+              routine_id: l.routine_id,
+              created_at: l.created_at,
+              is_complete: l.is_complete,
+              key: `${l.routine_id}::${(new Date(l.created_at)).toISOString().slice(0,10)}`
+            }))
+          });
           const map = {};
           (logs || []).forEach(l => {
             const key = `${l.routine_id}::${(new Date(l.created_at)).toISOString().slice(0,10)}`;
             map[key] = l;
           });
           setLogsMap(map);
+          console.log('🗺️ Logs map created:', map);
         }
       } catch (err) {
         console.error('Failed to load mesocycle detail', err.message ?? err);
@@ -260,6 +273,15 @@ function MesocycleDetail() {
 
               const logKey = routineId && scheduledDateStr ? `${routineId}::${scheduledDateStr}` : null;
               const log = logKey ? logsMap[logKey] : null;
+              
+              console.log('🔍 Day', dayIndex, 'completion check:', {
+                routineId,
+                scheduledDateStr,
+                logKey,
+                hasLog: !!log,
+                log_is_complete: log?.is_complete,
+                session_is_complete: sessions?.find(s => s?.scheduled_date?.slice(0,10) === scheduledDateStr)?.is_complete
+              });
 
               // prefer explicit cycle_session.is_complete if present
               let completed = false;
