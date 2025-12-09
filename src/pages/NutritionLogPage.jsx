@@ -322,6 +322,7 @@ function NutritionLogPage() {
         
         // Sort: prioritize simple, basic foods that people actually want
         const termLower = term.toLowerCase();
+        console.log('[DEBUG] Sorting foods for term:', termLower, '- Total to sort:', filtered.length);
         const sorted = filtered.sort((a, b) => {
           const aName = a.name.toLowerCase();
           const bName = b.name.toLowerCase();
@@ -371,6 +372,19 @@ function NutritionLogPage() {
           
           const aBoost = getCommonBoost(aName);
           const bBoost = getCommonBoost(bName);
+          
+          // Log first 5 comparisons to see what's happening
+          if (Math.random() < 0.01) {
+            console.log('[SORT]', {
+              a: aName.substring(0, 30),
+              b: bName.substring(0, 30),
+              aBoost,
+              bBoost,
+              aComplexity,
+              bComplexity,
+              termLower
+            });
+          }
           
           // Exact match beats everything
           const aExact = aName === termLower;
@@ -471,6 +485,7 @@ function NutritionLogPage() {
           };
         });
 
+        console.log('[DEBUG] Top 10 sorted results:', sorted.slice(0, 10).map(f => f.name));
         console.log('[DEBUG] Standardized results:', standardizedResults.length);
         setSearchResults(standardizedResults);
       } catch (error) {
