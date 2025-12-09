@@ -271,6 +271,12 @@ function MesocycleDetail() {
 
               const logKey = routineId && scheduledDateStr ? `${routineId}::${scheduledDateStr}` : null;
               const log = logKey ? logsMap[logKey] : null;
+              
+              // Check if this routine has ANY completed log (regardless of date)
+              // This allows users to complete workouts early or on different days
+              const hasAnyCompletedLog = routineId ? 
+                Object.keys(logsMap).some(key => key.startsWith(`${routineId}::`)) : 
+                false;
 
               // prefer explicit cycle_session.is_complete if present
               let completed = false;
@@ -283,10 +289,11 @@ function MesocycleDetail() {
                 if (session && typeof session.is_complete !== 'undefined') {
                   completed = Boolean(session.is_complete);
                 } else {
-                  completed = Boolean(log && log.is_complete);
+                  // Check exact date match first, then fallback to any completion
+                  completed = Boolean(log && log.is_complete) || hasAnyCompletedLog;
                 }
               } else {
-                completed = Boolean(log && log.is_complete);
+                completed = Boolean(log && log.is_complete) || hasAnyCompletedLog;
               }
 
               return (
