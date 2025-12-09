@@ -145,19 +145,30 @@ function MesocycleDetail() {
     setSessions([]);
   }
 
-        // If we have a start date, fetch workout_logs for the entire mesocycle range to determine completion
-        if (m && m.start_date) {
-          const start = new Date(m.start_date);
-          const totalDays = (m.weeks || 1) * 7;
-          const end = new Date(start);
-          end.setDate(end.getDate() + totalDays - 1);
-          const { data: logs } = await supabase.from('workout_logs').select('id,routine_id,created_at,is_complete').eq('user_id', user.id).gte('created_at', start.toISOString()).lte('created_at', new Date(end.getTime() + 24*3600*1000).toISOString());
+        // Fetch ALL workout logs for the routines in this mesocycle (regardless of date)
+        // This allows users to complete workouts early or make up missed sessions
+        if (routineIds.length > 0) {
+          const { data: logs } = await supabase
+            .from('workout_logs')
+            .select('id,routine_id,created_at,is_complete')
+            .eq('user_id', user.id)
+            .in('routine_id', routineIds)
+            .eq('is_complete', true)
+            .order('created_at', { ascending: false });
+          
+          // Map logs by routine_id and date for lookup
           const map = {};
           (logs || []).forEach(l => {
-            const key = `${l.routine_id}::${(new Date(l.created_at)).toISOString().slice(0,10)}`;
-            map[key] = l;
+            const dateKey = (new Date(l.created_at)).toISOString().slice(0,10);
+            const key = `${l.routine_id}::${dateKey}`;
+            // Keep most recent log for each routine+date combo
+            if (!map[key]) {
+              map[key] = l;
+            }
           });
           setLogsMap(map);
+        } else {
+          setLogsMap({});
         }
       } catch (err) {
         console.error('Failed to load mesocycle detail', err.message ?? err);
