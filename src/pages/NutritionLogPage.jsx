@@ -351,15 +351,26 @@ function NutritionLogPage() {
           const aComplexity = getComplexity(aName) + aPenalty;
           const bComplexity = getComplexity(bName) + bPenalty;
           
-          // Boost for most common foods (exact matches)
+          // Boost for most common foods (case-insensitive, flexible matching)
           const getCommonBoost = (name) => {
-            const common = {
-              'milk, whole': -50,
-              'milk, nfs': -40,  // NFS = "not further specified" = generic
-              'milk, low fat': -35,
-              'milk, reduced fat': -35,
-              'milk, skim': -35,
-              'milk, nonfat': -35,
+            // Direct boost for exact simple milk (just "milk" or "milk, ...")
+            if (name === 'milk') return -100;
+            if (name.startsWith('milk, ')) {
+              const variant = name.substring(6); // after "milk, "
+              // Boost common variants heavily
+              if (variant === 'whole' || variant === 'nfs' || variant === 'reduced fat' || 
+                  variant === 'low fat' || variant === 'lowfat' || variant === '2%' || 
+                  variant === '1%' || variant === 'skim' || variant === 'nonfat') {
+                return -80;
+              }
+            }
+            // Penalty for specialty milks
+            if (name.includes('almond') || name.includes('oat') || name.includes('soy') || 
+                name.includes('coconut') || name.includes('rice milk') || name.includes('cashew')) {
+              return 30;
+            }
+            // Other common foods
+            const commonMap = {
               'chicken breast': -50,
               'ground beef': -50,
               'white rice': -50,
@@ -367,13 +378,20 @@ function NutritionLogPage() {
               'whole egg': -50,
               'egg white': -45
             };
-            return common[name] || 0;
+            return commonMap[name] || 0;
           };
           
           const aBoost = getCommonBoost(aName);
           const bBoost = getCommonBoost(bName);
           
-          // Log first 5 comparisons to see what's happening
+          // Debug: log boost values for milk-related foods
+          if (termLower === 'milk' && (aName.includes('milk') || bName.includes('milk'))) {
+            if (Math.random() < 0.05) { // 5% sample
+              console.log('[MILK BOOST]', { a: aName.substring(0, 30), b: bName.substring(0, 30), aBoost, bBoost });
+            }
+          }
+          
+          // Log sample comparisons
           if (Math.random() < 0.01) {
             console.log('[SORT]', {
               a: aName.substring(0, 30),
