@@ -437,6 +437,7 @@ function NutritionLogPage() {
             brand: food.brand_owner || food.data_type || '',
             serving_id: food.id,
             serving_description: defaultPortion.portion_description || `${portionGrams}g`,
+            gram_weight: portionGrams, // Store gram weight for quantity calculation
             portions: food.portions || [],
             // Nutrition (scaled from 100g base to portion size)
             calories: Math.round((food.calories || 0) * multiplier),
@@ -617,13 +618,19 @@ function NutritionLogPage() {
       const today = new Date();
       const logDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       
+      // Calculate quantity_consumed in grams for the trigger
+      // qty = number of servings selected, we need to convert to grams
+      // selectedFood should have the portion gram weight
+      const portionGrams = selectedFood.gram_weight || selectedFood.portion_gram_weight || 100;
+      const quantityInGrams = qty * portionGrams;
+      
       const { data: _data, error } = await supabase
         .from('nutrition_logs')
         .insert({
           user_id: user.id,
           food_id: servingId,
           meal_type: activeMeal,
-          quantity_consumed: qty,
+          quantity_consumed: quantityInGrams,
           log_date: logDate
         })
         .select();
