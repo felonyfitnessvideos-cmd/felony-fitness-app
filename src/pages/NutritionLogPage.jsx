@@ -302,152 +302,32 @@ function NutritionLogPage() {
         
         // Escape commas in search term to prevent PostgREST syntax errors
         // PostgREST interprets commas as OR separators, so we need to replace them
-        const sanitizedTerm = term.replace(/,/g, ' ');
+        const sanitizedTerm = term.replace(/,/g, ' ').toLowerCase();
         
-        // Direct Supabase search - foods table with portions
-        // Order by: non-alcoholic first, then by name
+        // Phase 3: Smart Search Algorithm
+        // Uses new database columns: name_simplified (for flexible matching) and commonness_score (for ranking)
+        // Search strategy: name_simplified allows matching "chicken stew" to "Stew, chicken"
         const { data: results, error: searchError } = await supabase
           .from('foods')
           .select(`
             *,
             portions (*)
           `)
-          .or(`name.ilike.%${sanitizedTerm}%,brand_owner.ilike.%${sanitizedTerm}%`)
-          .order('name')
+          .or(`name_simplified.ilike.%${sanitizedTerm}%,brand_owner.ilike.%${sanitizedTerm}%`)
+          .order('commonness_score', { ascending: false })  // Primary sort: most common foods first
+          .order('name')  // Secondary sort: alphabetical
           .limit(100);
         
-        // Filter out alcoholic beverages and sort better matches first
+        // Phase 3: Filter out alcoholic beverages
+        // Database now handles ranking via commonness_score, so minimal client-side sorting needed
         const filtered = (results || []).filter(food => 
           !food.name.toLowerCase().includes('alcoholic') &&
           !food.name.toLowerCase().includes('liqueur') &&
           !food.name.toLowerCase().includes('wine') &&
           !food.name.toLowerCase().includes('beer')
-        );
+        ).slice(0, 50);  // Limit to top 50 results
         
-        // Sort: prioritize simple, basic foods that people actually want
-        const termLower = term.toLowerCase();
-        console.log('[DEBUG] Sorting foods for term:', termLower, '- Total to sort:', filtered.length);
-        const sorted = filtered.sort((a, b) => {
-          const aName = a.name.toLowerCase();
-          const bName = b.name.toLowerCase();
-          
-          // Penalize uncommon/specialty foods Americans don't typically consume
-          const getUncommonPenalty = (name) => {
-            const uncommon = [
-              'human', 'breast', 'goat', 'sheep', 'donkey', 'camel', 
-              'buffalo', 'yak', 'reindeer', 'mare',
-              'malted', 'condensed', 'evaporated', 'powdered', 'dried',
-              'shake', 'smoothie', 'latte', 'frappe', 'frappuccino'
-            ];
-            return uncommon.some(u => name.includes(u)) ? 100 : 0;
-          };
-          
-          // Calculate complexity score (fewer words and punctuation = simpler)
-          const getComplexity = (name) => {
-            const words = name.split(/[,\s]+/).length;
-            const hasComma = name.includes(',') ? 10 : 0;
-            const hasParens = name.includes('(') ? 5 : 0;
-            return words + hasComma + hasParens;
-          };
-          
-          const aPenalty = getUncommonPenalty(aName);
-          const bPenalty = getUncommonPenalty(bName);
-          const aComplexity = getComplexity(aName) + aPenalty;
-          const bComplexity = getComplexity(bName) + bPenalty;
-          
-          // Boost for most common foods (case-insensitive, flexible matching)
-          const getCommonBoost = (name) => {
-            // Direct boost for exact simple milk (just "milk" or "milk, ...")
-            if (name === 'milk') return -100;
-            if (name.startsWith('milk, ')) {
-              const variant = name.substring(6); // after "milk, "
-              // Boost common variants heavily
-              if (variant === 'whole' || variant === 'nfs' || variant === 'reduced fat' || 
-                  variant === 'low fat' || variant === 'lowfat' || variant === '2%' || 
-                  variant === '1%' || variant === 'skim' || variant === 'nonfat') {
-                return -80;
-              }
-            }
-            // Penalty for specialty milks
-            if (name.includes('almond') || name.includes('oat') || name.includes('soy') || 
-                name.includes('coconut') || name.includes('rice milk') || name.includes('cashew')) {
-              return 30;
-            }
-            // Other common foods
-            const commonMap = {
-              'chicken breast': -50,
-              'ground beef': -50,
-              'white rice': -50,
-              'brown rice': -50,
-              'whole egg': -50,
-              'egg white': -45
-            };
-            return commonMap[name] || 0;
-          };
-          
-          const aBoost = getCommonBoost(aName);
-          const bBoost = getCommonBoost(bName);
-          
-          // Debug: log boost values for milk-related foods
-          if (termLower === 'milk' && (aName.includes('milk') || bName.includes('milk'))) {
-            if (Math.random() < 0.05) { // 5% sample
-              console.log('[MILK BOOST]', { a: aName.substring(0, 30), b: bName.substring(0, 30), aBoost, bBoost });
-            }
-          }
-          
-          // Log sample comparisons
-          if (Math.random() < 0.01) {
-            console.log('[SORT]', {
-              a: aName.substring(0, 30),
-              b: bName.substring(0, 30),
-              aBoost,
-              bBoost,
-              aComplexity,
-              bComplexity,
-              termLower
-            });
-          }
-          
-          // Exact match beats everything
-          const aExact = aName === termLower;
-          const bExact = bName === termLower;
-          if (aExact && !bExact) return -1;
-          if (bExact && !aExact) return 1;
-          
-          // Starts with term
-          const aStarts = aName.startsWith(termLower);
-          const bStarts = bName.startsWith(termLower);
-          
-          // If both start with term, apply common food boost then prefer simpler
-          if (aStarts && bStarts) {
-            if (aBoost !== bBoost) return aBoost - bBoost; // Common foods first
-            const complexityDiff = aComplexity - bComplexity;
-            if (complexityDiff !== 0) return complexityDiff * 3; // Triple weight for simplicity
-          }
-          
-          // One starts, one doesn't
-          if (aStarts && !bStarts) return -1;
-          if (bStarts && !aStarts) return 1;
-          
-          // Neither starts with term - prefer term appearing early
-          const aIndex = aName.indexOf(termLower);
-          const bIndex = bName.indexOf(termLower);
-          
-          // If term appears at same position, apply boost then prefer simpler
-          if (aIndex === bIndex) {
-            if (aBoost !== bBoost) return aBoost - bBoost;
-            const complexityDiff = aComplexity - bComplexity;
-            if (complexityDiff !== 0) return complexityDiff * 2; // Double weight
-          }
-          
-          // Different positions - closer to start wins
-          if (aIndex !== bIndex) return aIndex - bIndex;
-          
-          // Final tiebreaker: simpler foods first
-          return aComplexity - bComplexity;
-        }).slice(0, 50);
-        
-        console.log('[DEBUG] Search results:', sorted.length, 'foods found (filtered from', results?.length || 0, ')');
+        console.log('[DEBUG] Search results:', filtered.length, 'foods found (filtered from', results?.length || 0, ')');
         
         if (searchError) {
           console.error('Food search error:', searchError);
@@ -456,7 +336,7 @@ function NutritionLogPage() {
         }
 
         // Format results for UI
-        const standardizedResults = (sorted || []).map(food => {
+        const standardizedResults = (filtered || []).map(food => {
           // Get default portion (first one or 100g equivalent)
           const defaultPortion = food.portions?.[0] || {
             gram_weight: 100,
@@ -507,7 +387,7 @@ function NutritionLogPage() {
           };
         });
 
-        console.log('[DEBUG] Top 10 sorted results:', sorted.slice(0, 10).map(f => f.name));
+        console.log('[DEBUG] Top 10 results:', filtered.slice(0, 10).map(f => f.name));
         console.log('[DEBUG] Standardized results:', standardizedResults.length);
         setSearchResults(standardizedResults);
       } catch (error) {

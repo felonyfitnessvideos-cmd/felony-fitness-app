@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ThgDWhmuDaR7ARwx0Z4BE81Ut5ipeEkODTdWXXxGIpqyzgdVZ7lh1HYiVrx8inf
+\restrict HDcqehxeUTpJp7lCphs5JbKTx9x3YeAMFSXzWAOrD2yscd80uhhzbaL63hRFerv
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.7
@@ -108,6 +108,34 @@ CREATE SCHEMA supabase_migrations;
 --
 
 CREATE SCHEMA vault;
+
+
+--
+-- Name: hypopg; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS hypopg WITH SCHEMA extensions;
+
+
+--
+-- Name: EXTENSION hypopg; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION hypopg IS 'Hypothetical indexes for PostgreSQL';
+
+
+--
+-- Name: index_advisor; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS index_advisor WITH SCHEMA extensions;
+
+
+--
+-- Name: EXTENSION index_advisor; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION index_advisor IS 'Query index advisor';
 
 
 --
@@ -810,121 +838,36 @@ $$;
 
 
 --
--- Name: calculate_nutrition_log_values(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: calculate_nutrition_from_food(); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.calculate_nutrition_log_values() RETURNS trigger
+CREATE FUNCTION public.calculate_nutrition_from_food() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
+DECLARE
+  food_data RECORD;
 BEGIN
-  -- Look up food_servings data and multiply by quantity consumed
-  -- Handle NULL quantity_consumed (default to 1.0)
-  SELECT 
-    -- Macronutrients
-    COALESCE(fs.calories * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.protein_g * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.carbs_g * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.fat_g * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    
-    -- Fiber and Sugar
-    COALESCE(fs.fiber_g * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.sugar_g * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    
-    -- Major Minerals
-    COALESCE(fs.sodium_mg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.calcium_mg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.iron_mg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.potassium_mg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.magnesium_mg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.phosphorus_mg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    
-    -- Trace Minerals
-    COALESCE(fs.zinc_mg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.copper_mg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.selenium_mcg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    
-    -- Vitamins
-    COALESCE(fs.vitamin_a_mcg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.vitamin_b6_mg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.vitamin_b12_mcg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.vitamin_c_mg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.vitamin_e_mg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.vitamin_k_mcg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    
-    -- B-Vitamins
-    COALESCE(fs.folate_mcg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.niacin_mg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.riboflavin_mg * COALESCE(NEW.quantity_consumed, 1.0), 0),
-    COALESCE(fs.thiamin_mg * COALESCE(NEW.quantity_consumed, 1.0), 0)
-    
-  INTO 
-    NEW.calories,
-    NEW.protein_g,
-    NEW.carbs_g,
-    NEW.fat_g,
-    NEW.fiber_g,
-    NEW.sugar_g,
-    NEW.sodium_mg,
-    NEW.calcium_mg,
-    NEW.iron_mg,
-    NEW.potassium_mg,
-    NEW.magnesium_mg,
-    NEW.phosphorus_mg,
-    NEW.zinc_mg,
-    NEW.copper_mg,
-    NEW.selenium_mcg,
-    NEW.vitamin_a_mcg,
-    NEW.vitamin_b6_mg,
-    NEW.vitamin_b12_mcg,
-    NEW.vitamin_c_mg,
-    NEW.vitamin_e_mg,
-    NEW.vitamin_k_mcg,
-    NEW.folate_mcg,
-    NEW.niacin_mg,
-    NEW.riboflavin_mg,
-    NEW.thiamin_mg
-  FROM food_servings fs
-  WHERE fs.id = NEW.food_serving_id;
-  
-  -- If food_serving_id is NULL or not found, keep existing values or set to NULL
-  IF NOT FOUND THEN
-    NEW.calories := NULL;
-    NEW.protein_g := NULL;
-    NEW.carbs_g := NULL;
-    NEW.fat_g := NULL;
-    NEW.fiber_g := NULL;
-    NEW.sugar_g := NULL;
-    NEW.sodium_mg := NULL;
-    NEW.calcium_mg := NULL;
-    NEW.iron_mg := NULL;
-    NEW.potassium_mg := NULL;
-    NEW.magnesium_mg := NULL;
-    NEW.phosphorus_mg := NULL;
-    NEW.zinc_mg := NULL;
-    NEW.copper_mg := NULL;
-    NEW.selenium_mcg := NULL;
-    NEW.vitamin_a_mcg := NULL;
-    NEW.vitamin_b6_mg := NULL;
-    NEW.vitamin_b12_mcg := NULL;
-    NEW.vitamin_c_mg := NULL;
-    NEW.vitamin_e_mg := NULL;
-    NEW.vitamin_k_mcg := NULL;
-    NEW.folate_mcg := NULL;
-    NEW.niacin_mg := NULL;
-    NEW.riboflavin_mg := NULL;
-    NEW.thiamin_mg := NULL;
+  -- Only calculate if food_id is provided and nutrition fields are NULL
+  IF NEW.food_id IS NOT NULL THEN
+    -- Get food nutrition data
+    SELECT calories, protein_g, carbs_g, fat_g
+    INTO food_data
+    FROM foods
+    WHERE id = NEW.food_id;
+
+    IF FOUND THEN
+      -- Calculate nutrition based on quantity consumed
+      -- Foods table stores per 100g, so multiply by quantity_consumed
+      NEW.calories := ROUND((food_data.calories::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+      NEW.protein_g := ROUND((food_data.protein_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+      NEW.carbs_g := ROUND((food_data.carbs_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+      NEW.fat_g := ROUND((food_data.fat_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+    END IF;
   END IF;
-  
+
   RETURN NEW;
 END;
 $$;
-
-
---
--- Name: FUNCTION calculate_nutrition_log_values(); Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON FUNCTION public.calculate_nutrition_log_values() IS 'Automatically populates nutrition_logs with complete nutritional data by multiplying food_servings values by quantity_consumed. Fires on INSERT/UPDATE.';
 
 
 --
@@ -1223,42 +1166,6 @@ $$;
 
 
 --
--- Name: refresh_pipeline_status(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.refresh_pipeline_status() RETURNS trigger
-    LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
-BEGIN
-  -- Delete old status (now bypasses RLS)
-  DELETE FROM nutrition_pipeline_status;
-  
-  -- Insert fresh status with current data
-  INSERT INTO nutrition_pipeline_status (
-    total_foods,
-    total_verified,
-    total_pending,
-    foods_below_threshold,
-    average_quality_score,
-    queue_size,
-    last_updated
-  )
-  SELECT 
-    (SELECT COUNT(*) FROM food_servings),
-    (SELECT COUNT(*) FROM food_servings WHERE quality_score >= 70),
-    (SELECT COUNT(*) FROM food_servings WHERE quality_score < 70 OR quality_score IS NULL),
-    (SELECT COUNT(*) FROM food_servings WHERE quality_score < 70),
-    (SELECT COALESCE(AVG(quality_score), 0) FROM food_servings WHERE quality_score > 0),
-    (SELECT COUNT(*) FROM nutrition_enrichment_queue WHERE status = 'pending'),
-    NOW();
-  
-  RETURN NEW;
-END;
-$$;
-
-
---
 -- Name: remove_tag_from_client(uuid, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1431,20 +1338,6 @@ BEGIN
   END IF;
   
   RETURN NEW;
-END;
-$$;
-
-
---
--- Name: trigger_refresh_pipeline_status(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.trigger_refresh_pipeline_status() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    PERFORM public.refresh_pipeline_status();
-    RETURN NEW;
 END;
 $$;
 
@@ -4068,139 +3961,44 @@ CREATE TABLE public.exercises (
 
 
 --
--- Name: food_servings; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.food_servings (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    food_name text NOT NULL,
-    serving_description text,
-    calories numeric(8,2),
-    protein_g numeric(6,2),
-    carbs_g numeric(6,2),
-    fat_g numeric(6,2),
-    fiber_g numeric(6,2),
-    sugar_g numeric(6,2),
-    sodium_mg numeric(8,2),
-    calcium_mg numeric(8,2) DEFAULT 0.00,
-    iron_mg numeric(8,2) DEFAULT 0.00,
-    vitamin_c_mg numeric(8,2) DEFAULT 0.00,
-    potassium_mg numeric(8,2) DEFAULT 0.00,
-    vitamin_a_mcg numeric(8,2) DEFAULT 0.00,
-    vitamin_e_mg numeric(8,2) DEFAULT 0.00,
-    vitamin_k_mcg numeric(8,2) DEFAULT 0.00,
-    thiamin_mg numeric(8,2),
-    riboflavin_mg numeric(8,2),
-    niacin_mg numeric(8,2),
-    vitamin_b6_mg numeric(8,2),
-    folate_mcg numeric(8,2),
-    vitamin_b12_mcg numeric(8,2),
-    magnesium_mg numeric(8,2),
-    phosphorus_mg numeric(8,2),
-    zinc_mg numeric(8,2),
-    copper_mg numeric(8,2),
-    selenium_mcg numeric(8,2),
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    brand text,
-    category text,
-    data_sources text DEFAULT 'user_input'::text,
-    quality_score integer DEFAULT 0,
-    enrichment_status text DEFAULT 'pending'::text,
-    last_enrichment timestamp with time zone,
-    is_verified boolean DEFAULT false,
-    source text DEFAULT 'user_input'::text,
-    pdcaas_score numeric(3,2) DEFAULT 0.00,
-    needs_review boolean DEFAULT false,
-    review_flags text[],
-    review_details jsonb,
-    verification_details jsonb,
-    last_verification timestamp with time zone,
-    fdc_id text,
-    CONSTRAINT food_servings_pdcaas_score_check CHECK (((pdcaas_score >= (0)::numeric) AND (pdcaas_score <= 1.0)))
-);
-
-
---
--- Name: COLUMN food_servings.is_verified; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.food_servings.is_verified IS 'TRUE when food has passed all verification checks (quality score = 100)';
-
-
---
--- Name: COLUMN food_servings.needs_review; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.food_servings.needs_review IS 'TRUE when food failed verification checks and needs manual review';
-
-
---
--- Name: COLUMN food_servings.review_flags; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.food_servings.review_flags IS 'Array of flag codes for failed checks (e.g., ATWATER_MISMATCH, PHYSICS_VIOLATION)';
-
-
---
--- Name: COLUMN food_servings.review_details; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.food_servings.review_details IS 'Detailed results from failed verification checks';
-
-
---
--- Name: COLUMN food_servings.verification_details; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.food_servings.verification_details IS 'Detailed results from successful verification (all checks passed)';
-
-
---
--- Name: COLUMN food_servings.last_verification; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.food_servings.last_verification IS 'Timestamp of last verification attempt';
-
-
---
 -- Name: foods; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.foods (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    id bigint NOT NULL,
     name text NOT NULL,
-    brand text,
     category text,
-    data_sources text,
-    quality_score integer,
-    enrichment_status text,
-    last_enrichment timestamp with time zone,
+    brand_owner text,
+    data_source text DEFAULT 'USDA'::text,
+    calories numeric DEFAULT 0,
+    protein_g numeric DEFAULT 0,
+    fat_g numeric DEFAULT 0,
+    carbs_g numeric DEFAULT 0,
+    sugar_g numeric DEFAULT 0,
+    fiber_g numeric DEFAULT 0,
+    sodium_mg numeric DEFAULT 0,
+    potassium_mg numeric DEFAULT 0,
+    calcium_mg numeric DEFAULT 0,
+    iron_mg numeric DEFAULT 0,
+    magnesium_mg numeric DEFAULT 0,
+    phosphorus_mg numeric DEFAULT 0,
+    zinc_mg numeric DEFAULT 0,
+    copper_mg numeric DEFAULT 0,
+    selenium_mcg numeric DEFAULT 0,
+    cholesterol_mg numeric DEFAULT 0,
+    vitamin_a_mcg numeric DEFAULT 0,
+    vitamin_c_mg numeric DEFAULT 0,
+    vitamin_e_mg numeric DEFAULT 0,
+    vitamin_d_mcg numeric DEFAULT 0,
+    vitamin_k_mcg numeric DEFAULT 0,
+    thiamin_mg numeric DEFAULT 0,
+    riboflavin_mg numeric DEFAULT 0,
+    niacin_mg numeric DEFAULT 0,
+    vitamin_b6_mg numeric DEFAULT 0,
+    folate_mcg numeric DEFAULT 0,
+    vitamin_b12_mcg numeric DEFAULT 0,
     created_at timestamp with time zone DEFAULT now()
 );
-
-
---
--- Name: foods_needing_review; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW public.foods_needing_review AS
- SELECT id,
-    food_name,
-    serving_description,
-    calories,
-    protein_g,
-    carbs_g,
-    fat_g,
-    category,
-    needs_review,
-    review_flags,
-    review_details,
-    quality_score,
-    last_verification
-   FROM public.food_servings
-  WHERE (needs_review = true)
-  ORDER BY last_verification DESC;
 
 
 --
@@ -4380,7 +4178,7 @@ CREATE TABLE public.nutrition_logs (
     niacin_mg numeric(10,2),
     riboflavin_mg numeric(10,2),
     thiamin_mg numeric(10,2),
-    CONSTRAINT chk_water_entries_no_macros CHECK ((((food_serving_id IS NULL) AND (calories IS NULL) AND (protein_g IS NULL) AND (carbs_g IS NULL) AND (fat_g IS NULL)) OR (food_serving_id IS NOT NULL))),
+    food_id bigint,
     CONSTRAINT nutrition_logs_meal_type_check CHECK ((meal_type = ANY (ARRAY['breakfast'::text, 'lunch'::text, 'dinner'::text, 'snack1'::text, 'snack2'::text, 'water'::text])))
 );
 
@@ -4561,6 +4359,13 @@ COMMENT ON COLUMN public.nutrition_logs.thiamin_mg IS 'Thiamin (B1) in milligram
 
 
 --
+-- Name: COLUMN nutrition_logs.food_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.food_id IS 'Reference to foods table (bigint USDA FDC ID). Replaces food_serving_id.';
+
+
+--
 -- Name: nutrition_pipeline_status; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4604,6 +4409,20 @@ ALTER TABLE public.plans ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
     NO MINVALUE
     NO MAXVALUE
     CACHE 1
+);
+
+
+--
+-- Name: portions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.portions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    food_id bigint,
+    amount numeric NOT NULL,
+    measure_unit text NOT NULL,
+    gram_weight numeric NOT NULL,
+    portion_description text
 );
 
 
@@ -5196,24 +5015,6 @@ CREATE TABLE public.users (
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now()
 );
-
-
---
--- Name: verification_queue; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW public.verification_queue AS
- SELECT id,
-    food_name,
-    serving_description,
-    enrichment_status,
-    quality_score,
-    is_verified,
-    last_verification
-   FROM public.food_servings
-  WHERE ((enrichment_status = ANY (ARRAY['completed'::text, 'verified'::text])) AND ((is_verified IS NULL) OR (is_verified = false)))
-  ORDER BY quality_score DESC
- LIMIT 100;
 
 
 --
@@ -6151,14 +5952,6 @@ ALTER TABLE ONLY public.exercises
 
 
 --
--- Name: food_servings food_servings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.food_servings
-    ADD CONSTRAINT food_servings_pkey PRIMARY KEY (id);
-
-
---
 -- Name: foods foods_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6252,6 +6045,14 @@ ALTER TABLE ONLY public.nutrition_pipeline_status
 
 ALTER TABLE ONLY public.plans
     ADD CONSTRAINT plans_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portions portions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portions
+    ADD CONSTRAINT portions_pkey PRIMARY KEY (id);
 
 
 --
@@ -7072,34 +6873,6 @@ CREATE INDEX exercises_type_idx ON public.exercises USING btree (exercise_type) 
 
 
 --
--- Name: food_servings_brand_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX food_servings_brand_idx ON public.food_servings USING btree (brand) WHERE (brand IS NOT NULL);
-
-
---
--- Name: food_servings_category_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX food_servings_category_idx ON public.food_servings USING btree (category);
-
-
---
--- Name: food_servings_category_name_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX food_servings_category_name_idx ON public.food_servings USING btree (category, food_name);
-
-
---
--- Name: food_servings_name_trgm_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX food_servings_name_trgm_idx ON public.food_servings USING gin (food_name public.gin_trgm_ops);
-
-
---
 -- Name: idx_body_metrics_user_date; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7268,45 +7041,17 @@ CREATE INDEX idx_enrichment_queue_status ON public.nutrition_enrichment_queue US
 
 
 --
--- Name: idx_food_servings_is_verified; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_foods_brand; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_food_servings_is_verified ON public.food_servings USING btree (is_verified);
-
-
---
--- Name: idx_food_servings_last_verification; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_food_servings_last_verification ON public.food_servings USING btree (last_verification);
+CREATE INDEX idx_foods_brand ON public.foods USING gin (brand_owner public.gin_trgm_ops);
 
 
 --
--- Name: idx_food_servings_name_gin; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_foods_name; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_food_servings_name_gin ON public.food_servings USING gin (food_name public.gin_trgm_ops);
-
-
---
--- Name: idx_food_servings_name_lower; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_food_servings_name_lower ON public.food_servings USING btree (lower(food_name));
-
-
---
--- Name: idx_food_servings_needs_review; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_food_servings_needs_review ON public.food_servings USING btree (needs_review);
-
-
---
--- Name: idx_food_servings_verification_queue; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_food_servings_verification_queue ON public.food_servings USING btree (enrichment_status, is_verified, quality_score DESC) WHERE ((enrichment_status = ANY (ARRAY['completed'::text, 'verified'::text])) AND ((is_verified IS NULL) OR (is_verified = false)));
+CREATE INDEX idx_foods_name ON public.foods USING gin (name public.gin_trgm_ops);
 
 
 --
@@ -7345,6 +7090,13 @@ CREATE INDEX idx_meal_plan_entries_plan_id ON public.weekly_meal_plan_entries US
 
 
 --
+-- Name: idx_nutrition_logs_food_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_nutrition_logs_food_id ON public.nutrition_logs USING btree (food_id);
+
+
+--
 -- Name: idx_nutrition_logs_food_serving; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7363,6 +7115,13 @@ CREATE INDEX idx_nutrition_logs_user_date ON public.nutrition_logs USING btree (
 --
 
 CREATE INDEX idx_nutrition_logs_user_date_macros ON public.nutrition_logs USING btree (user_id, log_date) INCLUDE (calories, protein_g, carbs_g, fat_g, quantity_consumed);
+
+
+--
+-- Name: idx_portions_food; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_portions_food ON public.portions USING btree (food_id);
 
 
 --
@@ -7898,17 +7657,17 @@ CREATE TRIGGER trigger_sync_user_profile_email_on_auth_update AFTER UPDATE ON au
 
 
 --
--- Name: nutrition_logs populate_nutrition_log_values; Type: TRIGGER; Schema: public; Owner: -
+-- Name: nutrition_logs calculate_nutrition_on_insert; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER populate_nutrition_log_values BEFORE INSERT OR UPDATE ON public.nutrition_logs FOR EACH ROW EXECUTE FUNCTION public.calculate_nutrition_log_values();
+CREATE TRIGGER calculate_nutrition_on_insert BEFORE INSERT ON public.nutrition_logs FOR EACH ROW EXECUTE FUNCTION public.calculate_nutrition_from_food();
 
 
 --
--- Name: nutrition_enrichment_queue refresh_pipeline_on_queue_change; Type: TRIGGER; Schema: public; Owner: -
+-- Name: nutrition_logs calculate_nutrition_on_update; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER refresh_pipeline_on_queue_change AFTER INSERT OR DELETE OR UPDATE ON public.nutrition_enrichment_queue FOR EACH STATEMENT EXECUTE FUNCTION public.trigger_refresh_pipeline_status();
+CREATE TRIGGER calculate_nutrition_on_update BEFORE UPDATE ON public.nutrition_logs FOR EACH ROW WHEN (((old.food_id IS DISTINCT FROM new.food_id) OR (old.quantity_consumed IS DISTINCT FROM new.quantity_consumed))) EXECUTE FUNCTION public.calculate_nutrition_from_food();
 
 
 --
@@ -7930,40 +7689,6 @@ CREATE TRIGGER sync_trainer_client_full_name_trigger BEFORE INSERT OR UPDATE OF 
 --
 
 CREATE TRIGGER sync_trainer_client_on_profile_update_trigger AFTER UPDATE OF first_name, last_name ON public.user_profiles FOR EACH ROW WHEN (((old.first_name IS DISTINCT FROM new.first_name) OR (old.last_name IS DISTINCT FROM new.last_name))) EXECUTE FUNCTION public.sync_trainer_client_on_profile_update();
-
-
---
--- Name: food_servings trigger_refresh_pipeline_on_delete; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER trigger_refresh_pipeline_on_delete AFTER DELETE ON public.food_servings FOR EACH STATEMENT EXECUTE FUNCTION public.refresh_pipeline_status();
-
-ALTER TABLE public.food_servings DISABLE TRIGGER trigger_refresh_pipeline_on_delete;
-
-
---
--- Name: food_servings trigger_refresh_pipeline_on_insert; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER trigger_refresh_pipeline_on_insert AFTER INSERT ON public.food_servings FOR EACH STATEMENT EXECUTE FUNCTION public.refresh_pipeline_status();
-
-ALTER TABLE public.food_servings DISABLE TRIGGER trigger_refresh_pipeline_on_insert;
-
-
---
--- Name: nutrition_enrichment_queue trigger_refresh_pipeline_on_queue_change; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER trigger_refresh_pipeline_on_queue_change AFTER INSERT OR DELETE OR UPDATE ON public.nutrition_enrichment_queue FOR EACH STATEMENT EXECUTE FUNCTION public.refresh_pipeline_status();
-
-
---
--- Name: food_servings trigger_refresh_pipeline_on_update; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER trigger_refresh_pipeline_on_update AFTER UPDATE ON public.food_servings FOR EACH STATEMENT EXECUTE FUNCTION public.refresh_pipeline_status();
-
-ALTER TABLE public.food_servings DISABLE TRIGGER trigger_refresh_pipeline_on_update;
 
 
 --
@@ -8338,14 +8063,6 @@ ALTER TABLE ONLY public.goals
 
 
 --
--- Name: meal_foods meal_foods_food_serving_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.meal_foods
-    ADD CONSTRAINT meal_foods_food_serving_id_fkey FOREIGN KEY (food_servings_id) REFERENCES public.food_servings(id) ON DELETE CASCADE;
-
-
---
 -- Name: meal_foods meal_foods_meal_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8386,19 +8103,11 @@ ALTER TABLE ONLY public.mesocycles
 
 
 --
--- Name: nutrition_enrichment_queue nutrition_enrichment_queue_food_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.nutrition_enrichment_queue
-    ADD CONSTRAINT nutrition_enrichment_queue_food_id_fkey FOREIGN KEY (food_id) REFERENCES public.food_servings(id) ON DELETE CASCADE;
-
-
---
--- Name: nutrition_logs nutrition_logs_food_serving_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: nutrition_logs nutrition_logs_food_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.nutrition_logs
-    ADD CONSTRAINT nutrition_logs_food_serving_id_fkey FOREIGN KEY (food_serving_id) REFERENCES public.food_servings(id) ON DELETE CASCADE;
+    ADD CONSTRAINT nutrition_logs_food_id_fkey FOREIGN KEY (food_id) REFERENCES public.foods(id) ON DELETE SET NULL;
 
 
 --
@@ -8407,6 +8116,14 @@ ALTER TABLE ONLY public.nutrition_logs
 
 ALTER TABLE ONLY public.nutrition_logs
     ADD CONSTRAINT nutrition_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: portions portions_food_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portions
+    ADD CONSTRAINT portions_food_id_fkey FOREIGN KEY (food_id) REFERENCES public.foods(id) ON DELETE CASCADE;
 
 
 --
@@ -8511,14 +8228,6 @@ ALTER TABLE ONLY public.trainer_email_templates
 
 ALTER TABLE ONLY public.trainer_group_tags
     ADD CONSTRAINT trainer_group_tags_trainer_id_fkey FOREIGN KEY (trainer_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
-
---
--- Name: user_meal_foods user_meal_foods_food_servings_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.user_meal_foods
-    ADD CONSTRAINT user_meal_foods_food_servings_id_fkey FOREIGN KEY (food_servings_id) REFERENCES public.food_servings(id) ON DELETE SET NULL;
 
 
 --
@@ -9117,20 +8826,6 @@ CREATE POLICY "Allow service role to insert email_events" ON public.email_events
 --
 
 CREATE POLICY "Allow service role to update unsubscribe" ON public.users FOR UPDATE TO service_role USING (true);
-
-
---
--- Name: food_servings Anyone can view food servings; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Anyone can view food servings" ON public.food_servings FOR SELECT TO authenticated USING (true);
-
-
---
--- Name: food_servings Authenticated users can insert food servings; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Authenticated users can insert food servings" ON public.food_servings FOR INSERT TO authenticated WITH CHECK (true);
 
 
 --
@@ -9771,5 +9466,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ThgDWhmuDaR7ARwx0Z4BE81Ut5ipeEkODTdWXXxGIpqyzgdVZ7lh1HYiVrx8inf
+\unrestrict HDcqehxeUTpJp7lCphs5JbKTx9x3YeAMFSXzWAOrD2yscd80uhhzbaL63hRFerv
 
