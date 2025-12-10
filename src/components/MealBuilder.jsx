@@ -197,7 +197,8 @@ const MealBuilder = ({
       // Map the data to match the expected structure
       const mappedFoods = data.map(item => ({
         id: item.id,
-        food_id: item.food_id,
+        food_id: item.food_servings_id, // Map from DB column name
+        food_servings_id: item.food_servings_id,
         quantity: item.quantity,
         notes: item.notes,
         foods: item.foods,
@@ -552,7 +553,7 @@ const MealBuilder = ({
 
         processedMealFoods.push({
           user_meal_id: mealId,  // Changed from meal_id to user_meal_id
-          food_id: finalFoodId,
+          food_servings_id: finalFoodId, // Use correct DB column name
           quantity: item.quantity,
           notes: item.notes || ''
         });

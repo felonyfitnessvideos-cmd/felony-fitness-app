@@ -300,6 +300,10 @@ function NutritionLogPage() {
       try {
         console.log('[DEBUG] Searching for:', term);
         
+        // Escape commas in search term to prevent PostgREST syntax errors
+        // PostgREST interprets commas as OR separators, so we need to replace them
+        const sanitizedTerm = term.replace(/,/g, ' ');
+        
         // Direct Supabase search - foods table with portions
         // Order by: non-alcoholic first, then by name
         const { data: results, error: searchError } = await supabase
@@ -308,7 +312,7 @@ function NutritionLogPage() {
             *,
             portions (*)
           `)
-          .or(`name.ilike.%${term}%,brand_owner.ilike.%${term}%`)
+          .or(`name.ilike.%${sanitizedTerm}%,brand_owner.ilike.%${sanitizedTerm}%`)
           .order('name')
           .limit(100);
         
