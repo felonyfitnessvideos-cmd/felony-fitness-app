@@ -114,9 +114,11 @@ const ClientProgress = ({ client }) => {
         const displayDate = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
         const existing = calorieMap.get(localSortKey) || { date: displayDate, calories: 0 };
-        const quantity = log.quantity_consumed || 0;
-        const caloriesPerServing = log.food_servings?.calories || 0;
-        existing.calories += (quantity * caloriesPerServing);
+        
+        // Calories are calculated by the database trigger
+        // The trigger uses: (foods.calories * quantity_consumed / 100)
+        existing.calories += (log.calories || 0);
+        
         calorieMap.set(localSortKey, existing);
       });
       

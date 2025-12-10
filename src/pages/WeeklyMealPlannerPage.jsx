@@ -146,10 +146,9 @@ const WeeklyMealPlannerPage = () => {
             category,
             user_meal_foods (
               quantity,
-              food_servings (
+              foods (
                 id,
-                food_name,
-                serving_description,
+                name,
                 category,
                 calories,
                 protein_g,
@@ -236,7 +235,8 @@ const WeeklyMealPlannerPage = () => {
       if (!dailyNutrition[dateStr]) return;
 
       entry.meals.meal_foods.forEach(mealFood => {
-        const food = mealFood.food_servings;
+        // Support both foods and food_servings for backwards compatibility
+        const food = mealFood.foods || mealFood.food_servings;
         const quantity = mealFood.quantity * servings;
 
         dailyNutrition[dateStr].calories += (food.calories * quantity || 0);
@@ -345,14 +345,13 @@ const WeeklyMealPlannerPage = () => {
             food_id,
             quantity,
             notes,
-            food_servings (
+            foods (
               id,
-              food_name,
+              name,
               calories,
               protein_g,
               carbs_g,
-              fat_g,
-              serving_description
+              fat_g
             )
           )
         `)
@@ -421,7 +420,8 @@ const WeeklyMealPlannerPage = () => {
    */
   const calculateMealNutrition = (mealFoods, servings = 1) => {
     return mealFoods.reduce((acc, item) => {
-      const food = item.food_servings;
+      // Support both foods and food_servings for backwards compatibility
+      const food = item.foods || item.food_servings;
       const quantity = Number.isFinite(item?.quantity) && item.quantity > 0 ? item.quantity : 1;
 
       return {
@@ -459,8 +459,9 @@ const WeeklyMealPlannerPage = () => {
       const mealFoods = entry.meals?.meal_foods || [];
       
       mealFoods.forEach(mealFood => {
-        const food = mealFood.food_servings;
-        if (!food) return; // Skip if food_servings is missing
+        // Support both foods and food_servings for backwards compatibility
+        const food = mealFood.foods || mealFood.food_servings;
+        if (!food) return; // Skip if food data is missing
         
         const foodId = food.id;
         const quantity = mealFood.quantity * servings;

@@ -156,7 +156,8 @@ export function calculateWeeklyNutrientTotals(planEntries) {
     const mealFoods = entry.meals?.meal_foods || [];
 
     mealFoods.forEach(mealFood => {
-      const food = mealFood.food_servings;
+      // Support both foods and food_servings for backwards compatibility
+      const food = mealFood.foods || mealFood.food_servings;
       if (!food) return;
 
       const quantity = mealFood.quantity * servings;
