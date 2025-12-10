@@ -52,7 +52,7 @@ const ClientProgress = ({ client }) => {
         
         // Fetch nutrition logs
         supabase.from('nutrition_logs')
-          .select('created_at, quantity_consumed, food_servings(calories)')
+          .select('created_at, calories')
           .eq('user_id', clientId),
         
         // Fetch active goals

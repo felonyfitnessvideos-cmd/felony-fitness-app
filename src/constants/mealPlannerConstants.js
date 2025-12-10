@@ -150,15 +150,15 @@ export function getWeekDates(date) {
  * 
  * Processes an array of meal_foods relationships and calculates aggregate
  * nutrition values by multiplying each food's base nutrition by its quantity.
- * Handles missing or null food_servings gracefully with warnings.
+ * Handles missing or null foods gracefully with warnings.
  * 
  * @param {Array<Object>} mealFoods - Array of meal_foods with quantities and nutrition data
  * @param {number} mealFoods[].quantity - Serving quantity multiplier
- * @param {Object} mealFoods[].food_servings - Nutrition data for the food serving
- * @param {number} mealFoods[].food_servings.calories - Calories per serving
- * @param {number} mealFoods[].food_servings.protein_g - Protein grams per serving
- * @param {number} mealFoods[].food_servings.carbs_g - Carbohydrate grams per serving
- * @param {number} mealFoods[].food_servings.fat_g - Fat grams per serving
+ * @param {Object} mealFoods[].foods - Nutrition data for the food (from foods table)
+ * @param {number} mealFoods[].foods.calories - Calories per 100g
+ * @param {number} mealFoods[].foods.protein_g - Protein grams per 100g
+ * @param {number} mealFoods[].foods.carbs_g - Carbohydrate grams per 100g
+ * @param {number} mealFoods[].foods.fat_g - Fat grams per 100g
  * 
  * @returns {Object} Calculated nutrition totals
  * @returns {number} returns.calories - Total calories
@@ -169,11 +169,12 @@ export function getWeekDates(date) {
  * @remarks
  * If an item quantity is missing, non-finite, or <= 0, a default quantity of 1 is used.
  * This ensures premade meals without explicit quantities still display correct macros.
+ * Foods table stores nutrition per 100g, so values are scaled by quantity.
  * 
  * @example
  * const mealFoods = [
- *   { quantity: 2, food_servings: { calories: 100, protein_g: 20, carbs_g: 5, fat_g: 2 } },
- *   { quantity: 1, food_servings: { calories: 200, protein_g: 10, carbs_g: 30, fat_g: 8 } }
+ *   { quantity: 2, foods: { calories: 100, protein_g: 20, carbs_g: 5, fat_g: 2 } },
+ *   { quantity: 1, foods: { calories: 200, protein_g: 10, carbs_g: 30, fat_g: 8 } }
  * ];
  * const nutrition = calculateMealNutrition(mealFoods);
  * // Returns: { calories: 400, protein: 50, carbs: 40, fat: 12 }
@@ -182,13 +183,14 @@ export function calculateMealNutrition(mealFoods) {
   if (!mealFoods) return { calories: 0, protein: 0, carbs: 0, fat: 0 };
 
   return mealFoods.reduce((acc, item) => {
-    const food = item.food_servings;
+    // Support both old 'food_servings' and new 'foods' field names for backwards compatibility
+    const food = item.foods || item.food_servings;
     // Default to 1 when quantity is missing/invalid to ensure premade meals show correct macros
     const quantity = Number.isFinite(item?.quantity) && item.quantity > 0 ? item.quantity : 1;
     
-    // Handle null or undefined food_servings
+    // Handle null or undefined food data
     if (!food) {
-      // Missing food_servings data for meal food item - skip calculation
+      // Missing food data for meal food item - skip calculation
       return acc;
     }
     

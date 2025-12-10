@@ -104,7 +104,7 @@ const MyMealsPage = () => {
         return;
       }
 
-      // Get user's saved meals from user_meals table (now self-contained)
+      // Get user's saved meals from user_meals table with foods data
       const { data: userSavedMeals, error: userMealsError } = await supabase
         .from('user_meals')
         .select(`
@@ -114,14 +114,13 @@ const MyMealsPage = () => {
             food_id,
             quantity,
             notes,
-            food_servings (
+            foods (
               id,
-              food_name,
+              name,
               calories,
               protein_g,
               carbs_g,
-              fat_g,
-              serving_description
+              fat_g
             )
           )
         `)
@@ -135,7 +134,7 @@ const MyMealsPage = () => {
 
       // Check each meal's structure for broken nutrition data
       userMealsData.forEach((meal) => {
-        if (meal.user_meal_foods && meal.user_meal_foods.some(mf => !mf.food_servings)) {
+        if (meal.user_meal_foods && meal.user_meal_foods.some(mf => !mf.foods)) {
           // Meal has broken food data - missing nutrition information
         }
       });
@@ -186,14 +185,13 @@ const MyMealsPage = () => {
             food_id,
             quantity,
             notes,
-            food_servings (
+            foods (
               id,
-              food_name,
+              name,
               calories,
               protein_g,
               carbs_g,
-              fat_g,
-              serving_description
+              fat_g
             )
           )
         `)

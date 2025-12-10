@@ -82,8 +82,8 @@ const ShoppingListGenerator = ({ isOpen, onClose, weekPlan, weekDates }) => {
             meal_foods (
               quantity,
               notes,
-              food_servings (
-                food_name,
+              foods (
+                name,
                 serving_size,
                 serving_unit
               )
@@ -103,9 +103,10 @@ const ShoppingListGenerator = ({ isOpen, onClose, weekPlan, weekDates }) => {
         const mealServings = entry.servings || 1;
         
         entry.meals.meal_foods.forEach(mealFood => {
-          const food = mealFood.food_servings;
+          const food = mealFood.foods || mealFood.food_servings; // Support both
+          const foodName = food.food_name || food.name;
           const totalQuantity = mealFood.quantity * mealServings;
-          const key = `${food.food_name}_${food.serving_unit}`;
+          const key = `${foodName}_${food.serving_unit}`;
           
           if (ingredientMap.has(key)) {
             const existing = ingredientMap.get(key);
@@ -113,7 +114,7 @@ const ShoppingListGenerator = ({ isOpen, onClose, weekPlan, weekDates }) => {
             existing.meals.add(entry.meals.name);
           } else {
             ingredientMap.set(key, {
-              name: food.food_name,
+              name: foodName,
               totalQuantity: totalQuantity,
               servingSize: food.serving_size,
               servingUnit: food.serving_unit,

@@ -121,7 +121,8 @@ const MealBuilder = ({
    */
   const calculateNutrition = useCallback(() => {
     const totals = mealFoods.reduce((acc, item) => {
-      const food = item.food_servings;
+      // Support both old 'food_servings' and new 'foods' for backwards compatibility
+      const food = item.foods || item.food_servings;
       const quantity = item.quantity || 0;
 
       return {
@@ -179,14 +180,13 @@ const MealBuilder = ({
         .from('user_meal_foods')  // Changed from meal_foods to user_meal_foods
         .select(`
           *,
-          food_servings (
+          foods (
             id,
-            food_name,
+            name,
             calories,
             protein_g,
             carbs_g,
-            fat_g,
-            serving_description
+            fat_g
           )
         `)
         .eq('user_meal_id', mealId);  // Changed from meal_id to user_meal_id
@@ -200,11 +200,9 @@ const MealBuilder = ({
         food_id: item.food_id,
         quantity: item.quantity,
         notes: item.notes,
-        food_servings: {
-          ...item.food_servings,
-          // Ensure food_name is available from the food_servings table directly
-          name: item.food_servings.food_name
-        }
+        foods: item.foods,
+        // Also set food_servings for backwards compatibility during transition
+        food_servings: item.foods
       }));
 
       setMealFoods(mappedFoods);
@@ -386,6 +384,8 @@ const MealBuilder = ({
         food_id: servingId,
         quantity: quantity,
         notes: '',
+        foods: foodServingData,
+        // Also set food_servings for backwards compatibility
         food_servings: foodServingData
       };
       setMealFoods(prev => [...prev, newMealFood]);
@@ -508,19 +508,20 @@ const MealBuilder = ({
         if (typeof item.food_id === 'string' && item.food_id.startsWith('ext_')) {
           
           // Create foods record directly
+          const foodToInsert = item.foods || item.food_servings; // Support both field names
           const { data: foodData, error: foodError } = await supabase
             .from('foods')
             .insert([{
-              name: item.food_servings.food_name || item.food_servings.name,
-              brand_owner: item.food_servings.brand || null,
-              category: item.food_servings.category || 'custom',
+              name: foodToInsert.food_name || foodToInsert.name,
+              brand_owner: foodToInsert.brand || null,
+              category: foodToInsert.category || 'custom',
               data_source: 'USER_CUSTOM',
-              calories: item.food_servings.calories || 0,
-              protein_g: item.food_servings.protein_g || 0,
-              carbs_g: item.food_servings.carbs_g || 0,
-              fat_g: item.food_servings.fat_g || 0,
-              fiber_g: item.food_servings.fiber_g || 0,
-              sugar_g: item.food_servings.sugar_g || 0
+              calories: foodToInsert.calories || 0,
+              protein_g: foodToInsert.protein_g || 0,
+              carbs_g: foodToInsert.carbs_g || 0,
+              fat_g: foodToInsert.fat_g || 0,
+              fiber_g: foodToInsert.fiber_g || 0,
+              sugar_g: foodToInsert.sugar_g || 0
             }])
             .select()
             .single();
@@ -536,9 +537,9 @@ const MealBuilder = ({
             .insert([{
               food_id: foodData.id,
               amount: 1,
-              measure_unit: item.food_servings.serving_description || 'serving',
+              measure_unit: foodToInsert.serving_description || 'serving',
               gram_weight: 100,
-              portion_description: item.food_servings.serving_description || '1 serving'
+              portion_description: foodToInsert.serving_description || '1 serving'
             }]);
 
           if (portionError) {
@@ -710,14 +711,13 @@ const MealBuilder = ({
                     />
                     {/* Show serving description with food name */}
                     {(() => {
-                      // Get food name from food_servings (has food_name column)
-                      const foodName = item.food_servings.food_name ||
-                        item.food_servings.name ||
-                        'Unknown Food';
+                      // Get food from either foods or food_servings (backwards compatibility)
+                      const food = item.foods || item.food_servings;
+                      const foodName = food.food_name || food.name || 'Unknown Food';
 
                       // Get the serving description as-is (don't strip anything)
                       // The quantity field represents "how many servings"
-                      const servingDesc = item.food_servings.serving_description || '';
+                      const servingDesc = food.serving_description || '';
                       
 
                       // Build the display string: serving description + food name

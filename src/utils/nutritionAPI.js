@@ -161,7 +161,7 @@ export class NutritionAPI {
       const { data, error } = await supabase.functions.invoke('log-food-item', {
         body: {
           p_external_food: foodData.source === 'external' ? foodData : null,
-          p_food_serving_id: foodData.source === 'local' ? foodData.serving_id : null,
+          p_food_id: foodData.source === 'local' ? foodData.serving_id : null,
           p_meal_type: foodData.meal_type || 'Snack',
           p_quantity_consumed: foodData.quantity || 1.0,
           p_user_id: userId,
