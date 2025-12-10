@@ -305,7 +305,8 @@ function NutritionLogPage() {
         const sanitizedTerm = term.replace(/,/g, ' ').toLowerCase();
         
         // Phase 3: Smart Search Algorithm
-        // Uses new database columns: name_simplified (for flexible matching) and commonness_score (for ranking)
+        // Uses new database columns: name_simplified (for flexible matching) and effective_score (for ranking)
+        // Query foods table directly and calculate effective_score client-side
         // Search strategy: name_simplified allows matching "chicken stew" to "Stew, chicken"
         const { data: results, error: searchError } = await supabase
           .from('foods')
@@ -314,7 +315,7 @@ function NutritionLogPage() {
             portions (*)
           `)
           .or(`name_simplified.ilike.%${sanitizedTerm}%,brand_owner.ilike.%${sanitizedTerm}%`)
-          .order('commonness_score', { ascending: false })  // Primary sort: most common foods first
+          .order('commonness_score', { ascending: false })  // Sort by base score (includes auto + manual scoring)
           .order('name')  // Secondary sort: alphabetical
           .limit(100);
         
