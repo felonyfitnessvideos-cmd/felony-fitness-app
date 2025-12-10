@@ -169,7 +169,7 @@ function DashboardPage() {
 
       const [profileRes, nutritionLogsRes, goalsRes, workoutLogRes] = await Promise.all([
         supabase.from('user_profiles').select('daily_calorie_goal, daily_protein_goal, daily_water_goal_oz, is_admin, is_beta').eq('id', userId).single(),
-        supabase.from('nutrition_logs').select('quantity_consumed, water_oz_consumed, food_servings(calories, protein_g)').eq('user_id', userId).gte('created_at', todayStart.toISOString()).lt('created_at', tomorrowStart.toISOString()),
+        supabase.from('nutrition_logs').select('calories, protein_g, water_oz_consumed').eq('user_id', userId).gte('created_at', todayStart.toISOString()).lt('created_at', tomorrowStart.toISOString()),
         supabase.from('goals').select('*').eq('user_id', userId),
         // Get today's completed workouts by log_date instead of created_at
         supabase.from('workout_logs')
@@ -189,10 +189,10 @@ function DashboardPage() {
 
       if (nutritionLogsRes.data) {
         const totals = nutritionLogsRes.data.reduce((acc, log) => {
-          if (log.food_servings) {
-            acc.calories += (log.food_servings.calories || 0) * log.quantity_consumed;
-            acc.protein += (log.food_servings.protein_g || 0) * log.quantity_consumed;
-          }
+          // Calories and protein are already calculated by the database trigger
+          // The trigger uses: (foods.calories * quantity_consumed / 100)
+          acc.calories += (log.calories || 0);
+          acc.protein += (log.protein_g || 0);
           if (log.water_oz_consumed) {
             acc.water += log.water_oz_consumed;
           }
