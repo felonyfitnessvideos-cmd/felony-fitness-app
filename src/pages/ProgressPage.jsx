@@ -114,7 +114,7 @@ function ProgressPage() {
         // Changed from 'v_nutrition_log_details' to the 'nutrition_logs' table
         // to get live, accurate data.
         supabase.from('nutrition_logs')
-          .select('created_at, quantity_consumed, food_servings(calories)')
+          .select('created_at, calories')
           .eq('user_id', userId),
         
         supabase.from('goals').select('*').eq('user_id', userId)
@@ -174,11 +174,10 @@ function ProgressPage() {
 
         const existing = calorieMap.get(localSortKey) || { date: displayDate, calories: 0 };
         
-        // --- 2. THIS CALCULATION IS FIXED ---
-        // We now calculate calories manually from the raw data.
-        const quantity = log.quantity_consumed || 0;
-        const caloriesPerServing = log.food_servings?.calories || 0;
-        existing.calories += (quantity * caloriesPerServing);
+        // Calories are already calculated by the database trigger
+        // The trigger uses: (foods.calories * quantity_consumed / 100)
+        // where quantity_consumed is in grams
+        existing.calories += (log.calories || 0);
         
         calorieMap.set(localSortKey, existing);
       });
