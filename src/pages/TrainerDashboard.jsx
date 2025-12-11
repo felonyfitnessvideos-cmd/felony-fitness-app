@@ -18,6 +18,7 @@ import {
   Apple,
   ArrowLeft,
   BarChart3,
+  Calculator,
   Calendar,
   Dumbbell,
   FolderOpen,
@@ -34,6 +35,7 @@ import useResponsive from '../hooks/useResponsive.jsx';
 import { getUnreadMessageCount } from '../utils/messagingUtils';
 // import { subscribeToMessages } from '../utils/messagingUtils'; // TEMPORARILY DISABLED - WebSocket causing errors
 import SmartScheduling from '../components/SmartScheduling.jsx';
+import CalculatorDashboard from '../components/tools/CalculatorDashboard.jsx';
 import ClientProgress from '../components/trainer/ClientProgress.jsx';
 import WorkoutBuilder from '../components/trainer/WorkoutBuilder.jsx';
 import NutritionPlanner from '../components/trainer/NutritionPlanner.jsx';
@@ -103,7 +105,7 @@ const TrainerDashboard = () => {
   const navigateToClients = () => navigate('/trainer-dashboard/clients');
   const navigateToMessages = () => navigate('/trainer-dashboard/messages');
   const navigateToResources = () => navigate('/trainer-dashboard/resources');
-  const navigateToOnboarding = () => navigate('/trainer-dashboard/onboarding');
+  const navigateToCalculators = () => navigate('/trainer-dashboard/calculators');
 
   /**
    * Initialize trainer dashboard
@@ -294,6 +296,15 @@ const TrainerDashboard = () => {
             <aside className="quick-tools-sidebar">
               <button
                 type="button"
+                className="tool-item home-btn"
+                onClick={handleBackToDashboard}
+                aria-label="Back to Main Dashboard"
+              >
+                <ArrowLeft size={20} />
+                <span>Main Dashboard</span>
+              </button>
+              <button
+                type="button"
                 className={`tool-item ${(location.pathname === '/trainer-dashboard/calendar' || location.pathname === '/trainer-dashboard') ? 'active' : ''}`}
                 onClick={navigateToCalendar}
                 aria-label="Open Calendar"
@@ -357,30 +368,21 @@ const TrainerDashboard = () => {
               </button>
               <button
                 type="button"
+                className={`tool-item ${location.pathname === '/trainer-dashboard/calculators' ? 'active' : ''}`}
+                onClick={navigateToCalculators}
+                aria-label="Open Calculators"
+              >
+                <Calculator size={20} />
+                <span>Calculators</span>
+              </button>
+              <button
+                type="button"
                 className="tool-item"
                 onClick={() => setShowIntervalTimer(true)}
                 aria-label="Open Interval Timer"
               >
                 <Timer size={20} />
                 <span>Interval Timer</span>
-              </button>
-              <button
-                type="button"
-                className={`tool-item onboarding-btn ${location.pathname === '/trainer-dashboard/onboarding' ? 'active' : ''}`}
-                onClick={navigateToOnboarding}
-                aria-label="Add New Client"
-              >
-                <UserPlus size={20} />
-                <span>New Client</span>
-              </button>
-              <button
-                type="button"
-                className="tool-item home-btn"
-                onClick={handleBackToDashboard}
-                aria-label="Back to Main Dashboard"
-              >
-                <ArrowLeft size={20} />
-                <span>Main Dashboard</span>
               </button>
             </aside>
 
@@ -395,6 +397,7 @@ const TrainerDashboard = () => {
                   <Route path="/clients" element={<TrainerClients onClientSelect={setSelectedClient} />} />
                   <Route path="/messages" element={<TrainerMessages />} />
                   <Route path="/resources" element={<TrainerResources />} />
+                  <Route path="/calculators" element={<CalculatorDashboard />} />
                   <Route path="/onboarding" element={<ClientOnboarding />} />
                 </Routes>
               </main>

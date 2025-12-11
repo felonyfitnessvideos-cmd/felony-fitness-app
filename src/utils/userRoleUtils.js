@@ -431,7 +431,7 @@ export const getTrainerClients = async (trainerId) => {
             .from('trainer_clients')
             .select(`
                 *,
-                user_profiles (
+                user_profiles!trainer_clients_client_id_fkey (
                     id,
                     email,
                     first_name,

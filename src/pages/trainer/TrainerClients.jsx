@@ -20,7 +20,7 @@
  * @requires ./TrainerClients.css
  */
 
-import { Activity, Calendar, Mail, Phone, Search } from 'lucide-react';
+import { Activity, Calendar, Mail, Phone, Search, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../AuthContext.jsx';
@@ -156,7 +156,7 @@ const TrainerClients = ({ onClientSelect }) => {
   // Main component render
   return (
     <div className="trainer-clients">
-      {/* Search Bar Only */}
+      {/* Search Bar with New Client Button */}
       <div className="search-section">
         <div className="search-container">
           <Search className="search-icon" size={20} />
@@ -168,6 +168,15 @@ const TrainerClients = ({ onClientSelect }) => {
             className="search-input"
           />
         </div>
+        <button
+          type="button"
+          className="new-client-btn"
+          onClick={() => navigate('/trainer-dashboard/onboarding')}
+          aria-label="Add New Client"
+        >
+          <UserPlus size={20} />
+          <span>New Client</span>
+        </button>
       </div>
 
       {/* Clients Grid */}
