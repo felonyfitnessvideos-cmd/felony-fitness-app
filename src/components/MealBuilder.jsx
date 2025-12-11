@@ -121,8 +121,7 @@ const MealBuilder = ({
    */
   const calculateNutrition = useCallback(() => {
     const totals = mealFoods.reduce((acc, item) => {
-      // Support both old 'food_servings' and new 'foods' for backwards compatibility
-      const food = item.foods || item.food_servings;
+      const food = item.foods;
       const quantity = item.quantity || 0;
 
       return {
@@ -197,13 +196,10 @@ const MealBuilder = ({
       // Map the data to match the expected structure
       const mappedFoods = data.map(item => ({
         id: item.id,
-        food_id: item.food_servings_id, // Map from DB column name
-        food_servings_id: item.food_servings_id,
+        food_id: item.food_id, // Use new DB column name
         quantity: item.quantity,
         notes: item.notes,
-        foods: item.foods,
-        // Also set food_servings for backwards compatibility during transition
-        food_servings: item.foods
+        foods: item.foods
       }));
 
       setMealFoods(mappedFoods);
@@ -259,13 +255,16 @@ const MealBuilder = ({
       setIsSearching(true);
       try {
         // Direct Supabase search - foods table with portions
+        // Match format used in NutritionLogPage for consistency
+        const sanitizedTerm = searchTerm.replace(/,/g, ' ').toLowerCase();
         const { data: results, error } = await supabase
           .from('foods')
           .select(`
             *,
             portions (*)
           `)
-          .or(`name.ilike.%${searchTerm}%,brand_owner.ilike.%${searchTerm}%`)
+          .or(`name_simplified.ilike.%${sanitizedTerm}%,brand_owner.ilike.%${sanitizedTerm}%`)
+          .order('commonness_score', { ascending: false })
           .order('name')
           .limit(50);
 
@@ -385,9 +384,7 @@ const MealBuilder = ({
         food_id: servingId,
         quantity: quantity,
         notes: '',
-        foods: foodServingData,
-        // Also set food_servings for backwards compatibility
-        food_servings: foodServingData
+        foods: foodServingData
       };
       setMealFoods(prev => [...prev, newMealFood]);
     }
@@ -509,7 +506,7 @@ const MealBuilder = ({
         if (typeof item.food_id === 'string' && item.food_id.startsWith('ext_')) {
           
           // Create foods record directly
-          const foodToInsert = item.foods || item.food_servings; // Support both field names
+          const foodToInsert = item.foods;
           const { data: foodData, error: foodError } = await supabase
             .from('foods')
             .insert([{
@@ -552,8 +549,8 @@ const MealBuilder = ({
         }
 
         processedMealFoods.push({
-          user_meal_id: mealId,  // Changed from meal_id to user_meal_id
-          food_servings_id: finalFoodId, // Use correct DB column name
+          user_meal_id: mealId,
+          food_id: finalFoodId, // Use new DB column name (migrated from food_servings_id)
           quantity: item.quantity,
           notes: item.notes || ''
         });

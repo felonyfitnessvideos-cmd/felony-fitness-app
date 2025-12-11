@@ -390,183 +390,129 @@ export type Database = {
         }
         Relationships: []
       }
-      food_servings: {
+      foods: {
         Row: {
-          brand: string | null
+          brand_owner: string | null
           calcium_mg: number | null
           calories: number | null
           carbs_g: number | null
           category: string | null
+          cholesterol_mg: number | null
+          commonness_score: number | null
           copper_mg: number | null
           created_at: string | null
-          data_sources: string | null
-          enrichment_status: string | null
+          data_source: string | null
           fat_g: number | null
-          fdc_id: string | null
           fiber_g: number | null
           folate_mcg: number | null
-          food_name: string
-          id: string
+          id: number
           iron_mg: number | null
-          is_verified: boolean | null
-          last_enrichment: string | null
-          last_verification: string | null
+          last_logged_at: string | null
           magnesium_mg: number | null
-          needs_review: boolean | null
+          name: string
+          name_simplified: string | null
           niacin_mg: number | null
-          pdcaas_score: number | null
           phosphorus_mg: number | null
           potassium_mg: number | null
           protein_g: number | null
-          quality_score: number | null
-          review_details: Json | null
-          review_flags: string[] | null
           riboflavin_mg: number | null
+          search_tokens: string | null
           selenium_mcg: number | null
-          serving_description: string | null
           sodium_mg: number | null
-          source: string | null
           sugar_g: number | null
           thiamin_mg: number | null
-          updated_at: string | null
-          verification_details: Json | null
+          times_logged: number | null
+          user_boost_score: number | null
           vitamin_a_mcg: number | null
           vitamin_b12_mcg: number | null
           vitamin_b6_mg: number | null
           vitamin_c_mg: number | null
+          vitamin_d_mcg: number | null
           vitamin_e_mg: number | null
           vitamin_k_mcg: number | null
           zinc_mg: number | null
         }
         Insert: {
-          brand?: string | null
+          brand_owner?: string | null
           calcium_mg?: number | null
           calories?: number | null
           carbs_g?: number | null
           category?: string | null
+          cholesterol_mg?: number | null
+          commonness_score?: number | null
           copper_mg?: number | null
           created_at?: string | null
-          data_sources?: string | null
-          enrichment_status?: string | null
+          data_source?: string | null
           fat_g?: number | null
-          fdc_id?: string | null
           fiber_g?: number | null
           folate_mcg?: number | null
-          food_name: string
-          id?: string
+          id: number
           iron_mg?: number | null
-          is_verified?: boolean | null
-          last_enrichment?: string | null
-          last_verification?: string | null
+          last_logged_at?: string | null
           magnesium_mg?: number | null
-          needs_review?: boolean | null
+          name: string
+          name_simplified?: string | null
           niacin_mg?: number | null
-          pdcaas_score?: number | null
           phosphorus_mg?: number | null
           potassium_mg?: number | null
           protein_g?: number | null
-          quality_score?: number | null
-          review_details?: Json | null
-          review_flags?: string[] | null
           riboflavin_mg?: number | null
+          search_tokens?: string | null
           selenium_mcg?: number | null
-          serving_description?: string | null
           sodium_mg?: number | null
-          source?: string | null
           sugar_g?: number | null
           thiamin_mg?: number | null
-          updated_at?: string | null
-          verification_details?: Json | null
+          times_logged?: number | null
+          user_boost_score?: number | null
           vitamin_a_mcg?: number | null
           vitamin_b12_mcg?: number | null
           vitamin_b6_mg?: number | null
           vitamin_c_mg?: number | null
+          vitamin_d_mcg?: number | null
           vitamin_e_mg?: number | null
           vitamin_k_mcg?: number | null
           zinc_mg?: number | null
         }
         Update: {
-          brand?: string | null
+          brand_owner?: string | null
           calcium_mg?: number | null
           calories?: number | null
           carbs_g?: number | null
           category?: string | null
+          cholesterol_mg?: number | null
+          commonness_score?: number | null
           copper_mg?: number | null
           created_at?: string | null
-          data_sources?: string | null
-          enrichment_status?: string | null
+          data_source?: string | null
           fat_g?: number | null
-          fdc_id?: string | null
           fiber_g?: number | null
           folate_mcg?: number | null
-          food_name?: string
-          id?: string
+          id?: number
           iron_mg?: number | null
-          is_verified?: boolean | null
-          last_enrichment?: string | null
-          last_verification?: string | null
+          last_logged_at?: string | null
           magnesium_mg?: number | null
-          needs_review?: boolean | null
-          niacin_mg?: number | null
-          pdcaas_score?: number | null
-          phosphorus_mg?: number | null
-          potassium_mg?: number | null
-          protein_g?: number | null
-          quality_score?: number | null
-          review_details?: Json | null
-          review_flags?: string[] | null
-          riboflavin_mg?: number | null
-          selenium_mcg?: number | null
-          serving_description?: string | null
-          sodium_mg?: number | null
-          source?: string | null
-          sugar_g?: number | null
-          thiamin_mg?: number | null
-          updated_at?: string | null
-          verification_details?: Json | null
-          vitamin_a_mcg?: number | null
-          vitamin_b12_mcg?: number | null
-          vitamin_b6_mg?: number | null
-          vitamin_c_mg?: number | null
-          vitamin_e_mg?: number | null
-          vitamin_k_mcg?: number | null
-          zinc_mg?: number | null
-        }
-        Relationships: []
-      }
-      foods: {
-        Row: {
-          brand: string | null
-          category: string | null
-          created_at: string | null
-          data_sources: string | null
-          enrichment_status: string | null
-          id: string
-          last_enrichment: string | null
-          name: string
-          quality_score: number | null
-        }
-        Insert: {
-          brand?: string | null
-          category?: string | null
-          created_at?: string | null
-          data_sources?: string | null
-          enrichment_status?: string | null
-          id?: string
-          last_enrichment?: string | null
-          name: string
-          quality_score?: number | null
-        }
-        Update: {
-          brand?: string | null
-          category?: string | null
-          created_at?: string | null
-          data_sources?: string | null
-          enrichment_status?: string | null
-          id?: string
-          last_enrichment?: string | null
           name?: string
-          quality_score?: number | null
+          name_simplified?: string | null
+          niacin_mg?: number | null
+          phosphorus_mg?: number | null
+          potassium_mg?: number | null
+          protein_g?: number | null
+          riboflavin_mg?: number | null
+          search_tokens?: string | null
+          selenium_mcg?: number | null
+          sodium_mg?: number | null
+          sugar_g?: number | null
+          thiamin_mg?: number | null
+          times_logged?: number | null
+          user_boost_score?: number | null
+          vitamin_a_mcg?: number | null
+          vitamin_b12_mcg?: number | null
+          vitamin_b6_mg?: number | null
+          vitamin_c_mg?: number | null
+          vitamin_d_mcg?: number | null
+          vitamin_e_mg?: number | null
+          vitamin_k_mcg?: number | null
+          zinc_mg?: number | null
         }
         Relationships: []
       }
@@ -615,7 +561,7 @@ export type Database = {
       meal_foods: {
         Row: {
           created_at: string | null
-          food_servings_id: string | null
+          food_id: number | null
           id: string
           meal_id: string | null
           notes: string | null
@@ -623,7 +569,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          food_servings_id?: string | null
+          food_id?: number | null
           id?: string
           meal_id?: string | null
           notes?: string | null
@@ -631,7 +577,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          food_servings_id?: string | null
+          food_id?: number | null
           id?: string
           meal_id?: string | null
           notes?: string | null
@@ -639,24 +585,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "meal_foods_food_serving_id_fkey"
-            columns: ["food_servings_id"]
+            foreignKeyName: "meal_foods_food_id_fkey"
+            columns: ["food_id"]
             isOneToOne: false
-            referencedRelation: "food_servings"
+            referencedRelation: "foods"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "meal_foods_food_serving_id_fkey"
-            columns: ["food_servings_id"]
+            foreignKeyName: "meal_foods_food_id_fkey"
+            columns: ["food_id"]
             isOneToOne: false
-            referencedRelation: "foods_needing_review"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meal_foods_food_serving_id_fkey"
-            columns: ["food_servings_id"]
-            isOneToOne: false
-            referencedRelation: "verification_queue"
+            referencedRelation: "foods_with_effective_score"
             referencedColumns: ["id"]
           },
           {
@@ -897,29 +836,7 @@ export type Database = {
           started_at?: string | null
           status?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "nutrition_enrichment_queue_food_id_fkey"
-            columns: ["food_id"]
-            isOneToOne: false
-            referencedRelation: "food_servings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "nutrition_enrichment_queue_food_id_fkey"
-            columns: ["food_id"]
-            isOneToOne: false
-            referencedRelation: "foods_needing_review"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "nutrition_enrichment_queue_food_id_fkey"
-            columns: ["food_id"]
-            isOneToOne: false
-            referencedRelation: "verification_queue"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       nutrition_logs: {
         Row: {
@@ -931,7 +848,7 @@ export type Database = {
           fat_g: number | null
           fiber_g: number | null
           folate_mcg: number | null
-          food_serving_id: string | null
+          food_id: number | null
           id: string
           iron_mg: number | null
           log_date: string | null
@@ -967,7 +884,7 @@ export type Database = {
           fat_g?: number | null
           fiber_g?: number | null
           folate_mcg?: number | null
-          food_serving_id?: string | null
+          food_id?: number | null
           id?: string
           iron_mg?: number | null
           log_date?: string | null
@@ -1003,7 +920,7 @@ export type Database = {
           fat_g?: number | null
           fiber_g?: number | null
           folate_mcg?: number | null
-          food_serving_id?: string | null
+          food_id?: number | null
           id?: string
           iron_mg?: number | null
           log_date?: string | null
@@ -1032,24 +949,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "nutrition_logs_food_serving_id_fkey"
-            columns: ["food_serving_id"]
+            foreignKeyName: "nutrition_logs_food_id_fkey"
+            columns: ["food_id"]
             isOneToOne: false
-            referencedRelation: "food_servings"
+            referencedRelation: "foods"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "nutrition_logs_food_serving_id_fkey"
-            columns: ["food_serving_id"]
+            foreignKeyName: "nutrition_logs_food_id_fkey"
+            columns: ["food_id"]
             isOneToOne: false
-            referencedRelation: "foods_needing_review"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "nutrition_logs_food_serving_id_fkey"
-            columns: ["food_serving_id"]
-            isOneToOne: false
-            referencedRelation: "verification_queue"
+            referencedRelation: "foods_with_effective_score"
             referencedColumns: ["id"]
           },
         ]
@@ -1119,6 +1029,48 @@ export type Database = {
           plan_name?: string | null
         }
         Relationships: []
+      }
+      portions: {
+        Row: {
+          amount: number
+          food_id: number | null
+          gram_weight: number
+          id: string
+          measure_unit: string
+          portion_description: string | null
+        }
+        Insert: {
+          amount: number
+          food_id?: number | null
+          gram_weight: number
+          id?: string
+          measure_unit: string
+          portion_description?: string | null
+        }
+        Update: {
+          amount?: number
+          food_id?: number | null
+          gram_weight?: number
+          id?: string
+          measure_unit?: string
+          portion_description?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portions_food_id_fkey"
+            columns: ["food_id"]
+            isOneToOne: false
+            referencedRelation: "foods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portions_food_id_fkey"
+            columns: ["food_id"]
+            isOneToOne: false
+            referencedRelation: "foods_with_effective_score"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pro_routine_exercises: {
         Row: {
@@ -1592,7 +1544,7 @@ export type Database = {
       user_meal_foods: {
         Row: {
           created_at: string | null
-          food_servings_id: string | null
+          food_id: number | null
           id: string
           notes: string | null
           quantity: number
@@ -1600,7 +1552,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          food_servings_id?: string | null
+          food_id?: number | null
           id?: string
           notes?: string | null
           quantity?: number
@@ -1608,7 +1560,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          food_servings_id?: string | null
+          food_id?: number | null
           id?: string
           notes?: string | null
           quantity?: number
@@ -1616,24 +1568,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "user_meal_foods_food_servings_id_fkey"
-            columns: ["food_servings_id"]
+            foreignKeyName: "user_meal_foods_food_id_fkey"
+            columns: ["food_id"]
             isOneToOne: false
-            referencedRelation: "food_servings"
+            referencedRelation: "foods"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "user_meal_foods_food_servings_id_fkey"
-            columns: ["food_servings_id"]
+            foreignKeyName: "user_meal_foods_food_id_fkey"
+            columns: ["food_id"]
             isOneToOne: false
-            referencedRelation: "foods_needing_review"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_meal_foods_food_servings_id_fkey"
-            columns: ["food_servings_id"]
-            isOneToOne: false
-            referencedRelation: "verification_queue"
+            referencedRelation: "foods_with_effective_score"
             referencedColumns: ["id"]
           },
           {
@@ -2190,63 +2135,132 @@ export type Database = {
       }
     }
     Views: {
-      foods_needing_review: {
+      foods_with_effective_score: {
         Row: {
+          brand_owner: string | null
+          calcium_mg: number | null
           calories: number | null
           carbs_g: number | null
           category: string | null
+          cholesterol_mg: number | null
+          commonness_score: number | null
+          copper_mg: number | null
+          created_at: string | null
+          data_source: string | null
+          effective_score: number | null
           fat_g: number | null
-          food_name: string | null
-          id: string | null
-          last_verification: string | null
-          needs_review: boolean | null
+          fiber_g: number | null
+          folate_mcg: number | null
+          id: number | null
+          iron_mg: number | null
+          last_logged_at: string | null
+          magnesium_mg: number | null
+          name: string | null
+          name_simplified: string | null
+          niacin_mg: number | null
+          phosphorus_mg: number | null
+          potassium_mg: number | null
           protein_g: number | null
-          quality_score: number | null
-          review_details: Json | null
-          review_flags: string[] | null
-          serving_description: string | null
+          riboflavin_mg: number | null
+          search_tokens: string | null
+          selenium_mcg: number | null
+          sodium_mg: number | null
+          sugar_g: number | null
+          thiamin_mg: number | null
+          times_logged: number | null
+          user_boost_score: number | null
+          vitamin_a_mcg: number | null
+          vitamin_b12_mcg: number | null
+          vitamin_b6_mg: number | null
+          vitamin_c_mg: number | null
+          vitamin_d_mcg: number | null
+          vitamin_e_mg: number | null
+          vitamin_k_mcg: number | null
+          zinc_mg: number | null
         }
         Insert: {
+          brand_owner?: string | null
+          calcium_mg?: number | null
           calories?: number | null
           carbs_g?: number | null
           category?: string | null
+          cholesterol_mg?: number | null
+          commonness_score?: number | null
+          copper_mg?: number | null
+          created_at?: string | null
+          data_source?: string | null
+          effective_score?: never
           fat_g?: number | null
-          food_name?: string | null
-          id?: string | null
-          last_verification?: string | null
-          needs_review?: boolean | null
+          fiber_g?: number | null
+          folate_mcg?: number | null
+          id?: number | null
+          iron_mg?: number | null
+          last_logged_at?: string | null
+          magnesium_mg?: number | null
+          name?: string | null
+          name_simplified?: string | null
+          niacin_mg?: number | null
+          phosphorus_mg?: number | null
+          potassium_mg?: number | null
           protein_g?: number | null
-          quality_score?: number | null
-          review_details?: Json | null
-          review_flags?: string[] | null
-          serving_description?: string | null
+          riboflavin_mg?: number | null
+          search_tokens?: string | null
+          selenium_mcg?: number | null
+          sodium_mg?: number | null
+          sugar_g?: number | null
+          thiamin_mg?: number | null
+          times_logged?: number | null
+          user_boost_score?: number | null
+          vitamin_a_mcg?: number | null
+          vitamin_b12_mcg?: number | null
+          vitamin_b6_mg?: number | null
+          vitamin_c_mg?: number | null
+          vitamin_d_mcg?: number | null
+          vitamin_e_mg?: number | null
+          vitamin_k_mcg?: number | null
+          zinc_mg?: number | null
         }
         Update: {
+          brand_owner?: string | null
+          calcium_mg?: number | null
           calories?: number | null
           carbs_g?: number | null
           category?: string | null
+          cholesterol_mg?: number | null
+          commonness_score?: number | null
+          copper_mg?: number | null
+          created_at?: string | null
+          data_source?: string | null
+          effective_score?: never
           fat_g?: number | null
-          food_name?: string | null
-          id?: string | null
-          last_verification?: string | null
-          needs_review?: boolean | null
+          fiber_g?: number | null
+          folate_mcg?: number | null
+          id?: number | null
+          iron_mg?: number | null
+          last_logged_at?: string | null
+          magnesium_mg?: number | null
+          name?: string | null
+          name_simplified?: string | null
+          niacin_mg?: number | null
+          phosphorus_mg?: number | null
+          potassium_mg?: number | null
           protein_g?: number | null
-          quality_score?: number | null
-          review_details?: Json | null
-          review_flags?: string[] | null
-          serving_description?: string | null
-        }
-        Relationships: []
-      }
-      verification_queue: {
-        Row: {
-          enrichment_status: string | null
-          food_name: string | null
-          id: string | null
-          is_verified: boolean | null
-          last_verification: string | null
-          quality_score: number | null
-          serving_description: string | null
+          riboflavin_mg?: number | null
+          search_tokens?: string | null
+          selenium_mcg?: number | null
+          sodium_mg?: number | null
+          sugar_g?: number | null
+          thiamin_mg?: number | null
+          times_logged?: number | null
+          user_boost_score?: number | null
+          vitamin_a_mcg?: number | null
+          vitamin_b12_mcg?: number | null
+          vitamin_b6_mg?: number | null
+          vitamin_c_mg?: number | null
+          vitamin_d_mcg?: number | null
+          vitamin_e_mg?: number | null
+          vitamin_k_mcg?: number | null
+          zinc_mg?: number | null
         }
         Relationships: []
       }
@@ -2255,6 +2269,14 @@ export type Database = {
       add_tag_to_client: {
         Args: { p_client_id: string; p_tag_id: string }
         Returns: boolean
+      }
+      calculate_complexity_score: {
+        Args: { food_name: string }
+        Returns: number
+      }
+      generate_simplified_name: {
+        Args: { original_name: string }
+        Returns: string
       }
       get_clients_by_tag: {
         Args: { p_tag_id: string }
@@ -2322,6 +2344,9 @@ export type Database = {
           verified_foods: number
         }[]
       }
+      is_admin: { Args: never; Returns: boolean }
+      is_trainer: { Args: never; Returns: boolean }
+      is_trainer_for_client: { Args: { client_id: string }; Returns: boolean }
       log_food_item: {
         Args: {
           p_external_food?: Json
@@ -2333,16 +2358,23 @@ export type Database = {
         }
         Returns: Json
       }
+      remove_category_prefix: {
+        Args: { food_category: string; food_name: string }
+        Returns: string
+      }
       remove_tag_from_client: {
         Args: { p_client_id: string; p_tag_id: string }
         Returns: boolean
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      simplify_fast_food_name: { Args: { food_name: string }; Returns: string }
+      simplify_food_name: { Args: { original_name: string }; Returns: string }
       unsubscribe_from_trainer_emails: {
         Args: { p_email: string }
         Returns: Json
       }
+      update_user_preference_boost: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict W6iV1Jnj6S9j2mGJx1wCTqcF8bbbmrG9elNYHdFL2iIhaexfs5MNun6gw0CTCsQ
+\restrict Oi6wPhDp1vDzepBrOgwRiWomhux1VMiU31K7hChhsghq8PhCflNgt7yurBxxbrA
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.7
@@ -401,18 +401,30 @@ CREATE TYPE storage.buckettype AS ENUM (
 
 CREATE FUNCTION analytics.get_daily_page_views(start_date date, end_date date) RETURNS TABLE(date date, page_path text, views bigint)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        DATE(created_at) as date,
-        page_path,
-        COUNT(*) as views
-    FROM analytics.page_views
-    WHERE DATE(created_at) BETWEEN start_date AND end_date
-    GROUP BY DATE(created_at), page_path
-    ORDER BY date DESC, views DESC;
-END;
+    AS $$
+
+BEGIN
+
+    RETURN QUERY
+
+    SELECT 
+
+        DATE(created_at) as date,
+
+        page_path,
+
+        COUNT(*) as views
+
+    FROM analytics.page_views
+
+    WHERE DATE(created_at) BETWEEN start_date AND end_date
+
+    GROUP BY DATE(created_at), page_path
+
+    ORDER BY date DESC, views DESC;
+
+END;
+
 $$;
 
 
@@ -822,18 +834,30 @@ $_$;
 CREATE FUNCTION public.add_tag_to_client(p_client_id uuid, p_tag_id text) RETURNS boolean
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-BEGIN
-    -- Add tag to client's tags array if not already present
-    UPDATE trainer_clients
-    SET tags = array_append(tags, p_tag_id),
-        updated_at = NOW()
-    WHERE client_id = p_client_id
-      AND trainer_id = auth.uid()
-      AND NOT (p_tag_id = ANY(tags)); -- Only add if not already present
-    
-    RETURN FOUND;
-END;
+    AS $$
+
+BEGIN
+
+    -- Add tag to client's tags array if not already present
+
+    UPDATE trainer_clients
+
+    SET tags = array_append(tags, p_tag_id),
+
+        updated_at = NOW()
+
+    WHERE client_id = p_client_id
+
+      AND trainer_id = auth.uid()
+
+      AND NOT (p_tag_id = ANY(tags)); -- Only add if not already present
+
+    
+
+    RETURN FOUND;
+
+END;
+
 $$;
 
 
@@ -843,46 +867,86 @@ $$;
 
 CREATE FUNCTION public.calculate_complexity_score(food_name text) RETURNS integer
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-DECLARE
-  base_score INTEGER := 70;  -- Start at "common"
-  word_count INTEGER;
-  comma_count INTEGER;
-  paren_penalty INTEGER;
-  length_penalty INTEGER;
-  qualifier_penalty INTEGER;
-  final_score INTEGER;
-BEGIN
-  -- Count words (split by spaces/commas)
-  word_count := array_length(regexp_split_to_array(food_name, '[,\s]+'), 1);
-  
-  -- Count commas (complex descriptions)
-  comma_count := LENGTH(food_name) - LENGTH(REPLACE(food_name, ',', ''));
-  
-  -- Parentheses indicate qualifiers
-  paren_penalty := CASE WHEN food_name LIKE '%(%)%' THEN 10 ELSE 0 END;
-  
-  -- Length penalty (very long names = obscure)
-  length_penalty := GREATEST(0, (LENGTH(food_name) - 20) / 3);
-  
-  -- Qualifier words that indicate specialty items
-  qualifier_penalty := 0;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%frozen%' THEN 3 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%canned%' THEN 3 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%dried%' THEN 3 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%powdered%' THEN 5 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%imitation%' THEN 8 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%prepared%' THEN 2 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%restaurant%' THEN 5 ELSE 0 END;
-  
-  -- Calculate final score
-  final_score := base_score - (word_count * 3) - (comma_count * 5) - paren_penalty - length_penalty - qualifier_penalty;
-  
-  -- Clamp to valid range (11-70 for auto-calculated scores)
-  -- Don't go below 11 (reserve 1-10 for manual rare assignments)
-  -- Don't go above 70 (reserve 71-100 for manual staples)
-  RETURN GREATEST(11, LEAST(70, final_score));
-END;
+    AS $$
+
+DECLARE
+
+  base_score INTEGER := 70;  -- Start at "common"
+
+  word_count INTEGER;
+
+  comma_count INTEGER;
+
+  paren_penalty INTEGER;
+
+  length_penalty INTEGER;
+
+  qualifier_penalty INTEGER;
+
+  final_score INTEGER;
+
+BEGIN
+
+  -- Count words (split by spaces/commas)
+
+  word_count := array_length(regexp_split_to_array(food_name, '[,\s]+'), 1);
+
+  
+
+  -- Count commas (complex descriptions)
+
+  comma_count := LENGTH(food_name) - LENGTH(REPLACE(food_name, ',', ''));
+
+  
+
+  -- Parentheses indicate qualifiers
+
+  paren_penalty := CASE WHEN food_name LIKE '%(%)%' THEN 10 ELSE 0 END;
+
+  
+
+  -- Length penalty (very long names = obscure)
+
+  length_penalty := GREATEST(0, (LENGTH(food_name) - 20) / 3);
+
+  
+
+  -- Qualifier words that indicate specialty items
+
+  qualifier_penalty := 0;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%frozen%' THEN 3 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%canned%' THEN 3 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%dried%' THEN 3 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%powdered%' THEN 5 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%imitation%' THEN 8 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%prepared%' THEN 2 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%restaurant%' THEN 5 ELSE 0 END;
+
+  
+
+  -- Calculate final score
+
+  final_score := base_score - (word_count * 3) - (comma_count * 5) - paren_penalty - length_penalty - qualifier_penalty;
+
+  
+
+  -- Clamp to valid range (11-70 for auto-calculated scores)
+
+  -- Don't go below 11 (reserve 1-10 for manual rare assignments)
+
+  -- Don't go above 70 (reserve 71-100 for manual staples)
+
+  RETURN GREATEST(11, LEAST(70, final_score));
+
+END;
+
 $$;
 
 
@@ -892,30 +956,54 @@ $$;
 
 CREATE FUNCTION public.calculate_nutrition_from_food() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-DECLARE
-  food_data RECORD;
-BEGIN
-  -- Only calculate if food_id is provided and nutrition fields are NULL
-  IF NEW.food_id IS NOT NULL THEN
-    -- Get food nutrition data
-    SELECT calories, protein_g, carbs_g, fat_g
-    INTO food_data
-    FROM foods
-    WHERE id = NEW.food_id;
-
-    IF FOUND THEN
-      -- Calculate nutrition based on quantity consumed
-      -- Foods table stores per 100g, so multiply by quantity_consumed
-      NEW.calories := ROUND((food_data.calories::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-      NEW.protein_g := ROUND((food_data.protein_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-      NEW.carbs_g := ROUND((food_data.carbs_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-      NEW.fat_g := ROUND((food_data.fat_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-    END IF;
-  END IF;
-
-  RETURN NEW;
-END;
+    AS $$
+
+DECLARE
+
+  food_data RECORD;
+
+BEGIN
+
+  -- Only calculate if food_id is provided and nutrition fields are NULL
+
+  IF NEW.food_id IS NOT NULL THEN
+
+    -- Get food nutrition data
+
+    SELECT calories, protein_g, carbs_g, fat_g
+
+    INTO food_data
+
+    FROM foods
+
+    WHERE id = NEW.food_id;
+
+
+
+    IF FOUND THEN
+
+      -- Calculate nutrition based on quantity consumed
+
+      -- Foods table stores per 100g, so multiply by quantity_consumed
+
+      NEW.calories := ROUND((food_data.calories::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+
+      NEW.protein_g := ROUND((food_data.protein_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+
+      NEW.carbs_g := ROUND((food_data.carbs_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+
+      NEW.fat_g := ROUND((food_data.fat_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+
+    END IF;
+
+  END IF;
+
+
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -925,20 +1013,34 @@ $$;
 
 CREATE FUNCTION public.generate_simplified_name(original_name text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-BEGIN
-  -- Convert to lowercase
-  -- Remove punctuation (keep only letters, numbers, spaces)
-  -- Normalize whitespace
-  RETURN lower(
-    trim(
-      regexp_replace(
-        regexp_replace(original_name, '[^a-zA-Z0-9\s]', ' ', 'g'),
-        '\s+', ' ', 'g'
-      )
-    )
-  );
-END;
+    AS $$
+
+BEGIN
+
+  -- Convert to lowercase
+
+  -- Remove punctuation (keep only letters, numbers, spaces)
+
+  -- Normalize whitespace
+
+  RETURN lower(
+
+    trim(
+
+      regexp_replace(
+
+        regexp_replace(original_name, '[^a-zA-Z0-9\s]', ' ', 'g'),
+
+        '\s+', ' ', 'g'
+
+      )
+
+    )
+
+  );
+
+END;
+
 $$;
 
 
@@ -949,19 +1051,32 @@ $$;
 CREATE FUNCTION public.get_clients_by_tag(p_tag_id text) RETURNS TABLE(client_id uuid, full_name text, email text, tags text[])
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        tc.client_id,
-        tc.full_name,
-        tc.email,
-        tc.tags
-    FROM trainer_clients tc
-    WHERE tc.trainer_id = auth.uid()
-      AND p_tag_id = ANY(tc.tags)
-      AND tc.status = 'active';
-END;
+    AS $$
+
+BEGIN
+
+    RETURN QUERY
+
+    SELECT 
+
+        tc.client_id,
+
+        tc.full_name,
+
+        tc.email,
+
+        tc.tags
+
+    FROM trainer_clients tc
+
+    WHERE tc.trainer_id = auth.uid()
+
+      AND p_tag_id = ANY(tc.tags)
+
+      AND tc.status = 'active';
+
+END;
+
 $$;
 
 
@@ -971,37 +1086,68 @@ $$;
 
 CREATE FUNCTION public.get_conversations() RETURNS TABLE(conversation_user_id uuid, conversation_user_name text, last_message text, last_message_time timestamp with time zone, unread_count bigint, is_trainer boolean)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    current_user_id UUID;
-BEGIN
-    current_user_id := auth.uid();
-    
-    IF current_user_id IS NULL THEN
-        RAISE EXCEPTION 'Authentication required';
-    END IF;
-    
-    RETURN QUERY
-    WITH conversation_partners AS (
-        SELECT DISTINCT
-            CASE 
-                WHEN dm.sender_id = current_user_id THEN dm.recipient_id
-                ELSE dm.sender_id 
-            END as partner_id
-        FROM direct_messages dm
-        WHERE dm.sender_id = current_user_id OR dm.recipient_id = current_user_id
-    )
-    SELECT 
-        cp.partner_id as conversation_user_id,
-        COALESCE(up.first_name || ' ' || up.last_name, up.email, 'Unknown User') as conversation_user_name,
-        ''::TEXT as last_message,
-        NOW()::TIMESTAMP WITH TIME ZONE as last_message_time,
-        0::BIGINT as unread_count,
-        false as is_trainer
-    FROM conversation_partners cp
-    LEFT JOIN user_profiles up ON up.id = cp.partner_id OR up.user_id = cp.partner_id
-    LIMIT 10;
-END;
+    AS $$
+
+DECLARE
+
+    current_user_id UUID;
+
+BEGIN
+
+    current_user_id := auth.uid();
+
+    
+
+    IF current_user_id IS NULL THEN
+
+        RAISE EXCEPTION 'Authentication required';
+
+    END IF;
+
+    
+
+    RETURN QUERY
+
+    WITH conversation_partners AS (
+
+        SELECT DISTINCT
+
+            CASE 
+
+                WHEN dm.sender_id = current_user_id THEN dm.recipient_id
+
+                ELSE dm.sender_id 
+
+            END as partner_id
+
+        FROM direct_messages dm
+
+        WHERE dm.sender_id = current_user_id OR dm.recipient_id = current_user_id
+
+    )
+
+    SELECT 
+
+        cp.partner_id as conversation_user_id,
+
+        COALESCE(up.first_name || ' ' || up.last_name, up.email, 'Unknown User') as conversation_user_name,
+
+        ''::TEXT as last_message,
+
+        NOW()::TIMESTAMP WITH TIME ZONE as last_message_time,
+
+        0::BIGINT as unread_count,
+
+        false as is_trainer
+
+    FROM conversation_partners cp
+
+    LEFT JOIN user_profiles up ON up.id = cp.partner_id OR up.user_id = cp.partner_id
+
+    LIMIT 10;
+
+END;
+
 $$;
 
 
@@ -1011,19 +1157,32 @@ $$;
 
 CREATE FUNCTION public.get_enrichment_status() RETURNS TABLE(status text, count bigint, avg_quality_before numeric, avg_quality_after numeric, total_improvements bigint)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        q.status,
-        COUNT(*)::BIGINT as count,
-        AVG(q.quality_score_before)::NUMERIC as avg_quality_before,
-        AVG(q.quality_score_after)::NUMERIC as avg_quality_after,
-        COUNT(CASE WHEN q.quality_score_after > q.quality_score_before THEN 1 END)::BIGINT as total_improvements
-    FROM public.nutrition_enrichment_queue q
-    GROUP BY q.status
-    ORDER BY q.status;
-END;
+    AS $$
+
+BEGIN
+
+    RETURN QUERY
+
+    SELECT 
+
+        q.status,
+
+        COUNT(*)::BIGINT as count,
+
+        AVG(q.quality_score_before)::NUMERIC as avg_quality_before,
+
+        AVG(q.quality_score_after)::NUMERIC as avg_quality_after,
+
+        COUNT(CASE WHEN q.quality_score_after > q.quality_score_before THEN 1 END)::BIGINT as total_improvements
+
+    FROM public.nutrition_enrichment_queue q
+
+    GROUP BY q.status
+
+    ORDER BY q.status;
+
+END;
+
 $$;
 
 
@@ -1033,42 +1192,78 @@ $$;
 
 CREATE FUNCTION public.get_quality_distribution() RETURNS TABLE(quality_range text, count bigint, percentage numeric)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    total_foods BIGINT;
-BEGIN
-    -- Get total count
-    SELECT COUNT(*) INTO total_foods FROM public.food_servings;
-    
-    -- Prevent division by zero
-    IF total_foods = 0 THEN
-        total_foods := 1;
-    END IF;
-    
-    RETURN QUERY
-    SELECT 
-        CASE 
-            WHEN f.quality_score = 0 THEN 'Not Scored (0)'
-            WHEN f.quality_score > 0 AND f.quality_score < 50 THEN 'Poor (1-49)'
-            WHEN f.quality_score >= 50 AND f.quality_score < 70 THEN 'Fair (50-69)'
-            WHEN f.quality_score >= 70 AND f.quality_score < 85 THEN 'Good (70-84)'
-            WHEN f.quality_score >= 85 THEN 'Excellent (85-100)'
-            ELSE 'Unknown'
-        END as quality_range,
-        COUNT(*)::BIGINT as count,
-        ROUND((COUNT(*)::NUMERIC / total_foods * 100), 2) as percentage
-    FROM public.food_servings f
-    GROUP BY quality_range
-    ORDER BY 
-        CASE quality_range
-            WHEN 'Excellent (85-100)' THEN 1
-            WHEN 'Good (70-84)' THEN 2
-            WHEN 'Fair (50-69)' THEN 3
-            WHEN 'Poor (1-49)' THEN 4
-            WHEN 'Not Scored (0)' THEN 5
-            ELSE 6
-        END;
-END;
+    AS $$
+
+DECLARE
+
+    total_foods BIGINT;
+
+BEGIN
+
+    -- Get total count
+
+    SELECT COUNT(*) INTO total_foods FROM public.food_servings;
+
+    
+
+    -- Prevent division by zero
+
+    IF total_foods = 0 THEN
+
+        total_foods := 1;
+
+    END IF;
+
+    
+
+    RETURN QUERY
+
+    SELECT 
+
+        CASE 
+
+            WHEN f.quality_score = 0 THEN 'Not Scored (0)'
+
+            WHEN f.quality_score > 0 AND f.quality_score < 50 THEN 'Poor (1-49)'
+
+            WHEN f.quality_score >= 50 AND f.quality_score < 70 THEN 'Fair (50-69)'
+
+            WHEN f.quality_score >= 70 AND f.quality_score < 85 THEN 'Good (70-84)'
+
+            WHEN f.quality_score >= 85 THEN 'Excellent (85-100)'
+
+            ELSE 'Unknown'
+
+        END as quality_range,
+
+        COUNT(*)::BIGINT as count,
+
+        ROUND((COUNT(*)::NUMERIC / total_foods * 100), 2) as percentage
+
+    FROM public.food_servings f
+
+    GROUP BY quality_range
+
+    ORDER BY 
+
+        CASE quality_range
+
+            WHEN 'Excellent (85-100)' THEN 1
+
+            WHEN 'Good (70-84)' THEN 2
+
+            WHEN 'Fair (50-69)' THEN 3
+
+            WHEN 'Poor (1-49)' THEN 4
+
+            WHEN 'Not Scored (0)' THEN 5
+
+            ELSE 6
+
+        END;
+
+END;
+
 $$;
 
 
@@ -1078,21 +1273,36 @@ $$;
 
 CREATE FUNCTION public.get_random_tip() RETURNS TABLE(tip text, category text)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-  tips TEXT[] := ARRAY[
-    'Aim for 0.8-1g of protein per kg of body weight daily',
-    'Drink water before you feel thirsty to stay properly hydrated',
-    'Include colorful vegetables in every meal for maximum nutrients',
-    'Eat protein within 30 minutes after strength training',
-    'Choose whole grains over refined grains for sustained energy'
-  ];
-  categories TEXT[] := ARRAY['Protein', 'Hydration', 'Vegetables', 'Recovery', 'Carbohydrates'];
-  random_index INT;
-BEGIN
-  random_index := floor(random() * array_length(tips, 1)) + 1;
-  RETURN QUERY SELECT tips[random_index], categories[random_index];
-END;
+    AS $$
+
+DECLARE
+
+  tips TEXT[] := ARRAY[
+
+    'Aim for 0.8-1g of protein per kg of body weight daily',
+
+    'Drink water before you feel thirsty to stay properly hydrated',
+
+    'Include colorful vegetables in every meal for maximum nutrients',
+
+    'Eat protein within 30 minutes after strength training',
+
+    'Choose whole grains over refined grains for sustained energy'
+
+  ];
+
+  categories TEXT[] := ARRAY['Protein', 'Hydration', 'Vegetables', 'Recovery', 'Carbohydrates'];
+
+  random_index INT;
+
+BEGIN
+
+  random_index := floor(random() * array_length(tips, 1)) + 1;
+
+  RETURN QUERY SELECT tips[random_index], categories[random_index];
+
+END;
+
 $$;
 
 
@@ -1102,32 +1312,58 @@ $$;
 
 CREATE FUNCTION public.get_user_tags(target_user_id uuid DEFAULT NULL::uuid) RETURNS TABLE(tag_id uuid, tag_name character varying, tag_description text, tag_color character varying, assigned_at timestamp with time zone, assigned_by uuid)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    current_user_id UUID;
-    query_user_id UUID;
-BEGIN
-    current_user_id := auth.uid();
-    
-    IF current_user_id IS NULL THEN
-        RAISE EXCEPTION 'Authentication required';
-    END IF;
-    
-    query_user_id := COALESCE(target_user_id, current_user_id);
-    
-    RETURN QUERY
-    SELECT 
-        t.id as tag_id,
-        t.name as tag_name,
-        t.description as tag_description,
-        t.color as tag_color,
-        ut.assigned_at,
-        ut.assigned_by
-    FROM user_tags ut
-    JOIN tags t ON t.id = ut.tag_id
-    WHERE ut.user_id = query_user_id
-    ORDER BY ut.assigned_at DESC;
-END;
+    AS $$
+
+DECLARE
+
+    current_user_id UUID;
+
+    query_user_id UUID;
+
+BEGIN
+
+    current_user_id := auth.uid();
+
+    
+
+    IF current_user_id IS NULL THEN
+
+        RAISE EXCEPTION 'Authentication required';
+
+    END IF;
+
+    
+
+    query_user_id := COALESCE(target_user_id, current_user_id);
+
+    
+
+    RETURN QUERY
+
+    SELECT 
+
+        t.id as tag_id,
+
+        t.name as tag_name,
+
+        t.description as tag_description,
+
+        t.color as tag_color,
+
+        ut.assigned_at,
+
+        ut.assigned_by
+
+    FROM user_tags ut
+
+    JOIN tags t ON t.id = ut.tag_id
+
+    WHERE ut.user_id = query_user_id
+
+    ORDER BY ut.assigned_at DESC;
+
+END;
+
 $$;
 
 
@@ -1137,20 +1373,34 @@ $$;
 
 CREATE FUNCTION public.get_verification_stats() RETURNS TABLE(total_foods bigint, verified_foods bigint, needs_review_foods bigint, pending_verification_foods bigint, verification_rate numeric)
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  RETURN QUERY
-  SELECT 
-    COUNT(*)::BIGINT as total_foods,
-    COUNT(*) FILTER (WHERE is_verified = TRUE)::BIGINT as verified_foods,
-    COUNT(*) FILTER (WHERE needs_review = TRUE)::BIGINT as needs_review_foods,
-    COUNT(*) FILTER (WHERE enrichment_status IN ('completed', 'verified') AND (is_verified IS NULL OR is_verified = FALSE))::BIGINT as pending_verification_foods,
-    ROUND(
-      (COUNT(*) FILTER (WHERE is_verified = TRUE)::NUMERIC / NULLIF(COUNT(*), 0) * 100),
-      2
-    ) as verification_rate
-  FROM food_servings;
-END;
+    AS $$
+
+BEGIN
+
+  RETURN QUERY
+
+  SELECT 
+
+    COUNT(*)::BIGINT as total_foods,
+
+    COUNT(*) FILTER (WHERE is_verified = TRUE)::BIGINT as verified_foods,
+
+    COUNT(*) FILTER (WHERE needs_review = TRUE)::BIGINT as needs_review_foods,
+
+    COUNT(*) FILTER (WHERE enrichment_status IN ('completed', 'verified') AND (is_verified IS NULL OR is_verified = FALSE))::BIGINT as pending_verification_foods,
+
+    ROUND(
+
+      (COUNT(*) FILTER (WHERE is_verified = TRUE)::NUMERIC / NULLIF(COUNT(*), 0) * 100),
+
+      2
+
+    ) as verification_rate
+
+  FROM food_servings;
+
+END;
+
 $$;
 
 
@@ -1160,13 +1410,20 @@ $$;
 
 CREATE FUNCTION public.handle_new_user() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    INSERT INTO public.user_profiles (id, user_id, email, created_at, updated_at)
-    VALUES (NEW.id, NEW.id, NEW.email, NOW(), NOW());
-    
-    RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+    INSERT INTO public.user_profiles (id, user_id, email, created_at, updated_at)
+
+    VALUES (NEW.id, NEW.id, NEW.email, NOW(), NOW());
+
+    
+
+    RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1176,18 +1433,107 @@ $$;
 
 CREATE FUNCTION public.increment_food_log_count() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Increment times_logged for the food that was just logged
-  -- nutrition_logs now has food_id directly (no food_servings table)
-  UPDATE foods
-  SET 
-    times_logged = times_logged + 1,
-    last_logged_at = NEW.created_at
-  WHERE id = NEW.food_id;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Increment times_logged for the food that was just logged
+
+  -- nutrition_logs now has food_id directly (no food_servings table)
+
+  UPDATE foods
+
+  SET 
+
+    times_logged = times_logged + 1,
+
+    last_logged_at = NEW.created_at
+
+  WHERE id = NEW.food_id;
+
+  
+
+  RETURN NEW;
+
+END;
+
+$$;
+
+
+--
+-- Name: is_admin(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.is_admin() RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+
+BEGIN
+
+  RETURN EXISTS (
+
+    SELECT 1 FROM user_profiles
+
+    WHERE id = (SELECT auth.uid())
+
+    AND is_admin = true
+
+  );
+
+END;
+
+$$;
+
+
+--
+-- Name: is_trainer(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.is_trainer() RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+
+BEGIN
+
+  RETURN EXISTS (
+
+    SELECT 1 FROM user_profiles
+
+    WHERE id = (SELECT auth.uid())
+
+    AND is_trainer = true
+
+  );
+
+END;
+
+$$;
+
+
+--
+-- Name: is_trainer_for_client(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.is_trainer_for_client(client_id uuid) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+
+BEGIN
+
+  RETURN EXISTS (
+
+    SELECT 1 FROM trainer_clients
+
+    WHERE trainer_id = (SELECT auth.uid())
+
+    AND client_id = client_id
+
+    AND status = 'active'
+
+  );
+
+END;
+
 $$;
 
 
@@ -1197,64 +1543,122 @@ $$;
 
 CREATE FUNCTION public.log_food_item(p_external_food jsonb DEFAULT NULL::jsonb, p_food_serving_id uuid DEFAULT NULL::uuid, p_meal_type text DEFAULT 'Snack'::text, p_quantity_consumed numeric DEFAULT 1.0, p_user_id uuid DEFAULT NULL::uuid, p_log_date date DEFAULT CURRENT_DATE) RETURNS jsonb
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-  v_food_serving_id UUID;
-  v_result JSONB;
-  v_user_id UUID;
-BEGIN
-  v_user_id := COALESCE(p_user_id, auth.uid());
-  
-  IF v_user_id IS NULL THEN
-    RETURN json_build_object('error', 'Authentication required');
-  END IF;
-
-  IF p_external_food IS NOT NULL THEN
-    SELECT f.id INTO v_food_serving_id
-    FROM food_servings f
-    WHERE LOWER(f.food_name) = LOWER(p_external_food->>'name')
-    AND LOWER(f.serving_description) = LOWER(p_external_food->>'serving_description')
-    LIMIT 1;
-    
-    IF v_food_serving_id IS NULL THEN
-      INSERT INTO food_servings (
-        food_name, serving_description, calories, protein_g, carbs_g, fat_g, 
-        fiber_g, sugar_g, sodium_mg, calcium_mg, iron_mg, vitamin_c_mg
-      ) VALUES (
-        p_external_food->>'name',
-        p_external_food->>'serving_description',
-        COALESCE((p_external_food->>'calories')::DECIMAL, 0),
-        COALESCE((p_external_food->>'protein_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'carbs_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'fat_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'fiber_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'sugar_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'sodium_mg')::DECIMAL, 0),
-        COALESCE((p_external_food->>'calcium_mg')::DECIMAL, 0),
-        COALESCE((p_external_food->>'iron_mg')::DECIMAL, 0),
-        COALESCE((p_external_food->>'vitamin_c_mg')::DECIMAL, 0)
-      ) RETURNING id INTO v_food_serving_id;
-    END IF;
-  ELSE
-    v_food_serving_id := p_food_serving_id;
-  END IF;
-
-  INSERT INTO nutrition_logs (
-    user_id, food_serving_id, meal_type, quantity_consumed, log_date
-  ) VALUES (
-    v_user_id, v_food_serving_id, p_meal_type, p_quantity_consumed, p_log_date
-  );
-
-  RETURN json_build_object(
-    'success', true,
-    'message', 'Food logged successfully',
-    'food_serving_id', v_food_serving_id
-  );
-
-EXCEPTION
-  WHEN OTHERS THEN
-    RETURN json_build_object('error', 'Failed to log food: ' || SQLERRM);
-END;
+    AS $$
+
+DECLARE
+
+  v_food_serving_id UUID;
+
+  v_result JSONB;
+
+  v_user_id UUID;
+
+BEGIN
+
+  v_user_id := COALESCE(p_user_id, auth.uid());
+
+  
+
+  IF v_user_id IS NULL THEN
+
+    RETURN json_build_object('error', 'Authentication required');
+
+  END IF;
+
+
+
+  IF p_external_food IS NOT NULL THEN
+
+    SELECT f.id INTO v_food_serving_id
+
+    FROM food_servings f
+
+    WHERE LOWER(f.food_name) = LOWER(p_external_food->>'name')
+
+    AND LOWER(f.serving_description) = LOWER(p_external_food->>'serving_description')
+
+    LIMIT 1;
+
+    
+
+    IF v_food_serving_id IS NULL THEN
+
+      INSERT INTO food_servings (
+
+        food_name, serving_description, calories, protein_g, carbs_g, fat_g, 
+
+        fiber_g, sugar_g, sodium_mg, calcium_mg, iron_mg, vitamin_c_mg
+
+      ) VALUES (
+
+        p_external_food->>'name',
+
+        p_external_food->>'serving_description',
+
+        COALESCE((p_external_food->>'calories')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'protein_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'carbs_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'fat_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'fiber_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'sugar_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'sodium_mg')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'calcium_mg')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'iron_mg')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'vitamin_c_mg')::DECIMAL, 0)
+
+      ) RETURNING id INTO v_food_serving_id;
+
+    END IF;
+
+  ELSE
+
+    v_food_serving_id := p_food_serving_id;
+
+  END IF;
+
+
+
+  INSERT INTO nutrition_logs (
+
+    user_id, food_serving_id, meal_type, quantity_consumed, log_date
+
+  ) VALUES (
+
+    v_user_id, v_food_serving_id, p_meal_type, p_quantity_consumed, p_log_date
+
+  );
+
+
+
+  RETURN json_build_object(
+
+    'success', true,
+
+    'message', 'Food logged successfully',
+
+    'food_serving_id', v_food_serving_id
+
+  );
+
+
+
+EXCEPTION
+
+  WHEN OTHERS THEN
+
+    RETURN json_build_object('error', 'Failed to log food: ' || SQLERRM);
+
+END;
+
 $$;
 
 
@@ -1264,42 +1668,78 @@ $$;
 
 CREATE FUNCTION public.remove_category_prefix(food_name text, food_category text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-DECLARE
-  cleaned_name text;
-  category_singular text;
-BEGIN
-  cleaned_name := food_name;
-  
-  -- Don't process if category is unknown or null
-  IF food_category IS NULL OR food_category IN ('Unknown', '') THEN
-    RETURN cleaned_name;
-  END IF;
-  
-  -- Remove exact category name from start (case insensitive)
-  -- Pattern: "Category, rest of name" → "rest of name"
-  cleaned_name := regexp_replace(
-    cleaned_name, 
-    '^' || food_category || ',\s*', 
-    '', 
-    'i'
-  );
-  
-  -- Remove common category prefixes
-  cleaned_name := regexp_replace(cleaned_name, '^Beverages?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Vegetables?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Fruits?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Meats?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Dairy,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Grains?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Cereals?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Legumes?,\s*', '', 'i');
-  
-  -- Capitalize first letter after cleanup
-  cleaned_name := upper(substring(cleaned_name from 1 for 1)) || substring(cleaned_name from 2);
-  
-  RETURN cleaned_name;
-END;
+    AS $$
+
+DECLARE
+
+  cleaned_name text;
+
+  category_singular text;
+
+BEGIN
+
+  cleaned_name := food_name;
+
+  
+
+  -- Don't process if category is unknown or null
+
+  IF food_category IS NULL OR food_category IN ('Unknown', '') THEN
+
+    RETURN cleaned_name;
+
+  END IF;
+
+  
+
+  -- Remove exact category name from start (case insensitive)
+
+  -- Pattern: "Category, rest of name" ΓåÆ "rest of name"
+
+  cleaned_name := regexp_replace(
+
+    cleaned_name, 
+
+    '^' || food_category || ',\s*', 
+
+    '', 
+
+    'i'
+
+  );
+
+  
+
+  -- Remove common category prefixes
+
+  cleaned_name := regexp_replace(cleaned_name, '^Beverages?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Vegetables?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Fruits?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Meats?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Dairy,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Grains?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Cereals?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Legumes?,\s*', '', 'i');
+
+  
+
+  -- Capitalize first letter after cleanup
+
+  cleaned_name := upper(substring(cleaned_name from 1 for 1)) || substring(cleaned_name from 2);
+
+  
+
+  RETURN cleaned_name;
+
+END;
+
 $$;
 
 
@@ -1310,18 +1750,30 @@ $$;
 CREATE FUNCTION public.remove_tag_from_client(p_client_id uuid, p_tag_id text) RETURNS boolean
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-BEGIN
-    -- Remove tag from client's tags array
-    UPDATE trainer_clients
-    SET tags = array_remove(tags, p_tag_id),
-        updated_at = NOW()
-    WHERE client_id = p_client_id
-      AND trainer_id = auth.uid()
-      AND p_tag_id = ANY(tags); -- Only remove if present
-    
-    RETURN FOUND;
-END;
+    AS $$
+
+BEGIN
+
+    -- Remove tag from client's tags array
+
+    UPDATE trainer_clients
+
+    SET tags = array_remove(tags, p_tag_id),
+
+        updated_at = NOW()
+
+    WHERE client_id = p_client_id
+
+      AND trainer_id = auth.uid()
+
+      AND p_tag_id = ANY(tags); -- Only remove if present
+
+    
+
+    RETURN FOUND;
+
+END;
+
 $$;
 
 
@@ -1331,23 +1783,40 @@ $$;
 
 CREATE FUNCTION public.simplify_fast_food_name(food_name text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-DECLARE
-  cleaned_name text;
-  main_name text;
-BEGIN
-  cleaned_name := food_name;
-  
-  -- Pattern: "Fast foods, item" → "Item (fast food)"
-  IF cleaned_name ~* '^Fast foods?,\s*' THEN
-    main_name := regexp_replace(cleaned_name, '^Fast foods?,\s*', '', 'i');
-    -- Capitalize first letter
-    main_name := upper(substring(main_name from 1 for 1)) || substring(main_name from 2);
-    cleaned_name := main_name || ' (fast food)';
-  END IF;
-  
-  RETURN cleaned_name;
-END;
+    AS $$
+
+DECLARE
+
+  cleaned_name text;
+
+  main_name text;
+
+BEGIN
+
+  cleaned_name := food_name;
+
+  
+
+  -- Pattern: "Fast foods, item" ΓåÆ "Item (fast food)"
+
+  IF cleaned_name ~* '^Fast foods?,\s*' THEN
+
+    main_name := regexp_replace(cleaned_name, '^Fast foods?,\s*', '', 'i');
+
+    -- Capitalize first letter
+
+    main_name := upper(substring(main_name from 1 for 1)) || substring(main_name from 2);
+
+    cleaned_name := main_name || ' (fast food)';
+
+  END IF;
+
+  
+
+  RETURN cleaned_name;
+
+END;
+
 $$;
 
 
@@ -1357,40 +1826,74 @@ $$;
 
 CREATE FUNCTION public.simplify_food_name(original_name text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $_$
-DECLARE
-  cleaned_name text;
-BEGIN
-  cleaned_name := original_name;
-  
-  -- Remove parenthetical geographic qualifiers
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Alaska[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Native[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Indian[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Plains[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Hispanic[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Mexican[^)]*\)', '', 'gi');
-  
-  -- Remove standalone "wild" when it's the only descriptor before a comma
-  -- Keep "wild" if it's part of a compound name like "wild rice"
-  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*,', ',', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*$', '', 'gi');
-  
-  -- Remove "NFS" (Not Further Specified) - redundant information
-  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*$', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*,', ',', 'gi');
-  
-  -- Clean up multiple commas and spaces
-  cleaned_name := regexp_replace(cleaned_name, ',\s*,', ',', 'g');
-  cleaned_name := regexp_replace(cleaned_name, '\s+', ' ', 'g');
-  
-  -- Trim leading/trailing whitespace and commas
-  cleaned_name := regexp_replace(cleaned_name, '^\s*,\s*', '', 'g');
-  cleaned_name := regexp_replace(cleaned_name, '\s*,\s*$', '', 'g');
-  cleaned_name := trim(cleaned_name);
-  
-  RETURN cleaned_name;
-END;
+    AS $_$
+
+DECLARE
+
+  cleaned_name text;
+
+BEGIN
+
+  cleaned_name := original_name;
+
+  
+
+  -- Remove parenthetical geographic qualifiers
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Alaska[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Native[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Indian[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Plains[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Hispanic[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Mexican[^)]*\)', '', 'gi');
+
+  
+
+  -- Remove standalone "wild" when it's the only descriptor before a comma
+
+  -- Keep "wild" if it's part of a compound name like "wild rice"
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*,', ',', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*$', '', 'gi');
+
+  
+
+  -- Remove "NFS" (Not Further Specified) - redundant information
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*$', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*,', ',', 'gi');
+
+  
+
+  -- Clean up multiple commas and spaces
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*,', ',', 'g');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s+', ' ', 'g');
+
+  
+
+  -- Trim leading/trailing whitespace and commas
+
+  cleaned_name := regexp_replace(cleaned_name, '^\s*,\s*', '', 'g');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*,\s*$', '', 'g');
+
+  cleaned_name := trim(cleaned_name);
+
+  
+
+  RETURN cleaned_name;
+
+END;
+
 $_$;
 
 
@@ -1400,17 +1903,28 @@ $_$;
 
 CREATE FUNCTION public.sync_scheduled_routine_client_info() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Get client info from trainer_clients
-  SELECT full_name, email
-  INTO NEW.client_name, NEW.client_email
-  FROM trainer_clients
-  WHERE client_id = NEW.user_id
-  LIMIT 1;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Get client info from trainer_clients
+
+  SELECT full_name, email
+
+  INTO NEW.client_name, NEW.client_email
+
+  FROM trainer_clients
+
+  WHERE client_id = NEW.user_id
+
+  LIMIT 1;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1420,19 +1934,32 @@ $$;
 
 CREATE FUNCTION public.sync_scheduled_routine_client_info_on_trainer_client_update() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Update all scheduled_routines when trainer_clients data changes
-  IF NEW.full_name IS DISTINCT FROM OLD.full_name OR NEW.email IS DISTINCT FROM OLD.email THEN
-    UPDATE scheduled_routines
-    SET 
-      client_name = NEW.full_name,
-      client_email = NEW.email
-    WHERE user_id = NEW.client_id;
-  END IF;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Update all scheduled_routines when trainer_clients data changes
+
+  IF NEW.full_name IS DISTINCT FROM OLD.full_name OR NEW.email IS DISTINCT FROM OLD.email THEN
+
+    UPDATE scheduled_routines
+
+    SET 
+
+      client_name = NEW.full_name,
+
+      client_email = NEW.email
+
+    WHERE user_id = NEW.client_id;
+
+  END IF;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1442,15 +1969,24 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_email() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Get email from user_profiles and set it
-  SELECT email INTO NEW.email
-  FROM user_profiles
-  WHERE id = NEW.client_id;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Get email from user_profiles and set it
+
+  SELECT email INTO NEW.email
+
+  FROM user_profiles
+
+  WHERE id = NEW.client_id;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1460,17 +1996,28 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_email_on_profile_update() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Update all trainer_clients records when user_profiles.email changes
-  IF NEW.email IS DISTINCT FROM OLD.email THEN
-    UPDATE trainer_clients
-    SET email = NEW.email
-    WHERE client_id = NEW.id;
-  END IF;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Update all trainer_clients records when user_profiles.email changes
+
+  IF NEW.email IS DISTINCT FROM OLD.email THEN
+
+    UPDATE trainer_clients
+
+    SET email = NEW.email
+
+    WHERE client_id = NEW.id;
+
+  END IF;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1480,16 +2027,26 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_full_name() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Get full_name from user_profiles for the client_id
-  SELECT CONCAT(first_name, ' ', last_name)
-  INTO NEW.full_name
-  FROM user_profiles
-  WHERE id = NEW.client_id;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Get full_name from user_profiles for the client_id
+
+  SELECT CONCAT(first_name, ' ', last_name)
+
+  INTO NEW.full_name
+
+  FROM user_profiles
+
+  WHERE id = NEW.client_id;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1499,15 +2056,24 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_on_profile_update() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Update all trainer_clients records for this user
-  UPDATE trainer_clients
-  SET full_name = CONCAT(NEW.first_name, ' ', NEW.last_name)
-  WHERE client_id = NEW.id;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Update all trainer_clients records for this user
+
+  UPDATE trainer_clients
+
+  SET full_name = CONCAT(NEW.first_name, ' ', NEW.last_name)
+
+  WHERE client_id = NEW.id;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1517,15 +2083,24 @@ $$;
 
 CREATE FUNCTION public.sync_user_profile_email_from_auth() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-  -- Get email from auth.users and set it
-  SELECT email INTO NEW.email
-  FROM auth.users
-  WHERE id = NEW.id;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Get email from auth.users and set it
+
+  SELECT email INTO NEW.email
+
+  FROM auth.users
+
+  WHERE id = NEW.id;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1535,17 +2110,28 @@ $$;
 
 CREATE FUNCTION public.sync_user_profile_email_on_auth_update() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-  -- Update user_profiles when auth.users.email changes
-  IF NEW.email IS DISTINCT FROM OLD.email THEN
-    UPDATE user_profiles
-    SET email = NEW.email
-    WHERE id = NEW.id;
-  END IF;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Update user_profiles when auth.users.email changes
+
+  IF NEW.email IS DISTINCT FROM OLD.email THEN
+
+    UPDATE user_profiles
+
+    SET email = NEW.email
+
+    WHERE id = NEW.id;
+
+  END IF;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1555,31 +2141,56 @@ $$;
 
 CREATE FUNCTION public.unsubscribe_from_trainer_emails(p_email text) RETURNS json
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-  v_updated_count INTEGER;
-BEGIN
-  -- Update all trainer_clients records with this email
-  UPDATE trainer_clients
-  SET 
-    is_unsubscribed = TRUE,
-    updated_at = NOW()
-  WHERE email = p_email;
-  
-  GET DIAGNOSTICS v_updated_count = ROW_COUNT;
-  
-  RETURN json_build_object(
-    'success', TRUE,
-    'message', 'Successfully unsubscribed from trainer emails',
-    'updated_count', v_updated_count
-  );
-EXCEPTION
-  WHEN OTHERS THEN
-    RETURN json_build_object(
-      'success', FALSE,
-      'error', SQLERRM
-    );
-END;
+    AS $$
+
+DECLARE
+
+  v_updated_count INTEGER;
+
+BEGIN
+
+  -- Update all trainer_clients records with this email
+
+  UPDATE trainer_clients
+
+  SET 
+
+    is_unsubscribed = TRUE,
+
+    updated_at = NOW()
+
+  WHERE email = p_email;
+
+  
+
+  GET DIAGNOSTICS v_updated_count = ROW_COUNT;
+
+  
+
+  RETURN json_build_object(
+
+    'success', TRUE,
+
+    'message', 'Successfully unsubscribed from trainer emails',
+
+    'updated_count', v_updated_count
+
+  );
+
+EXCEPTION
+
+  WHEN OTHERS THEN
+
+    RETURN json_build_object(
+
+      'success', FALSE,
+
+      'error', SQLERRM
+
+    );
+
+END;
+
 $$;
 
 
@@ -1596,13 +2207,20 @@ COMMENT ON FUNCTION public.unsubscribe_from_trainer_emails(p_email text) IS 'Uns
 
 CREATE FUNCTION public.update_bug_report_timestamp() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    UPDATE bug_reports
-    SET updated_at = now()
-    WHERE id = NEW.bug_report_id;
-    RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+    UPDATE bug_reports
+
+    SET updated_at = now()
+
+    WHERE id = NEW.bug_report_id;
+
+    RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1612,11 +2230,16 @@ $$;
 
 CREATE FUNCTION public.update_scheduled_routines_updated_at() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  NEW.updated_at = NOW();
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1626,12 +2249,18 @@ $$;
 
 CREATE FUNCTION public.update_search_helpers() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  NEW.name_simplified := generate_simplified_name(NEW.name);
-  NEW.search_tokens := NEW.name_simplified;
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  NEW.name_simplified := generate_simplified_name(NEW.name);
+
+  NEW.search_tokens := NEW.name_simplified;
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1641,11 +2270,16 @@ $$;
 
 CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+    NEW.updated_at = NOW();
+
+    RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1655,11 +2289,16 @@ $$;
 
 CREATE FUNCTION public.update_user_meals_updated_at() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  NEW.updated_at = NOW();
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1669,27 +2308,48 @@ $$;
 
 CREATE FUNCTION public.update_user_preference_boost() RETURNS void
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Calculate boost based on times_logged (0-25 point boost)
-  -- Logarithmic scale: popular items get boost without overwhelming base score
-  UPDATE foods
-  SET user_boost_score = CASE
-    WHEN times_logged >= 1000 THEN 25  -- Very popular
-    WHEN times_logged >= 500 THEN 20
-    WHEN times_logged >= 250 THEN 15
-    WHEN times_logged >= 100 THEN 12
-    WHEN times_logged >= 50 THEN 10
-    WHEN times_logged >= 25 THEN 8
-    WHEN times_logged >= 10 THEN 5
-    WHEN times_logged >= 5 THEN 3
-    WHEN times_logged >= 1 THEN 1
-    ELSE 0
-  END
-  WHERE times_logged > 0;
-  
-  RAISE NOTICE '✅ Updated user preference boosts based on logging frequency';
-END;
+    AS $$
+
+BEGIN
+
+  -- Calculate boost based on times_logged (0-25 point boost)
+
+  -- Logarithmic scale: popular items get boost without overwhelming base score
+
+  UPDATE foods
+
+  SET user_boost_score = CASE
+
+    WHEN times_logged >= 1000 THEN 25  -- Very popular
+
+    WHEN times_logged >= 500 THEN 20
+
+    WHEN times_logged >= 250 THEN 15
+
+    WHEN times_logged >= 100 THEN 12
+
+    WHEN times_logged >= 50 THEN 10
+
+    WHEN times_logged >= 25 THEN 8
+
+    WHEN times_logged >= 10 THEN 5
+
+    WHEN times_logged >= 5 THEN 3
+
+    WHEN times_logged >= 1 THEN 1
+
+    ELSE 0
+
+  END
+
+  WHERE times_logged > 0;
+
+  
+
+  RAISE NOTICE 'Γ£à Updated user preference boosts based on logging frequency';
+
+END;
+
 $$;
 
 
@@ -2864,7 +3524,7 @@ BEGIN
         RETURN NULL;
     END IF;
 
-    -- 1) Compute NEW−OLD (added paths) and OLD−NEW (moved-away paths)
+    -- 1) Compute NEWΓêÆOLD (added paths) and OLDΓêÆNEW (moved-away paths)
     WITH added AS (
         SELECT n.bucket_id, n.name
         FROM new_rows n
@@ -2908,7 +3568,7 @@ BEGIN
         END IF;
     END;
 
-    -- 3) Create destination prefixes (NEW−OLD) BEFORE pruning sources
+    -- 3) Create destination prefixes (NEWΓêÆOLD) BEFORE pruning sources
     IF array_length(v_add_bucket_ids, 1) IS NOT NULL THEN
         WITH candidates AS (
             SELECT DISTINCT t.bucket_id, unnest(storage.get_prefixes(t.name)) AS name
@@ -2921,7 +3581,7 @@ BEGIN
         ON CONFLICT DO NOTHING;
     END IF;
 
-    -- 4) Prune source prefixes bottom-up for OLD−NEW
+    -- 4) Prune source prefixes bottom-up for OLDΓêÆNEW
     IF array_length(v_src_bucket_ids, 1) IS NOT NULL THEN
         -- re-entrancy guard so DELETE on prefixes won't recurse
         IF current_setting('storage.gc.prefixes', true) <> '1' THEN
@@ -4362,10 +5022,10 @@ CREATE TABLE public.goals (
 CREATE TABLE public.meal_foods (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     meal_id uuid,
-    food_servings_id uuid,
     quantity numeric(8,2) DEFAULT 1 NOT NULL,
     notes text,
-    created_at timestamp with time zone DEFAULT now()
+    created_at timestamp with time zone DEFAULT now(),
+    food_id bigint
 );
 
 ALTER TABLE ONLY public.meal_foods FORCE ROW LEVEL SECURITY;
@@ -4480,7 +5140,6 @@ CREATE TABLE public.nutrition_enrichment_queue (
 CREATE TABLE public.nutrition_logs (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id uuid,
-    food_serving_id uuid,
     meal_type text,
     quantity_consumed numeric(8,2) DEFAULT 1.0,
     water_oz_consumed numeric(6,2) DEFAULT 0,
@@ -5170,10 +5829,10 @@ COMMENT ON COLUMN public.trainer_group_tags.name IS 'Human-readable tag name dis
 CREATE TABLE public.user_meal_foods (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_meal_id uuid NOT NULL,
-    food_servings_id uuid,
     quantity numeric DEFAULT 1 NOT NULL,
     notes text,
-    created_at timestamp with time zone DEFAULT now()
+    created_at timestamp with time zone DEFAULT now(),
+    food_id bigint
 );
 
 
@@ -7228,6 +7887,13 @@ CREATE INDEX idx_bug_report_replies_created_at ON public.bug_report_replies USIN
 
 
 --
+-- Name: idx_bug_report_replies_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_bug_report_replies_user_id ON public.bug_report_replies USING btree (user_id);
+
+
+--
 -- Name: idx_bug_reports_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7239,6 +7905,13 @@ CREATE INDEX idx_bug_reports_created_at ON public.bug_reports USING btree (creat
 --
 
 CREATE INDEX idx_bug_reports_priority ON public.bug_reports USING btree (priority);
+
+
+--
+-- Name: idx_bug_reports_resolved_by; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_bug_reports_resolved_by ON public.bug_reports USING btree (resolved_by);
 
 
 --
@@ -7281,6 +7954,13 @@ CREATE INDEX idx_campaigns_created_at ON public.email_campaigns USING btree (cre
 --
 
 CREATE INDEX idx_cycle_sessions_mesocycle_date ON public.cycle_sessions USING btree (mesocycle_id, scheduled_date);
+
+
+--
+-- Name: idx_cycle_sessions_routine_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_cycle_sessions_routine_id ON public.cycle_sessions USING btree (routine_id);
 
 
 --
@@ -7445,6 +8125,20 @@ CREATE INDEX idx_foods_times_logged ON public.foods USING btree (times_logged DE
 
 
 --
+-- Name: idx_goals_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_goals_user_id ON public.goals USING btree (user_id);
+
+
+--
+-- Name: idx_meal_foods_food_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_meal_foods_food_id ON public.meal_foods USING btree (food_id);
+
+
+--
 -- Name: idx_meal_foods_meal; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7480,17 +8174,38 @@ CREATE INDEX idx_meal_plan_entries_plan_id ON public.weekly_meal_plan_entries US
 
 
 --
+-- Name: idx_meals_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_meals_user_id ON public.meals USING btree (user_id);
+
+
+--
+-- Name: idx_mesocycle_weeks_mesocycle_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_mesocycle_weeks_mesocycle_id ON public.mesocycle_weeks USING btree (mesocycle_id);
+
+
+--
+-- Name: idx_mesocycle_weeks_routine_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_mesocycle_weeks_routine_id ON public.mesocycle_weeks USING btree (routine_id);
+
+
+--
+-- Name: idx_mesocycles_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_mesocycles_user_id ON public.mesocycles USING btree (user_id);
+
+
+--
 -- Name: idx_nutrition_logs_food_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_nutrition_logs_food_id ON public.nutrition_logs USING btree (food_id);
-
-
---
--- Name: idx_nutrition_logs_food_serving; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_nutrition_logs_food_serving ON public.nutrition_logs USING btree (food_serving_id);
 
 
 --
@@ -7554,6 +8269,13 @@ CREATE INDEX idx_programs_is_active ON public.programs USING btree (is_active);
 --
 
 CREATE INDEX idx_programs_trainer_id ON public.programs USING btree (trainer_id);
+
+
+--
+-- Name: idx_routine_exercises_exercise_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_routine_exercises_exercise_id ON public.routine_exercises USING btree (exercise_id);
 
 
 --
@@ -7662,10 +8384,10 @@ CREATE INDEX idx_trainer_group_tags_trainer_id ON public.trainer_group_tags USIN
 
 
 --
--- Name: idx_user_meal_foods_food_servings_id; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_user_meal_foods_food_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_user_meal_foods_food_servings_id ON public.user_meal_foods USING btree (food_servings_id);
+CREATE INDEX idx_user_meal_foods_food_id ON public.user_meal_foods USING btree (food_id);
 
 
 --
@@ -7673,6 +8395,13 @@ CREATE INDEX idx_user_meal_foods_food_servings_id ON public.user_meal_foods USIN
 --
 
 CREATE INDEX idx_user_meal_foods_user_meal_id ON public.user_meal_foods USING btree (user_meal_id);
+
+
+--
+-- Name: idx_user_meals_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_user_meals_user_id ON public.user_meals USING btree (user_id);
 
 
 --
@@ -7694,6 +8423,13 @@ CREATE INDEX idx_user_profiles_is_beta ON public.user_profiles USING btree (is_b
 --
 
 CREATE INDEX idx_user_profiles_plan_type ON public.user_profiles USING btree (plan_type);
+
+
+--
+-- Name: idx_user_tags_assigned_by; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_user_tags_assigned_by ON public.user_tags USING btree (assigned_by);
 
 
 --
@@ -7722,6 +8458,13 @@ CREATE INDEX idx_users_email ON public.users USING btree (email);
 --
 
 CREATE INDEX idx_users_unsubscribed ON public.users USING btree (is_unsubscribed);
+
+
+--
+-- Name: idx_weekly_meal_plan_entries_user_meal_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_weekly_meal_plan_entries_user_meal_id ON public.weekly_meal_plan_entries USING btree (user_meal_id);
 
 
 --
@@ -7781,6 +8524,13 @@ CREATE INDEX idx_workout_logs_cycle_session ON public.workout_logs USING btree (
 
 
 --
+-- Name: idx_workout_logs_routine_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_workout_logs_routine_id ON public.workout_logs USING btree (routine_id);
+
+
+--
 -- Name: idx_workout_logs_user_date; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -7792,6 +8542,13 @@ CREATE INDEX idx_workout_logs_user_date ON public.workout_logs USING btree (user
 --
 
 CREATE INDEX idx_workout_logs_user_routine_date ON public.workout_logs USING btree (user_id, routine_id, created_at DESC);
+
+
+--
+-- Name: idx_workout_routines_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_workout_routines_user_id ON public.workout_routines USING btree (user_id);
 
 
 --
@@ -8467,6 +9224,14 @@ ALTER TABLE ONLY public.goals
 
 
 --
+-- Name: meal_foods meal_foods_food_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.meal_foods
+    ADD CONSTRAINT meal_foods_food_id_fkey FOREIGN KEY (food_id) REFERENCES public.foods(id) ON DELETE CASCADE;
+
+
+--
 -- Name: meal_foods meal_foods_meal_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8511,7 +9276,7 @@ ALTER TABLE ONLY public.mesocycles
 --
 
 ALTER TABLE ONLY public.nutrition_logs
-    ADD CONSTRAINT nutrition_logs_food_id_fkey FOREIGN KEY (food_id) REFERENCES public.foods(id) ON DELETE SET NULL;
+    ADD CONSTRAINT nutrition_logs_food_id_fkey FOREIGN KEY (food_id) REFERENCES public.foods(id) ON DELETE CASCADE;
 
 
 --
@@ -8632,6 +9397,14 @@ ALTER TABLE ONLY public.trainer_email_templates
 
 ALTER TABLE ONLY public.trainer_group_tags
     ADD CONSTRAINT trainer_group_tags_trainer_id_fkey FOREIGN KEY (trainer_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: user_meal_foods user_meal_foods_food_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.user_meal_foods
+    ADD CONSTRAINT user_meal_foods_food_id_fkey FOREIGN KEY (food_id) REFERENCES public.foods(id) ON DELETE CASCADE;
 
 
 --
@@ -8998,561 +9771,400 @@ ALTER TABLE marketing.landing_pages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE marketing.leads ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: nutrition_enrichment_queue Admins can insert enrichment jobs; Type: POLICY; Schema: public; Owner: -
+-- Name: trainer_clients Admins can manage all relationships; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Admins can insert enrichment jobs" ON public.nutrition_enrichment_queue FOR INSERT TO authenticated WITH CHECK ((EXISTS ( SELECT 1
-   FROM public.user_profiles
-  WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true)))));
+CREATE POLICY "Admins can manage all relationships" ON public.trainer_clients USING (public.is_admin());
 
 
 --
--- Name: nutrition_enrichment_queue Admins can read enrichment queue; Type: POLICY; Schema: public; Owner: -
+-- Name: exercises Admins can manage exercises; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Admins can read enrichment queue" ON public.nutrition_enrichment_queue FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
-   FROM public.user_profiles
-  WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true)))));
+CREATE POLICY "Admins can manage exercises" ON public.exercises USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 
 --
--- Name: nutrition_pipeline_status Admins can read pipeline status; Type: POLICY; Schema: public; Owner: -
+-- Name: foods Admins can manage foods; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Admins can read pipeline status" ON public.nutrition_pipeline_status FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
-   FROM public.user_profiles
-  WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true)))));
+CREATE POLICY "Admins can manage foods" ON public.foods USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+
+--
+-- Name: meal_foods Admins can manage meal foods; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can manage meal foods" ON public.meal_foods USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+
+--
+-- Name: meals Admins can manage meals; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can manage meals" ON public.meals USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+
+--
+-- Name: portions Admins can manage portions; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can manage portions" ON public.portions USING (public.is_admin()) WITH CHECK (public.is_admin());
+
+
+--
+-- Name: programs Admins can manage programs; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can manage programs" ON public.programs USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 
 --
 -- Name: bug_report_replies Admins can reply to any bug report; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Admins can reply to any bug report" ON public.bug_report_replies FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
-   FROM public.user_profiles
-  WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true)))));
+CREATE POLICY "Admins can reply to any bug report" ON public.bug_report_replies FOR INSERT WITH CHECK (public.is_admin());
 
 
 --
--- Name: bug_reports Admins can update any bug report; Type: POLICY; Schema: public; Owner: -
+-- Name: bug_reports Admins can update all bug reports; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Admins can update any bug report" ON public.bug_reports FOR UPDATE USING ((EXISTS ( SELECT 1
-   FROM public.user_profiles
-  WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true))))) WITH CHECK ((EXISTS ( SELECT 1
-   FROM public.user_profiles
-  WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true)))));
+CREATE POLICY "Admins can update all bug reports" ON public.bug_reports FOR UPDATE USING (public.is_admin());
 
 
 --
--- Name: nutrition_enrichment_queue Admins can update enrichment jobs; Type: POLICY; Schema: public; Owner: -
+-- Name: user_profiles Admins can update all profiles; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Admins can update enrichment jobs" ON public.nutrition_enrichment_queue FOR UPDATE TO authenticated USING ((EXISTS ( SELECT 1
-   FROM public.user_profiles
-  WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true)))));
+CREATE POLICY "Admins can update all profiles" ON public.user_profiles FOR UPDATE USING (public.is_admin());
+
+
+--
+-- Name: bug_report_replies Admins can view all bug report replies; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can view all bug report replies" ON public.bug_report_replies FOR SELECT USING (public.is_admin());
 
 
 --
 -- Name: bug_reports Admins can view all bug reports; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Admins can view all bug reports" ON public.bug_reports FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM public.user_profiles
-  WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true)))));
+CREATE POLICY "Admins can view all bug reports" ON public.bug_reports FOR SELECT USING (public.is_admin());
 
 
 --
--- Name: bug_report_replies Admins can view all replies; Type: POLICY; Schema: public; Owner: -
+-- Name: weekly_meal_plan_entries Admins can view all meal plan entries; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Admins can view all replies" ON public.bug_report_replies FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM public.user_profiles
-  WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_admin = true)))));
+CREATE POLICY "Admins can view all meal plan entries" ON public.weekly_meal_plan_entries FOR SELECT USING (public.is_admin());
 
 
 --
--- Name: email_campaigns Allow authenticated users to delete email_campaigns; Type: POLICY; Schema: public; Owner: -
+-- Name: weekly_meal_plans Admins can view all meal plans; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to delete email_campaigns" ON public.email_campaigns FOR DELETE TO authenticated USING (true);
+CREATE POLICY "Admins can view all meal plans" ON public.weekly_meal_plans FOR SELECT USING (public.is_admin());
 
 
 --
--- Name: email_templates Allow authenticated users to delete email_templates; Type: POLICY; Schema: public; Owner: -
+-- Name: user_meals Admins can view all meals; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to delete email_templates" ON public.email_templates FOR DELETE TO authenticated USING (true);
+CREATE POLICY "Admins can view all meals" ON public.user_meals FOR SELECT USING (public.is_admin());
 
 
 --
--- Name: tags Allow authenticated users to delete tags; Type: POLICY; Schema: public; Owner: -
+-- Name: direct_messages Admins can view all messages; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to delete tags" ON public.tags FOR DELETE TO authenticated USING (true);
+CREATE POLICY "Admins can view all messages" ON public.direct_messages FOR SELECT USING (public.is_admin());
 
 
 --
--- Name: user_tags Allow authenticated users to delete user_tags; Type: POLICY; Schema: public; Owner: -
+-- Name: nutrition_logs Admins can view all nutrition logs; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to delete user_tags" ON public.user_tags FOR DELETE TO authenticated USING (true);
+CREATE POLICY "Admins can view all nutrition logs" ON public.nutrition_logs FOR SELECT USING (public.is_admin());
 
 
 --
--- Name: users Allow authenticated users to delete users; Type: POLICY; Schema: public; Owner: -
+-- Name: user_profiles Admins can view all profiles; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to delete users" ON public.users FOR DELETE TO authenticated USING (true);
+CREATE POLICY "Admins can view all profiles" ON public.user_profiles FOR SELECT USING (public.is_admin());
 
 
 --
--- Name: email_campaigns Allow authenticated users to insert email_campaigns; Type: POLICY; Schema: public; Owner: -
+-- Name: trainer_clients Admins can view all relationships; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to insert email_campaigns" ON public.email_campaigns FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Admins can view all relationships" ON public.trainer_clients FOR SELECT USING (public.is_admin());
 
 
 --
--- Name: email_templates Allow authenticated users to insert email_templates; Type: POLICY; Schema: public; Owner: -
+-- Name: exercises Anyone can view exercises; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to insert email_templates" ON public.email_templates FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Anyone can view exercises" ON public.exercises FOR SELECT USING (true);
 
 
 --
--- Name: tags Allow authenticated users to insert tags; Type: POLICY; Schema: public; Owner: -
+-- Name: foods Anyone can view foods; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to insert tags" ON public.tags FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Anyone can view foods" ON public.foods FOR SELECT USING (true);
 
 
 --
--- Name: user_tags Allow authenticated users to insert user_tags; Type: POLICY; Schema: public; Owner: -
+-- Name: meal_foods Anyone can view meal foods; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to insert user_tags" ON public.user_tags FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Anyone can view meal foods" ON public.meal_foods FOR SELECT USING (true);
 
 
 --
--- Name: users Allow authenticated users to insert users; Type: POLICY; Schema: public; Owner: -
+-- Name: meals Anyone can view meals; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to insert users" ON public.users FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Anyone can view meals" ON public.meals FOR SELECT USING (true);
 
 
 --
--- Name: email_campaigns Allow authenticated users to read email_campaigns; Type: POLICY; Schema: public; Owner: -
+-- Name: portions Anyone can view portions; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to read email_campaigns" ON public.email_campaigns FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Anyone can view portions" ON public.portions FOR SELECT USING (true);
 
 
 --
--- Name: email_events Allow authenticated users to read email_events; Type: POLICY; Schema: public; Owner: -
+-- Name: programs Anyone can view programs; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to read email_events" ON public.email_events FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Anyone can view programs" ON public.programs FOR SELECT USING (true);
 
 
 --
--- Name: email_templates Allow authenticated users to read email_templates; Type: POLICY; Schema: public; Owner: -
+-- Name: trainer_clients Clients can view own relationships; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to read email_templates" ON public.email_templates FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Clients can view own relationships" ON public.trainer_clients FOR SELECT USING ((client_id = ( SELECT auth.uid() AS uid)));
 
 
 --
--- Name: tags Allow authenticated users to read tags; Type: POLICY; Schema: public; Owner: -
+-- Name: trainer_clients Trainers can update own relationships; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to read tags" ON public.tags FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Trainers can update own relationships" ON public.trainer_clients FOR UPDATE USING ((trainer_id = ( SELECT auth.uid() AS uid)));
 
 
 --
--- Name: user_tags Allow authenticated users to read user_tags; Type: POLICY; Schema: public; Owner: -
+-- Name: weekly_meal_plan_entries Trainers can view client meal plan entries; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Allow authenticated users to read user_tags" ON public.user_tags FOR SELECT TO authenticated USING (true);
-
-
---
--- Name: users Allow authenticated users to read users; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Allow authenticated users to read users" ON public.users FOR SELECT TO authenticated USING (true);
-
-
---
--- Name: email_templates Allow authenticated users to update email_templates; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Allow authenticated users to update email_templates" ON public.email_templates FOR UPDATE TO authenticated USING (true);
-
-
---
--- Name: tags Allow authenticated users to update tags; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Allow authenticated users to update tags" ON public.tags FOR UPDATE TO authenticated USING (true);
-
-
---
--- Name: user_tags Allow authenticated users to update user_tags; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Allow authenticated users to update user_tags" ON public.user_tags FOR UPDATE TO authenticated USING (true);
-
-
---
--- Name: users Allow authenticated users to update users; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Allow authenticated users to update users" ON public.users FOR UPDATE TO authenticated USING (true);
-
-
---
--- Name: email_campaigns Allow service role to insert campaigns; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Allow service role to insert campaigns" ON public.email_campaigns FOR INSERT TO service_role WITH CHECK (true);
-
-
---
--- Name: email_events Allow service role to insert email_events; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Allow service role to insert email_events" ON public.email_events FOR INSERT TO service_role WITH CHECK (true);
-
-
---
--- Name: users Allow service role to update unsubscribe; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Allow service role to update unsubscribe" ON public.users FOR UPDATE TO service_role USING (true);
-
-
---
--- Name: bug_reports Beta users can insert bug reports; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Beta users can insert bug reports" ON public.bug_reports FOR INSERT WITH CHECK (((auth.uid() = user_id) AND (EXISTS ( SELECT 1
-   FROM public.user_profiles
-  WHERE ((user_profiles.id = auth.uid()) AND (user_profiles.is_beta = true))))));
-
-
---
--- Name: pro_routine_exercises Pro routine exercises are viewable by everyone; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Pro routine exercises are viewable by everyone" ON public.pro_routine_exercises FOR SELECT USING (true);
-
-
---
--- Name: trainer_email_templates Trainers can create their own email templates; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Trainers can create their own email templates" ON public.trainer_email_templates FOR INSERT WITH CHECK ((auth.uid() = trainer_id));
-
-
---
--- Name: trainer_group_tags Trainers can create their own group tags; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Trainers can create their own group tags" ON public.trainer_group_tags FOR INSERT WITH CHECK ((auth.uid() = trainer_id));
-
-
---
--- Name: trainer_email_templates Trainers can delete their own email templates; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Trainers can delete their own email templates" ON public.trainer_email_templates FOR DELETE USING ((auth.uid() = trainer_id));
-
-
---
--- Name: trainer_group_tags Trainers can delete their own group tags; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Trainers can delete their own group tags" ON public.trainer_group_tags FOR DELETE USING ((auth.uid() = trainer_id));
-
-
---
--- Name: trainer_email_templates Trainers can update their own email templates; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Trainers can update their own email templates" ON public.trainer_email_templates FOR UPDATE USING ((auth.uid() = trainer_id));
-
-
---
--- Name: trainer_group_tags Trainers can update their own group tags; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Trainers can update their own group tags" ON public.trainer_group_tags FOR UPDATE USING ((auth.uid() = trainer_id));
-
-
---
--- Name: trainer_email_templates Trainers can view their own email templates; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Trainers can view their own email templates" ON public.trainer_email_templates FOR SELECT USING ((auth.uid() = trainer_id));
-
-
---
--- Name: trainer_group_tags Trainers can view their own group tags; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Trainers can view their own group tags" ON public.trainer_group_tags FOR SELECT USING ((auth.uid() = trainer_id));
-
-
---
--- Name: weekly_meal_plan_entries Users can create entries in their own plans; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can create entries in their own plans" ON public.weekly_meal_plan_entries FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+CREATE POLICY "Trainers can view client meal plan entries" ON public.weekly_meal_plan_entries FOR SELECT USING ((plan_id IN ( SELECT weekly_meal_plans.id
    FROM public.weekly_meal_plans
-  WHERE ((weekly_meal_plans.id = weekly_meal_plan_entries.plan_id) AND (weekly_meal_plans.user_id = auth.uid())))));
+  WHERE public.is_trainer_for_client(weekly_meal_plans.user_id))));
 
 
 --
--- Name: weekly_meal_plans Users can create their own meal plans; Type: POLICY; Schema: public; Owner: -
+-- Name: weekly_meal_plans Trainers can view client meal plans; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can create their own meal plans" ON public.weekly_meal_plans FOR INSERT WITH CHECK ((auth.uid() = user_id));
+CREATE POLICY "Trainers can view client meal plans" ON public.weekly_meal_plans FOR SELECT USING (public.is_trainer_for_client(user_id));
 
 
 --
--- Name: weekly_meal_plan_entries Users can delete entries in their own plans; Type: POLICY; Schema: public; Owner: -
+-- Name: user_meals Trainers can view client meals; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can delete entries in their own plans" ON public.weekly_meal_plan_entries FOR DELETE USING ((EXISTS ( SELECT 1
+CREATE POLICY "Trainers can view client meals" ON public.user_meals FOR SELECT USING (public.is_trainer_for_client(user_id));
+
+
+--
+-- Name: nutrition_logs Trainers can view client nutrition logs; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Trainers can view client nutrition logs" ON public.nutrition_logs FOR SELECT USING (public.is_trainer_for_client(user_id));
+
+
+--
+-- Name: user_profiles Trainers can view client profiles; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Trainers can view client profiles" ON public.user_profiles FOR SELECT USING ((public.is_trainer() AND (id IN ( SELECT trainer_clients.client_id
+   FROM public.trainer_clients
+  WHERE ((trainer_clients.trainer_id = ( SELECT auth.uid() AS uid)) AND ((trainer_clients.status)::text = 'active'::text))))));
+
+
+--
+-- Name: trainer_clients Trainers can view own relationships; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Trainers can view own relationships" ON public.trainer_clients FOR SELECT USING ((trainer_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: bug_reports Users can create bug reports; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can create bug reports" ON public.bug_reports FOR INSERT WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: nutrition_logs Users can delete own nutrition logs; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can delete own nutrition logs" ON public.nutrition_logs FOR DELETE USING ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: nutrition_logs Users can insert own nutrition logs; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can insert own nutrition logs" ON public.nutrition_logs FOR INSERT WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: user_profiles Users can insert own profile; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can insert own profile" ON public.user_profiles FOR INSERT WITH CHECK ((id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: weekly_meal_plan_entries Users can manage own meal plan entries; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can manage own meal plan entries" ON public.weekly_meal_plan_entries USING ((plan_id IN ( SELECT weekly_meal_plans.id
    FROM public.weekly_meal_plans
-  WHERE ((weekly_meal_plans.id = weekly_meal_plan_entries.plan_id) AND (weekly_meal_plans.user_id = auth.uid())))));
+  WHERE (weekly_meal_plans.user_id = ( SELECT auth.uid() AS uid))))) WITH CHECK ((plan_id IN ( SELECT weekly_meal_plans.id
+   FROM public.weekly_meal_plans
+  WHERE (weekly_meal_plans.user_id = ( SELECT auth.uid() AS uid)))));
 
 
 --
--- Name: user_meal_foods Users can delete their own meal foods; Type: POLICY; Schema: public; Owner: -
+-- Name: weekly_meal_plans Users can manage own meal plans; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can delete their own meal foods" ON public.user_meal_foods FOR DELETE USING ((EXISTS ( SELECT 1
-   FROM public.user_meals
-  WHERE ((user_meals.id = user_meal_foods.user_meal_id) AND (user_meals.user_id = auth.uid())))));
+CREATE POLICY "Users can manage own meal plans" ON public.weekly_meal_plans USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
 
 
 --
--- Name: weekly_meal_plans Users can delete their own meal plans; Type: POLICY; Schema: public; Owner: -
+-- Name: user_meals Users can manage own meals; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can delete their own meal plans" ON public.weekly_meal_plans FOR DELETE USING ((auth.uid() = user_id));
-
-
---
--- Name: user_meal_foods Users can insert their own meal foods; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can insert their own meal foods" ON public.user_meal_foods FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
-   FROM public.user_meals
-  WHERE ((user_meals.id = user_meal_foods.user_meal_id) AND (user_meals.user_id = auth.uid())))));
-
-
---
--- Name: user_profiles Users can manage own profile; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can manage own profile" ON public.user_profiles USING (((auth.uid() = id) OR (auth.uid() = user_id)));
-
-
---
--- Name: routine_exercises Users can manage routine exercises for own routines; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can manage routine exercises for own routines" ON public.routine_exercises USING ((EXISTS ( SELECT 1
-   FROM public.workout_routines
-  WHERE ((workout_routines.id = routine_exercises.routine_id) AND (workout_routines.user_id = auth.uid())))));
-
-
---
--- Name: workout_log_entries Users can manage workout log entries for own logs; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can manage workout log entries for own logs" ON public.workout_log_entries USING ((EXISTS ( SELECT 1
-   FROM public.workout_logs
-  WHERE ((workout_logs.id = workout_log_entries.log_id) AND (workout_logs.user_id = auth.uid())))));
+CREATE POLICY "Users can manage own meals" ON public.user_meals USING ((user_id = ( SELECT auth.uid() AS uid))) WITH CHECK ((user_id = ( SELECT auth.uid() AS uid)));
 
 
 --
 -- Name: bug_report_replies Users can reply to own bug reports; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can reply to own bug reports" ON public.bug_report_replies FOR INSERT WITH CHECK (((auth.uid() = user_id) AND (bug_report_id IN ( SELECT bug_reports.id
+CREATE POLICY "Users can reply to own bug reports" ON public.bug_report_replies FOR INSERT WITH CHECK (((user_id = ( SELECT auth.uid() AS uid)) AND (bug_report_id IN ( SELECT bug_reports.id
    FROM public.bug_reports
-  WHERE (bug_reports.user_id = auth.uid())))));
+  WHERE (bug_reports.user_id = ( SELECT auth.uid() AS uid))))));
 
 
 --
 -- Name: direct_messages Users can send messages; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can send messages" ON public.direct_messages FOR INSERT WITH CHECK ((auth.uid() = sender_id));
+CREATE POLICY "Users can send messages" ON public.direct_messages FOR INSERT WITH CHECK ((sender_id = ( SELECT auth.uid() AS uid)));
 
 
 --
--- Name: weekly_meal_plan_entries Users can update entries in their own plans; Type: POLICY; Schema: public; Owner: -
+-- Name: nutrition_logs Users can update own nutrition logs; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can update entries in their own plans" ON public.weekly_meal_plan_entries FOR UPDATE USING ((EXISTS ( SELECT 1
-   FROM public.weekly_meal_plans
-  WHERE ((weekly_meal_plans.id = weekly_meal_plan_entries.plan_id) AND (weekly_meal_plans.user_id = auth.uid()))))) WITH CHECK ((EXISTS ( SELECT 1
-   FROM public.weekly_meal_plans
-  WHERE ((weekly_meal_plans.id = weekly_meal_plan_entries.plan_id) AND (weekly_meal_plans.user_id = auth.uid())))));
+CREATE POLICY "Users can update own nutrition logs" ON public.nutrition_logs FOR UPDATE USING ((user_id = ( SELECT auth.uid() AS uid)));
 
 
 --
--- Name: bug_reports Users can update own bug reports; Type: POLICY; Schema: public; Owner: -
+-- Name: user_profiles Users can update own profile; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can update own bug reports" ON public.bug_reports FOR UPDATE USING ((auth.uid() = user_id)) WITH CHECK ((auth.uid() = user_id));
-
-
---
--- Name: user_meal_foods Users can update their own meal foods; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can update their own meal foods" ON public.user_meal_foods FOR UPDATE USING ((EXISTS ( SELECT 1
-   FROM public.user_meals
-  WHERE ((user_meals.id = user_meal_foods.user_meal_id) AND (user_meals.user_id = auth.uid())))));
+CREATE POLICY "Users can update own profile" ON public.user_profiles FOR UPDATE USING ((id = ( SELECT auth.uid() AS uid)));
 
 
 --
--- Name: weekly_meal_plans Users can update their own meal plans; Type: POLICY; Schema: public; Owner: -
+-- Name: bug_report_replies Users can view own bug report replies; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can update their own meal plans" ON public.weekly_meal_plans FOR UPDATE USING ((auth.uid() = user_id)) WITH CHECK ((auth.uid() = user_id));
-
-
---
--- Name: weekly_meal_plan_entries Users can view entries in their own plans; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can view entries in their own plans" ON public.weekly_meal_plan_entries FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM public.weekly_meal_plans
-  WHERE ((weekly_meal_plans.id = weekly_meal_plan_entries.plan_id) AND (weekly_meal_plans.user_id = auth.uid())))));
-
-
---
--- Name: body_metrics Users can view own body metrics; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can view own body metrics" ON public.body_metrics USING ((auth.uid() = user_id));
+CREATE POLICY "Users can view own bug report replies" ON public.bug_report_replies FOR SELECT USING ((bug_report_id IN ( SELECT bug_reports.id
+   FROM public.bug_reports
+  WHERE (bug_reports.user_id = ( SELECT auth.uid() AS uid)))));
 
 
 --
 -- Name: bug_reports Users can view own bug reports; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can view own bug reports" ON public.bug_reports FOR SELECT USING ((auth.uid() = user_id));
+CREATE POLICY "Users can view own bug reports" ON public.bug_reports FOR SELECT USING ((user_id = ( SELECT auth.uid() AS uid)));
 
 
 --
--- Name: cycle_sessions Users can view own cycle sessions; Type: POLICY; Schema: public; Owner: -
+-- Name: weekly_meal_plan_entries Users can view own meal plan entries; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can view own cycle sessions" ON public.cycle_sessions USING ((auth.uid() = user_id));
-
-
---
--- Name: goals Users can view own goals; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can view own goals" ON public.goals USING ((auth.uid() = user_id));
+CREATE POLICY "Users can view own meal plan entries" ON public.weekly_meal_plan_entries FOR SELECT USING ((plan_id IN ( SELECT weekly_meal_plans.id
+   FROM public.weekly_meal_plans
+  WHERE (weekly_meal_plans.user_id = ( SELECT auth.uid() AS uid)))));
 
 
 --
--- Name: meals Users can view own meals; Type: POLICY; Schema: public; Owner: -
+-- Name: weekly_meal_plans Users can view own meal plans; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can view own meals" ON public.meals USING ((auth.uid() = user_id));
+CREATE POLICY "Users can view own meal plans" ON public.weekly_meal_plans FOR SELECT USING ((user_id = ( SELECT auth.uid() AS uid)));
 
 
 --
--- Name: mesocycles Users can view own mesocycles; Type: POLICY; Schema: public; Owner: -
+-- Name: user_meals Users can view own meals; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can view own mesocycles" ON public.mesocycles USING ((auth.uid() = user_id));
+CREATE POLICY "Users can view own meals" ON public.user_meals FOR SELECT USING ((user_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: direct_messages Users can view own messages; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can view own messages" ON public.direct_messages FOR SELECT USING (((sender_id = ( SELECT auth.uid() AS uid)) OR (recipient_id = ( SELECT auth.uid() AS uid))));
 
 
 --
 -- Name: nutrition_logs Users can view own nutrition logs; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can view own nutrition logs" ON public.nutrition_logs USING ((auth.uid() = user_id));
+CREATE POLICY "Users can view own nutrition logs" ON public.nutrition_logs FOR SELECT USING ((user_id = ( SELECT auth.uid() AS uid)));
 
 
 --
--- Name: workout_routines Users can view own routines; Type: POLICY; Schema: public; Owner: -
+-- Name: user_profiles Users can view own profile; Type: POLICY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can view own routines" ON public.workout_routines USING ((auth.uid() = user_id));
-
-
---
--- Name: user_tags Users can view own tags; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can view own tags" ON public.user_tags FOR SELECT USING ((auth.uid() = user_id));
+CREATE POLICY "Users can view own profile" ON public.user_profiles FOR SELECT USING ((id = ( SELECT auth.uid() AS uid)));
 
 
 --
--- Name: user_meals Users can view own user meals; Type: POLICY; Schema: public; Owner: -
+-- Name: bug_report_replies; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can view own user meals" ON public.user_meals USING ((auth.uid() = user_id));
-
-
---
--- Name: workout_logs Users can view own workout logs; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can view own workout logs" ON public.workout_logs USING ((auth.uid() = user_id));
-
+ALTER TABLE public.bug_report_replies ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: bug_report_replies Users can view replies to own bug reports; Type: POLICY; Schema: public; Owner: -
+-- Name: bug_reports; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can view replies to own bug reports" ON public.bug_report_replies FOR SELECT USING ((bug_report_id IN ( SELECT bug_reports.id
-   FROM public.bug_reports
-  WHERE (bug_reports.user_id = auth.uid()))));
-
+ALTER TABLE public.bug_reports ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: direct_messages Users can view their messages; Type: POLICY; Schema: public; Owner: -
+-- Name: direct_messages; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
-CREATE POLICY "Users can view their messages" ON public.direct_messages FOR SELECT USING (((auth.uid() = sender_id) OR (auth.uid() = recipient_id)));
-
-
---
--- Name: user_meal_foods Users can view their own meal foods; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can view their own meal foods" ON public.user_meal_foods FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM public.user_meals
-  WHERE ((user_meals.id = user_meal_foods.user_meal_id) AND (user_meals.user_id = auth.uid())))));
-
-
---
--- Name: weekly_meal_plans Users can view their own meal plans; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can view their own meal plans" ON public.weekly_meal_plans FOR SELECT USING ((auth.uid() = user_id));
-
-
---
--- Name: trainer_clients Users can view their relationships; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can view their relationships" ON public.trainer_clients FOR SELECT USING (((auth.uid() = trainer_id) OR (auth.uid() = client_id)));
-
+ALTER TABLE public.direct_messages ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: email_campaigns; Type: ROW SECURITY; Schema: public; Owner: -
@@ -9573,25 +10185,28 @@ ALTER TABLE public.email_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.email_templates ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: exercises exercises_insert_policy; Type: POLICY; Schema: public; Owner: -
+-- Name: exercises; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
-CREATE POLICY exercises_insert_policy ON public.exercises FOR INSERT TO authenticated WITH CHECK (true);
-
-
---
--- Name: exercises exercises_select_policy; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY exercises_select_policy ON public.exercises FOR SELECT TO authenticated USING (true);
-
+ALTER TABLE public.exercises ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: exercises exercises_update_policy; Type: POLICY; Schema: public; Owner: -
+-- Name: foods; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
-CREATE POLICY exercises_update_policy ON public.exercises FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+ALTER TABLE public.foods ENABLE ROW LEVEL SECURITY;
 
+--
+-- Name: meal_foods; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.meal_foods ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: meals; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.meals ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: nutrition_enrichment_queue; Type: ROW SECURITY; Schema: public; Owner: -
@@ -9600,10 +10215,28 @@ CREATE POLICY exercises_update_policy ON public.exercises FOR UPDATE TO authenti
 ALTER TABLE public.nutrition_enrichment_queue ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: nutrition_logs; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.nutrition_logs ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: portions; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.portions ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: pro_routine_exercises; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
 ALTER TABLE public.pro_routine_exercises ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: programs; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.programs ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: tags; Type: ROW SECURITY; Schema: public; Owner: -
@@ -9612,88 +10245,10 @@ ALTER TABLE public.pro_routine_exercises ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tags ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: routine_exercises trainer_can_delete_client_routine_exercises; Type: POLICY; Schema: public; Owner: -
+-- Name: trainer_clients; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
-CREATE POLICY trainer_can_delete_client_routine_exercises ON public.routine_exercises FOR DELETE TO authenticated USING (((EXISTS ( SELECT 1
-   FROM public.workout_routines
-  WHERE ((workout_routines.id = routine_exercises.routine_id) AND (workout_routines.user_id = auth.uid())))) OR (EXISTS ( SELECT 1
-   FROM (public.workout_routines
-     JOIN public.trainer_clients ON ((trainer_clients.client_id = workout_routines.user_id)))
-  WHERE ((workout_routines.id = routine_exercises.routine_id) AND (trainer_clients.trainer_id = auth.uid()))))));
-
-
---
--- Name: scheduled_routines trainer_can_delete_client_scheduled_routines; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY trainer_can_delete_client_scheduled_routines ON public.scheduled_routines FOR DELETE USING ((user_id IN ( SELECT trainer_clients.client_id
-   FROM public.trainer_clients
-  WHERE (trainer_clients.trainer_id = auth.uid()))));
-
-
---
--- Name: routine_exercises trainer_can_insert_client_routine_exercises; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY trainer_can_insert_client_routine_exercises ON public.routine_exercises FOR INSERT TO authenticated WITH CHECK (((EXISTS ( SELECT 1
-   FROM public.workout_routines
-  WHERE ((workout_routines.id = routine_exercises.routine_id) AND (workout_routines.user_id = auth.uid())))) OR (EXISTS ( SELECT 1
-   FROM (public.workout_routines
-     JOIN public.trainer_clients ON ((trainer_clients.client_id = workout_routines.user_id)))
-  WHERE ((workout_routines.id = routine_exercises.routine_id) AND (trainer_clients.trainer_id = auth.uid()))))));
-
-
---
--- Name: scheduled_routines trainer_can_insert_client_scheduled_routines; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY trainer_can_insert_client_scheduled_routines ON public.scheduled_routines FOR INSERT WITH CHECK (((auth.uid() = user_id) OR (user_id IN ( SELECT trainer_clients.client_id
-   FROM public.trainer_clients
-  WHERE (trainer_clients.trainer_id = auth.uid())))));
-
-
---
--- Name: routine_exercises trainer_can_update_client_routine_exercises; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY trainer_can_update_client_routine_exercises ON public.routine_exercises FOR UPDATE TO authenticated USING (((EXISTS ( SELECT 1
-   FROM public.workout_routines
-  WHERE ((workout_routines.id = routine_exercises.routine_id) AND (workout_routines.user_id = auth.uid())))) OR (EXISTS ( SELECT 1
-   FROM (public.workout_routines
-     JOIN public.trainer_clients ON ((trainer_clients.client_id = workout_routines.user_id)))
-  WHERE ((workout_routines.id = routine_exercises.routine_id) AND (trainer_clients.trainer_id = auth.uid()))))));
-
-
---
--- Name: scheduled_routines trainer_can_update_client_scheduled_routines; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY trainer_can_update_client_scheduled_routines ON public.scheduled_routines FOR UPDATE USING ((user_id IN ( SELECT trainer_clients.client_id
-   FROM public.trainer_clients
-  WHERE (trainer_clients.trainer_id = auth.uid()))));
-
-
---
--- Name: routine_exercises trainer_can_view_client_routine_exercises; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY trainer_can_view_client_routine_exercises ON public.routine_exercises FOR SELECT TO authenticated USING (((EXISTS ( SELECT 1
-   FROM public.workout_routines
-  WHERE ((workout_routines.id = routine_exercises.routine_id) AND (workout_routines.user_id = auth.uid())))) OR (EXISTS ( SELECT 1
-   FROM (public.workout_routines
-     JOIN public.trainer_clients ON ((trainer_clients.client_id = workout_routines.user_id)))
-  WHERE ((workout_routines.id = routine_exercises.routine_id) AND (trainer_clients.trainer_id = auth.uid()))))));
-
-
---
--- Name: scheduled_routines trainer_can_view_client_scheduled_routines; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY trainer_can_view_client_scheduled_routines ON public.scheduled_routines FOR SELECT USING ((user_id IN ( SELECT trainer_clients.client_id
-   FROM public.trainer_clients
-  WHERE (trainer_clients.trainer_id = auth.uid()))));
-
+ALTER TABLE public.trainer_clients ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: trainer_email_templates; Type: ROW SECURITY; Schema: public; Owner: -
@@ -9708,18 +10263,16 @@ ALTER TABLE public.trainer_email_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.trainer_group_tags ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: scheduled_routines user_can_update_own_scheduled_routines; Type: POLICY; Schema: public; Owner: -
+-- Name: user_meals; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
-CREATE POLICY user_can_update_own_scheduled_routines ON public.scheduled_routines FOR UPDATE USING ((auth.uid() = user_id));
-
+ALTER TABLE public.user_meals ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: scheduled_routines user_can_view_own_scheduled_routines; Type: POLICY; Schema: public; Owner: -
+-- Name: user_profiles; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
-CREATE POLICY user_can_view_own_scheduled_routines ON public.scheduled_routines FOR SELECT USING ((auth.uid() = user_id));
-
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: user_tags; Type: ROW SECURITY; Schema: public; Owner: -
@@ -9732,6 +10285,18 @@ ALTER TABLE public.user_tags ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: weekly_meal_plan_entries; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.weekly_meal_plan_entries ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: weekly_meal_plans; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.weekly_meal_plans ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: messages; Type: ROW SECURITY; Schema: realtime; Owner: -
@@ -9870,5 +10435,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict W6iV1Jnj6S9j2mGJx1wCTqcF8bbbmrG9elNYHdFL2iIhaexfs5MNun6gw0CTCsQ
+\unrestrict Oi6wPhDp1vDzepBrOgwRiWomhux1VMiU31K7hChhsghq8PhCflNgt7yurBxxbrA
 

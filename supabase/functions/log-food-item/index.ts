@@ -20,7 +20,7 @@
  * // Log local food from database
  * const { data, error } = await supabase.functions.invoke('log-food-item', {
  *   body: {
- *     p_food_serving_id: 123,
+ *     p_food_id: 123,
  *     p_meal_type: 'Breakfast',
  *     p_quantity_consumed: 1.5,
  *     p_user_id: userId,
@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
 
     const {
       p_external_food,
-      p_food_serving_id,
+      p_food_id,
       p_meal_type = 'Snack',
       p_quantity_consumed = 1.0,
       p_user_id,
@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
     const userId = p_user_id || user.id;
     const logDate = p_log_date || new Date().toISOString().split('T')[0];
 
-    let servingId = p_food_serving_id;
+    let foodId = p_food_id;
     let qualityScore = 'verified';
     let warning = null;
 
@@ -140,16 +140,16 @@ Deno.serve(async (req) => {
         throw insertError;
       }
 
-      servingId = newServing.id;
+      foodId = newServing.id;
     }
 
-    if (!servingId) {
-      // Water entry - no food serving, just log water consumption
+    if (!foodId) {
+      // Water entry - no food, just log water consumption
       const { data: logEntry, error: logError } = await supabase
         .from('nutrition_logs')
         .insert({
           user_id: userId,
-          food_serving_id: null,
+          food_id: null,
           meal_type: p_meal_type,
           quantity_consumed: p_quantity_consumed,
           log_date: logDate,
@@ -179,15 +179,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch the food serving data to get macro values for denormalization
-    const { data: foodServing, error: servingError } = await supabase
-      .from('food_servings')
+    // Fetch the food data to get macro values for denormalization
+    const { data: food, error: foodError } = await supabase
+      .from('foods')
       .select('calories, protein_g, carbs_g, fat_g')
-      .eq('id', servingId)
+      .eq('id', foodId)
       .single();
 
-    if (servingError) {
-      throw new Error('Food serving not found: ' + servingError.message);
+    if (foodError) {
+      throw new Error('Food not found: ' + foodError.message);
     }
 
     // Insert nutrition log entry with denormalized macro columns
@@ -196,14 +196,14 @@ Deno.serve(async (req) => {
       .from('nutrition_logs')
       .insert({
         user_id: userId,
-        food_serving_id: servingId,
+        food_id: foodId,
         meal_type: p_meal_type,
         quantity_consumed: p_quantity_consumed,
         log_date: logDate,
-        calories: foodServing.calories ?? 0,
-        protein_g: foodServing.protein_g ?? 0,
-        carbs_g: foodServing.carbs_g ?? 0,
-        fat_g: foodServing.fat_g ?? 0,
+        calories: food.calories ?? 0,
+        protein_g: food.protein_g ?? 0,
+        carbs_g: food.carbs_g ?? 0,
+        fat_g: food.fat_g ?? 0,
       })
       .select()
       .single();

@@ -237,7 +237,7 @@ function DashboardPage() {
   // Authentication guard effect
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate('/login', { replace: true });
+      navigate('/', { replace: true });
     }
   }, [authLoading, user, navigate]);
 

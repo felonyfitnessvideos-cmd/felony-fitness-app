@@ -83,13 +83,16 @@ const NutritionPlanner = ({ client }) => {
       setIsSearching(true);
       try {
         // Direct Supabase search - foods table with portions
+        // Match format used in NutritionLogPage and MealBuilder for consistency
+        const sanitizedTerm = searchTerm.replace(/,/g, ' ').toLowerCase();
         const { data: results, error } = await supabase
           .from('foods')
           .select(`
             *,
             portions (*)
           `)
-          .or(`name.ilike.%${searchTerm}%,brand_owner.ilike.%${searchTerm}%`)
+          .or(`name_simplified.ilike.%${sanitizedTerm}%,brand_owner.ilike.%${sanitizedTerm}%`)
+          .order('commonness_score', { ascending: false })
           .order('name')
           .limit(50);
 
