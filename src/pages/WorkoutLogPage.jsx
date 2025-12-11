@@ -284,11 +284,6 @@ function WorkoutLogPage() {
         todaysLogMap[exId].push(entry);
       }
       setTodaysLog(todaysLogMap);
-      // DEBUG: Log keys and selectedExercise.id to troubleshoot UI mismatch
-      setTimeout(() => {
-         
-        console.log('[DEBUG] todaysLog keys:', Object.keys(todaysLogMap), 'selectedExerciseId:', selectedExercise?.id);
-      }, 100);
 
       // 6. Fetch previous log entries (last completed log for this routine)
       const { data: prevLog } = await supabase
@@ -432,7 +427,7 @@ function WorkoutLogPage() {
     if (activeView === 'chart' && selectedExercise) {
       fetchChartDataForExercise(chartMetric, selectedExercise.id);
     }
-  }, [activeView, chartMetric, selectedExercise, fetchChartDataForExercise]);
+  }, [activeView, chartMetric, fetchChartDataForExercise, selectedExercise]);
 
   const handleSaveSet = async () => {
     if (!currentSet.reps || !currentSet.weight || !selectedExercise) return;

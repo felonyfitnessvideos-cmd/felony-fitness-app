@@ -239,13 +239,6 @@ function MyPlanPage() {
       setUseRpe(userProfile.use_rpe !== false); // default true
       setUseRestTimer(userProfile.use_rest_timer !== false); // default true
     }
-  }, [user]);
-
-  useEffect(() => {
-    if (userProfile) {
-      setUseRpe(userProfile.use_rpe !== false);
-      setUseRestTimer(userProfile.use_rest_timer !== false);
-    }
   }, [userProfile]);
   // Handler to update user profile setting in Supabase
   const updateUserSetting = async (field, value) => {

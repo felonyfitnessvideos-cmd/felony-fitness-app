@@ -2,8 +2,12 @@
 # This script works with the FREE tier and bypasses network/firewall issues
 
 param(
-    [string]$BackupName = "backup-$(Get-Date -Format 'yyyy-MM-dd-HHmmss')"
+    [string]$BackupType = "daily" # Options: "daily" or "weekly-complete"
 )
+
+# Generate backup name in format: YYYY-MM-DD-{type}
+$timestamp = Get-Date -Format 'yyyy-MM-dd'
+$BackupName = "$timestamp-$BackupType"
 
 # Load environment variables
 if (Test-Path ".env.local") {
@@ -184,6 +188,20 @@ Write-Host "`n=== ✅ Backup Complete ===" -ForegroundColor Green
 Write-Host "Location: $backupDir" -ForegroundColor Cyan
 Write-Host "Total Size: $totalSizeMB MB" -ForegroundColor Cyan
 Write-Host "Files: $(Get-ChildItem $backupDir | Measure-Object | Select-Object -ExpandProperty Count)" -ForegroundColor Cyan
+
+# Cleanup: Keep only last 7 backups
+Write-Host "`n=== 🧹 Cleanup: Maintaining 7 Most Recent Backups ===" -ForegroundColor Yellow
+$allBackups = Get-ChildItem backups | Sort-Object Name -Descending
+if ($allBackups.Count -gt 7) {
+    $toDelete = $allBackups | Select-Object -Skip 7
+    foreach ($backup in $toDelete) {
+        Write-Host "🗑️  Deleting old backup: $($backup.Name)" -ForegroundColor DarkGray
+        Remove-Item -Path $backup.FullName -Recurse -Force
+    }
+    Write-Host "✅ Cleanup complete - kept $($allBackups.Count - $toDelete.Count) backups" -ForegroundColor Green
+} else {
+    Write-Host "✅ Backup count OK ($($allBackups.Count)/7)" -ForegroundColor Green
+}
 
 Write-Host "`n💡 To restore from this backup, use the restore-from-api.ps1 script" -ForegroundColor Yellow
 

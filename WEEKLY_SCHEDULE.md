@@ -130,11 +130,12 @@ git push origin main
 **3. Database Backup (2-3 min)** ⚡ **CRITICAL - NEVER SKIP**
 
 ```powershell
-.\scripts\backup-via-api.ps1 -BackupName "daily-$(Get-Date -Format 'yyyy-MM-dd')"
+.\scripts\backup-via-api.ps1 -BackupType "weekly-complete"
 ```
 
-- Verify `backups/daily-YYYY-MM-DD/` folder created
-- Check file sizes reasonable (~6MB for food_servings.json)
+- Creates backup: `backups/YYYY-MM-DD-weekly-complete/`
+- Automatically keeps only last 7 backups
+- Verify ~15MB total size (includes all tables + schema)
 
 **4. Session Documentation (15 min)**
 
@@ -286,8 +287,11 @@ git push origin main
 **4. Database Backup (2-3 min)** ⚡ **CRITICAL**
 
 ```powershell
-.\scripts\backup-via-api.ps1 -BackupName "daily-$(Get-Date -Format 'yyyy-MM-dd')"
+.\scripts\backup-via-api.ps1
 ```
+
+- Creates backup: `backups/YYYY-MM-DD-daily/`
+- Automatically keeps only last 7 backups
 
 **5. Session Documentation (10 min)**
 
@@ -445,8 +449,11 @@ git push origin main
 **4. Database Backup (2-3 min)** ⚡ **CRITICAL**
 
 ```powershell
-.\scripts\backup-via-api.ps1 -BackupName "daily-$(Get-Date -Format 'yyyy-MM-dd')"
+.\scripts\backup-via-api.ps1
 ```
+
+- Creates backup: `backups/YYYY-MM-DD-daily/`
+- Automatically keeps only last 7 backups
 
 **5. Session Documentation (10 min)**
 
@@ -660,8 +667,11 @@ git push origin main
 **4. Database Backup (2-3 min)** ⚡ **CRITICAL**
 
 ```powershell
-.\scripts\backup-via-api.ps1 -BackupName "daily-$(Get-Date -Format 'yyyy-MM-dd')"
+.\scripts\backup-via-api.ps1
 ```
+
+- Creates backup: `backups/YYYY-MM-DD-daily/`
+- Automatically keeps only last 7 backups
 
 **5. Session Documentation (10 min)**
 
@@ -878,8 +888,11 @@ git push origin main
 **4. Database Backup (2-3 min)** ⚡ **CRITICAL**
 
 ```powershell
-.\scripts\backup-via-api.ps1 -BackupName "daily-$(Get-Date -Format 'yyyy-MM-dd')"
+.\scripts\backup-via-api.ps1
 ```
+
+- Creates backup: `backups/YYYY-MM-DD-daily/`
+- Automatically keeps only last 7 backups
 
 **5. Session Documentation (10 min)**
 
@@ -1108,19 +1121,22 @@ git push origin main
 **4. Database Backup (2-3 min)** ⚡ **CRITICAL**
 
 ```powershell
-.\scripts\backup-via-api.ps1 -BackupName "daily-$(Get-Date -Format 'yyyy-MM-dd')"
+.\scripts\backup-via-api.ps1
 ```
+
+- Creates backup: `backups/YYYY-MM-DD-daily/`
+- Automatically keeps only last 7 backups
 
 **Optional: Weekly Storage Backup (5-10 min)**
 
 ```powershell
 # Run every Friday or after adding files to storage buckets
-.\scripts\backup-storage-buckets.ps1 -BackupName "storage-$(Get-Date -Format 'yyyy-MM-dd')"
+.\scripts\backup-storage-buckets.ps1
 ```
 
 - Backs up trainer manual PDFs, images, assets (5 buckets)
 - Takes ~5-10 minutes (233 MB currently)
-- Keep last 4 weekly backups
+- Storage backups kept separately (not counted in 7-backup limit)
 
 **5. Session Documentation (10 min)**
 
@@ -1326,8 +1342,11 @@ git push origin main
 **4. Database Backup (2-3 min)** ⚡ **CRITICAL**
 
 ```powershell
-.\scripts\backup-via-api.ps1 -BackupName "daily-$(Get-Date -Format 'yyyy-MM-dd')"
+.\scripts\backup-via-api.ps1
 ```
+
+- Creates backup: `backups/YYYY-MM-DD-daily/`
+- Automatically keeps only last 7 backups
 
 **5. Session Documentation (10 min)**
 
@@ -1528,12 +1547,12 @@ Write-Host "✅ Complete backup saved to: $backupDir" -ForegroundColor Green
 ```powershell
 # Use descriptive name explaining what you're about to do
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-.\scripts\backup-via-api.ps1 -BackupName "pre-[operation]-$timestamp"
+.\scripts\backup-via-api.ps1 -BackupType "pre-[operation]"
 
-# Examples:
-.\scripts\backup-via-api.ps1 -BackupName "pre-food-cleanup-20251209-143022"
-.\scripts\backup-via-api.ps1 -BackupName "pre-exercise-migration-20251209-090015"
-.\scripts\backup-via-api.ps1 -BackupName "pre-delete-test-data-20251209-151200"
+# Examples (creates YYYY-MM-DD-{type} format):
+.\scripts\backup-via-api.ps1 -BackupType "pre-food-cleanup"
+.\scripts\backup-via-api.ps1 -BackupType "pre-exercise-migration"
+.\scripts\backup-via-api.ps1 -BackupType "pre-delete-test-data"
 ```
 
 ---
@@ -1635,29 +1654,35 @@ Get-ChildItem backups/ | Where-Object { $_.Name -like "*test*" -or $_.Name -like
 New-Item -ItemType Directory -Force -Path "backups"
 
 # Run immediate backup
-.\scripts\backup-via-api.ps1 -BackupName "emergency-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+.\scripts\backup-via-api.ps1 -BackupType "emergency"
 ```
 
 ---
 
 ## 📞 Quick Reference
 
-**Daily Backup (CRITICAL):**
+**Daily Backup (CRITICAL - Run Every Day):**
 
 ```powershell
-.\scripts\backup-via-api.ps1 -BackupName "daily-$(Get-Date -Format 'yyyy-MM-dd')"
+.\scripts\backup-via-api.ps1
+# Creates: backups/YYYY-MM-DD-daily/
+# Auto-keeps last 7 backups
 ```
 
-**Complete Backup (Weekly + Pre-Migration):**
+**Weekly Complete Backup (Run Sunday):**
 
 ```powershell
-$timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-$backupDir = "backups/complete-$timestamp"
-New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
-npx supabase db dump --db-url="$env:DATABASE_URL" -f "$backupDir/schema.sql"
-npx supabase db dump --db-url="$env:DATABASE_URL" --data-only -f "$backupDir/data.sql"
-npx supabase gen types typescript --db-url="$env:DATABASE_URL" > "$backupDir/database.types.ts"
-.\scripts\backup-via-api.ps1 -BackupName "complete-$timestamp"
+.\scripts\backup-via-api.ps1 -BackupType "weekly-complete"
+# Creates: backups/YYYY-MM-DD-weekly-complete/
+# Auto-keeps last 7 backups
+```
+
+**Pre-Operation Backup (Before Risky Changes):**
+
+```powershell
+.\scripts\backup-via-api.ps1 -BackupType "pre-operation-name"
+# Creates: backups/YYYY-MM-DD-pre-operation-name/
+# Auto-keeps last 7 backups
 ```
 
 **Food Enrichment Check:**
