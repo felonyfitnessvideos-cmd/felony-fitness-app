@@ -443,7 +443,11 @@ function WorkoutLogPage() {
         // Determine the date for this workout (today or scheduled date, local boundaries)
         const now = new Date();
         const startOfDayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-        const scheduledDateStr = startOfDayLocal.toISOString().slice(0, 10); // for cycle_sessions
+        // Use local date instead of UTC to prevent timezone issues
+        const year = startOfDayLocal.getFullYear();
+        const month = String(startOfDayLocal.getMonth() + 1).padStart(2, '0');
+        const day = String(startOfDayLocal.getDate()).padStart(2, '0');
+        const scheduledDateStr = `${year}-${month}-${day}`; // for cycle_sessions
         
         const payload = {
           user_id: userId,
@@ -714,7 +718,11 @@ function WorkoutLogPage() {
           if (userId) await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', sessionMeta.id).eq('user_id', userId);
         } else {
           // fallback: find cycle_session by user, routine and date
-          const startDateStr = new Date(logData.created_at).toISOString().slice(0, 10);
+          const createdDate = new Date(logData.created_at);
+          const year = createdDate.getFullYear();
+          const month = String(createdDate.getMonth() + 1).padStart(2, '0');
+          const day = String(createdDate.getDate()).padStart(2, '0');
+          const startDateStr = `${year}-${month}-${day}`;
           const { data: found } = await supabase.from('cycle_sessions').select('id').eq('user_id', userId).eq('routine_id', routineId).eq('scheduled_date', startDateStr).maybeSingle();
           if (found && found.id) {
             await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', found.id).eq('user_id', userId);

@@ -68,7 +68,11 @@ function toISODate(val) {
   try {
     const d = new Date(val);
     if (isNaN(d.getTime())) return '';
-    return d.toISOString().slice(0, 10);
+    // Use local date instead of UTC to prevent timezone issues
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   } catch {
     return '';
   }

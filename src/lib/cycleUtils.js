@@ -110,7 +110,11 @@ export function generateSessionDates(startDate, assignments = []) {
     const daysOffset = (a.week_index - 1) * 7 + (a.day_index || 0);
     const d = new Date(base);
     d.setDate(base.getDate() + daysOffset);
-    const iso = d.toISOString().slice(0, 10);
+    // Use local date instead of UTC to prevent timezone issues
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const iso = `${year}-${month}-${day}`;
     return {
       week_index: a.week_index,
       day_index: a.day_index ?? 0,

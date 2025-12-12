@@ -48,6 +48,17 @@
  * destructive operations.
  */
 import React, { useEffect, useState } from 'react';
+
+/**
+ * Convert a Date object to local YYYY-MM-DD string (not UTC)
+ * This prevents timezone issues where dates show as "yesterday"
+ */
+const toLocalDateString = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 import { useParams, Link } from 'react-router-dom';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { supabase } from '../supabaseClient.js';
@@ -159,7 +170,7 @@ function MesocycleDetail() {
           // Map logs by routine_id and date for lookup
           const map = {};
           (logs || []).forEach(l => {
-            const dateKey = (new Date(l.created_at)).toISOString().slice(0,10);
+            const dateKey = toLocalDateString(new Date(l.created_at));
             const key = `${l.routine_id}::${dateKey}`;
             // Keep most recent log for each routine+date combo
             if (!map[key]) {
@@ -218,7 +229,7 @@ function MesocycleDetail() {
                 d.setDate(d.getDate() + i);
                 const weekday = d.toLocaleDateString(undefined, { weekday: 'short' });
                 const daynum = d.getDate();
-                const iso = d.toISOString().slice(0,10);
+                const iso = toLocalDateString(d);
                 items.push({ weekday, daynum, iso });
               }
             } else {
@@ -229,7 +240,7 @@ function MesocycleDetail() {
           } catch {
             // noop
           }
-          const todayIso = new Date().toISOString().slice(0,10);
+          const todayIso = toLocalDateString(new Date());
           return items.map(it => (
             <div key={it.iso || it.weekday} className={`date-pill ${it.iso === todayIso ? 'today' : ''}`}>
               <div className="date-weekday">{it.weekday}</div>
@@ -263,7 +274,7 @@ function MesocycleDetail() {
                   const daysToAdd = (currentWeekIndex - 1) * 7 + (dayIndex - 1);
                   const d = new Date(start);
                   d.setDate(d.getDate() + daysToAdd);
-                  scheduledDateStr = d.toISOString().slice(0,10);
+                  scheduledDateStr = toLocalDateString(d);
                 } catch {
                   scheduledDateStr = null;
                 }
