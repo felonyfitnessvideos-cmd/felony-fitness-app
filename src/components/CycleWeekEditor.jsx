@@ -131,6 +131,26 @@ function CycleWeekEditor({ weeks = 4, focus = 'Hypertrophy', onAssignmentsChange
 
   const weekArray = Array.from({ length: weeks }, (_, i) => i + 1);
 
+  const moveDay = (weekIndex, dayIndex, direction) => {
+    const newAssignments = [...assignments];
+    const currentIdx = newAssignments.findIndex(a => a.week_index === weekIndex && a.day_index === dayIndex);
+    const targetDayIndex = direction === 'up' ? dayIndex - 1 : dayIndex + 1;
+    const targetIdx = newAssignments.findIndex(a => a.week_index === weekIndex && a.day_index === targetDayIndex);
+    
+    if (targetDayIndex < 1 || targetDayIndex > 7) return;
+    
+    // Swap day_index values
+    if (currentIdx >= 0) {
+      newAssignments[currentIdx] = { ...newAssignments[currentIdx], day_index: targetDayIndex };
+    }
+    if (targetIdx >= 0) {
+      newAssignments[targetIdx] = { ...newAssignments[targetIdx], day_index: dayIndex };
+    }
+    
+    setAssignments(newAssignments);
+    onAssignmentsChange(newAssignments);
+  };
+
   return (
     <div className="cycle-week-editor">
       <div className="weeks-grid">
@@ -138,15 +158,38 @@ function CycleWeekEditor({ weeks = 4, focus = 'Hypertrophy', onAssignmentsChange
           const deloadWeek = isDeloadFocus(focus) && (w % 5 === 0);
           return (
             <div key={w} className="week-card">
-              <strong>Week {w} {deloadWeek ? '(Deload week)' : ''}</strong>
+              <div className="week-header">Week {w} {deloadWeek ? '(Deload week)' : ''}</div>
               <div className="assignments">
                 {[1, 2, 3, 4, 5, 6, 7].map((d) => {
                   const idx = assignments.findIndex(a => a.week_index === w && a.day_index === d);
                   const current = idx >= 0 ? assignments[idx] : { type: 'rest', routine_id: null };
+                  const selectedRoutine = routines.find(r => r.id === current.routine_id);
+                  const displayName = current.type === 'rest' ? 'Rest' : current.type === 'deload' ? 'Deload' : (selectedRoutine?.routine_name || 'Select Routine');
+                  
                   return (
-                    <div key={d} style={{ marginTop: '0.5rem' }}>
-                      <label style={{ fontSize: '0.8rem' }}>Day {d}</label>
+                    <div key={d} className="day-row">
+                      <div className="day-reorder">
+                        <button 
+                          onClick={() => moveDay(w, d, 'up')} 
+                          disabled={d === 1}
+                          className="reorder-btn"
+                          title="Move up"
+                        >
+                          ▲
+                        </button>
+                        <button 
+                          onClick={() => moveDay(w, d, 'down')} 
+                          disabled={d === 7}
+                          className="reorder-btn"
+                          title="Move down"
+                        >
+                          ▼
+                        </button>
+                      </div>
+                      <div className="day-number">Day {d}</div>
+                      <div className="day-routine">{displayName}</div>
                       <select
+                        className="day-select"
                         value={current.type === 'routine' ? (current.routine_id || '') : current.type}
                         onChange={(e) => handleSelect(w, d, e.target.value)}
                         disabled={deloadWeek}

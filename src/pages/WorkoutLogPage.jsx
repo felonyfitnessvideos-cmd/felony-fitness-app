@@ -993,10 +993,8 @@ function WorkoutLogPage() {
             <div className="input-group">
               <label>Weight</label>
               {/* Use text + inputMode to avoid mobile numeric input quirks while still
-                    presenting a numeric keyboard. Sanitize to digits but allow empty
-                    string so users can clear the field without the browser forcing a
-                    default like `1`. */}
-              <input type="text" inputMode="numeric" pattern="[0-9]*" value={currentSet.weight} onChange={(e) => setCurrentSet(prev => ({ ...prev, weight: e.target.value.replace(/\D/g, '') }))} placeholder="0" />
+                    presenting a numeric keyboard. Allow decimal points for fractional weights. */}
+              <input type="text" inputMode="decimal" pattern="[0-9.]*" value={currentSet.weight} onChange={(e) => setCurrentSet(prev => ({ ...prev, weight: e.target.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\./g, '$1') }))} placeholder="0" />
             </div>
             <div className="input-group">
               <label>Reps</label>
@@ -1021,7 +1019,7 @@ function WorkoutLogPage() {
                   >
                     {editingSet && editingSet.entryId === set.id ? (
                       <div className="edit-set-form">
-                        <input type="text" inputMode="numeric" pattern="[0-9]*" value={editSetValue.weight} onChange={(e) => setEditSetValue(prev => ({ ...prev, weight: e.target.value.replace(/\D/g, '') }))} />
+                        <input type="text" inputMode="decimal" pattern="[0-9.]*" value={editSetValue.weight} onChange={(e) => setEditSetValue(prev => ({ ...prev, weight: e.target.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\./g, '$1') }))} />
                         <span>lbs x</span>
                         <input type="text" inputMode="numeric" pattern="[0-9]*" value={editSetValue.reps} onChange={(e) => setEditSetValue(prev => ({ ...prev, reps: e.target.value.replace(/\D/g, '') }))} />
                         <button onClick={handleUpdateSet} className="edit-action-btn save" disabled={rpcLoading}><Check size={16} /></button>

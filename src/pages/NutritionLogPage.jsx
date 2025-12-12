@@ -600,10 +600,16 @@ function NutritionLogPage() {
     
     setIsAddingMealPlan(true);
     try {
-      // Fetch all user_meal_foods for this meal
+      // Fetch all user_meal_foods for this meal WITH portion data to convert servings to grams
       const { data: mealFoods, error: mealFoodsError } = await supabase
         .from('user_meal_foods')
-        .select('food_id, quantity')
+        .select(`
+          food_id, 
+          quantity,
+          foods (
+            portions (gram_weight)
+          )
+        `)
         .eq('user_meal_id', scheduledMeal.mealId);
 
       if (mealFoodsError) {
@@ -622,13 +628,24 @@ function NutritionLogPage() {
       const today = new Date();
       const logDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       
-      const nutritionLogs = mealFoods.map(mealFood => ({
-        user_id: user.id,
-        food_id: mealFood.food_id,
-        meal_type: activeMeal,
-        quantity_consumed: mealFood.quantity * (scheduledMeal.servings || 1),
-        log_date: logDate
-      }));
+      // **QUANTITY FIX**: Convert servings to grams
+      // - user_meal_foods.quantity is stored as "servings" (e.g., 2 eggs, 1 cup)
+      // - foods table has nutrition per 100g
+      // - portions table has gram_weight for each serving
+      // - Formula: quantity_servings * gram_weight_per_serving = total_grams
+      const nutritionLogs = mealFoods.map(mealFood => {
+        // Get portion gram weight (default to 100g if no portion data)
+        const gramWeight = mealFood.foods?.portions?.[0]?.gram_weight || 100;
+        const totalGrams = mealFood.quantity * (scheduledMeal.servings || 1) * gramWeight;
+        
+        return {
+          user_id: user.id,
+          food_id: mealFood.food_id,
+          meal_type: activeMeal,
+          quantity_consumed: totalGrams,
+          log_date: logDate
+        };
+      });
 
       // Bulk insert all nutrition logs
       const { error: insertError } = await supabase

@@ -697,12 +697,12 @@ const MealBuilder = ({
             {/* Selected Foods List */}
             <div className="selected-foods">
               {mealFoods.map((item, index) => (
-                <div key={`${item.food_id || 'missing'}-${index}`} className="food-item">
+                  <div key={`${item.food_id || 'missing'}-${index}`} className="food-item">
                   <div className="food-display">
                     <input
                       type="number"
-                      min="0.1"
-                      step="0.1"
+                      min="0.25"
+                      step="0.25"
                       value={item.quantity}
                       onChange={(e) => updateFoodQuantity(index, e.target.value)}
                       className="quantity-input-inline"
