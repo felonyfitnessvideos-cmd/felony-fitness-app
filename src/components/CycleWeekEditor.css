@@ -8,8 +8,40 @@
   padding: 1rem;
   border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 0.5rem;
-  min-width: 500px;
+  min-width: 300px;
   flex: 1;
+}
+
+/* Mobile responsive - make cards full width on small screens */
+@media (max-width: 640px) {
+  .week-card {
+    min-width: 100%;
+    width: 100%;
+  }
+
+  .day-row {
+    gap: 0.5rem;
+    padding: 0.375rem;
+  }
+
+  .day-number {
+    min-width: 40px;
+    font-size: 0.875rem;
+  }
+
+  .day-routine {
+    font-size: 0.875rem;
+  }
+
+  .day-select {
+    min-width: 100px;
+    font-size: 0.8rem;
+  }
+
+  .reorder-btn {
+    font-size: 0.6rem;
+    padding: 1px 4px;
+  }
 }
 
 .week-card .week-header {
