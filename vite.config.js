@@ -15,6 +15,11 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       workbox: {
+        // Clean up old caches on activation
+        cleanupOutdatedCaches: true,
+        // Skip waiting and claim clients immediately
+        skipWaiting: true,
+        clientsClaim: true,
         // Add caching strategies for better performance
         runtimeCaching: [
           {
