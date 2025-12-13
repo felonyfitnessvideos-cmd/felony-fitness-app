@@ -37,12 +37,13 @@ import ClientMessaging from '../components/ClientMessaging.jsx';
 import { supabase } from '../supabaseClient.js';
 import './DashboardPage.css';
 
-const motivationalQuotes = [
-  "Consistency beats intensity.",
-  "Your only limit is you.",
-  "Success is earned in the gym.",
-  "Strive for progress, not perfection.",
-];
+// Disabled - TODO: Smart engagement system
+// const motivationalQuotes = [
+//   "Consistency beats intensity.",
+//   "Your only limit is you.",
+//   "Success is earned in the gym.",
+//   "Strive for progress, not perfection.",
+// ];
 
 /**
  * @typedef {object} DailyGoals
@@ -118,7 +119,7 @@ function DashboardPage() {
   const userId = user?.id;
 
   // ALL HOOKS MUST BE DECLARED BEFORE ANY CONDITIONAL RETURNS
-  const [quote, setQuote] = useState('');
+  // const [quote, setQuote] = useState(''); // Disabled - TODO: Smart engagement system
   /** @type {[DailyGoals, React.Dispatch<React.SetStateAction<DailyGoals>>]} */
   const [goals, setGoals] = useState({ calories: 0, protein: 0, water: 0 });
   /** @type {[DailyNutrition, React.Dispatch<React.SetStateAction<DailyNutrition>>]} */
@@ -242,8 +243,9 @@ function DashboardPage() {
   // re-fetches if its reference changes while identity (id) remains the same.
   // We intentionally depend only on `userId` and stable callbacks below.
   useEffect(() => {
-    const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
-    setQuote(randomQuote);
+    // Quote system disabled - TODO: Smart engagement system
+    // const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+    // setQuote(randomQuote);
 
     if (userId) {
       fetchDashboardData(userId);
@@ -359,9 +361,14 @@ function DashboardPage() {
         )) : <p className="no-goals-message">No active goals set.</p>}
       </Link>
 
-      <div className="dashboard-card quote-card">
+      {/* TODO: Smart Quote System - Show personalized feedback based on user engagement
+          - Track user activity (nutrition logging, workout completion, etc.)
+          - Provide targeted encouragement or suggestions
+          - Example: "Great job logging 7 days in a row!" or "Let's get that workout logged!"
+      */}
+      {/* <div className="dashboard-card quote-card">
         <p>{quote}</p>
-      </div>
+      </div> */}
 
       {/* Client Messaging - Only visible to clients */}
       <ClientMessaging />

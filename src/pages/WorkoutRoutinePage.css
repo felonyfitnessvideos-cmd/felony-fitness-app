@@ -66,7 +66,6 @@
   background-color: var(--border-color);
 }
 
-
 /**
  * The main container for the list of routine cards.
  * Uses a flexbox column to stack the cards vertically with consistent spacing.
@@ -131,7 +130,8 @@
  * Shared base styles for the action buttons on the cards.
  * They are reset to appear as simple icons.
  */
-.routine-actions .action-button, .routine-actions button {
+.routine-actions .action-button,
+.routine-actions button {
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -157,8 +157,211 @@
 /**
  * Centered message text used for both loading states and when no routines are found.
  */
-.no-routines-message, .loading-message {
+.no-routines-message,
+.loading-message {
   text-align: center;
   color: var(--text-secondary);
   padding: 2rem;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+/**
+ * Mobile Phones (0-603px)
+ * - Compact layout
+ * - Stack action buttons if needed
+ * - Ensure touch targets
+ */
+@media (max-width: 603px) {
+  .workout-routines-container {
+    padding: 0.75rem;
+    padding-bottom: 70px;
+  }
+
+  .routine-page-actions {
+    flex-direction: column;
+    gap: 0.875rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .routine-page-actions .action-button {
+    padding: 0.875rem;
+    font-size: 0.95rem;
+  }
+
+  .routine-list {
+    max-width: 100%;
+  }
+
+  .routine-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.875rem;
+  }
+
+  .routine-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/**
+ * Tablets (604px - 1023px)
+ * - Good for tablet, maintain single column
+ * - Larger touch targets
+ * - PRIORITY: Main trainer use case
+ */
+@media (min-width: 604px) and (max-width: 1023px) {
+  .workout-routines-container {
+    padding: 1.5rem;
+    padding-bottom: 80px;
+  }
+
+  .routine-page-actions {
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .routine-page-actions .action-button {
+    padding: 1.25rem;
+    font-size: 1.05rem;
+    min-height: 56px;
+  }
+
+  .routine-list {
+    max-width: 100%; /* Match desktop - full width */
+  }
+
+  .routine-card {
+    padding: 1.25rem;
+    /* Explicitly ensure horizontal layout like desktop */
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .routine-info {
+    flex: 0 1 auto; /* Don't grow, can shrink if needed */
+    min-width: 0; /* Allow text to shrink/wrap if needed */
+  }
+
+  .routine-info h4 {
+    font-size: 1.15rem;
+  }
+
+  .routine-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0; /* Prevent actions from shrinking */
+    margin-left: auto; /* Push to the right */
+  }
+
+  .routine-actions .action-button,
+  .routine-actions button {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
+/**
+ * Desktop (1024px+)
+ * - Remove narrow max-width constraint
+ * - Better utilize horizontal space
+ * - Improve card layout
+ */
+@media (min-width: 1024px) {
+  .workout-routines-container {
+    padding: 2rem;
+    padding-bottom: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .routine-page-actions {
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    max-width: 100%; /* Match routine-list width */
+  }
+
+  .routine-page-actions .action-button {
+    padding: 1.5rem;
+    font-size: 1.1rem;
+    border-radius: 14px;
+  }
+
+  .routine-list {
+    max-width: 100%; /* Remove restrictive max-width */
+    gap: 1.25rem;
+  }
+
+  .routine-card {
+    padding: 1.5rem;
+    border-radius: 14px;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .routine-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .routine-info h4 {
+    font-size: 1.25rem;
+  }
+
+  .status-badge {
+    font-size: 0.9rem;
+  }
+
+  .routine-actions {
+    gap: 1.25rem;
+  }
+
+  .routine-actions .action-button,
+  .routine-actions button {
+    transition:
+      color 0.2s ease,
+      transform 0.1s ease;
+  }
+
+  .routine-actions .action-button:hover,
+  .routine-actions button:hover {
+    color: var(--accent-color);
+    transform: scale(1.1);
+  }
+
+  .routine-actions .action-button.danger:hover {
+    color: #dc2626;
+  }
+}
+
+/**
+ * Wide Screens (1440px+)
+ * - Even better use of space
+ * - Could consider grid layout for routines
+ */
+@media (min-width: 1440px) {
+  .workout-routines-container {
+    max-width: 1400px;
+    padding: 2.5rem;
+  }
+
+  .routine-page-actions {
+    max-width: 900px;
+  }
+
+  .routine-card {
+    padding: 1.75rem;
+  }
+
+  .routine-info h4 {
+    font-size: 1.3rem;
+  }
 }

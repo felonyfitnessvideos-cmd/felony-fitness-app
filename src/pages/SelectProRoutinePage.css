@@ -60,7 +60,9 @@
   justify-content: center;
   text-decoration: none;
   color: var(--text-primary);
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
   aspect-ratio: 1 / 1; /* Makes the cards square */
 }
 
@@ -101,3 +103,164 @@
   text-align: center;
 }
 
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+/**
+ * Mobile Phones (0-603px)
+ * - Maintain 2-column layout (good for portrait)
+ * - Adjust spacing and sizing
+ */
+@media (max-width: 603px) {
+  .select-pro-container {
+    padding: 0.75rem;
+    padding-bottom: 70px;
+  }
+
+  .page-intro {
+    margin: 1rem auto 1.5rem;
+    max-width: 100%;
+    font-size: 0.9rem;
+  }
+
+  .category-grid {
+    gap: 0.875rem;
+  }
+
+  .category-card {
+    flex-basis: calc(50% - 0.4375rem);
+    max-width: calc(50% - 0.4375rem);
+    padding: 1.25rem 1rem;
+    border-radius: 10px;
+  }
+
+  .card-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 0.75rem;
+  }
+
+  .card-name {
+    font-size: 0.9rem;
+  }
+}
+
+/**
+ * Tablets (604px - 1023px)
+ * - Keep 2-column layout (better for tablet)
+ * - Larger touch targets
+ * - PRIORITY: Main trainer use case
+ */
+@media (min-width: 604px) and (max-width: 1023px) {
+  .select-pro-container {
+    padding: 1.5rem;
+    padding-bottom: 80px;
+  }
+
+  .page-intro {
+    margin: 1.5rem auto 2rem;
+    max-width: 500px;
+    font-size: 1rem;
+  }
+
+  .category-grid {
+    gap: 1.25rem;
+  }
+
+  .category-card {
+    flex-basis: calc(50% - 0.625rem); /* 2 columns */
+    max-width: calc(50% - 0.625rem);
+    padding: 1.75rem;
+    border-radius: 14px;
+  }
+
+  .card-icon {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 1rem;
+  }
+
+  .card-name {
+    font-size: 1rem;
+  }
+}
+
+/**
+ * Desktop (1024px+)
+ * - 3-column layout with better spacing
+ * - Max-width container for centered layout
+ */
+@media (min-width: 1024px) {
+  .select-pro-container {
+    padding: 2rem;
+    padding-bottom: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .page-intro {
+    margin: 1.5rem auto 2.5rem;
+    max-width: 600px;
+    font-size: 1.05rem;
+  }
+
+  .category-grid {
+    gap: 1.5rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .category-card {
+    flex-basis: calc(33.333% - 1rem); /* 3 columns */
+    max-width: calc(33.333% - 1rem);
+    padding: 2rem;
+    border-radius: 16px;
+  }
+
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 1.25rem;
+  }
+
+  .card-name {
+    font-size: 1.1rem;
+  }
+
+  .category-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/**
+ * Wide Screens (1440px+)
+ * - Could go to 4 columns or keep 3 with more space
+ */
+@media (min-width: 1440px) {
+  .select-pro-container {
+    max-width: 1400px;
+    padding: 2.5rem;
+  }
+
+  .category-grid {
+    max-width: 1000px;
+    gap: 2rem;
+  }
+
+  .category-card {
+    flex-basis: calc(33.333% - 1.333rem);
+    max-width: calc(33.333% - 1.333rem);
+    padding: 2.25rem;
+  }
+
+  .card-icon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .card-name {
+    font-size: 1.15rem;
+  }
+}

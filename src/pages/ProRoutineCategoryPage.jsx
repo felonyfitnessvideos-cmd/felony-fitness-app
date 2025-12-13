@@ -18,7 +18,7 @@
  * local data or a cached endpoint.
  */
 
-import { Dumbbell, Info, X } from 'lucide-react';
+import { Dumbbell, Info } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Modal from 'react-modal';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -47,7 +47,7 @@ function ProRoutineCategoryPage() {
           .from('pro_routines')
           .select(`
             *,
-            exercises:pro_routine_exercises(
+            pro_routine_exercises(
               exercise_id,
               target_sets,
               target_reps,
@@ -61,6 +61,8 @@ function ProRoutineCategoryPage() {
           .eq('category', categoryName)
           .order('name', { ascending: true });
         if (error) throw error;
+        console.log('Fetched routines:', data);
+        console.log('First routine pro_routine_exercises:', data?.[0]?.pro_routine_exercises);
         setRoutines(data || []);
       } catch (error) {
         console.error(`Error fetching ${categoryName} routines:`, error);
@@ -75,13 +77,23 @@ function ProRoutineCategoryPage() {
     setSelectedRoutine(routine);
     setModalIsOpen(true);
     
+    console.log('Opening modal for routine:', routine);
+    console.log('Routine pro_routine_exercises array:', routine.pro_routine_exercises);
+    console.log('Is pro_routine_exercises an array?', Array.isArray(routine.pro_routine_exercises));
+    
     // Group exercises by exercise_id to avoid showing duplicate entries for each set
     // Each exercise appears multiple times in pro_routine_exercises (one row per set)
     const exercisesByIdMap = new Map();
     
-    if (Array.isArray(routine.exercises)) {
-      routine.exercises.forEach((ex) => {
+    // Use pro_routine_exercises instead of exercises
+    const exercisesArray = routine.pro_routine_exercises || routine.exercises || [];
+    
+    if (Array.isArray(exercisesArray)) {
+      console.log('Processing exercises, count:', exercisesArray.length);
+      exercisesArray.forEach((ex, index) => {
+        console.log(`Exercise ${index}:`, ex);
         const id = ex?.exercise_id ?? ex?.id ?? ex?.exercises?.id;
+        console.log(`Extracted ID for exercise ${index}:`, id);
         if (!id) return;
         
         if (!exercisesByIdMap.has(id)) {
@@ -101,7 +113,11 @@ function ProRoutineCategoryPage() {
           grouped.target_sets += 1;
         }
       });
+    } else {
+      console.log('exercisesArray is NOT an array or is undefined');
     }
+    
+    console.log('Exercises by ID map:', exercisesByIdMap);
     
     const exerciseIds = Array.from(exercisesByIdMap.keys());
     
@@ -218,13 +234,7 @@ function ProRoutineCategoryPage() {
       >
         {selectedRoutine && (
           <div className="routine-modal-content">
-            <div className="modal-header">
-                <h2>{selectedRoutine.name}</h2>
-                {/* ACCESSIBILITY FIX: Add aria-label and hide decorative icon. */}
-                <button onClick={closeModal} className="close-button" aria-label="Close details">
-                  <X size={24} aria-hidden="true" />
-                </button>
-            </div>
+            <h2>{selectedRoutine.name}</h2>
             <p className="modal-description">{selectedRoutine.description}</p>
             
             <h3>Exercises in this Routine:</h3>

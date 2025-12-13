@@ -42,10 +42,147 @@
   padding: 1.5rem;
   border-radius: 12px;
   border: 1px solid #4a5568;
-  transition: background-color 0.2s, transform 0.2s; /* Smooth visual feedback on hover */
+  transition:
+    background-color 0.2s,
+    transform 0.2s; /* Smooth visual feedback on hover */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.menu-card .card-icon {
+  color: var(--accent-color);
+  flex-shrink: 0;
 }
 
 .menu-card:hover {
   background-color: #4a5568;
   transform: translateY(-2px); /* Slight lift effect on hover */
+}
+
+.menu-card:hover .card-icon {
+  transform: scale(1.1);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+/**
+ * Mobile Phones (0-603px)
+ * - Compact spacing for smaller screens
+ * - Touch targets remain 44px minimum
+ */
+@media (max-width: 603px) {
+  .workouts-container {
+    padding: 0.75rem;
+    padding-bottom: 70px;
+  }
+
+  .card-menu {
+    gap: 0.875rem;
+    margin-top: 0.875rem;
+  }
+
+  .menu-card {
+    font-size: 1rem;
+    padding: 1.25rem;
+    min-height: 60px; /* Ensure adequate touch target */
+  }
+}
+
+/**
+ * Tablets (604px - 1023px)
+ * - Optimized for touch during training sessions
+ * - Larger cards for easy tapping
+ * - Better spacing for at-arm's-length viewing
+ * - PRIORITY: Main trainer use case
+ */
+@media (min-width: 604px) and (max-width: 1023px) {
+  .workouts-container {
+    padding: 1.5rem;
+    padding-bottom: 80px;
+  }
+
+  .card-menu {
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+  }
+
+  .menu-card {
+    font-size: 1.2rem;
+    padding: 1.75rem;
+    border-radius: 14px;
+    min-height: 70px; /* Comfortable touch target for tablet */
+  }
+
+  .menu-card:active {
+    transform: translateY(0); /* Tactile feedback on tap */
+    background-color: #4a5568;
+  }
+}
+
+/**
+ * Desktop (1024px - 1439px)
+ * - Consider grid layout for better space utilization
+ * - Larger cards with hover effects
+ */
+@media (min-width: 1024px) {
+  .workouts-container {
+    padding: 2rem;
+    padding-bottom: 2rem; /* No bottom nav on desktop */
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .card-menu {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .menu-card {
+    font-size: 1.25rem;
+    padding: 2rem;
+    border-radius: 16px;
+    min-height: 80px;
+  }
+
+  .menu-card:hover {
+    background-color: #4a5568;
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/**
+ * Wide Screens (1440px+)
+ * - Three column grid for better space usage
+ * - Compact cards with icons
+ */
+@media (min-width: 1440px) {
+  .workouts-container {
+    max-width: 1400px;
+    padding: 2.5rem;
+  }
+
+  .card-menu {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  .menu-card {
+    font-size: 1.1rem;
+    padding: 1rem 1.5rem;
+    min-height: 90px;
+    gap: 0.625rem;
+  }
+
+  .menu-card .card-icon {
+    width: 28px;
+    height: 28px;
+  }
 }

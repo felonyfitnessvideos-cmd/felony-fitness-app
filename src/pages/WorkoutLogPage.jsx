@@ -603,7 +603,16 @@ function WorkoutLogPage() {
         }
       }
       setPendingSetForRpe({ ...newEntry, _showRestTimer: true });
-      if (userSettingsLoaded && showRpeModal) setIsRpeModalOpen(true);
+      
+      // Handle RPE and Rest Timer independently
+      if (userSettingsLoaded && showRpeModal) {
+        // RPE enabled: show RPE modal (rest timer shows after RPE is handled)
+        setIsRpeModalOpen(true);
+      } else if (userSettingsLoaded && showRestTimer) {
+        // RPE disabled but rest timer enabled: show rest timer immediately
+        setIsTimerOpen(true);
+      }
+      
       setSaveSetLoading(false);
     } catch (err) {
       console.error('[WorkoutLog] Error in handleSaveSet:', err);
@@ -859,8 +868,8 @@ function WorkoutLogPage() {
         <SubPageHeader title={routine?.routine_name || 'Workout'} icon={<Dumbbell size={28} />} iconColor="#f97316" backTo={returnTo} />
         <button
           style={{
-            fontSize: '0.8rem',
-            padding: '4px 10px',
+            fontSize: 'clamp(0.55rem, 2vw, 0.75rem)',
+            padding: '4px 6px',
             margin: '0 0.5rem',
             borderRadius: 4,
             background: '#f97316',
@@ -868,12 +877,16 @@ function WorkoutLogPage() {
             border: 'none',
             cursor: 'pointer',
             minWidth: 0,
-            height: 28,
+            height: 'auto',
             alignSelf: 'flex-start',
             boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-            letterSpacing: 0.5,
+            letterSpacing: 0,
             fontWeight: 600,
-            lineHeight: 1
+            lineHeight: 1,
+            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}
           onClick={handleFinishWorkout}
           disabled={!workoutLogId || saveSetLoading}

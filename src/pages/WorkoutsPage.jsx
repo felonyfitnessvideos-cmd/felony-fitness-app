@@ -29,7 +29,7 @@
  */
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Dumbbell } from 'lucide-react';
+import { Dumbbell, ListChecks, Calendar, ClipboardList, Target, Lightbulb } from 'lucide-react';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import './WorkoutsPage.css';
 
@@ -57,19 +57,24 @@ function WorkoutsPage() {
       {/* A menu of links styled as cards for easy navigation. */}
       <div className="card-menu">
         <Link to="/workouts/routines" className="menu-card">
-          Routines
+          <ListChecks size={24} className="card-icon" />
+          <span>Routines</span>
         </Link>
         <Link to="/mesocycles" className="menu-card">
-          Mesocycles
+          <Calendar size={24} className="card-icon" />
+          <span>Mesocycles</span>
         </Link>
         <Link to="/workouts/select-routine-log" className="menu-card">
-          Log
+          <ClipboardList size={24} className="card-icon" />
+          <span>Log</span>
         </Link>
         <Link to="/workouts/goals" className="menu-card">
-          Goals
+          <Target size={24} className="card-icon" />
+          <span>Goals</span>
         </Link>
         <Link to="/workouts/recommendations" className="menu-card">
-          Recommendations
+          <Lightbulb size={24} className="card-icon" />
+          <span>Recommendations</span>
         </Link>
       </div>
     </div>
