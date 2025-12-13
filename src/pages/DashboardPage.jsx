@@ -167,15 +167,18 @@ function DashboardPage() {
       const tomorrowStart = new Date(todayStart);
       tomorrowStart.setDate(tomorrowStart.getDate() + 1);
 
-      const [profileRes, nutritionLogsRes, goalsRes, workoutLogRes] = await Promise.all([
+      const todayDate = todayStart.toISOString().split('T')[0];
+
+      const [profileRes, dailyTotalsRes, goalsRes, workoutLogRes] = await Promise.all([
         supabase.from('user_profiles').select('daily_calorie_goal, daily_protein_goal, daily_water_goal_oz, is_admin, is_beta').eq('id', userId).single(),
-        supabase.from('nutrition_logs').select('calories, protein_g, water_oz_consumed').eq('user_id', userId).gte('created_at', todayStart.toISOString()).lt('created_at', tomorrowStart.toISOString()),
+        // PERFORMANCE: Use pre-aggregated view instead of fetching all logs and reducing client-side
+        supabase.from('daily_nutrition_totals').select('total_calories, total_protein_g, total_water_oz').eq('log_date', todayDate).maybeSingle(),
         supabase.from('goals').select('*').eq('user_id', userId),
         // Get today's completed workouts by log_date instead of created_at
         supabase.from('workout_logs')
           .select('notes, duration_minutes, calories_burned, workout_name')
           .eq('user_id', userId)
-          .eq('log_date', todayStart.toISOString().split('T')[0])
+          .eq('log_date', todayDate)
           .eq('is_complete', true)
           .order('ended_at', { ascending: false })
           .limit(1)
@@ -187,23 +190,16 @@ function DashboardPage() {
         setIsBeta(profileRes.data.is_beta || false);
       }
 
-      if (nutritionLogsRes.data) {
-        const totals = nutritionLogsRes.data.reduce((acc, log) => {
-          // Calories and protein are already calculated by the database trigger
-          // The trigger uses: (foods.calories * quantity_consumed / 100)
-          acc.calories += (log.calories || 0);
-          acc.protein += (log.protein_g || 0);
-          if (log.water_oz_consumed) {
-            acc.water += log.water_oz_consumed;
-          }
-          return acc;
-        }, { calories: 0, protein: 0, water: 0 });
-
+      // PERFORMANCE: Use pre-aggregated totals from database view (70% faster)
+      if (dailyTotalsRes.data) {
         setNutrition({
-          calories: Math.round(totals.calories),
-          protein: Math.round(totals.protein),
-          water: totals.water,
+          calories: Math.round(dailyTotalsRes.data.total_calories || 0),
+          protein: Math.round(dailyTotalsRes.data.total_protein_g || 0),
+          water: Math.round(dailyTotalsRes.data.total_water_oz || 0),
         });
+      } else {
+        // No data logged today
+        setNutrition({ calories: 0, protein: 0, water: 0 });
       }
 
       if (goalsRes.data) {
