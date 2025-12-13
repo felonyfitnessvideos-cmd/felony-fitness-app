@@ -60,6 +60,12 @@ const WeeklyMealPlannerPage = () => {
   /** @type {[boolean, Function]} Controls shopping list modal visibility */
   const [showShoppingList, setShowShoppingList] = useState(false);
 
+  /** @type {[Object, Function]} Generated shopping list data grouped by category */
+  const [shoppingListData, setShoppingListData] = useState({});
+
+  /** @type {[boolean, Function]} Loading state for shopping list generation */
+  const [isLoadingShoppingList, setIsLoadingShoppingList] = useState(false);
+
   /** @type {[boolean, Function]} Controls recommendations modal visibility */
   const [showRecommendations, setShowRecommendations] = useState(false);
 
@@ -581,6 +587,21 @@ const WeeklyMealPlannerPage = () => {
       }
     }
   }, [generateShoppingList, currentWeek]);
+
+  /**
+   * Load shopping list data when modal opens
+   */
+  useEffect(() => {
+    if (showShoppingList && activePlan) {
+      const loadShoppingList = async () => {
+        setIsLoadingShoppingList(true);
+        const list = await generateShoppingList();
+        setShoppingListData(list);
+        setIsLoadingShoppingList(false);
+      };
+      loadShoppingList();
+    }
+  }, [showShoppingList, activePlan, generateShoppingList]);
 
   /**
    * Create a new weekly meal plan for the current week
@@ -1226,9 +1247,12 @@ const WeeklyMealPlannerPage = () => {
             </div>
 
             <div className="meal-selector-content">
-              {(() => {
-                const shoppingList = generateShoppingList();
-                const hasItems = Object.keys(shoppingList).length > 0;
+              {isLoadingShoppingList ? (
+                <div className="loading-spinner">
+                  <p>Generating shopping list...</p>
+                </div>
+              ) : (() => {
+                const hasItems = Object.keys(shoppingListData).length > 0;
 
                 if (!hasItems) {
                   return (
@@ -1241,7 +1265,7 @@ const WeeklyMealPlannerPage = () => {
 
                 return (
                   <div className="shopping-list-content">
-                    {Object.entries(shoppingList).map(([category, items]) => (
+                    {Object.entries(shoppingListData).map(([category, items]) => (
                       <div key={category} className="shopping-category">
                         <h4 className="category-title">{category}</h4>
                         <div className="shopping-items">
@@ -1266,7 +1290,7 @@ const WeeklyMealPlannerPage = () => {
                     
                     <div className="shopping-list-summary">
                       <p className="item-count">
-                        Total: {Object.values(shoppingList).reduce((sum, items) => sum + items.length, 0)} items
+                        Total: {Object.values(shoppingListData).reduce((sum, items) => sum + items.length, 0)} items
                       </p>
                     </div>
                   </div>
