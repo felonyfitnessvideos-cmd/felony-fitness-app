@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Oi6wPhDp1vDzepBrOgwRiWomhux1VMiU31K7hChhsghq8PhCflNgt7yurBxxbrA
+\restrict 50ZCh9TFModMwUCXBtqEyHyDtFDrB7ogVmli18ruhB3sBcP5SF4vTUmVJj2JNz1
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.7
@@ -401,30 +401,18 @@ CREATE TYPE storage.buckettype AS ENUM (
 
 CREATE FUNCTION analytics.get_daily_page_views(start_date date, end_date date) RETURNS TABLE(date date, page_path text, views bigint)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-BEGIN
-
-    RETURN QUERY
-
-    SELECT 
-
-        DATE(created_at) as date,
-
-        page_path,
-
-        COUNT(*) as views
-
-    FROM analytics.page_views
-
-    WHERE DATE(created_at) BETWEEN start_date AND end_date
-
-    GROUP BY DATE(created_at), page_path
-
-    ORDER BY date DESC, views DESC;
-
-END;
-
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        DATE(created_at) as date,
+        page_path,
+        COUNT(*) as views
+    FROM analytics.page_views
+    WHERE DATE(created_at) BETWEEN start_date AND end_date
+    GROUP BY DATE(created_at), page_path
+    ORDER BY date DESC, views DESC;
+END;
 $$;
 
 
@@ -834,30 +822,18 @@ $_$;
 CREATE FUNCTION public.add_tag_to_client(p_client_id uuid, p_tag_id text) RETURNS boolean
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-
-BEGIN
-
-    -- Add tag to client's tags array if not already present
-
-    UPDATE trainer_clients
-
-    SET tags = array_append(tags, p_tag_id),
-
-        updated_at = NOW()
-
-    WHERE client_id = p_client_id
-
-      AND trainer_id = auth.uid()
-
-      AND NOT (p_tag_id = ANY(tags)); -- Only add if not already present
-
-    
-
-    RETURN FOUND;
-
-END;
-
+    AS $$
+BEGIN
+    -- Add tag to client's tags array if not already present
+    UPDATE trainer_clients
+    SET tags = array_append(tags, p_tag_id),
+        updated_at = NOW()
+    WHERE client_id = p_client_id
+      AND trainer_id = auth.uid()
+      AND NOT (p_tag_id = ANY(tags)); -- Only add if not already present
+    
+    RETURN FOUND;
+END;
 $$;
 
 
@@ -867,86 +843,46 @@ $$;
 
 CREATE FUNCTION public.calculate_complexity_score(food_name text) RETURNS integer
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-
-DECLARE
-
-  base_score INTEGER := 70;  -- Start at "common"
-
-  word_count INTEGER;
-
-  comma_count INTEGER;
-
-  paren_penalty INTEGER;
-
-  length_penalty INTEGER;
-
-  qualifier_penalty INTEGER;
-
-  final_score INTEGER;
-
-BEGIN
-
-  -- Count words (split by spaces/commas)
-
-  word_count := array_length(regexp_split_to_array(food_name, '[,\s]+'), 1);
-
-  
-
-  -- Count commas (complex descriptions)
-
-  comma_count := LENGTH(food_name) - LENGTH(REPLACE(food_name, ',', ''));
-
-  
-
-  -- Parentheses indicate qualifiers
-
-  paren_penalty := CASE WHEN food_name LIKE '%(%)%' THEN 10 ELSE 0 END;
-
-  
-
-  -- Length penalty (very long names = obscure)
-
-  length_penalty := GREATEST(0, (LENGTH(food_name) - 20) / 3);
-
-  
-
-  -- Qualifier words that indicate specialty items
-
-  qualifier_penalty := 0;
-
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%frozen%' THEN 3 ELSE 0 END;
-
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%canned%' THEN 3 ELSE 0 END;
-
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%dried%' THEN 3 ELSE 0 END;
-
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%powdered%' THEN 5 ELSE 0 END;
-
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%imitation%' THEN 8 ELSE 0 END;
-
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%prepared%' THEN 2 ELSE 0 END;
-
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%restaurant%' THEN 5 ELSE 0 END;
-
-  
-
-  -- Calculate final score
-
-  final_score := base_score - (word_count * 3) - (comma_count * 5) - paren_penalty - length_penalty - qualifier_penalty;
-
-  
-
-  -- Clamp to valid range (11-70 for auto-calculated scores)
-
-  -- Don't go below 11 (reserve 1-10 for manual rare assignments)
-
-  -- Don't go above 70 (reserve 71-100 for manual staples)
-
-  RETURN GREATEST(11, LEAST(70, final_score));
-
-END;
-
+    AS $$
+DECLARE
+  base_score INTEGER := 70;  -- Start at "common"
+  word_count INTEGER;
+  comma_count INTEGER;
+  paren_penalty INTEGER;
+  length_penalty INTEGER;
+  qualifier_penalty INTEGER;
+  final_score INTEGER;
+BEGIN
+  -- Count words (split by spaces/commas)
+  word_count := array_length(regexp_split_to_array(food_name, '[,\s]+'), 1);
+  
+  -- Count commas (complex descriptions)
+  comma_count := LENGTH(food_name) - LENGTH(REPLACE(food_name, ',', ''));
+  
+  -- Parentheses indicate qualifiers
+  paren_penalty := CASE WHEN food_name LIKE '%(%)%' THEN 10 ELSE 0 END;
+  
+  -- Length penalty (very long names = obscure)
+  length_penalty := GREATEST(0, (LENGTH(food_name) - 20) / 3);
+  
+  -- Qualifier words that indicate specialty items
+  qualifier_penalty := 0;
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%frozen%' THEN 3 ELSE 0 END;
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%canned%' THEN 3 ELSE 0 END;
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%dried%' THEN 3 ELSE 0 END;
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%powdered%' THEN 5 ELSE 0 END;
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%imitation%' THEN 8 ELSE 0 END;
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%prepared%' THEN 2 ELSE 0 END;
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%restaurant%' THEN 5 ELSE 0 END;
+  
+  -- Calculate final score
+  final_score := base_score - (word_count * 3) - (comma_count * 5) - paren_penalty - length_penalty - qualifier_penalty;
+  
+  -- Clamp to valid range (11-70 for auto-calculated scores)
+  -- Don't go below 11 (reserve 1-10 for manual rare assignments)
+  -- Don't go above 70 (reserve 71-100 for manual staples)
+  RETURN GREATEST(11, LEAST(70, final_score));
+END;
 $$;
 
 
@@ -956,55 +892,110 @@ $$;
 
 CREATE FUNCTION public.calculate_nutrition_from_food() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-
-DECLARE
-
-  food_data RECORD;
-
-BEGIN
-
-  -- Only calculate if food_id is provided and nutrition fields are NULL
-
-  IF NEW.food_id IS NOT NULL THEN
-
-    -- Get food nutrition data
-
-    SELECT calories, protein_g, carbs_g, fat_g
-
-    INTO food_data
-
-    FROM foods
-
-    WHERE id = NEW.food_id;
-
-
-
-    IF FOUND THEN
-
-      -- Calculate nutrition based on quantity consumed
-
-      -- Foods table stores per 100g, so multiply by quantity_consumed
-
-      NEW.calories := ROUND((food_data.calories::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-
-      NEW.protein_g := ROUND((food_data.protein_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-
-      NEW.carbs_g := ROUND((food_data.carbs_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-
-      NEW.fat_g := ROUND((food_data.fat_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-
-    END IF;
-
-  END IF;
-
-
-
-  RETURN NEW;
-
-END;
-
+    AS $$
+DECLARE
+  food_data RECORD;
+BEGIN
+  -- Only calculate if food_id is provided and nutrition fields are NULL
+  IF NEW.food_id IS NOT NULL THEN
+    -- Get food nutrition data
+    SELECT calories, protein_g, carbs_g, fat_g
+    INTO food_data
+    FROM foods
+    WHERE id = NEW.food_id;
+
+    IF FOUND THEN
+      -- Calculate nutrition based on quantity consumed
+      -- Foods table stores per 100g, so multiply by quantity_consumed
+      NEW.calories := ROUND((food_data.calories::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+      NEW.protein_g := ROUND((food_data.protein_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+      NEW.carbs_g := ROUND((food_data.carbs_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+      NEW.fat_g := ROUND((food_data.fat_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
 $$;
+
+
+--
+-- Name: generate_shopping_list(uuid, date, date); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.generate_shopping_list(p_plan_id uuid, p_start_date date DEFAULT NULL::date, p_end_date date DEFAULT NULL::date) RETURNS TABLE(food_id bigint, food_name text, total_quantity numeric, category text, days_needed date[], meal_count bigint)
+    LANGUAGE sql STABLE
+    AS $$
+  SELECT
+    f.id,
+    f.name::TEXT,
+    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
+    COALESCE(f.category, 'Other')::TEXT,
+    ARRAY_AGG(DISTINCT wmpe.plan_date ORDER BY wmpe.plan_date)::DATE[],
+    COUNT(DISTINCT wmpe.id)::BIGINT
+  FROM weekly_meal_plan_entries wmpe
+  JOIN user_meals um ON wmpe.user_meal_id = um.id
+  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
+  JOIN foods f ON umf.food_id = f.id
+  WHERE 
+    wmpe.plan_id = p_plan_id
+    AND wmpe.user_meal_id IS NOT NULL
+    AND (p_start_date IS NULL OR wmpe.plan_date >= p_start_date)
+    AND (p_end_date IS NULL OR wmpe.plan_date <= p_end_date)
+  GROUP BY f.id
+  ORDER BY 
+    COALESCE(f.category, 'Other'),
+    f.name
+$$;
+
+
+--
+-- Name: FUNCTION generate_shopping_list(p_plan_id uuid, p_start_date date, p_end_date date); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.generate_shopping_list(p_plan_id uuid, p_start_date date, p_end_date date) IS 'Generates aggregated shopping list from weekly meal plan. Optimized for performance with 81% reduction in processing time.';
+
+
+--
+-- Name: generate_shopping_list_with_nutrition(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.generate_shopping_list_with_nutrition(p_plan_id uuid) RETURNS TABLE(food_id bigint, food_name text, total_quantity numeric, category text, days_needed date[], total_calories numeric, total_protein_g numeric, total_carbs_g numeric, total_fat_g numeric, calories_per_serving numeric, protein_per_serving numeric)
+    LANGUAGE sql STABLE
+    AS $$
+  SELECT
+    f.id,
+    f.name::TEXT,
+    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
+    COALESCE(f.category, 'Other')::TEXT,
+    ARRAY_AGG(DISTINCT wmpe.plan_date ORDER BY wmpe.plan_date)::DATE[],
+    -- Total nutrition for all servings
+    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.calories)::NUMERIC(10,2),
+    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.protein_g)::NUMERIC(10,2),
+    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.carbs_g)::NUMERIC(10,2),
+    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.fat_g)::NUMERIC(10,2),
+    -- Reference values
+    f.calories::NUMERIC(10,2),
+    f.protein_g::NUMERIC(10,2)
+  FROM weekly_meal_plan_entries wmpe
+  JOIN user_meals um ON wmpe.user_meal_id = um.id
+  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
+  JOIN foods f ON umf.food_id = f.id
+  WHERE 
+    wmpe.plan_id = p_plan_id
+    AND wmpe.user_meal_id IS NOT NULL
+  GROUP BY f.id
+  ORDER BY 
+    COALESCE(f.category, 'Other'),
+    f.name
+$$;
+
+
+--
+-- Name: FUNCTION generate_shopping_list_with_nutrition(p_plan_id uuid); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.generate_shopping_list_with_nutrition(p_plan_id uuid) IS 'Shopping list with nutritional breakdown. Shows total nutrition for all planned servings.';
 
 
 --
@@ -1013,34 +1004,20 @@ $$;
 
 CREATE FUNCTION public.generate_simplified_name(original_name text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-
-BEGIN
-
-  -- Convert to lowercase
-
-  -- Remove punctuation (keep only letters, numbers, spaces)
-
-  -- Normalize whitespace
-
-  RETURN lower(
-
-    trim(
-
-      regexp_replace(
-
-        regexp_replace(original_name, '[^a-zA-Z0-9\s]', ' ', 'g'),
-
-        '\s+', ' ', 'g'
-
-      )
-
-    )
-
-  );
-
-END;
-
+    AS $$
+BEGIN
+  -- Convert to lowercase
+  -- Remove punctuation (keep only letters, numbers, spaces)
+  -- Normalize whitespace
+  RETURN lower(
+    trim(
+      regexp_replace(
+        regexp_replace(original_name, '[^a-zA-Z0-9\s]', ' ', 'g'),
+        '\s+', ' ', 'g'
+      )
+    )
+  );
+END;
 $$;
 
 
@@ -1051,32 +1028,19 @@ $$;
 CREATE FUNCTION public.get_clients_by_tag(p_tag_id text) RETURNS TABLE(client_id uuid, full_name text, email text, tags text[])
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-
-BEGIN
-
-    RETURN QUERY
-
-    SELECT 
-
-        tc.client_id,
-
-        tc.full_name,
-
-        tc.email,
-
-        tc.tags
-
-    FROM trainer_clients tc
-
-    WHERE tc.trainer_id = auth.uid()
-
-      AND p_tag_id = ANY(tc.tags)
-
-      AND tc.status = 'active';
-
-END;
-
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        tc.client_id,
+        tc.full_name,
+        tc.email,
+        tc.tags
+    FROM trainer_clients tc
+    WHERE tc.trainer_id = auth.uid()
+      AND p_tag_id = ANY(tc.tags)
+      AND tc.status = 'active';
+END;
 $$;
 
 
@@ -1086,68 +1050,37 @@ $$;
 
 CREATE FUNCTION public.get_conversations() RETURNS TABLE(conversation_user_id uuid, conversation_user_name text, last_message text, last_message_time timestamp with time zone, unread_count bigint, is_trainer boolean)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-DECLARE
-
-    current_user_id UUID;
-
-BEGIN
-
-    current_user_id := auth.uid();
-
-    
-
-    IF current_user_id IS NULL THEN
-
-        RAISE EXCEPTION 'Authentication required';
-
-    END IF;
-
-    
-
-    RETURN QUERY
-
-    WITH conversation_partners AS (
-
-        SELECT DISTINCT
-
-            CASE 
-
-                WHEN dm.sender_id = current_user_id THEN dm.recipient_id
-
-                ELSE dm.sender_id 
-
-            END as partner_id
-
-        FROM direct_messages dm
-
-        WHERE dm.sender_id = current_user_id OR dm.recipient_id = current_user_id
-
-    )
-
-    SELECT 
-
-        cp.partner_id as conversation_user_id,
-
-        COALESCE(up.first_name || ' ' || up.last_name, up.email, 'Unknown User') as conversation_user_name,
-
-        ''::TEXT as last_message,
-
-        NOW()::TIMESTAMP WITH TIME ZONE as last_message_time,
-
-        0::BIGINT as unread_count,
-
-        false as is_trainer
-
-    FROM conversation_partners cp
-
-    LEFT JOIN user_profiles up ON up.id = cp.partner_id OR up.user_id = cp.partner_id
-
-    LIMIT 10;
-
-END;
-
+    AS $$
+DECLARE
+    current_user_id UUID;
+BEGIN
+    current_user_id := auth.uid();
+    
+    IF current_user_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required';
+    END IF;
+    
+    RETURN QUERY
+    WITH conversation_partners AS (
+        SELECT DISTINCT
+            CASE 
+                WHEN dm.sender_id = current_user_id THEN dm.recipient_id
+                ELSE dm.sender_id 
+            END as partner_id
+        FROM direct_messages dm
+        WHERE dm.sender_id = current_user_id OR dm.recipient_id = current_user_id
+    )
+    SELECT 
+        cp.partner_id as conversation_user_id,
+        COALESCE(up.first_name || ' ' || up.last_name, up.email, 'Unknown User') as conversation_user_name,
+        ''::TEXT as last_message,
+        NOW()::TIMESTAMP WITH TIME ZONE as last_message_time,
+        0::BIGINT as unread_count,
+        false as is_trainer
+    FROM conversation_partners cp
+    LEFT JOIN user_profiles up ON up.id = cp.partner_id OR up.user_id = cp.partner_id
+    LIMIT 10;
+END;
 $$;
 
 
@@ -1157,32 +1090,19 @@ $$;
 
 CREATE FUNCTION public.get_enrichment_status() RETURNS TABLE(status text, count bigint, avg_quality_before numeric, avg_quality_after numeric, total_improvements bigint)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-BEGIN
-
-    RETURN QUERY
-
-    SELECT 
-
-        q.status,
-
-        COUNT(*)::BIGINT as count,
-
-        AVG(q.quality_score_before)::NUMERIC as avg_quality_before,
-
-        AVG(q.quality_score_after)::NUMERIC as avg_quality_after,
-
-        COUNT(CASE WHEN q.quality_score_after > q.quality_score_before THEN 1 END)::BIGINT as total_improvements
-
-    FROM public.nutrition_enrichment_queue q
-
-    GROUP BY q.status
-
-    ORDER BY q.status;
-
-END;
-
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        q.status,
+        COUNT(*)::BIGINT as count,
+        AVG(q.quality_score_before)::NUMERIC as avg_quality_before,
+        AVG(q.quality_score_after)::NUMERIC as avg_quality_after,
+        COUNT(CASE WHEN q.quality_score_after > q.quality_score_before THEN 1 END)::BIGINT as total_improvements
+    FROM public.nutrition_enrichment_queue q
+    GROUP BY q.status
+    ORDER BY q.status;
+END;
 $$;
 
 
@@ -1192,78 +1112,42 @@ $$;
 
 CREATE FUNCTION public.get_quality_distribution() RETURNS TABLE(quality_range text, count bigint, percentage numeric)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-DECLARE
-
-    total_foods BIGINT;
-
-BEGIN
-
-    -- Get total count
-
-    SELECT COUNT(*) INTO total_foods FROM public.food_servings;
-
-    
-
-    -- Prevent division by zero
-
-    IF total_foods = 0 THEN
-
-        total_foods := 1;
-
-    END IF;
-
-    
-
-    RETURN QUERY
-
-    SELECT 
-
-        CASE 
-
-            WHEN f.quality_score = 0 THEN 'Not Scored (0)'
-
-            WHEN f.quality_score > 0 AND f.quality_score < 50 THEN 'Poor (1-49)'
-
-            WHEN f.quality_score >= 50 AND f.quality_score < 70 THEN 'Fair (50-69)'
-
-            WHEN f.quality_score >= 70 AND f.quality_score < 85 THEN 'Good (70-84)'
-
-            WHEN f.quality_score >= 85 THEN 'Excellent (85-100)'
-
-            ELSE 'Unknown'
-
-        END as quality_range,
-
-        COUNT(*)::BIGINT as count,
-
-        ROUND((COUNT(*)::NUMERIC / total_foods * 100), 2) as percentage
-
-    FROM public.food_servings f
-
-    GROUP BY quality_range
-
-    ORDER BY 
-
-        CASE quality_range
-
-            WHEN 'Excellent (85-100)' THEN 1
-
-            WHEN 'Good (70-84)' THEN 2
-
-            WHEN 'Fair (50-69)' THEN 3
-
-            WHEN 'Poor (1-49)' THEN 4
-
-            WHEN 'Not Scored (0)' THEN 5
-
-            ELSE 6
-
-        END;
-
-END;
-
+    AS $$
+DECLARE
+    total_foods BIGINT;
+BEGIN
+    -- Get total count
+    SELECT COUNT(*) INTO total_foods FROM public.food_servings;
+    
+    -- Prevent division by zero
+    IF total_foods = 0 THEN
+        total_foods := 1;
+    END IF;
+    
+    RETURN QUERY
+    SELECT 
+        CASE 
+            WHEN f.quality_score = 0 THEN 'Not Scored (0)'
+            WHEN f.quality_score > 0 AND f.quality_score < 50 THEN 'Poor (1-49)'
+            WHEN f.quality_score >= 50 AND f.quality_score < 70 THEN 'Fair (50-69)'
+            WHEN f.quality_score >= 70 AND f.quality_score < 85 THEN 'Good (70-84)'
+            WHEN f.quality_score >= 85 THEN 'Excellent (85-100)'
+            ELSE 'Unknown'
+        END as quality_range,
+        COUNT(*)::BIGINT as count,
+        ROUND((COUNT(*)::NUMERIC / total_foods * 100), 2) as percentage
+    FROM public.food_servings f
+    GROUP BY quality_range
+    ORDER BY 
+        CASE quality_range
+            WHEN 'Excellent (85-100)' THEN 1
+            WHEN 'Good (70-84)' THEN 2
+            WHEN 'Fair (50-69)' THEN 3
+            WHEN 'Poor (1-49)' THEN 4
+            WHEN 'Not Scored (0)' THEN 5
+            ELSE 6
+        END;
+END;
 $$;
 
 
@@ -1273,37 +1157,53 @@ $$;
 
 CREATE FUNCTION public.get_random_tip() RETURNS TABLE(tip text, category text)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-DECLARE
-
-  tips TEXT[] := ARRAY[
-
-    'Aim for 0.8-1g of protein per kg of body weight daily',
-
-    'Drink water before you feel thirsty to stay properly hydrated',
-
-    'Include colorful vegetables in every meal for maximum nutrients',
-
-    'Eat protein within 30 minutes after strength training',
-
-    'Choose whole grains over refined grains for sustained energy'
-
-  ];
-
-  categories TEXT[] := ARRAY['Protein', 'Hydration', 'Vegetables', 'Recovery', 'Carbohydrates'];
-
-  random_index INT;
-
-BEGIN
-
-  random_index := floor(random() * array_length(tips, 1)) + 1;
-
-  RETURN QUERY SELECT tips[random_index], categories[random_index];
-
-END;
-
+    AS $$
+DECLARE
+  tips TEXT[] := ARRAY[
+    'Aim for 0.8-1g of protein per kg of body weight daily',
+    'Drink water before you feel thirsty to stay properly hydrated',
+    'Include colorful vegetables in every meal for maximum nutrients',
+    'Eat protein within 30 minutes after strength training',
+    'Choose whole grains over refined grains for sustained energy'
+  ];
+  categories TEXT[] := ARRAY['Protein', 'Hydration', 'Vegetables', 'Recovery', 'Carbohydrates'];
+  random_index INT;
+BEGIN
+  random_index := floor(random() * array_length(tips, 1)) + 1;
+  RETURN QUERY SELECT tips[random_index], categories[random_index];
+END;
 $$;
+
+
+--
+-- Name: get_shopping_list_category_summary(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.get_shopping_list_category_summary(p_plan_id uuid) RETURNS TABLE(category text, unique_foods bigint, total_items numeric, estimated_calories numeric)
+    LANGUAGE sql STABLE
+    AS $$
+  SELECT
+    COALESCE(f.category, 'Other')::TEXT,
+    COUNT(DISTINCT f.id)::BIGINT,
+    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
+    SUM(umf.quantity * COALESCE(wmpe.servings, 1) * f.calories)::NUMERIC(10,2)
+  FROM weekly_meal_plan_entries wmpe
+  JOIN user_meals um ON wmpe.user_meal_id = um.id
+  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
+  JOIN foods f ON umf.food_id = f.id
+  WHERE 
+    wmpe.plan_id = p_plan_id
+    AND wmpe.user_meal_id IS NOT NULL
+  GROUP BY COALESCE(f.category, 'Other')
+  ORDER BY 1
+$$;
+
+
+--
+-- Name: FUNCTION get_shopping_list_category_summary(p_plan_id uuid); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.get_shopping_list_category_summary(p_plan_id uuid) IS 'Category-level summary for shopping list. Shows counts and totals per category.';
 
 
 --
@@ -1312,58 +1212,32 @@ $$;
 
 CREATE FUNCTION public.get_user_tags(target_user_id uuid DEFAULT NULL::uuid) RETURNS TABLE(tag_id uuid, tag_name character varying, tag_description text, tag_color character varying, assigned_at timestamp with time zone, assigned_by uuid)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-DECLARE
-
-    current_user_id UUID;
-
-    query_user_id UUID;
-
-BEGIN
-
-    current_user_id := auth.uid();
-
-    
-
-    IF current_user_id IS NULL THEN
-
-        RAISE EXCEPTION 'Authentication required';
-
-    END IF;
-
-    
-
-    query_user_id := COALESCE(target_user_id, current_user_id);
-
-    
-
-    RETURN QUERY
-
-    SELECT 
-
-        t.id as tag_id,
-
-        t.name as tag_name,
-
-        t.description as tag_description,
-
-        t.color as tag_color,
-
-        ut.assigned_at,
-
-        ut.assigned_by
-
-    FROM user_tags ut
-
-    JOIN tags t ON t.id = ut.tag_id
-
-    WHERE ut.user_id = query_user_id
-
-    ORDER BY ut.assigned_at DESC;
-
-END;
-
+    AS $$
+DECLARE
+    current_user_id UUID;
+    query_user_id UUID;
+BEGIN
+    current_user_id := auth.uid();
+    
+    IF current_user_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required';
+    END IF;
+    
+    query_user_id := COALESCE(target_user_id, current_user_id);
+    
+    RETURN QUERY
+    SELECT 
+        t.id as tag_id,
+        t.name as tag_name,
+        t.description as tag_description,
+        t.color as tag_color,
+        ut.assigned_at,
+        ut.assigned_by
+    FROM user_tags ut
+    JOIN tags t ON t.id = ut.tag_id
+    WHERE ut.user_id = query_user_id
+    ORDER BY ut.assigned_at DESC;
+END;
 $$;
 
 
@@ -1373,34 +1247,20 @@ $$;
 
 CREATE FUNCTION public.get_verification_stats() RETURNS TABLE(total_foods bigint, verified_foods bigint, needs_review_foods bigint, pending_verification_foods bigint, verification_rate numeric)
     LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-
-  RETURN QUERY
-
-  SELECT 
-
-    COUNT(*)::BIGINT as total_foods,
-
-    COUNT(*) FILTER (WHERE is_verified = TRUE)::BIGINT as verified_foods,
-
-    COUNT(*) FILTER (WHERE needs_review = TRUE)::BIGINT as needs_review_foods,
-
-    COUNT(*) FILTER (WHERE enrichment_status IN ('completed', 'verified') AND (is_verified IS NULL OR is_verified = FALSE))::BIGINT as pending_verification_foods,
-
-    ROUND(
-
-      (COUNT(*) FILTER (WHERE is_verified = TRUE)::NUMERIC / NULLIF(COUNT(*), 0) * 100),
-
-      2
-
-    ) as verification_rate
-
-  FROM food_servings;
-
-END;
-
+    AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    COUNT(*)::BIGINT as total_foods,
+    COUNT(*) FILTER (WHERE is_verified = TRUE)::BIGINT as verified_foods,
+    COUNT(*) FILTER (WHERE needs_review = TRUE)::BIGINT as needs_review_foods,
+    COUNT(*) FILTER (WHERE enrichment_status IN ('completed', 'verified') AND (is_verified IS NULL OR is_verified = FALSE))::BIGINT as pending_verification_foods,
+    ROUND(
+      (COUNT(*) FILTER (WHERE is_verified = TRUE)::NUMERIC / NULLIF(COUNT(*), 0) * 100),
+      2
+    ) as verification_rate
+  FROM food_servings;
+END;
 $$;
 
 
@@ -1410,20 +1270,13 @@ $$;
 
 CREATE FUNCTION public.handle_new_user() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-BEGIN
-
-    INSERT INTO public.user_profiles (id, user_id, email, created_at, updated_at)
-
-    VALUES (NEW.id, NEW.id, NEW.email, NOW(), NOW());
-
-    
-
-    RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+    INSERT INTO public.user_profiles (id, user_id, email, created_at, updated_at)
+    VALUES (NEW.id, NEW.id, NEW.email, NOW(), NOW());
+    
+    RETURN NEW;
+END;
 $$;
 
 
@@ -1433,30 +1286,18 @@ $$;
 
 CREATE FUNCTION public.increment_food_log_count() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-
-  -- Increment times_logged for the food that was just logged
-
-  -- nutrition_logs now has food_id directly (no food_servings table)
-
-  UPDATE foods
-
-  SET 
-
-    times_logged = times_logged + 1,
-
-    last_logged_at = NEW.created_at
-
-  WHERE id = NEW.food_id;
-
-  
-
-  RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+  -- Increment times_logged for the food that was just logged
+  -- nutrition_logs now has food_id directly (no food_servings table)
+  UPDATE foods
+  SET 
+    times_logged = times_logged + 1,
+    last_logged_at = NEW.created_at
+  WHERE id = NEW.food_id;
+  
+  RETURN NEW;
+END;
 $$;
 
 
@@ -1465,23 +1306,15 @@ $$;
 --
 
 CREATE FUNCTION public.is_admin() RETURNS boolean
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-BEGIN
-
-  RETURN EXISTS (
-
-    SELECT 1 FROM user_profiles
-
-    WHERE id = (SELECT auth.uid())
-
-    AND is_admin = true
-
-  );
-
-END;
-
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'auth'
+    AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.user_profiles
+    WHERE id = auth.uid() 
+    AND is_admin = true
+  );
 $$;
 
 
@@ -1490,23 +1323,15 @@ $$;
 --
 
 CREATE FUNCTION public.is_trainer() RETURNS boolean
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-BEGIN
-
-  RETURN EXISTS (
-
-    SELECT 1 FROM user_profiles
-
-    WHERE id = (SELECT auth.uid())
-
-    AND is_trainer = true
-
-  );
-
-END;
-
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'auth'
+    AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.user_profiles
+    WHERE id = auth.uid() 
+    AND is_trainer = true
+  );
 $$;
 
 
@@ -1515,25 +1340,16 @@ $$;
 --
 
 CREATE FUNCTION public.is_trainer_for_client(client_id uuid) RETURNS boolean
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-BEGIN
-
-  RETURN EXISTS (
-
-    SELECT 1 FROM trainer_clients
-
-    WHERE trainer_id = (SELECT auth.uid())
-
-    AND client_id = client_id
-
-    AND status = 'active'
-
-  );
-
-END;
-
+    LANGUAGE sql STABLE SECURITY DEFINER
+    SET search_path TO 'public', 'auth'
+    AS $$
+  SELECT EXISTS (
+    SELECT 1 
+    FROM public.trainer_clients
+    WHERE trainer_id = auth.uid() 
+    AND trainer_clients.client_id = is_trainer_for_client.client_id
+    AND status = 'active'
+  );
 $$;
 
 
@@ -1543,122 +1359,80 @@ $$;
 
 CREATE FUNCTION public.log_food_item(p_external_food jsonb DEFAULT NULL::jsonb, p_food_serving_id uuid DEFAULT NULL::uuid, p_meal_type text DEFAULT 'Snack'::text, p_quantity_consumed numeric DEFAULT 1.0, p_user_id uuid DEFAULT NULL::uuid, p_log_date date DEFAULT CURRENT_DATE) RETURNS jsonb
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-DECLARE
-
-  v_food_serving_id UUID;
-
-  v_result JSONB;
-
-  v_user_id UUID;
-
-BEGIN
-
-  v_user_id := COALESCE(p_user_id, auth.uid());
-
-  
-
-  IF v_user_id IS NULL THEN
-
-    RETURN json_build_object('error', 'Authentication required');
-
-  END IF;
-
-
-
-  IF p_external_food IS NOT NULL THEN
-
-    SELECT f.id INTO v_food_serving_id
-
-    FROM food_servings f
-
-    WHERE LOWER(f.food_name) = LOWER(p_external_food->>'name')
-
-    AND LOWER(f.serving_description) = LOWER(p_external_food->>'serving_description')
-
-    LIMIT 1;
-
-    
-
-    IF v_food_serving_id IS NULL THEN
-
-      INSERT INTO food_servings (
-
-        food_name, serving_description, calories, protein_g, carbs_g, fat_g, 
-
-        fiber_g, sugar_g, sodium_mg, calcium_mg, iron_mg, vitamin_c_mg
-
-      ) VALUES (
-
-        p_external_food->>'name',
-
-        p_external_food->>'serving_description',
-
-        COALESCE((p_external_food->>'calories')::DECIMAL, 0),
-
-        COALESCE((p_external_food->>'protein_g')::DECIMAL, 0),
-
-        COALESCE((p_external_food->>'carbs_g')::DECIMAL, 0),
-
-        COALESCE((p_external_food->>'fat_g')::DECIMAL, 0),
-
-        COALESCE((p_external_food->>'fiber_g')::DECIMAL, 0),
-
-        COALESCE((p_external_food->>'sugar_g')::DECIMAL, 0),
-
-        COALESCE((p_external_food->>'sodium_mg')::DECIMAL, 0),
-
-        COALESCE((p_external_food->>'calcium_mg')::DECIMAL, 0),
-
-        COALESCE((p_external_food->>'iron_mg')::DECIMAL, 0),
-
-        COALESCE((p_external_food->>'vitamin_c_mg')::DECIMAL, 0)
-
-      ) RETURNING id INTO v_food_serving_id;
-
-    END IF;
-
-  ELSE
-
-    v_food_serving_id := p_food_serving_id;
-
-  END IF;
+    AS $$
+DECLARE
+  v_food_serving_id UUID;
+  v_result JSONB;
+  v_user_id UUID;
+BEGIN
+  v_user_id := COALESCE(p_user_id, auth.uid());
+  
+  IF v_user_id IS NULL THEN
+    RETURN json_build_object('error', 'Authentication required');
+  END IF;
+
+  IF p_external_food IS NOT NULL THEN
+    SELECT f.id INTO v_food_serving_id
+    FROM food_servings f
+    WHERE LOWER(f.food_name) = LOWER(p_external_food->>'name')
+    AND LOWER(f.serving_description) = LOWER(p_external_food->>'serving_description')
+    LIMIT 1;
+    
+    IF v_food_serving_id IS NULL THEN
+      INSERT INTO food_servings (
+        food_name, serving_description, calories, protein_g, carbs_g, fat_g, 
+        fiber_g, sugar_g, sodium_mg, calcium_mg, iron_mg, vitamin_c_mg
+      ) VALUES (
+        p_external_food->>'name',
+        p_external_food->>'serving_description',
+        COALESCE((p_external_food->>'calories')::DECIMAL, 0),
+        COALESCE((p_external_food->>'protein_g')::DECIMAL, 0),
+        COALESCE((p_external_food->>'carbs_g')::DECIMAL, 0),
+        COALESCE((p_external_food->>'fat_g')::DECIMAL, 0),
+        COALESCE((p_external_food->>'fiber_g')::DECIMAL, 0),
+        COALESCE((p_external_food->>'sugar_g')::DECIMAL, 0),
+        COALESCE((p_external_food->>'sodium_mg')::DECIMAL, 0),
+        COALESCE((p_external_food->>'calcium_mg')::DECIMAL, 0),
+        COALESCE((p_external_food->>'iron_mg')::DECIMAL, 0),
+        COALESCE((p_external_food->>'vitamin_c_mg')::DECIMAL, 0)
+      ) RETURNING id INTO v_food_serving_id;
+    END IF;
+  ELSE
+    v_food_serving_id := p_food_serving_id;
+  END IF;
+
+  INSERT INTO nutrition_logs (
+    user_id, food_serving_id, meal_type, quantity_consumed, log_date
+  ) VALUES (
+    v_user_id, v_food_serving_id, p_meal_type, p_quantity_consumed, p_log_date
+  );
+
+  RETURN json_build_object(
+    'success', true,
+    'message', 'Food logged successfully',
+    'food_serving_id', v_food_serving_id
+  );
+
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN json_build_object('error', 'Failed to log food: ' || SQLERRM);
+END;
+$$;
 
 
+--
+-- Name: refresh_meal_plan_nutrition(); Type: FUNCTION; Schema: public; Owner: -
+--
 
-  INSERT INTO nutrition_logs (
-
-    user_id, food_serving_id, meal_type, quantity_consumed, log_date
-
-  ) VALUES (
-
-    v_user_id, v_food_serving_id, p_meal_type, p_quantity_consumed, p_log_date
-
-  );
-
-
-
-  RETURN json_build_object(
-
-    'success', true,
-
-    'message', 'Food logged successfully',
-
-    'food_serving_id', v_food_serving_id
-
-  );
-
-
-
-EXCEPTION
-
-  WHEN OTHERS THEN
-
-    RETURN json_build_object('error', 'Failed to log food: ' || SQLERRM);
-
-END;
-
+CREATE FUNCTION public.refresh_meal_plan_nutrition() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+BEGIN
+  -- Refresh the materialized view concurrently (non-blocking)
+  -- Only refresh if there are changes to relevant tables
+  REFRESH MATERIALIZED VIEW CONCURRENTLY weekly_meal_plan_nutrition;
+  RETURN NULL;
+END;
 $$;
 
 
@@ -1668,78 +1442,42 @@ $$;
 
 CREATE FUNCTION public.remove_category_prefix(food_name text, food_category text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-
-DECLARE
-
-  cleaned_name text;
-
-  category_singular text;
-
-BEGIN
-
-  cleaned_name := food_name;
-
-  
-
-  -- Don't process if category is unknown or null
-
-  IF food_category IS NULL OR food_category IN ('Unknown', '') THEN
-
-    RETURN cleaned_name;
-
-  END IF;
-
-  
-
-  -- Remove exact category name from start (case insensitive)
-
-  -- Pattern: "Category, rest of name" ΓåÆ "rest of name"
-
-  cleaned_name := regexp_replace(
-
-    cleaned_name, 
-
-    '^' || food_category || ',\s*', 
-
-    '', 
-
-    'i'
-
-  );
-
-  
-
-  -- Remove common category prefixes
-
-  cleaned_name := regexp_replace(cleaned_name, '^Beverages?,\s*', '', 'i');
-
-  cleaned_name := regexp_replace(cleaned_name, '^Vegetables?,\s*', '', 'i');
-
-  cleaned_name := regexp_replace(cleaned_name, '^Fruits?,\s*', '', 'i');
-
-  cleaned_name := regexp_replace(cleaned_name, '^Meats?,\s*', '', 'i');
-
-  cleaned_name := regexp_replace(cleaned_name, '^Dairy,\s*', '', 'i');
-
-  cleaned_name := regexp_replace(cleaned_name, '^Grains?,\s*', '', 'i');
-
-  cleaned_name := regexp_replace(cleaned_name, '^Cereals?,\s*', '', 'i');
-
-  cleaned_name := regexp_replace(cleaned_name, '^Legumes?,\s*', '', 'i');
-
-  
-
-  -- Capitalize first letter after cleanup
-
-  cleaned_name := upper(substring(cleaned_name from 1 for 1)) || substring(cleaned_name from 2);
-
-  
-
-  RETURN cleaned_name;
-
-END;
-
+    AS $$
+DECLARE
+  cleaned_name text;
+  category_singular text;
+BEGIN
+  cleaned_name := food_name;
+  
+  -- Don't process if category is unknown or null
+  IF food_category IS NULL OR food_category IN ('Unknown', '') THEN
+    RETURN cleaned_name;
+  END IF;
+  
+  -- Remove exact category name from start (case insensitive)
+  -- Pattern: "Category, rest of name" → "rest of name"
+  cleaned_name := regexp_replace(
+    cleaned_name, 
+    '^' || food_category || ',\s*', 
+    '', 
+    'i'
+  );
+  
+  -- Remove common category prefixes
+  cleaned_name := regexp_replace(cleaned_name, '^Beverages?,\s*', '', 'i');
+  cleaned_name := regexp_replace(cleaned_name, '^Vegetables?,\s*', '', 'i');
+  cleaned_name := regexp_replace(cleaned_name, '^Fruits?,\s*', '', 'i');
+  cleaned_name := regexp_replace(cleaned_name, '^Meats?,\s*', '', 'i');
+  cleaned_name := regexp_replace(cleaned_name, '^Dairy,\s*', '', 'i');
+  cleaned_name := regexp_replace(cleaned_name, '^Grains?,\s*', '', 'i');
+  cleaned_name := regexp_replace(cleaned_name, '^Cereals?,\s*', '', 'i');
+  cleaned_name := regexp_replace(cleaned_name, '^Legumes?,\s*', '', 'i');
+  
+  -- Capitalize first letter after cleanup
+  cleaned_name := upper(substring(cleaned_name from 1 for 1)) || substring(cleaned_name from 2);
+  
+  RETURN cleaned_name;
+END;
 $$;
 
 
@@ -1750,30 +1488,18 @@ $$;
 CREATE FUNCTION public.remove_tag_from_client(p_client_id uuid, p_tag_id text) RETURNS boolean
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-
-BEGIN
-
-    -- Remove tag from client's tags array
-
-    UPDATE trainer_clients
-
-    SET tags = array_remove(tags, p_tag_id),
-
-        updated_at = NOW()
-
-    WHERE client_id = p_client_id
-
-      AND trainer_id = auth.uid()
-
-      AND p_tag_id = ANY(tags); -- Only remove if present
-
-    
-
-    RETURN FOUND;
-
-END;
-
+    AS $$
+BEGIN
+    -- Remove tag from client's tags array
+    UPDATE trainer_clients
+    SET tags = array_remove(tags, p_tag_id),
+        updated_at = NOW()
+    WHERE client_id = p_client_id
+      AND trainer_id = auth.uid()
+      AND p_tag_id = ANY(tags); -- Only remove if present
+    
+    RETURN FOUND;
+END;
 $$;
 
 
@@ -1783,40 +1509,23 @@ $$;
 
 CREATE FUNCTION public.simplify_fast_food_name(food_name text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-
-DECLARE
-
-  cleaned_name text;
-
-  main_name text;
-
-BEGIN
-
-  cleaned_name := food_name;
-
-  
-
-  -- Pattern: "Fast foods, item" ΓåÆ "Item (fast food)"
-
-  IF cleaned_name ~* '^Fast foods?,\s*' THEN
-
-    main_name := regexp_replace(cleaned_name, '^Fast foods?,\s*', '', 'i');
-
-    -- Capitalize first letter
-
-    main_name := upper(substring(main_name from 1 for 1)) || substring(main_name from 2);
-
-    cleaned_name := main_name || ' (fast food)';
-
-  END IF;
-
-  
-
-  RETURN cleaned_name;
-
-END;
-
+    AS $$
+DECLARE
+  cleaned_name text;
+  main_name text;
+BEGIN
+  cleaned_name := food_name;
+  
+  -- Pattern: "Fast foods, item" → "Item (fast food)"
+  IF cleaned_name ~* '^Fast foods?,\s*' THEN
+    main_name := regexp_replace(cleaned_name, '^Fast foods?,\s*', '', 'i');
+    -- Capitalize first letter
+    main_name := upper(substring(main_name from 1 for 1)) || substring(main_name from 2);
+    cleaned_name := main_name || ' (fast food)';
+  END IF;
+  
+  RETURN cleaned_name;
+END;
 $$;
 
 
@@ -1826,74 +1535,40 @@ $$;
 
 CREATE FUNCTION public.simplify_food_name(original_name text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $_$
-
-DECLARE
-
-  cleaned_name text;
-
-BEGIN
-
-  cleaned_name := original_name;
-
-  
-
-  -- Remove parenthetical geographic qualifiers
-
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Alaska[^)]*\)', '', 'gi');
-
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Native[^)]*\)', '', 'gi');
-
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Indian[^)]*\)', '', 'gi');
-
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Plains[^)]*\)', '', 'gi');
-
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Hispanic[^)]*\)', '', 'gi');
-
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Mexican[^)]*\)', '', 'gi');
-
-  
-
-  -- Remove standalone "wild" when it's the only descriptor before a comma
-
-  -- Keep "wild" if it's part of a compound name like "wild rice"
-
-  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*,', ',', 'gi');
-
-  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*$', '', 'gi');
-
-  
-
-  -- Remove "NFS" (Not Further Specified) - redundant information
-
-  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*$', '', 'gi');
-
-  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*,', ',', 'gi');
-
-  
-
-  -- Clean up multiple commas and spaces
-
-  cleaned_name := regexp_replace(cleaned_name, ',\s*,', ',', 'g');
-
-  cleaned_name := regexp_replace(cleaned_name, '\s+', ' ', 'g');
-
-  
-
-  -- Trim leading/trailing whitespace and commas
-
-  cleaned_name := regexp_replace(cleaned_name, '^\s*,\s*', '', 'g');
-
-  cleaned_name := regexp_replace(cleaned_name, '\s*,\s*$', '', 'g');
-
-  cleaned_name := trim(cleaned_name);
-
-  
-
-  RETURN cleaned_name;
-
-END;
-
+    AS $_$
+DECLARE
+  cleaned_name text;
+BEGIN
+  cleaned_name := original_name;
+  
+  -- Remove parenthetical geographic qualifiers
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Alaska[^)]*\)', '', 'gi');
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Native[^)]*\)', '', 'gi');
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Indian[^)]*\)', '', 'gi');
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Plains[^)]*\)', '', 'gi');
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Hispanic[^)]*\)', '', 'gi');
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Mexican[^)]*\)', '', 'gi');
+  
+  -- Remove standalone "wild" when it's the only descriptor before a comma
+  -- Keep "wild" if it's part of a compound name like "wild rice"
+  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*,', ',', 'gi');
+  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*$', '', 'gi');
+  
+  -- Remove "NFS" (Not Further Specified) - redundant information
+  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*$', '', 'gi');
+  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*,', ',', 'gi');
+  
+  -- Clean up multiple commas and spaces
+  cleaned_name := regexp_replace(cleaned_name, ',\s*,', ',', 'g');
+  cleaned_name := regexp_replace(cleaned_name, '\s+', ' ', 'g');
+  
+  -- Trim leading/trailing whitespace and commas
+  cleaned_name := regexp_replace(cleaned_name, '^\s*,\s*', '', 'g');
+  cleaned_name := regexp_replace(cleaned_name, '\s*,\s*$', '', 'g');
+  cleaned_name := trim(cleaned_name);
+  
+  RETURN cleaned_name;
+END;
 $_$;
 
 
@@ -1903,28 +1578,17 @@ $_$;
 
 CREATE FUNCTION public.sync_scheduled_routine_client_info() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-
-  -- Get client info from trainer_clients
-
-  SELECT full_name, email
-
-  INTO NEW.client_name, NEW.client_email
-
-  FROM trainer_clients
-
-  WHERE client_id = NEW.user_id
-
-  LIMIT 1;
-
-  
-
-  RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+  -- Get client info from trainer_clients
+  SELECT full_name, email
+  INTO NEW.client_name, NEW.client_email
+  FROM trainer_clients
+  WHERE client_id = NEW.user_id
+  LIMIT 1;
+  
+  RETURN NEW;
+END;
 $$;
 
 
@@ -1934,32 +1598,19 @@ $$;
 
 CREATE FUNCTION public.sync_scheduled_routine_client_info_on_trainer_client_update() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-
-  -- Update all scheduled_routines when trainer_clients data changes
-
-  IF NEW.full_name IS DISTINCT FROM OLD.full_name OR NEW.email IS DISTINCT FROM OLD.email THEN
-
-    UPDATE scheduled_routines
-
-    SET 
-
-      client_name = NEW.full_name,
-
-      client_email = NEW.email
-
-    WHERE user_id = NEW.client_id;
-
-  END IF;
-
-  
-
-  RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+  -- Update all scheduled_routines when trainer_clients data changes
+  IF NEW.full_name IS DISTINCT FROM OLD.full_name OR NEW.email IS DISTINCT FROM OLD.email THEN
+    UPDATE scheduled_routines
+    SET 
+      client_name = NEW.full_name,
+      client_email = NEW.email
+    WHERE user_id = NEW.client_id;
+  END IF;
+  
+  RETURN NEW;
+END;
 $$;
 
 
@@ -1969,24 +1620,15 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_email() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-
-  -- Get email from user_profiles and set it
-
-  SELECT email INTO NEW.email
-
-  FROM user_profiles
-
-  WHERE id = NEW.client_id;
-
-  
-
-  RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+  -- Get email from user_profiles and set it
+  SELECT email INTO NEW.email
+  FROM user_profiles
+  WHERE id = NEW.client_id;
+  
+  RETURN NEW;
+END;
 $$;
 
 
@@ -1996,28 +1638,17 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_email_on_profile_update() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-
-  -- Update all trainer_clients records when user_profiles.email changes
-
-  IF NEW.email IS DISTINCT FROM OLD.email THEN
-
-    UPDATE trainer_clients
-
-    SET email = NEW.email
-
-    WHERE client_id = NEW.id;
-
-  END IF;
-
-  
-
-  RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+  -- Update all trainer_clients records when user_profiles.email changes
+  IF NEW.email IS DISTINCT FROM OLD.email THEN
+    UPDATE trainer_clients
+    SET email = NEW.email
+    WHERE client_id = NEW.id;
+  END IF;
+  
+  RETURN NEW;
+END;
 $$;
 
 
@@ -2027,26 +1658,16 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_full_name() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-
-  -- Get full_name from user_profiles for the client_id
-
-  SELECT CONCAT(first_name, ' ', last_name)
-
-  INTO NEW.full_name
-
-  FROM user_profiles
-
-  WHERE id = NEW.client_id;
-
-  
-
-  RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+  -- Get full_name from user_profiles for the client_id
+  SELECT CONCAT(first_name, ' ', last_name)
+  INTO NEW.full_name
+  FROM user_profiles
+  WHERE id = NEW.client_id;
+  
+  RETURN NEW;
+END;
 $$;
 
 
@@ -2056,24 +1677,15 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_on_profile_update() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-
-  -- Update all trainer_clients records for this user
-
-  UPDATE trainer_clients
-
-  SET full_name = CONCAT(NEW.first_name, ' ', NEW.last_name)
-
-  WHERE client_id = NEW.id;
-
-  
-
-  RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+  -- Update all trainer_clients records for this user
+  UPDATE trainer_clients
+  SET full_name = CONCAT(NEW.first_name, ' ', NEW.last_name)
+  WHERE client_id = NEW.id;
+  
+  RETURN NEW;
+END;
 $$;
 
 
@@ -2083,24 +1695,15 @@ $$;
 
 CREATE FUNCTION public.sync_user_profile_email_from_auth() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-BEGIN
-
-  -- Get email from auth.users and set it
-
-  SELECT email INTO NEW.email
-
-  FROM auth.users
-
-  WHERE id = NEW.id;
-
-  
-
-  RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+  -- Get email from auth.users and set it
+  SELECT email INTO NEW.email
+  FROM auth.users
+  WHERE id = NEW.id;
+  
+  RETURN NEW;
+END;
 $$;
 
 
@@ -2110,28 +1713,17 @@ $$;
 
 CREATE FUNCTION public.sync_user_profile_email_on_auth_update() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-BEGIN
-
-  -- Update user_profiles when auth.users.email changes
-
-  IF NEW.email IS DISTINCT FROM OLD.email THEN
-
-    UPDATE user_profiles
-
-    SET email = NEW.email
-
-    WHERE id = NEW.id;
-
-  END IF;
-
-  
-
-  RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+  -- Update user_profiles when auth.users.email changes
+  IF NEW.email IS DISTINCT FROM OLD.email THEN
+    UPDATE user_profiles
+    SET email = NEW.email
+    WHERE id = NEW.id;
+  END IF;
+  
+  RETURN NEW;
+END;
 $$;
 
 
@@ -2141,56 +1733,31 @@ $$;
 
 CREATE FUNCTION public.unsubscribe_from_trainer_emails(p_email text) RETURNS json
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-DECLARE
-
-  v_updated_count INTEGER;
-
-BEGIN
-
-  -- Update all trainer_clients records with this email
-
-  UPDATE trainer_clients
-
-  SET 
-
-    is_unsubscribed = TRUE,
-
-    updated_at = NOW()
-
-  WHERE email = p_email;
-
-  
-
-  GET DIAGNOSTICS v_updated_count = ROW_COUNT;
-
-  
-
-  RETURN json_build_object(
-
-    'success', TRUE,
-
-    'message', 'Successfully unsubscribed from trainer emails',
-
-    'updated_count', v_updated_count
-
-  );
-
-EXCEPTION
-
-  WHEN OTHERS THEN
-
-    RETURN json_build_object(
-
-      'success', FALSE,
-
-      'error', SQLERRM
-
-    );
-
-END;
-
+    AS $$
+DECLARE
+  v_updated_count INTEGER;
+BEGIN
+  -- Update all trainer_clients records with this email
+  UPDATE trainer_clients
+  SET 
+    is_unsubscribed = TRUE,
+    updated_at = NOW()
+  WHERE email = p_email;
+  
+  GET DIAGNOSTICS v_updated_count = ROW_COUNT;
+  
+  RETURN json_build_object(
+    'success', TRUE,
+    'message', 'Successfully unsubscribed from trainer emails',
+    'updated_count', v_updated_count
+  );
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN json_build_object(
+      'success', FALSE,
+      'error', SQLERRM
+    );
+END;
 $$;
 
 
@@ -2207,20 +1774,13 @@ COMMENT ON FUNCTION public.unsubscribe_from_trainer_emails(p_email text) IS 'Uns
 
 CREATE FUNCTION public.update_bug_report_timestamp() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-
-BEGIN
-
-    UPDATE bug_reports
-
-    SET updated_at = now()
-
-    WHERE id = NEW.bug_report_id;
-
-    RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+    UPDATE bug_reports
+    SET updated_at = now()
+    WHERE id = NEW.bug_report_id;
+    RETURN NEW;
+END;
 $$;
 
 
@@ -2230,16 +1790,11 @@ $$;
 
 CREATE FUNCTION public.update_scheduled_routines_updated_at() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-
-  NEW.updated_at = NOW();
-
-  RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
 $$;
 
 
@@ -2249,18 +1804,12 @@ $$;
 
 CREATE FUNCTION public.update_search_helpers() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-
-  NEW.name_simplified := generate_simplified_name(NEW.name);
-
-  NEW.search_tokens := NEW.name_simplified;
-
-  RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+  NEW.name_simplified := generate_simplified_name(NEW.name);
+  NEW.search_tokens := NEW.name_simplified;
+  RETURN NEW;
+END;
 $$;
 
 
@@ -2270,16 +1819,11 @@ $$;
 
 CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-
-    NEW.updated_at = NOW();
-
-    RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
 $$;
 
 
@@ -2289,16 +1833,11 @@ $$;
 
 CREATE FUNCTION public.update_user_meals_updated_at() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-
-  NEW.updated_at = NOW();
-
-  RETURN NEW;
-
-END;
-
+    AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
 $$;
 
 
@@ -2308,48 +1847,27 @@ $$;
 
 CREATE FUNCTION public.update_user_preference_boost() RETURNS void
     LANGUAGE plpgsql
-    AS $$
-
-BEGIN
-
-  -- Calculate boost based on times_logged (0-25 point boost)
-
-  -- Logarithmic scale: popular items get boost without overwhelming base score
-
-  UPDATE foods
-
-  SET user_boost_score = CASE
-
-    WHEN times_logged >= 1000 THEN 25  -- Very popular
-
-    WHEN times_logged >= 500 THEN 20
-
-    WHEN times_logged >= 250 THEN 15
-
-    WHEN times_logged >= 100 THEN 12
-
-    WHEN times_logged >= 50 THEN 10
-
-    WHEN times_logged >= 25 THEN 8
-
-    WHEN times_logged >= 10 THEN 5
-
-    WHEN times_logged >= 5 THEN 3
-
-    WHEN times_logged >= 1 THEN 1
-
-    ELSE 0
-
-  END
-
-  WHERE times_logged > 0;
-
-  
-
-  RAISE NOTICE 'Γ£à Updated user preference boosts based on logging frequency';
-
-END;
-
+    AS $$
+BEGIN
+  -- Calculate boost based on times_logged (0-25 point boost)
+  -- Logarithmic scale: popular items get boost without overwhelming base score
+  UPDATE foods
+  SET user_boost_score = CASE
+    WHEN times_logged >= 1000 THEN 25  -- Very popular
+    WHEN times_logged >= 500 THEN 20
+    WHEN times_logged >= 250 THEN 15
+    WHEN times_logged >= 100 THEN 12
+    WHEN times_logged >= 50 THEN 10
+    WHEN times_logged >= 25 THEN 8
+    WHEN times_logged >= 10 THEN 5
+    WHEN times_logged >= 5 THEN 3
+    WHEN times_logged >= 1 THEN 1
+    ELSE 0
+  END
+  WHERE times_logged > 0;
+  
+  RAISE NOTICE '✅ Updated user preference boosts based on logging frequency';
+END;
 $$;
 
 
@@ -3524,7 +3042,7 @@ BEGIN
         RETURN NULL;
     END IF;
 
-    -- 1) Compute NEWΓêÆOLD (added paths) and OLDΓêÆNEW (moved-away paths)
+    -- 1) Compute NEW−OLD (added paths) and OLD−NEW (moved-away paths)
     WITH added AS (
         SELECT n.bucket_id, n.name
         FROM new_rows n
@@ -3568,7 +3086,7 @@ BEGIN
         END IF;
     END;
 
-    -- 3) Create destination prefixes (NEWΓêÆOLD) BEFORE pruning sources
+    -- 3) Create destination prefixes (NEW−OLD) BEFORE pruning sources
     IF array_length(v_add_bucket_ids, 1) IS NOT NULL THEN
         WITH candidates AS (
             SELECT DISTINCT t.bucket_id, unnest(storage.get_prefixes(t.name)) AS name
@@ -3581,7 +3099,7 @@ BEGIN
         ON CONFLICT DO NOTHING;
     END IF;
 
-    -- 4) Prune source prefixes bottom-up for OLDΓêÆNEW
+    -- 4) Prune source prefixes bottom-up for OLD−NEW
     IF array_length(v_src_bucket_ids, 1) IS NOT NULL THEN
         -- re-entrancy guard so DELETE on prefixes won't recurse
         IF current_setting('storage.gc.prefixes', true) <> '1' THEN
@@ -4246,6 +3764,25 @@ CREATE TABLE auth.oauth_authorizations (
 
 
 --
+-- Name: oauth_client_states; Type: TABLE; Schema: auth; Owner: -
+--
+
+CREATE TABLE auth.oauth_client_states (
+    id uuid NOT NULL,
+    provider_type text NOT NULL,
+    code_verifier text,
+    created_at timestamp with time zone NOT NULL
+);
+
+
+--
+-- Name: TABLE oauth_client_states; Type: COMMENT; Schema: auth; Owner: -
+--
+
+COMMENT ON TABLE auth.oauth_client_states IS 'Stores OAuth states for third-party provider authentication flows where Supabase acts as the OAuth client.';
+
+
+--
 -- Name: oauth_clients; Type: TABLE; Schema: auth; Owner: -
 --
 
@@ -4637,8 +4174,20 @@ CREATE TABLE public.body_metrics (
     muscle_mass_lbs numeric(5,2),
     measurement_date date DEFAULT CURRENT_DATE,
     notes text,
-    created_at timestamp with time zone DEFAULT now()
+    created_at timestamp with time zone DEFAULT now(),
+    weight_kg numeric(6,2) GENERATED ALWAYS AS (
+CASE
+    WHEN (weight_lbs IS NOT NULL) THEN round((weight_lbs * 0.453592), 2)
+    ELSE NULL::numeric
+END) STORED
 );
+
+
+--
+-- Name: COLUMN body_metrics.weight_kg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.body_metrics.weight_kg IS 'Computed from weight_lbs: weight in kilograms for progress tracking';
 
 
 --
@@ -4788,6 +4337,290 @@ CREATE TABLE public.cycle_sessions (
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now()
 );
+
+
+--
+-- Name: nutrition_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.nutrition_logs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid,
+    meal_type text,
+    quantity_consumed numeric(8,2) DEFAULT 1.0,
+    water_oz_consumed numeric(6,2) DEFAULT 0,
+    log_date date DEFAULT CURRENT_DATE,
+    notes text,
+    created_at timestamp with time zone DEFAULT now(),
+    calories numeric(8,2),
+    protein_g numeric(8,2),
+    carbs_g numeric(8,2),
+    fat_g numeric(8,2),
+    fiber_g numeric(10,2),
+    sugar_g numeric(10,2),
+    sodium_mg numeric(10,2),
+    calcium_mg numeric(10,2),
+    iron_mg numeric(10,2),
+    potassium_mg numeric(10,2),
+    magnesium_mg numeric(10,2),
+    phosphorus_mg numeric(10,2),
+    zinc_mg numeric(10,2),
+    copper_mg numeric(10,2),
+    selenium_mcg numeric(10,2),
+    vitamin_a_mcg numeric(10,2),
+    vitamin_b6_mg numeric(10,2),
+    vitamin_b12_mcg numeric(10,2),
+    vitamin_c_mg numeric(10,2),
+    vitamin_e_mg numeric(10,2),
+    vitamin_k_mcg numeric(10,2),
+    folate_mcg numeric(10,2),
+    niacin_mg numeric(10,2),
+    riboflavin_mg numeric(10,2),
+    thiamin_mg numeric(10,2),
+    food_id bigint,
+    vitamin_d_mcg numeric(10,2),
+    cholesterol_mg numeric(10,2),
+    CONSTRAINT nutrition_logs_meal_type_check CHECK ((meal_type = ANY (ARRAY['breakfast'::text, 'lunch'::text, 'dinner'::text, 'snack1'::text, 'snack2'::text, 'water'::text])))
+);
+
+
+--
+-- Name: COLUMN nutrition_logs.calories; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.calories IS 'Calories per serving from food_servings table (multiply by quantity_consumed for total)';
+
+
+--
+-- Name: COLUMN nutrition_logs.protein_g; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.protein_g IS 'Protein grams per serving from food_servings table';
+
+
+--
+-- Name: COLUMN nutrition_logs.carbs_g; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.carbs_g IS 'Carbs grams per serving from food_servings table';
+
+
+--
+-- Name: COLUMN nutrition_logs.fat_g; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.fat_g IS 'Fat grams per serving from food_servings table';
+
+
+--
+-- Name: COLUMN nutrition_logs.fiber_g; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.fiber_g IS 'Dietary fiber in grams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.sugar_g; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.sugar_g IS 'Total sugars in grams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.sodium_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.sodium_mg IS 'Sodium in milligrams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.calcium_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.calcium_mg IS 'Calcium in milligrams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.iron_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.iron_mg IS 'Iron in milligrams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.potassium_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.potassium_mg IS 'Potassium in milligrams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.magnesium_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.magnesium_mg IS 'Magnesium in milligrams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.phosphorus_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.phosphorus_mg IS 'Phosphorus in milligrams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.zinc_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.zinc_mg IS 'Zinc in milligrams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.copper_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.copper_mg IS 'Copper in milligrams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.selenium_mcg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.selenium_mcg IS 'Selenium in micrograms (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.vitamin_a_mcg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.vitamin_a_mcg IS 'Vitamin A in micrograms RAE (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.vitamin_b6_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.vitamin_b6_mg IS 'Vitamin B6 in milligrams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.vitamin_b12_mcg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.vitamin_b12_mcg IS 'Vitamin B12 in micrograms (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.vitamin_c_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.vitamin_c_mg IS 'Vitamin C in milligrams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.vitamin_e_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.vitamin_e_mg IS 'Vitamin E in milligrams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.vitamin_k_mcg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.vitamin_k_mcg IS 'Vitamin K in micrograms (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.folate_mcg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.folate_mcg IS 'Folate in micrograms DFE (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.niacin_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.niacin_mg IS 'Niacin (B3) in milligrams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.riboflavin_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.riboflavin_mg IS 'Riboflavin (B2) in milligrams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.thiamin_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.thiamin_mg IS 'Thiamin (B1) in milligrams (from food_servings * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.food_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.food_id IS 'Reference to foods table (bigint USDA FDC ID). Replaces food_serving_id.';
+
+
+--
+-- Name: COLUMN nutrition_logs.vitamin_d_mcg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.vitamin_d_mcg IS 'Vitamin D in micrograms (from food * quantity_consumed)';
+
+
+--
+-- Name: COLUMN nutrition_logs.cholesterol_mg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.nutrition_logs.cholesterol_mg IS 'Cholesterol in milligrams (from food * quantity_consumed)';
+
+
+--
+-- Name: daily_nutrition_totals; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.daily_nutrition_totals WITH (security_invoker='true') AS
+ SELECT user_id,
+    log_date,
+    (COALESCE(sum(calories), (0)::numeric))::numeric(10,2) AS total_calories,
+    (COALESCE(sum(protein_g), (0)::numeric))::numeric(10,2) AS total_protein_g,
+    (COALESCE(sum(carbs_g), (0)::numeric))::numeric(10,2) AS total_carbs_g,
+    (COALESCE(sum(fat_g), (0)::numeric))::numeric(10,2) AS total_fat_g,
+    (COALESCE(sum(fiber_g), (0)::numeric))::numeric(10,2) AS total_fiber_g,
+    (COALESCE(sum(sugar_g), (0)::numeric))::numeric(10,2) AS total_sugar_g,
+    (COALESCE(sum(sodium_mg), (0)::numeric))::numeric(10,2) AS total_sodium_mg,
+    (COALESCE(sum(potassium_mg), (0)::numeric))::numeric(10,2) AS total_potassium_mg,
+    (COALESCE(sum(calcium_mg), (0)::numeric))::numeric(10,2) AS total_calcium_mg,
+    (COALESCE(sum(iron_mg), (0)::numeric))::numeric(10,2) AS total_iron_mg,
+    (COALESCE(sum(magnesium_mg), (0)::numeric))::numeric(10,2) AS total_magnesium_mg,
+    (COALESCE(sum(phosphorus_mg), (0)::numeric))::numeric(10,2) AS total_phosphorus_mg,
+    (COALESCE(sum(zinc_mg), (0)::numeric))::numeric(10,2) AS total_zinc_mg,
+    (COALESCE(sum(copper_mg), (0)::numeric))::numeric(10,2) AS total_copper_mg,
+    (COALESCE(sum(selenium_mcg), (0)::numeric))::numeric(10,2) AS total_selenium_mcg,
+    (COALESCE(sum(cholesterol_mg), (0)::numeric))::numeric(10,2) AS total_cholesterol_mg,
+    (COALESCE(sum(vitamin_a_mcg), (0)::numeric))::numeric(10,2) AS total_vitamin_a_mcg,
+    (COALESCE(sum(vitamin_c_mg), (0)::numeric))::numeric(10,2) AS total_vitamin_c_mg,
+    (COALESCE(sum(vitamin_e_mg), (0)::numeric))::numeric(10,2) AS total_vitamin_e_mg,
+    (COALESCE(sum(vitamin_d_mcg), (0)::numeric))::numeric(10,2) AS total_vitamin_d_mcg,
+    (COALESCE(sum(vitamin_k_mcg), (0)::numeric))::numeric(10,2) AS total_vitamin_k_mcg,
+    (COALESCE(sum(thiamin_mg), (0)::numeric))::numeric(10,2) AS total_thiamin_mg,
+    (COALESCE(sum(riboflavin_mg), (0)::numeric))::numeric(10,2) AS total_riboflavin_mg,
+    (COALESCE(sum(niacin_mg), (0)::numeric))::numeric(10,2) AS total_niacin_mg,
+    (COALESCE(sum(vitamin_b6_mg), (0)::numeric))::numeric(10,2) AS total_vitamin_b6_mg,
+    (COALESCE(sum(folate_mcg), (0)::numeric))::numeric(10,2) AS total_folate_mcg,
+    (COALESCE(sum(vitamin_b12_mcg), (0)::numeric))::numeric(10,2) AS total_vitamin_b12_mcg,
+    (COALESCE(sum(water_oz_consumed), (0)::numeric))::numeric(10,2) AS total_water_oz,
+    count(*) AS entry_count,
+    count(DISTINCT food_id) AS unique_foods_count,
+    max(created_at) AS last_entry_time,
+    min(created_at) AS first_entry_time
+   FROM public.nutrition_logs nl
+  GROUP BY user_id, log_date;
 
 
 --
@@ -5131,231 +4964,6 @@ CREATE TABLE public.nutrition_enrichment_queue (
     CONSTRAINT nutrition_enrichment_queue_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'processing'::text, 'completed'::text, 'failed'::text]))),
     CONSTRAINT valid_priority CHECK (((priority >= 1) AND (priority <= 10)))
 );
-
-
---
--- Name: nutrition_logs; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.nutrition_logs (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    user_id uuid,
-    meal_type text,
-    quantity_consumed numeric(8,2) DEFAULT 1.0,
-    water_oz_consumed numeric(6,2) DEFAULT 0,
-    log_date date DEFAULT CURRENT_DATE,
-    notes text,
-    created_at timestamp with time zone DEFAULT now(),
-    calories numeric(8,2),
-    protein_g numeric(8,2),
-    carbs_g numeric(8,2),
-    fat_g numeric(8,2),
-    fiber_g numeric(10,2),
-    sugar_g numeric(10,2),
-    sodium_mg numeric(10,2),
-    calcium_mg numeric(10,2),
-    iron_mg numeric(10,2),
-    potassium_mg numeric(10,2),
-    magnesium_mg numeric(10,2),
-    phosphorus_mg numeric(10,2),
-    zinc_mg numeric(10,2),
-    copper_mg numeric(10,2),
-    selenium_mcg numeric(10,2),
-    vitamin_a_mcg numeric(10,2),
-    vitamin_b6_mg numeric(10,2),
-    vitamin_b12_mcg numeric(10,2),
-    vitamin_c_mg numeric(10,2),
-    vitamin_e_mg numeric(10,2),
-    vitamin_k_mcg numeric(10,2),
-    folate_mcg numeric(10,2),
-    niacin_mg numeric(10,2),
-    riboflavin_mg numeric(10,2),
-    thiamin_mg numeric(10,2),
-    food_id bigint,
-    CONSTRAINT nutrition_logs_meal_type_check CHECK ((meal_type = ANY (ARRAY['breakfast'::text, 'lunch'::text, 'dinner'::text, 'snack1'::text, 'snack2'::text, 'water'::text])))
-);
-
-
---
--- Name: COLUMN nutrition_logs.calories; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.calories IS 'Calories per serving from food_servings table (multiply by quantity_consumed for total)';
-
-
---
--- Name: COLUMN nutrition_logs.protein_g; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.protein_g IS 'Protein grams per serving from food_servings table';
-
-
---
--- Name: COLUMN nutrition_logs.carbs_g; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.carbs_g IS 'Carbs grams per serving from food_servings table';
-
-
---
--- Name: COLUMN nutrition_logs.fat_g; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.fat_g IS 'Fat grams per serving from food_servings table';
-
-
---
--- Name: COLUMN nutrition_logs.fiber_g; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.fiber_g IS 'Dietary fiber in grams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.sugar_g; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.sugar_g IS 'Total sugars in grams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.sodium_mg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.sodium_mg IS 'Sodium in milligrams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.calcium_mg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.calcium_mg IS 'Calcium in milligrams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.iron_mg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.iron_mg IS 'Iron in milligrams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.potassium_mg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.potassium_mg IS 'Potassium in milligrams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.magnesium_mg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.magnesium_mg IS 'Magnesium in milligrams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.phosphorus_mg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.phosphorus_mg IS 'Phosphorus in milligrams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.zinc_mg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.zinc_mg IS 'Zinc in milligrams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.copper_mg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.copper_mg IS 'Copper in milligrams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.selenium_mcg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.selenium_mcg IS 'Selenium in micrograms (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.vitamin_a_mcg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.vitamin_a_mcg IS 'Vitamin A in micrograms RAE (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.vitamin_b6_mg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.vitamin_b6_mg IS 'Vitamin B6 in milligrams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.vitamin_b12_mcg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.vitamin_b12_mcg IS 'Vitamin B12 in micrograms (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.vitamin_c_mg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.vitamin_c_mg IS 'Vitamin C in milligrams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.vitamin_e_mg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.vitamin_e_mg IS 'Vitamin E in milligrams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.vitamin_k_mcg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.vitamin_k_mcg IS 'Vitamin K in micrograms (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.folate_mcg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.folate_mcg IS 'Folate in micrograms DFE (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.niacin_mg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.niacin_mg IS 'Niacin (B3) in milligrams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.riboflavin_mg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.riboflavin_mg IS 'Riboflavin (B2) in milligrams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.thiamin_mg; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.thiamin_mg IS 'Thiamin (B1) in milligrams (from food_servings * quantity_consumed)';
-
-
---
--- Name: COLUMN nutrition_logs.food_id; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.nutrition_logs.food_id IS 'Reference to foods table (bigint USDA FDC ID). Replaces food_serving_id.';
 
 
 --
@@ -5720,6 +5328,7 @@ CREATE TABLE public.trainer_clients (
     program_name text,
     tags text[] DEFAULT '{}'::text[],
     is_unsubscribed boolean DEFAULT false,
+    metrics jsonb DEFAULT '{}'::jsonb,
     CONSTRAINT trainer_clients_status_check CHECK (((status)::text = ANY (ARRAY[('active'::character varying)::text, ('inactive'::character varying)::text, ('pending'::character varying)::text, ('blocked'::character varying)::text])))
 );
 
@@ -5764,6 +5373,13 @@ COMMENT ON COLUMN public.trainer_clients.tags IS 'Array of trainer_group_tags UU
 --
 
 COMMENT ON COLUMN public.trainer_clients.is_unsubscribed IS 'Whether client has unsubscribed from trainer marketing emails. Does not affect transactional emails.';
+
+
+--
+-- Name: COLUMN trainer_clients.metrics; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.trainer_clients.metrics IS 'JSONB storage for calculator results and client metrics. Structure: { strength: {...}, bodyComp: {...}, heartRate: {...}, macros: {...} }';
 
 
 --
@@ -5911,6 +5527,31 @@ CREATE TABLE public.user_profiles (
     is_beta boolean,
     use_rpe boolean DEFAULT true,
     use_rest_timer boolean DEFAULT true,
+    height_feet integer GENERATED ALWAYS AS (
+CASE
+    WHEN (height_cm IS NOT NULL) THEN (floor((((height_cm)::numeric / 2.54) / (12)::numeric)))::integer
+    ELSE NULL::integer
+END) STORED,
+    height_inches integer GENERATED ALWAYS AS (
+CASE
+    WHEN (height_cm IS NOT NULL) THEN (floor((((height_cm)::numeric / 2.54) % (12)::numeric)))::integer
+    ELSE NULL::integer
+END) STORED,
+    weight_kg numeric(6,2) GENERATED ALWAYS AS (
+CASE
+    WHEN (weight_lbs IS NOT NULL) THEN round((weight_lbs * 0.453592), 2)
+    ELSE NULL::numeric
+END) STORED,
+    current_weight_kg numeric(6,2) GENERATED ALWAYS AS (
+CASE
+    WHEN (current_weight_lbs IS NOT NULL) THEN round((current_weight_lbs * 0.453592), 2)
+    ELSE NULL::numeric
+END) STORED,
+    target_weight_kg numeric(6,2) GENERATED ALWAYS AS (
+CASE
+    WHEN (target_weight_lbs IS NOT NULL) THEN round((target_weight_lbs * 0.453592), 2)
+    ELSE NULL::numeric
+END) STORED,
     CONSTRAINT user_profiles_activity_level_check CHECK ((activity_level = ANY (ARRAY[('sedentary'::character varying)::text, ('lightly_active'::character varying)::text, ('moderately_active'::character varying)::text, ('very_active'::character varying)::text, ('extra_active'::character varying)::text]))),
     CONSTRAINT user_profiles_fitness_goal_check CHECK ((fitness_goal = ANY (ARRAY[('lose_weight'::character varying)::text, ('maintain_weight'::character varying)::text, ('gain_weight'::character varying)::text, ('build_muscle'::character varying)::text, ('improve_endurance'::character varying)::text]))),
     CONSTRAINT user_profiles_sex_check CHECK ((sex = ANY (ARRAY[('male'::character varying)::text, ('female'::character varying)::text, ('other'::character varying)::text]))),
@@ -5979,6 +5620,41 @@ COMMENT ON COLUMN public.user_profiles.weight_lbs IS 'Current weight in pounds (
 --
 
 COMMENT ON COLUMN public.user_profiles.is_beta IS 'Indicates if user is part of the beta testing group';
+
+
+--
+-- Name: COLUMN user_profiles.height_feet; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_profiles.height_feet IS 'Computed from height_cm: feet component of imperial height';
+
+
+--
+-- Name: COLUMN user_profiles.height_inches; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_profiles.height_inches IS 'Computed from height_cm: inches component of imperial height (0-11)';
+
+
+--
+-- Name: COLUMN user_profiles.weight_kg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_profiles.weight_kg IS 'Computed from weight_lbs: weight in kilograms';
+
+
+--
+-- Name: COLUMN user_profiles.current_weight_kg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_profiles.current_weight_kg IS 'Computed from current_weight_lbs: current weight in kilograms';
+
+
+--
+-- Name: COLUMN user_profiles.target_weight_kg; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.user_profiles.target_weight_kg IS 'Computed from target_weight_lbs: target weight in kilograms';
 
 
 --
@@ -6052,6 +5728,53 @@ COMMENT ON COLUMN public.weekly_meal_plan_entries.servings IS 'Number of serving
 
 
 --
+-- Name: weekly_meal_plan_nutrition; Type: MATERIALIZED VIEW; Schema: public; Owner: -
+--
+
+CREATE MATERIALIZED VIEW public.weekly_meal_plan_nutrition AS
+ SELECT wmpe.id AS entry_id,
+    wmpe.plan_id,
+    wmpe.plan_date,
+    wmpe.meal_type,
+    wmpe.servings,
+    wmpe.user_meal_id,
+    (COALESCE(sum(((f.calories * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_calories,
+    (COALESCE(sum(((f.protein_g * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_protein_g,
+    (COALESCE(sum(((f.carbs_g * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_carbs_g,
+    (COALESCE(sum(((f.fat_g * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_fat_g,
+    (COALESCE(sum(((f.fiber_g * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_fiber_g,
+    (COALESCE(sum(((f.sugar_g * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_sugar_g,
+    (COALESCE(sum(((f.sodium_mg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_sodium_mg,
+    (COALESCE(sum(((f.potassium_mg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_potassium_mg,
+    (COALESCE(sum(((f.calcium_mg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_calcium_mg,
+    (COALESCE(sum(((f.iron_mg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_iron_mg,
+    (COALESCE(sum(((f.magnesium_mg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_magnesium_mg,
+    (COALESCE(sum(((f.phosphorus_mg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_phosphorus_mg,
+    (COALESCE(sum(((f.zinc_mg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_zinc_mg,
+    (COALESCE(sum(((f.copper_mg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_copper_mg,
+    (COALESCE(sum(((f.selenium_mcg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_selenium_mcg,
+    (COALESCE(sum(((f.vitamin_a_mcg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_vitamin_a_mcg,
+    (COALESCE(sum(((f.vitamin_c_mg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_vitamin_c_mg,
+    (COALESCE(sum(((f.vitamin_e_mg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_vitamin_e_mg,
+    (COALESCE(sum(((f.vitamin_k_mcg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_vitamin_k_mcg,
+    (COALESCE(sum(((f.thiamin_mg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_thiamin_mg,
+    (COALESCE(sum(((f.riboflavin_mg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_riboflavin_mg,
+    (COALESCE(sum(((f.niacin_mg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_niacin_mg,
+    (COALESCE(sum(((f.vitamin_b6_mg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_vitamin_b6_mg,
+    (COALESCE(sum(((f.folate_mcg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_folate_mcg,
+    (COALESCE(sum(((f.vitamin_b12_mcg * umf.quantity) * wmpe.servings)), (0)::numeric))::numeric(10,2) AS total_vitamin_b12_mcg,
+    count(DISTINCT f.id) AS food_count,
+    wmpe.created_at,
+    wmpe.updated_at
+   FROM ((public.weekly_meal_plan_entries wmpe
+     LEFT JOIN public.user_meal_foods umf ON ((wmpe.user_meal_id = umf.user_meal_id)))
+     LEFT JOIN public.foods f ON ((umf.food_id = f.id)))
+  WHERE (wmpe.user_meal_id IS NOT NULL)
+  GROUP BY wmpe.id, wmpe.plan_id, wmpe.plan_date, wmpe.meal_type, wmpe.servings, wmpe.user_meal_id, wmpe.created_at, wmpe.updated_at
+  WITH NO DATA;
+
+
+--
 -- Name: weekly_meal_plans; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6082,6 +5805,33 @@ COMMENT ON COLUMN public.weekly_meal_plans.is_active IS 'Only one plan should be
 
 
 --
+-- Name: weekly_nutrition_summary; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.weekly_nutrition_summary WITH (security_invoker='true') AS
+ SELECT user_id,
+    log_date,
+    sum(total_calories) OVER w7 AS week_calories,
+    sum(total_protein_g) OVER w7 AS week_protein_g,
+    sum(total_carbs_g) OVER w7 AS week_carbs_g,
+    sum(total_fat_g) OVER w7 AS week_fat_g,
+    sum(total_fiber_g) OVER w7 AS week_fiber_g,
+    sum(total_sugar_g) OVER w7 AS week_sugar_g,
+    avg(total_calories) OVER w7 AS avg_daily_calories,
+    avg(total_protein_g) OVER w7 AS avg_daily_protein_g,
+    avg(total_carbs_g) OVER w7 AS avg_daily_carbs_g,
+    avg(total_fat_g) OVER w7 AS avg_daily_fat_g,
+    count(*) OVER w7 AS days_logged_in_week,
+    total_calories AS today_calories,
+    total_protein_g AS today_protein_g,
+    total_carbs_g AS today_carbs_g,
+    total_fat_g AS today_fat_g,
+    entry_count AS today_entry_count
+   FROM public.daily_nutrition_totals
+  WINDOW w7 AS (PARTITION BY user_id ORDER BY log_date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW);
+
+
+--
 -- Name: workout_log_entries; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6101,6 +5851,11 @@ CREATE TABLE public.workout_log_entries (
     notes text,
     completed boolean DEFAULT true,
     created_at timestamp with time zone DEFAULT now(),
+    volume_lbs numeric(10,2) GENERATED ALWAYS AS (
+CASE
+    WHEN ((weight_lbs IS NOT NULL) AND (reps_completed IS NOT NULL)) THEN (weight_lbs * (reps_completed)::numeric)
+    ELSE (0)::numeric
+END) STORED,
     CONSTRAINT workout_log_entries_rpe_rating_check CHECK (((rpe_rating >= 1) AND (rpe_rating <= 10)))
 );
 
@@ -6138,6 +5893,41 @@ COMMENT ON COLUMN public.workout_logs.cycle_session_id IS 'Links this workout lo
 
 
 --
+-- Name: workout_exercise_session_stats; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.workout_exercise_session_stats WITH (security_invoker='true') AS
+ SELECT wle.workout_log_id,
+    wle.exercise_id,
+    wl.user_id,
+    wl.log_date,
+    count(*) AS sets_completed,
+    sum(wle.volume_lbs) AS total_volume_lbs,
+    avg(wle.volume_lbs) FILTER (WHERE (wle.volume_lbs > (0)::numeric)) AS avg_volume_per_set,
+    max(wle.volume_lbs) AS max_volume_single_set,
+    max(wle.weight_lbs) AS max_weight_lbs,
+    avg(wle.weight_lbs) FILTER (WHERE (wle.weight_lbs > (0)::numeric)) AS avg_weight_lbs,
+    min(wle.weight_lbs) FILTER (WHERE (wle.weight_lbs > (0)::numeric)) AS min_weight_lbs,
+    sum(wle.reps_completed) AS total_reps,
+    avg(wle.reps_completed) AS avg_reps,
+    max(wle.reps_completed) AS max_reps,
+    min(wle.reps_completed) AS min_reps,
+    avg(wle.rpe_rating) FILTER (WHERE (wle.rpe_rating IS NOT NULL)) AS avg_rpe,
+    array_agg(jsonb_build_object('set_number', wle.set_number, 'reps', wle.reps_completed, 'weight', wle.weight_lbs, 'volume', wle.volume_lbs, 'rpe', wle.rpe_rating) ORDER BY wle.set_number) AS set_details
+   FROM (public.workout_log_entries wle
+     JOIN public.workout_logs wl ON ((wle.workout_log_id = wl.id)))
+  WHERE (wle.completed = true)
+  GROUP BY wle.workout_log_id, wle.exercise_id, wl.user_id, wl.log_date;
+
+
+--
+-- Name: VIEW workout_exercise_session_stats; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON VIEW public.workout_exercise_session_stats IS 'Exercise-specific statistics within each workout session. Used for progress tracking and charts.';
+
+
+--
 -- Name: workout_routines; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6156,6 +5946,43 @@ CREATE TABLE public.workout_routines (
     difficulty_level text,
     CONSTRAINT difficulty_level_check CHECK ((difficulty_level = ANY (ARRAY['Beginner'::text, 'Intermediate'::text, 'Advanced'::text])))
 );
+
+
+--
+-- Name: workout_session_totals; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.workout_session_totals WITH (security_invoker='true') AS
+ SELECT wl.id AS workout_log_id,
+    wl.user_id,
+    wl.routine_id,
+    wl.log_date,
+    wl.duration_minutes,
+    wl.calories_burned,
+    wl.is_complete,
+    count(DISTINCT wle.exercise_id) AS unique_exercises,
+    count(*) AS total_sets,
+    sum(wle.volume_lbs) AS total_volume_lbs,
+    avg(wle.volume_lbs) FILTER (WHERE (wle.volume_lbs > (0)::numeric)) AS avg_volume_per_set,
+    max(wle.volume_lbs) AS max_volume_single_set,
+    max(wle.weight_lbs) AS max_weight_lbs,
+    avg(wle.weight_lbs) FILTER (WHERE (wle.weight_lbs > (0)::numeric)) AS avg_weight_lbs,
+    sum(wle.reps_completed) AS total_reps,
+    avg(wle.reps_completed) AS avg_reps_per_set,
+    avg(wle.rpe_rating) FILTER (WHERE (wle.rpe_rating IS NOT NULL)) AS avg_rpe,
+    max(wle.rpe_rating) AS max_rpe,
+    min(wle.created_at) AS first_set_time,
+    max(wle.created_at) AS last_set_time
+   FROM (public.workout_logs wl
+     LEFT JOIN public.workout_log_entries wle ON ((wl.id = wle.workout_log_id)))
+  GROUP BY wl.id, wl.user_id, wl.routine_id, wl.log_date, wl.duration_minutes, wl.calories_burned, wl.is_complete;
+
+
+--
+-- Name: VIEW workout_session_totals; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON VIEW public.workout_session_totals IS 'Pre-aggregated workout session statistics for performance. Eliminates client-side calculations.';
 
 
 --
@@ -6694,6 +6521,14 @@ ALTER TABLE ONLY auth.oauth_authorizations
 
 ALTER TABLE ONLY auth.oauth_authorizations
     ADD CONSTRAINT oauth_authorizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: oauth_client_states oauth_client_states_pkey; Type: CONSTRAINT; Schema: auth; Owner: -
+--
+
+ALTER TABLE ONLY auth.oauth_client_states
+    ADD CONSTRAINT oauth_client_states_pkey PRIMARY KEY (id);
 
 
 --
@@ -7537,6 +7372,13 @@ CREATE INDEX idx_auth_code ON auth.flow_state USING btree (auth_code);
 
 
 --
+-- Name: idx_oauth_client_states_created_at; Type: INDEX; Schema: auth; Owner: -
+--
+
+CREATE INDEX idx_oauth_client_states_created_at ON auth.oauth_client_states USING btree (created_at);
+
+
+--
 -- Name: idx_user_id_auth_method; Type: INDEX; Schema: auth; Owner: -
 --
 
@@ -7873,6 +7715,13 @@ CREATE INDEX idx_body_metrics_user_date ON public.body_metrics USING btree (user
 
 
 --
+-- Name: idx_body_metrics_weight_kg; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_body_metrics_weight_kg ON public.body_metrics USING btree (weight_kg, measurement_date) WHERE (weight_kg IS NOT NULL);
+
+
+--
 -- Name: idx_bug_report_replies_bug_report_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8202,6 +8051,13 @@ CREATE INDEX idx_mesocycles_user_id ON public.mesocycles USING btree (user_id);
 
 
 --
+-- Name: idx_nutrition_logs_date_desc; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_nutrition_logs_date_desc ON public.nutrition_logs USING btree (log_date DESC, user_id);
+
+
+--
 -- Name: idx_nutrition_logs_food_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8356,6 +8212,13 @@ CREATE INDEX idx_trainer_clients_generated_routines ON public.trainer_clients US
 
 
 --
+-- Name: idx_trainer_clients_metrics; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_trainer_clients_metrics ON public.trainer_clients USING gin (metrics);
+
+
+--
 -- Name: idx_trainer_clients_tags; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8391,6 +8254,13 @@ CREATE INDEX idx_user_meal_foods_food_id ON public.user_meal_foods USING btree (
 
 
 --
+-- Name: idx_user_meal_foods_user_meal; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_user_meal_foods_user_meal ON public.user_meal_foods USING btree (user_meal_id);
+
+
+--
 -- Name: idx_user_meal_foods_user_meal_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8409,6 +8279,13 @@ CREATE INDEX idx_user_meals_user_id ON public.user_meals USING btree (user_id);
 --
 
 CREATE INDEX idx_user_profiles_email ON public.user_profiles USING btree (email);
+
+
+--
+-- Name: idx_user_profiles_height_feet; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_user_profiles_height_feet ON public.user_profiles USING btree (height_feet) WHERE (height_feet IS NOT NULL);
 
 
 --
@@ -8461,6 +8338,13 @@ CREATE INDEX idx_users_unsubscribed ON public.users USING btree (is_unsubscribed
 
 
 --
+-- Name: idx_weekly_meal_plan_entries_plan_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_weekly_meal_plan_entries_plan_date ON public.weekly_meal_plan_entries USING btree (plan_id, plan_date);
+
+
+--
 -- Name: idx_weekly_meal_plan_entries_user_meal_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8489,10 +8373,38 @@ CREATE INDEX idx_weekly_meal_plans_user_id ON public.weekly_meal_plans USING btr
 
 
 --
+-- Name: idx_wmp_nutrition_entry_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_wmp_nutrition_entry_id ON public.weekly_meal_plan_nutrition USING btree (entry_id);
+
+
+--
+-- Name: idx_wmp_nutrition_plan_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_wmp_nutrition_plan_date ON public.weekly_meal_plan_nutrition USING btree (plan_id, plan_date);
+
+
+--
+-- Name: idx_wmp_nutrition_plan_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_wmp_nutrition_plan_id ON public.weekly_meal_plan_nutrition USING btree (plan_id);
+
+
+--
 -- Name: idx_workout_log_entries_exercise_date; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_workout_log_entries_exercise_date ON public.workout_log_entries USING btree (exercise_id, created_at DESC);
+
+
+--
+-- Name: idx_workout_log_entries_exercise_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_workout_log_entries_exercise_user ON public.workout_log_entries USING btree (exercise_id, created_at DESC) WHERE ((completed = true) AND (weight_lbs > (0)::numeric));
 
 
 --
@@ -8510,6 +8422,13 @@ CREATE INDEX idx_workout_log_entries_log_id ON public.workout_log_entries USING 
 
 
 --
+-- Name: idx_workout_log_entries_volume; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_workout_log_entries_volume ON public.workout_log_entries USING btree (volume_lbs DESC) WHERE (volume_lbs > (0)::numeric);
+
+
+--
 -- Name: idx_workout_logs_completed_sessions; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8524,6 +8443,13 @@ CREATE INDEX idx_workout_logs_cycle_session ON public.workout_logs USING btree (
 
 
 --
+-- Name: idx_workout_logs_routine_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_workout_logs_routine_date ON public.workout_logs USING btree (routine_id, log_date DESC) WHERE (is_complete = true);
+
+
+--
 -- Name: idx_workout_logs_routine_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8535,6 +8461,13 @@ CREATE INDEX idx_workout_logs_routine_id ON public.workout_logs USING btree (rou
 --
 
 CREATE INDEX idx_workout_logs_user_date ON public.workout_logs USING btree (user_id, log_date);
+
+
+--
+-- Name: idx_workout_logs_user_date_complete; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_workout_logs_user_date_complete ON public.workout_logs USING btree (user_id, log_date DESC, is_complete);
 
 
 --
@@ -8815,6 +8748,20 @@ CREATE TRIGGER calculate_nutrition_on_insert BEFORE INSERT ON public.nutrition_l
 --
 
 CREATE TRIGGER calculate_nutrition_on_update BEFORE UPDATE ON public.nutrition_logs FOR EACH ROW WHEN (((old.food_id IS DISTINCT FROM new.food_id) OR (old.quantity_consumed IS DISTINCT FROM new.quantity_consumed))) EXECUTE FUNCTION public.calculate_nutrition_from_food();
+
+
+--
+-- Name: weekly_meal_plan_entries refresh_meal_plan_nutrition_on_entry; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER refresh_meal_plan_nutrition_on_entry AFTER INSERT OR DELETE OR UPDATE ON public.weekly_meal_plan_entries FOR EACH STATEMENT EXECUTE FUNCTION public.refresh_meal_plan_nutrition();
+
+
+--
+-- Name: user_meal_foods refresh_meal_plan_nutrition_on_foods; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER refresh_meal_plan_nutrition_on_foods AFTER INSERT OR DELETE OR UPDATE ON public.user_meal_foods FOR EACH STATEMENT EXECUTE FUNCTION public.refresh_meal_plan_nutrition();
 
 
 --
@@ -9855,6 +9802,13 @@ CREATE POLICY "Admins can view all bug reports" ON public.bug_reports FOR SELECT
 
 
 --
+-- Name: user_meal_foods Admins can view all meal foods; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Admins can view all meal foods" ON public.user_meal_foods FOR SELECT USING (public.is_admin());
+
+
+--
 -- Name: weekly_meal_plan_entries Admins can view all meal plan entries; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -9960,6 +9914,15 @@ CREATE POLICY "Trainers can update own relationships" ON public.trainer_clients 
 
 
 --
+-- Name: user_meal_foods Trainers can view client meal foods; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Trainers can view client meal foods" ON public.user_meal_foods FOR SELECT USING ((user_meal_id IN ( SELECT user_meals.id
+   FROM public.user_meals
+  WHERE public.is_trainer_for_client(user_meals.user_id))));
+
+
+--
 -- Name: weekly_meal_plan_entries Trainers can view client meal plan entries; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -10031,6 +9994,17 @@ CREATE POLICY "Users can insert own nutrition logs" ON public.nutrition_logs FOR
 --
 
 CREATE POLICY "Users can insert own profile" ON public.user_profiles FOR INSERT WITH CHECK ((id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: user_meal_foods Users can manage own meal foods; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can manage own meal foods" ON public.user_meal_foods USING ((user_meal_id IN ( SELECT user_meals.id
+   FROM public.user_meals
+  WHERE (user_meals.user_id = auth.uid())))) WITH CHECK ((user_meal_id IN ( SELECT user_meals.id
+   FROM public.user_meals
+  WHERE (user_meals.user_id = auth.uid()))));
 
 
 --
@@ -10263,6 +10237,12 @@ ALTER TABLE public.trainer_email_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.trainer_group_tags ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: user_meal_foods; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.user_meal_foods ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: user_meals; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -10435,5 +10415,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Oi6wPhDp1vDzepBrOgwRiWomhux1VMiU31K7hChhsghq8PhCflNgt7yurBxxbrA
+\unrestrict 50ZCh9TFModMwUCXBtqEyHyDtFDrB7ogVmli18ruhB3sBcP5SF4vTUmVJj2JNz1
 
