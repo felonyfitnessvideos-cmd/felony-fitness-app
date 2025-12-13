@@ -30,6 +30,7 @@ export const RDA_TARGETS = {
   zinc_mg: { min: 8, optimal: 11, max: 40 },
   copper_mg: { min: 0.9, optimal: 1.3, max: 10 },
   selenium_mcg: { min: 55, optimal: 70, max: 400 },
+  cholesterol_mg: { min: 0, optimal: 200, max: 300 }, // AHA recommends <300mg for healthy adults
 
   // Vitamins
   vitamin_a_mcg: { min: 700, optimal: 900, max: 3000 },
@@ -109,6 +110,11 @@ export const NUTRIENT_SOURCES = {
     topFoods: ['Almonds', 'Sunflower Seeds', 'Avocado', 'Spinach', 'Olive Oil'],
     description: 'Powerful antioxidant',
   },
+  cholesterol_mg: {
+    category: 'Proteins',
+    topFoods: ['Eggs', 'Shrimp', 'Red Meat', 'Cheese', 'Butter', 'Organ Meats'],
+    description: 'Limit intake for heart health',
+  },
 };
 
 /**
@@ -137,6 +143,7 @@ export function calculateWeeklyNutrientTotals(planEntries) {
     zinc_mg: 0,
     copper_mg: 0,
     selenium_mcg: 0,
+    cholesterol_mg: 0,
     
     // Vitamins
     vitamin_a_mcg: 0,
@@ -187,6 +194,59 @@ export function calculateDailyAverages(weeklyTotals) {
     dailyAverages[nutrient] = weeklyTotals[nutrient] / 7;
   });
   return dailyAverages;
+}
+
+/**
+ * Identify foods contributing most to excess nutrients
+ * 
+ * @param {Array} planEntries - Weekly meal plan entries
+ * @param {Array} excessNutrients - Array of nutrients with excess severity
+ * @returns {Object} Map of nutrient to top contributing foods
+ */
+export function identifyExcessContributors(planEntries, excessNutrients) {
+  const contributors = {};
+
+  excessNutrients.forEach(excess => {
+    const nutrient = excess.nutrient;
+    const foodContributions = [];
+
+    planEntries.forEach(entry => {
+      const servings = entry.servings || 1;
+      const mealFoods = entry.meals?.meal_foods || [];
+
+      mealFoods.forEach(mealFood => {
+        const food = mealFood.foods || mealFood.food_servings;
+        if (!food) return;
+
+        const quantity = mealFood.quantity * servings;
+        const nutrientValue = food[nutrient];
+
+        if (nutrientValue !== null && nutrientValue !== undefined && !isNaN(nutrientValue) && nutrientValue > 0) {
+          const totalContribution = nutrientValue * quantity;
+          
+          // Find existing food entry or create new one
+          const existingFood = foodContributions.find(f => f.name === food.name);
+          if (existingFood) {
+            existingFood.totalContribution += totalContribution;
+            existingFood.servings += quantity;
+          } else {
+            foodContributions.push({
+              name: food.name,
+              totalContribution,
+              servings: quantity,
+              perServing: nutrientValue,
+            });
+          }
+        }
+      });
+    });
+
+    // Sort by total contribution and take top 5
+    foodContributions.sort((a, b) => b.totalContribution - a.totalContribution);
+    contributors[nutrient] = foodContributions.slice(0, 5);
+  });
+
+  return contributors;
 }
 
 /**
@@ -258,12 +318,13 @@ export function identifyDeficiencies(dailyAverages) {
  * 
  * @param {Array} deficiencies - Array of identified deficiencies
  * @param {Array} _availableMeals - User's available meals (reserved for future enhancement)
+ * @param {Object} excessContributors - Map of excess nutrients to contributing foods
  * @returns {Array} Recommended meals with reasoning
  */
-export function generateMealRecommendations(deficiencies, _availableMeals) {
+export function generateMealRecommendations(deficiencies, _availableMeals, excessContributors = {}) {
   const recommendations = [];
 
-  // Focus on top 3 most severe deficiencies
+  // Focus on top 3 most severe deficiencies (excluding excess for now)
   const topDeficiencies = deficiencies.slice(0, 3).filter(d => d.severity !== 'excess');
 
   if (topDeficiencies.length === 0) {
@@ -294,17 +355,34 @@ export function generateMealRecommendations(deficiencies, _availableMeals) {
     });
   });
 
-  // Check for excess nutrients
+  // Check for excess nutrients and provide specific food contributors
   const excessNutrients = deficiencies.filter(d => d.severity === 'excess');
   excessNutrients.forEach(excess => {
     const nutrientName = excess.nutrient.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const contributors = excessContributors[excess.nutrient] || [];
+    
+    // Build food list with contributions
+    const topFoods = contributors.slice(0, 3).map(food => {
+      return `${food.name} (${food.servings.toFixed(1)} servings) → ${Math.round(food.totalContribution)} ${excess.unit}`;
+    });
+
+    // Generate swap suggestion based on top contributor
+    let swapSuggestion = `Consider reducing ${nutrientName} intake. Current consumption exceeds recommended maximum.`;
+    if (contributors.length > 0) {
+      const topContributor = contributors[0];
+      const savings = Math.round(topContributor.totalContribution);
+      swapSuggestion = `Replace or reduce ${topContributor.name} to save ~${savings} ${excess.unit} of ${nutrientName}.`;
+    }
+
     recommendations.push({
       type: 'excess',
       severity: 'warning',
       nutrient: nutrientName,
       current: Math.round(excess.intake),
       max: Math.round(excess.max),
-      suggestion: `Consider reducing ${nutrientName} intake. Current consumption exceeds recommended maximum.`,
+      topFoods,
+      contributors,
+      suggestion: swapSuggestion,
     });
   });
 
@@ -326,8 +404,12 @@ export function analyzeWeeklyNutrition(planEntries, availableMeals = []) {
   // Identify deficiencies
   const deficiencies = identifyDeficiencies(dailyAverages);
   
-  // Generate recommendations
-  const recommendations = generateMealRecommendations(deficiencies, availableMeals);
+  // Identify foods contributing to excess nutrients
+  const excessNutrients = deficiencies.filter(d => d.severity === 'excess');
+  const excessContributors = identifyExcessContributors(planEntries, excessNutrients);
+  
+  // Generate recommendations with excess contributors
+  const recommendations = generateMealRecommendations(deficiencies, availableMeals, excessContributors);
 
   // Calculate overall health score (0-100)
   const totalNutrients = Object.keys(RDA_TARGETS).length;
@@ -344,6 +426,7 @@ export function analyzeWeeklyNutrition(planEntries, availableMeals = []) {
     dailyAverages,
     deficiencies,
     recommendations,
+    excessContributors,
     healthScore,
     summary: {
       totalNutrients,

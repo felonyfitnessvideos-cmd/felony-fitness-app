@@ -1335,9 +1335,20 @@ const WeeklyMealPlannerPage = () => {
                             {' '}({def.percentOfTarget.toFixed(0)}%)
                           </div>
                         </div>
-                        {def.foodSources && def.foodSources.length > 0 && (
+                        {def.severity === 'excess' && nutritionAnalysis.excessContributors && nutritionAnalysis.excessContributors[def.nutrient] && nutritionAnalysis.excessContributors[def.nutrient].length > 0 ? (
+                          <div className="excess-contributors">
+                            <strong>Top Contributors:</strong>
+                            <ul>
+                              {nutritionAnalysis.excessContributors[def.nutrient].slice(0, 3).map((food, idx) => (
+                                <li key={idx}>
+                                  {food.name} ({food.servings.toFixed(1)} servings) → {Math.round(food.totalContribution)} {def.unit}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : def.foodSources && def.foodSources.length > 0 && (
                           <div className="food-sources">
-                            <strong>Top Sources:</strong> {def.foodSources.join(', ')}
+                            <strong>Top Sources to Add:</strong> {def.foodSources.join(', ')}
                           </div>
                         )}
                         {def.description && (
@@ -1375,16 +1386,6 @@ const WeeklyMealPlannerPage = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Note about micronutrients */}
-              {nutritionAnalysis.deficiencies && nutritionAnalysis.deficiencies.filter(d => d.nutrient !== 'protein_g' && d.nutrient !== 'carbs_g' && d.nutrient !== 'fat_g' && d.nutrient !== 'fiber_g' && d.nutrient !== 'calories').length === 0 && (
-                <div className="micronutrient-note">
-                  <p>
-                    <strong>Note:</strong> Vitamin and mineral analysis will be available once food micronutrient data is populated. 
-                    Currently showing macronutrient analysis (protein, carbs, fat, fiber).
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </div>
