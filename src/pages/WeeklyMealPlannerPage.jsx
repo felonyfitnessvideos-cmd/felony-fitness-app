@@ -492,6 +492,7 @@ const WeeklyMealPlannerPage = () => {
         if (!food) return; // Skip if food data is missing
         
         const foodId = food.id;
+        const foodName = food.name || food.food_name; // Support both name formats
         const quantity = mealFood.quantity * servings;
         
         if (ingredientMap.has(foodId)) {
@@ -502,10 +503,9 @@ const WeeklyMealPlannerPage = () => {
           // Add new ingredient
           ingredientMap.set(foodId, {
             id: foodId,
-            name: food.food_name,
+            name: foodName,
             quantity: quantity,
-            category: food.category || 'Other',
-            serving_description: food.serving_description
+            category: food.category || 'Other'
           });
         }
       });
@@ -524,9 +524,12 @@ const WeeklyMealPlannerPage = () => {
     // Sort categories and items within each category
     const sortedList = {};
     Object.keys(groupedList).sort().forEach(category => {
-      sortedList[category] = groupedList[category].sort((a, b) => 
-        a.name.localeCompare(b.name)
-      );
+      sortedList[category] = groupedList[category].sort((a, b) => {
+        // Defensive null check to prevent localeCompare errors
+        const nameA = a.name || '';
+        const nameB = b.name || '';
+        return nameA.localeCompare(nameB);
+      });
     });
 
     return sortedList;
