@@ -253,10 +253,11 @@ export function identifyExcessContributors(planEntries, excessNutrients) {
  * Identify nutrient deficiencies based on RDA targets
  * 
  * @param {Object} dailyAverages - Daily average nutrient intake
- * @returns {Array} Array of deficiency objects with severity and recommendations
+ * @returns {Object} Object containing deficiencies and adequate nutrients arrays
  */
 export function identifyDeficiencies(dailyAverages) {
   const deficiencies = [];
+  const adequateNutrients = [];
 
   Object.keys(RDA_TARGETS).forEach(nutrient => {
     const intake = dailyAverages[nutrient] || 0;
@@ -282,35 +283,49 @@ export function identifyDeficiencies(dailyAverages) {
       excess = true;
     }
 
+    const source = NUTRIENT_SOURCES[nutrient];
+    const nutrientName = formatNutrientName(nutrient);
+    const unit = getNutrientUnit(nutrient);
+
+    const nutrientData = {
+      nutrient,
+      nutrientName,
+      intake: Math.round(intake * 100) / 100,
+      target: target.optimal,
+      min: target.min,
+      max: target.max,
+      percentage: Math.round(percentOfTarget),
+      percentOfTarget,
+      unit,
+      category: source?.category || 'Unknown',
+      topFoods: source?.topFoods || [],
+      foodSources: source?.topFoods || [],
+      description: source?.description || '',
+    };
+
     if (severity || excess) {
-      const source = NUTRIENT_SOURCES[nutrient];
-      const nutrientName = formatNutrientName(nutrient);
-      const unit = getNutrientUnit(nutrient);
-      
+      // Add to deficiencies with severity
       deficiencies.push({
-        nutrient,
-        nutrientName,
-        intake: Math.round(intake * 100) / 100,
-        target: target.optimal,
-        min: target.min,
-        max: target.max,
-        percentage: Math.round(percentOfTarget),
-        percentOfTarget,
-        unit,
+        ...nutrientData,
         severity: excess ? 'excess' : severity,
-        category: source?.category || 'Unknown',
-        topFoods: source?.topFoods || [],
-        foodSources: source?.topFoods || [],
-        description: source?.description || '',
+      });
+    } else if (intake >= target.min && intake <= target.max) {
+      // Within optimal range - add to adequate nutrients
+      adequateNutrients.push({
+        ...nutrientData,
+        severity: 'optimal',
       });
     }
   });
 
-  // Sort by severity (critical first)
+  // Sort deficiencies by severity (critical first)
   const severityOrder = { critical: 1, moderate: 2, mild: 3, excess: 4 };
   deficiencies.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 
-  return deficiencies;
+  // Sort adequate nutrients by percentage (highest first - showing best performers)
+  adequateNutrients.sort((a, b) => b.percentOfTarget - a.percentOfTarget);
+
+  return { deficiencies, adequateNutrients };
 }
 
 /**
@@ -401,8 +416,8 @@ export function analyzeWeeklyNutrition(planEntries, availableMeals = []) {
   const weeklyTotals = calculateWeeklyNutrientTotals(planEntries);
   const dailyAverages = calculateDailyAverages(weeklyTotals);
   
-  // Identify deficiencies
-  const deficiencies = identifyDeficiencies(dailyAverages);
+  // Identify deficiencies and adequate nutrients
+  const { deficiencies, adequateNutrients } = identifyDeficiencies(dailyAverages);
   
   // Identify foods contributing to excess nutrients
   const excessNutrients = deficiencies.filter(d => d.severity === 'excess');
@@ -413,24 +428,21 @@ export function analyzeWeeklyNutrition(planEntries, availableMeals = []) {
 
   // Calculate overall health score (0-100)
   const totalNutrients = Object.keys(RDA_TARGETS).length;
-  const adequateNutrients = Object.keys(dailyAverages).filter(nutrient => {
-    const intake = dailyAverages[nutrient];
-    const target = RDA_TARGETS[nutrient];
-    return intake >= target.min && intake <= target.max;
-  }).length;
+  const adequateCount = adequateNutrients.length;
   
-  const healthScore = Math.round((adequateNutrients / totalNutrients) * 100);
+  const healthScore = Math.round((adequateCount / totalNutrients) * 100);
 
   return {
     weeklyTotals,
     dailyAverages,
     deficiencies,
+    adequateNutrients,
     recommendations,
     excessContributors,
     healthScore,
     summary: {
       totalNutrients,
-      adequateNutrients,
+      adequateNutrients: adequateCount,
       deficientNutrients: deficiencies.filter(d => d.severity !== 'excess').length,
       excessNutrients: deficiencies.filter(d => d.severity === 'excess').length,
     },

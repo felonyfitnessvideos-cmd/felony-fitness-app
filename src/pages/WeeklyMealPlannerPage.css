@@ -25,8 +25,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Header */
@@ -555,7 +559,7 @@
   .meal-planning-grid {
     overflow-x: auto;
   }
-  
+
   .grid-header,
   .meal-row,
   .nutrition-summary-row {
@@ -567,53 +571,53 @@
   .weekly-meal-planner {
     padding: 12px;
   }
-  
+
   .planner-header {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
   }
-  
+
   .header-left {
     text-align: center;
   }
-  
+
   .header-actions {
     justify-content: center;
   }
-  
+
   .active-plan-info {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
   }
-  
+
   .plan-actions {
     justify-content: center;
   }
-  
+
   .week-navigation {
     justify-content: center;
   }
-  
+
   .meal-selector-overlay {
     padding: 10px;
   }
-  
+
   .meal-selector-modal {
     max-height: 90vh;
   }
-  
+
   .meal-categories {
     justify-content: center;
   }
-  
+
   .meal-option {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
   }
-  
+
   .meal-meta {
     flex-direction: row;
     justify-content: space-between;
@@ -819,7 +823,11 @@
 .health-score-section {
   text-align: center;
   padding: 24px;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--secondary-color) 100%
+  );
   border-radius: 12px;
   color: white;
 }
@@ -850,6 +858,7 @@
 /* Recommendations Section */
 .recommendations-section h4,
 .deficiencies-section h4,
+.adequate-nutrients-section h4,
 .daily-averages-section h4 {
   color: var(--text-primary);
   font-size: 1.1rem;
@@ -878,6 +887,69 @@
 .recommendation-card.success {
   background: rgba(76, 175, 80, 0.05);
   border-left-color: #4caf50;
+}
+
+/* Adequate Nutrients Section - What You're Doing Well */
+.adequate-nutrients-section {
+  margin-bottom: 32px;
+  padding: 20px;
+  background: rgba(76, 175, 80, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.adequate-nutrients-section h4 {
+  color: #2e7d32;
+  border-bottom-color: rgba(76, 175, 80, 0.3);
+}
+
+.section-description {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: -8px 0 16px 0;
+  line-height: 1.5;
+}
+
+.adequate-nutrients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.adequate-nutrient-item {
+  padding: 14px;
+  background: var(--background-color);
+  border-radius: 8px;
+  border-left: 4px solid #4caf50;
+}
+
+.adequate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.status-badge.optimal {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: #4caf50;
+  color: white;
+}
+
+.adequate-details {
+  margin-bottom: 8px;
+}
+
+.intake-bar.optimal {
+  background: rgba(76, 175, 80, 0.15);
+}
+
+.intake-bar.optimal .intake-fill {
+  background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%);
 }
 
 .recommendation-header {

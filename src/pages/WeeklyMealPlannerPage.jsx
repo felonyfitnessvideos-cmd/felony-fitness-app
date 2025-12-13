@@ -1322,6 +1322,41 @@ const WeeklyMealPlannerPage = () => {
                 </p>
               </div>
 
+              {/* Adequate Nutrients - What You're Doing Well */}
+              {nutritionAnalysis.adequateNutrients && nutritionAnalysis.adequateNutrients.length > 0 && (
+                <div className="adequate-nutrients-section">
+                  <h4>✅ What You&apos;re Doing Well</h4>
+                  <p className="section-description">
+                    These nutrients are within optimal ranges. Keep up the great work!
+                  </p>
+                  <div className="adequate-nutrients-list">
+                    {nutritionAnalysis.adequateNutrients.map((nutrient, index) => (
+                      <div key={index} className="adequate-nutrient-item">
+                        <div className="adequate-header">
+                          <span className="nutrient-name">{nutrient.nutrientName}</span>
+                          <span className="status-badge optimal">Optimal</span>
+                        </div>
+                        <div className="adequate-details">
+                          <div className="intake-bar optimal">
+                            <div 
+                              className="intake-fill" 
+                              style={{ width: `${Math.min((nutrient.intake / nutrient.max) * 100, 100)}%` }}
+                            />
+                          </div>
+                          <div className="intake-text">
+                            Daily Average: <strong>{nutrient.intake.toFixed(1)} {nutrient.unit}</strong>
+                            {' '} (Target: {nutrient.min}-{nutrient.max} {nutrient.unit})
+                          </div>
+                        </div>
+                        {nutrient.description && (
+                          <p className="nutrient-description">{nutrient.description}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Recommendations */}
               {nutritionAnalysis.recommendations && nutritionAnalysis.recommendations.length > 0 && (
                 <div className="recommendations-section">
