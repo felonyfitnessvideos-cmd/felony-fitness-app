@@ -118,6 +118,10 @@
   color: var(--text-primary);
   font-size: 0.875rem;
   cursor: pointer;
-  min-width: 120px;
+  width: 180px; /* Fixed width to fit within card */
   flex-shrink: 0; /* Prevent dropdown from being squeezed */
+  /* Truncate long option text */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
