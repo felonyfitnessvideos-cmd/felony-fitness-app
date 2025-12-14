@@ -436,7 +436,7 @@ function MesocycleDetail() {
                             Skip
                           </button>
                         )}
-                        <button className="action-button" onClick={(ev) => { ev.stopPropagation(); navigate(`/workouts/${routineId}/edit`); }} title="Edit">Edit</button>
+                        <button className="action-button" onClick={(ev) => { ev.stopPropagation(); navigate(`/workouts/routines/${routineId}`); }} title="Edit">Edit</button>
                       </>
                     ) : (
                       entry.notes === 'rest' ? (
