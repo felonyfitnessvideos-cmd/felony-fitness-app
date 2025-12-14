@@ -177,7 +177,18 @@ function MesocycleDetail() {
         setMesocycle(m || null);
 
   // load mesocycle_week assignments so we can render week layouts even when no sessions exist
-  const { data: weeksRows } = await supabase.from('mesocycle_weeks').select('id,mesocycle_id,week_index,day_index,routine_id,notes,day_type,is_complete,completed_at').eq('mesocycle_id', mesocycleId).order('week_index', { ascending: true }).order('day_index', { ascending: true });
+  let weeksRows = [];
+  try {
+    // Try to select new columns (is_complete, completed_at) if migration has been run
+    const { data, error } = await supabase.from('mesocycle_weeks').select('id,mesocycle_id,week_index,day_index,routine_id,notes,day_type,is_complete,completed_at').eq('mesocycle_id', mesocycleId).order('week_index', { ascending: true }).order('day_index', { ascending: true });
+    if (error) throw error;
+    weeksRows = data || [];
+  } catch (err) {
+    // If new columns don't exist yet, fall back to selecting all existing columns
+    console.warn('Could not load is_complete column (migration not run yet), falling back:', err?.message ?? err);
+    const { data } = await supabase.from('mesocycle_weeks').select('*').eq('mesocycle_id', mesocycleId).order('week_index', { ascending: true }).order('day_index', { ascending: true });
+    weeksRows = data || [];
+  }
   setWeeksData(weeksRows || []);
         // also load routine names referenced by this mesocycle via mesocycle_weeks
         const routineIds = Array.from(new Set((weeksRows || []).map(w => w.routine_id).filter(Boolean)));
@@ -271,17 +282,26 @@ function MesocycleDetail() {
     <div className="mesocycle-detail">
       <SubPageHeader title={mesocycle?.name ?? 'Mesocycle'} backTo="/mesocycles" />
       
-      {/* Display month/year if start_date exists */}
-      {mesocycle?.start_date && (
-        <div style={{ 
-          textAlign: 'center', 
-          color: 'var(--text-secondary)', 
-          fontSize: '0.9rem',
-          marginBottom: '0.5rem' 
-        }}>
-          {new Date(mesocycle.start_date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-        </div>
-      )}
+      {/* Display month/year based on current week being viewed */}
+      {mesocycle?.start_date && (() => {
+        try {
+          const start = new Date(mesocycle.start_date);
+          const weekStart = new Date(start);
+          weekStart.setDate(weekStart.getDate() + (currentWeekIndex - 1) * 7);
+          return (
+            <div style={{ 
+              textAlign: 'center', 
+              color: 'var(--text-secondary)', 
+              fontSize: '0.9rem',
+              marginBottom: '0.5rem' 
+            }}>
+              {weekStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </div>
+          );
+        } catch {
+          return null;
+        }
+      })()}
 
       {/* Week navigation with date display */}
       <div className="week-nav-container">
