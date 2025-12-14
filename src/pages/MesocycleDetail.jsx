@@ -224,7 +224,7 @@ function MesocycleDetail() {
               const start = new Date(mesocycle.start_date);
               const weekStart = new Date(start);
               weekStart.setDate(weekStart.getDate() + (currentWeekIndex - 1) * 7);
-              for (let i = 0; i < 8; i++) {
+              for (let i = 0; i < 7; i++) {
                 const d = new Date(weekStart);
                 d.setDate(d.getDate() + i);
                 const weekday = d.toLocaleDateString(undefined, { weekday: 'short' });
@@ -233,9 +233,9 @@ function MesocycleDetail() {
                 items.push({ weekday, daynum, iso });
               }
             } else {
-              // fallback to Mon-Sun labels + 1 extra day
-              const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-              for (let i = 0; i < 8; i++) items.push({ weekday: names[i], daynum: '', iso: null });
+              // fallback to Mon-Sun labels
+              const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+              for (let i = 0; i < 7; i++) items.push({ weekday: names[i], daynum: '', iso: null });
             }
           } catch {
             // noop
