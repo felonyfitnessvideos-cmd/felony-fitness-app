@@ -328,6 +328,11 @@
 
   /* Routine cards - horizontal layout, larger touch targets */
   .mesocycle-routine-card {
+    /* Ensure horizontal layout on tablet */
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     padding: 1rem;
     min-height: 72px;
     /* Prevent Android from expanding cards */
@@ -337,20 +342,30 @@
   }
 
   .mesocycle-routine-card .routine-info {
+    /* Keep routine info compact on one line */
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
     flex: 1;
-    min-width: 0;
+    min-width: 0; /* Allow text to truncate if needed */
   }
 
   .mesocycle-routine-card .day-badge {
     font-size: 0.8rem;
-    margin-right: 1rem;
+    margin-right: 0; /* Gap handles spacing */
+    flex-shrink: 0;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
 
   .mesocycle-routine-card h4 {
     font-size: 1.1rem;
-    margin-bottom: 0.35rem;
+    margin: 0;
+    /* Prevent text from wrapping and breaking layout */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     /* Prevent text inflation on Android */
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
@@ -359,12 +374,15 @@
   .mesocycle-routine-card .status-badge {
     font-size: 0.85rem;
     padding: 0.2rem 0.5rem;
+    flex-shrink: 0;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
 
   .mesocycle-routine-card .routine-actions {
+    display: flex;
     gap: 0.625rem;
+    align-items: center;
     margin-left: 1rem;
     flex-shrink: 0;
     flex-wrap: nowrap;
