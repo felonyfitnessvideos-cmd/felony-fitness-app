@@ -84,30 +84,32 @@ function MesocycleDetail() {
     
     try {
       // Create a workout_log entry marked as complete but with a note indicating it was skipped
+      const now = new Date();
       const { error } = await supabase.from('workout_logs').insert({
         user_id: user.id,
         routine_id: routineId,
         is_complete: true,
         notes: 'Skipped',
-        created_at: new Date().toISOString()
+        created_at: now.toISOString()
       });
       
       if (error) throw error;
       
-      // Refresh logs
-      const { data: logs } = await supabase
-        .from('workout_logs')
-        .select('id,routine_id,created_at,is_complete')
-        .eq('user_id', user.id)
-        .eq('routine_id', routineId)
-        .eq('is_complete', true)
-        .order('created_at', { ascending: false });
-      
-      // Update logs map
-      const newLogsMap = { ...logsMap, [routineId]: logs || [] };
+      // Update logsMap with the new skipped entry
+      const dateKey = toLocalDateString(now);
+      const key = `${routineId}::${dateKey}`;
+      const newLogsMap = { 
+        ...logsMap, 
+        [key]: { 
+          id: `skip-${Date.now()}`, 
+          routine_id: routineId, 
+          created_at: now.toISOString(), 
+          is_complete: true 
+        } 
+      };
       setLogsMap(newLogsMap);
       
-      alert('Routine marked as skipped');
+      // No alert needed - the UI will update immediately
     } catch (err) {
       console.error('Failed to skip routine:', err);
       alert('Failed to skip routine. Please try again.');
@@ -284,59 +286,76 @@ function MesocycleDetail() {
     <div className="mesocycle-detail">
       <SubPageHeader title={mesocycle?.name ?? 'Mesocycle'} backTo="/mesocycles" />
 
-      {/* Date scroller for the current week */}
-      <div className="date-scroller">
-        {(() => {
-          // build week dates based on mesocycle.start_date and currentWeekIndex
-          const items = [];
-          const todayIso = toLocalDateString(new Date());
-          
-          try {
-            if (mesocycle?.start_date) {
-              const start = new Date(mesocycle.start_date);
-              const weekStart = new Date(start);
-              weekStart.setDate(weekStart.getDate() + (currentWeekIndex - 1) * 7);
-              
-              for (let i = 0; i < 7; i++) {
-                const d = new Date(weekStart);
-                d.setDate(d.getDate() + i);
-                const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
-                const daynum = d.getDate();
-                const iso = toLocalDateString(d);
-                items.push({ weekday, daynum, iso });
+      {/* Week navigation with date display */}
+      <div className="week-nav-container">
+        <button 
+          className="week-nav-btn" 
+          onClick={() => setCurrentWeekIndex(Math.max(1, currentWeekIndex - 1))}
+          disabled={currentWeekIndex <= 1}
+          title="Previous week">
+          ←
+        </button>
+        
+        <div className="date-scroller">
+          {(() => {
+            // build week dates based on mesocycle.start_date and currentWeekIndex
+            const items = [];
+            const todayIso = toLocalDateString(new Date());
+            
+            try {
+              if (mesocycle?.start_date) {
+                const start = new Date(mesocycle.start_date);
+                const weekStart = new Date(start);
+                weekStart.setDate(weekStart.getDate() + (currentWeekIndex - 1) * 7);
+                
+                for (let i = 0; i < 7; i++) {
+                  const d = new Date(weekStart);
+                  d.setDate(d.getDate() + i);
+                  const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
+                  const daynum = d.getDate();
+                  const iso = toLocalDateString(d);
+                  items.push({ weekday, daynum, iso });
+                }
+              } else {
+                // Fallback: show week dates based on currentWeekIndex
+                const today = new Date();
+                const weekStart = new Date(today);
+                weekStart.setDate(today.getDate() - today.getDay() + (currentWeekIndex - 1) * 7);
+                
+                for (let i = 0; i < 7; i++) {
+                  const d = new Date(weekStart);
+                  d.setDate(weekStart.getDate() + i);
+                  const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
+                  const daynum = d.getDate();
+                  const iso = toLocalDateString(d);
+                  items.push({ weekday, daynum, iso });
+                }
               }
-            } else {
-              // Fallback: show current week's dates even without mesocycle.start_date
-              const today = new Date();
-              const dayOfWeek = today.getDay(); // 0 = Sunday
-              const weekStart = new Date(today);
-              weekStart.setDate(today.getDate() - dayOfWeek); // Go to Sunday of current week
-              
+            } catch (err) {
+              console.error('Error building date scroller:', err);
+              // Ultimate fallback: just show day names
+              const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
               for (let i = 0; i < 7; i++) {
-                const d = new Date(weekStart);
-                d.setDate(weekStart.getDate() + i);
-                const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
-                const daynum = d.getDate();
-                const iso = toLocalDateString(d);
-                items.push({ weekday, daynum, iso });
+                items.push({ weekday: names[i], daynum: '?', iso: null });
               }
             }
-          } catch (err) {
-            console.error('Error building date scroller:', err);
-            // Ultimate fallback: just show day names
-            const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-            for (let i = 0; i < 7; i++) {
-              items.push({ weekday: names[i], daynum: '?', iso: null });
-            }
-          }
-          
-          return items.map((it, idx) => (
-            <div key={it.iso || `${it.weekday}-${idx}`} className={`date-pill ${it.iso === todayIso ? 'today' : ''}`}>
-              <div className="date-weekday">{it.weekday}</div>
-              <div className="date-day">{it.daynum}</div>
-            </div>
-          ));
-        })()}
+            
+            return items.map((it, idx) => (
+              <div key={it.iso || `${it.weekday}-${idx}`} className={`date-pill ${it.iso === todayIso ? 'today' : ''}`}>
+                <div className="date-weekday">{it.weekday}</div>
+                <div className="date-day">{it.daynum}</div>
+              </div>
+            ));
+          })()}
+        </div>
+        
+        <button 
+          className="week-nav-btn" 
+          onClick={() => setCurrentWeekIndex(Math.min((mesocycle?.weeks || 1), currentWeekIndex + 1))}
+          disabled={currentWeekIndex >= (mesocycle?.weeks || 1)}
+          title="Next week">
+          →
+        </button>
       </div>
 
       

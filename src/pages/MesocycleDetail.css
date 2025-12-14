@@ -109,13 +109,42 @@
   vertical-align: middle;
 }
 
+/* Week navigation container */
+.week-nav-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.week-nav-btn {
+  background: var(--card-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.week-nav-btn:hover:not(:disabled) {
+  background: var(--card-hover, rgba(0, 0, 0, 0.04));
+  border-color: var(--text-primary);
+}
+
+.week-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 /* Date scroller at top */
 .date-scroller {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
   padding: 0.5rem 0;
-  margin-bottom: 0.5rem;
+  flex: 1;
 }
 .date-pill {
   min-width: 56px;
