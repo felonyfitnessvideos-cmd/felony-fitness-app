@@ -426,6 +426,8 @@ function MesocycleDetail() {
               // Determine display label: prefer routine name, then explicit notes (rest/deload), otherwise 'Unassigned'
               let label = 'Unassigned';
               if (routineId) label = routines.find(r => r.id === routineId)?.routine_name || 'Routine';
+              else if (entry.notes === 'rest') label = 'Rest Day';
+              else if (entry.notes === 'deload') label = 'Deload Day';
               else if (entry.notes) label = entry.notes;
 
               // 🔍 COMPREHENSIVE DEBUG LOGGING
@@ -470,7 +472,7 @@ function MesocycleDetail() {
                     </div>
                     <div>
                       <h4>{label}</h4>
-                      <span className={`status-badge ${isDeload ? 'deload' : (routineId ? 'active' : 'inactive')}`}>{isDeload ? 'Deload' : (routineId ? 'Routine' : 'Rest')}</span>
+                      {routineId && <span className={`status-badge ${isDeload ? 'deload' : 'active'}`}>Routine</span>}
                     </div>
                   </div>
                   <div className="routine-actions">
@@ -486,14 +488,8 @@ function MesocycleDetail() {
                         )}
                         <button className="action-button" onClick={(ev) => { ev.stopPropagation(); navigate(`/workouts/routines/${routineId}`); }} title="Edit">Edit</button>
                       </>
-                    ) : (
-                      entry.notes === 'rest' ? (
-                        <div style={{ color: 'var(--text-secondary)' }}>Rest</div>
-                      ) : entry.notes === 'deload' ? (
-                        <div style={{ color: '#92400e' }}>Deload</div>
-                      ) : (
-                        <button className="action-button" onClick={() => navigate(`/mesocycles/new?mesocycleId=${mesocycleId}`)}>Assign</button>
-                      )
+                    ) : entry.notes ? null : (
+                      <button className="action-button" onClick={() => navigate(`/mesocycles/new?mesocycleId=${mesocycleId}`)}>Assign</button>
                     )}
                   </div>
                 </div>
