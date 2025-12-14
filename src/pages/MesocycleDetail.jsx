@@ -75,6 +75,7 @@ function MesocycleDetail() {
   const [sessions, setSessions] = useState([]);
   const [logsMap, setLogsMap] = useState({});
   const [currentWeekIndex, setCurrentWeekIndex] = useState(1);
+  const [autoCalculatedWeek, setAutoCalculatedWeek] = useState(1);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -247,37 +248,56 @@ function MesocycleDetail() {
       const allComplete = weekRoutines.every(wr => {
         const routineId = wr.routine_id;
         
-        // Check sessions if available
-        if (sessions && sessions.length > 0) {
-          const dayEntries = weeksData.filter(w => 
-            w.week_index === weekIdx && 
-            w.day_index === wr.day_index && 
-            w.routine_id === routineId
-          );
-          
-          for (const entry of dayEntries) {
-            const session = sessions.find(s => 
-              s.routine_id === entry.routine_id && 
-              s.mesocycle_id === mesocycle.id
-            );
-            if (session && session.is_complete) return true;
+        // Calculate scheduled date for this routine
+        let scheduledDateStr = null;
+        if (mesocycle.start_date) {
+          try {
+            const start = new Date(mesocycle.start_date);
+            const daysToAdd = (weekIdx - 1) * 7 + (wr.day_index - 1);
+            const d = new Date(start);
+            d.setDate(d.getDate() + daysToAdd);
+            scheduledDateStr = toLocalDateString(d);
+          } catch {
+            scheduledDateStr = null;
           }
         }
         
-        // Fallback: check workout_logs
-        const logs = logsMap[routineId] || [];
-        return logs.some(log => log.is_complete);
+        // Check sessions if available
+        if (sessions && sessions.length > 0) {
+          const session = sessions.find(s => 
+            s.routine_id === routineId && 
+            s.mesocycle_id === mesocycle.id &&
+            s.is_complete
+          );
+          if (session) return true;
+        }
+        
+        // Fallback: check workout_logs with date key
+        if (scheduledDateStr) {
+          const logKey = `${routineId}::${scheduledDateStr}`;
+          const log = logsMap[logKey];
+          if (log && log.is_complete) return true;
+        }
+        
+        // Also check if ANY log exists for this routine (allows completing early)
+        return Object.keys(logsMap).some(key => 
+          key.startsWith(`${routineId}::`) && 
+          logsMap[key].is_complete
+        );
       });
       
       // If not all complete, this is the current week
       if (!allComplete) {
+        setAutoCalculatedWeek(weekIdx);
         setCurrentWeekIndex(weekIdx);
         return;
       }
     }
     
     // All weeks are complete, show the last week
-    setCurrentWeekIndex(mesocycle.weeks || 1);
+    const lastWeek = mesocycle.weeks || 1;
+    setAutoCalculatedWeek(lastWeek);
+    setCurrentWeekIndex(lastWeek);
   }, [mesocycle, weeksData, sessions, logsMap]);
 
   // No generate function here — mesocycle renders week assignments directly
@@ -362,7 +382,7 @@ function MesocycleDetail() {
 
       {weeksData && weeksData.length > 0 && (
         <div className="mesocycle-routines">
-          <h4>Week {currentWeekIndex}{mesocycle?.start_date ? ' (current)' : ''}</h4>
+          <h4>Week {currentWeekIndex}{currentWeekIndex === autoCalculatedWeek ? ' (current)' : ''}</h4>
           <div className="routine-list">
             {Array.from({ length: 7 }).map((_, idx) => {
               const dayIndex = idx + 1;
