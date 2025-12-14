@@ -74,6 +74,16 @@
   cursor: pointer;
 }
 
+/* Skip button styling */
+.skip-button {
+  color: var(--text-secondary);
+  border-color: var(--text-secondary) !important;
+}
+.skip-button:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: var(--text-primary) !important;
+}
+
 /* Completed state */
 .mesocycle-routine-card.completed {
   background: linear-gradient(

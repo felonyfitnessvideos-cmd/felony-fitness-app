@@ -78,6 +78,42 @@ function MesocycleDetail() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
+  // Skip a routine (mark as complete without logging workout)
+  const handleSkipRoutine = async (routineId) => {
+    if (!user || !routineId) return;
+    
+    try {
+      // Create a workout_log entry marked as complete but with a note indicating it was skipped
+      const { error } = await supabase.from('workout_logs').insert({
+        user_id: user.id,
+        routine_id: routineId,
+        is_complete: true,
+        notes: 'Skipped',
+        created_at: new Date().toISOString()
+      });
+      
+      if (error) throw error;
+      
+      // Refresh logs
+      const { data: logs } = await supabase
+        .from('workout_logs')
+        .select('id,routine_id,created_at,is_complete')
+        .eq('user_id', user.id)
+        .eq('routine_id', routineId)
+        .eq('is_complete', true)
+        .order('created_at', { ascending: false });
+      
+      // Update logs map
+      const newLogsMap = { ...logsMap, [routineId]: logs || [] };
+      setLogsMap(newLogsMap);
+      
+      alert('Routine marked as skipped');
+    } catch (err) {
+      console.error('Failed to skip routine:', err);
+      alert('Failed to skip routine. Please try again.');
+    }
+  };
+
   // Move a day assignment up or down within the current week
   const handleMoveDay = async (dayIndex, direction) => {
     // direction: -1 = up, +1 = down
@@ -187,66 +223,59 @@ function MesocycleDetail() {
     })();
   }, [mesocycleId, loading, user]);
 
-  // compute current week index based on completion status
-  // Show the first week that has incomplete workouts, or the date-based week if all prior weeks are complete
+  // Compute current week index based ONLY on completion status (no dates)
+  // Show the first week that has any incomplete assigned routines
+  // Advance to next week only when all assigned routines are complete
   useEffect(() => {
-    if (!mesocycle) {
+    if (!mesocycle || !weeksData || weeksData.length === 0) {
       setCurrentWeekIndex(1);
       return;
     }
 
-    // Find the first week with any incomplete routines
-    let firstIncompleteWeek = null;
-    
-    if (weeksData && weeksData.length > 0) {
-      for (let weekIdx = 1; weekIdx <= (mesocycle.weeks || 1); weekIdx++) {
-        const weekRoutines = weeksData.filter(w => w.week_index === weekIdx && w.routine_id); // Only check assigned routines, not rest days
+    // Find the first week with any incomplete assigned routines (routine_id != null)
+    for (let weekIdx = 1; weekIdx <= (mesocycle.weeks || 1); weekIdx++) {
+      const weekRoutines = weeksData.filter(w => w.week_index === weekIdx && w.routine_id); 
+      
+      if (weekRoutines.length === 0) {
+        // Week has no assigned routines (all rest), skip it
+        continue;
+      }
+      
+      // Check if ALL routines in this week are complete
+      const allComplete = weekRoutines.every(wr => {
+        const routineId = wr.routine_id;
         
-        if (weekRoutines.length > 0) {
-          // Check if any routine in this week is incomplete
-          const hasIncomplete = weekRoutines.some(wr => {
-            const routineId = wr.routine_id;
-            // Check sessions if available
-            if (sessions && sessions.length > 0) {
-              const session = sessions.find(s => s.routine_id === routineId && s.scheduled_date);
-              return !session || !session.is_complete;
-            }
-            // Fallback to logs
-            const logs = logsMap[routineId] || [];
-            return logs.length === 0 || !logs.some(log => log.is_complete);
-          });
+        // Check sessions if available
+        if (sessions && sessions.length > 0) {
+          const dayEntries = weeksData.filter(w => 
+            w.week_index === weekIdx && 
+            w.day_index === wr.day_index && 
+            w.routine_id === routineId
+          );
           
-          if (hasIncomplete) {
-            firstIncompleteWeek = weekIdx;
-            break;
+          for (const entry of dayEntries) {
+            const session = sessions.find(s => 
+              s.routine_id === entry.routine_id && 
+              s.mesocycle_id === mesocycle.id
+            );
+            if (session && session.is_complete) return true;
           }
         }
+        
+        // Fallback: check workout_logs
+        const logs = logsMap[routineId] || [];
+        return logs.some(log => log.is_complete);
+      });
+      
+      // If not all complete, this is the current week
+      if (!allComplete) {
+        setCurrentWeekIndex(weekIdx);
+        return;
       }
     }
     
-    // If we found an incomplete week, use it
-    if (firstIncompleteWeek) {
-      setCurrentWeekIndex(firstIncompleteWeek);
-      return;
-    }
-    
-    // Otherwise, fall back to date-based calculation (for new mesocycles or all weeks complete)
-    if (mesocycle.start_date) {
-      try {
-        const start = new Date(mesocycle.start_date);
-        const today = new Date();
-        start.setHours(0,0,0,0);
-        today.setHours(0,0,0,0);
-        const diff = Math.floor((today - start) / (1000 * 60 * 60 * 24));
-        const week = Math.floor(diff / 7) + 1;
-        const clamp = Math.max(1, Math.min(week, mesocycle.weeks || 1));
-        setCurrentWeekIndex(clamp);
-      } catch {
-        setCurrentWeekIndex(1);
-      }
-    } else {
-      setCurrentWeekIndex(1);
-    }
+    // All weeks are complete, show the last week
+    setCurrentWeekIndex(mesocycle.weeks || 1);
   }, [mesocycle, weeksData, sessions, logsMap]);
 
   // No generate function here — mesocycle renders week assignments directly
@@ -386,6 +415,14 @@ function MesocycleDetail() {
                   <div className="routine-actions">
                     {routineId ? (
                       <>
+                        {!completed && (
+                          <button 
+                            className="action-button skip-button" 
+                            onClick={(ev) => { ev.stopPropagation(); handleSkipRoutine(routineId); }} 
+                            title="Skip this workout">
+                            Skip
+                          </button>
+                        )}
                         <button className="action-button" onClick={(ev) => { ev.stopPropagation(); navigate(`/workouts/${routineId}/edit`); }} title="Edit">Edit</button>
                       </>
                     ) : (
