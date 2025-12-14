@@ -283,7 +283,7 @@
     flex: 1;
     min-width: 0; /* Allow text to truncate if needed */
     max-width: calc(100% - 80px); /* Reserve space for action buttons */
-    overflow: hidden;
+    overflow: visible;
   }
 
   .mesocycle-routine-card .day-badge {
@@ -307,10 +307,9 @@
     margin: 0;
     /* Prevent text from wrapping and breaking layout */
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
     color: var(--text-primary); /* Ensure visibility in dark theme */
-    min-width: 0; /* Allow flex child to shrink below content size */
+    max-width: 180px; /* Limit width instead of hiding overflow */
   }
 
   .mesocycle-routine-card .routine-info > div {
@@ -476,12 +475,12 @@
     margin: 0;
     /* Prevent text from wrapping and breaking layout */
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
     /* Prevent text inflation on Android */
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     color: var(--text-primary); /* Ensure visibility */
+    max-width: 280px; /* Limit width instead of hiding */
   }
 
   .mesocycle-routine-card .status-badge {
