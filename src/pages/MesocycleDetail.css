@@ -40,7 +40,7 @@
 }
 .mesocycle-routine-card .day-badge {
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   margin-right: 0.75rem;
   font-weight: 700;
 }
@@ -51,6 +51,7 @@
 }
 .mesocycle-routine-card h4 {
   margin: 0 0 0.25rem 0;
+  color: var(--text-primary);
 }
 .mesocycle-routine-card .status-badge.deload {
   color: #92400e;
