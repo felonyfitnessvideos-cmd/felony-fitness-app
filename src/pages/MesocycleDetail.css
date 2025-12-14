@@ -448,8 +448,12 @@
     font-size: 1.15rem;
   }
 
-  /* Routine cards - hover effects */
+  /* Routine cards - hover effects AND single-line layout */
   .mesocycle-routine-card {
+    /* Ensure single-line horizontal layout on desktop */
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     padding: 1.125rem;
     transition:
       transform 0.15s ease,
@@ -461,17 +465,41 @@
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
   }
 
+  .mesocycle-routine-card .routine-info {
+    /* Keep routine info compact on one line */
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0; /* Allow text to truncate if needed */
+  }
+
   .mesocycle-routine-card .day-badge {
     font-size: 0.85rem;
-    margin-right: 1rem;
+    margin-right: 0; /* Remove extra margin since gap handles spacing */
+    flex-shrink: 0;
   }
 
   .mesocycle-routine-card h4 {
     font-size: 1.15rem;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .mesocycle-routine-card .status-badge {
     font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .mesocycle-routine-card .routine-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: 1rem;
   }
 
   .mesocycle-routine-card .routine-actions button,
@@ -548,19 +576,47 @@
   }
 
   .mesocycle-routine-card {
+    /* Maintain single-line layout on wide screens */
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     padding: 1.25rem;
+  }
+
+  .mesocycle-routine-card .routine-info {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    min-width: 0;
   }
 
   .mesocycle-routine-card .day-badge {
     font-size: 0.9rem;
+    margin-right: 0;
+    flex-shrink: 0;
   }
 
   .mesocycle-routine-card h4 {
     font-size: 1.2rem;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .mesocycle-routine-card .status-badge {
     font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+
+  .mesocycle-routine-card .routine-actions {
+    display: flex;
+    gap: 0.625rem;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: 1.25rem;
   }
 
   .mesocycle-routine-card .routine-actions button,

@@ -149,7 +149,8 @@
  * @see `.main-content` for related safe area handling
  */
 .bottom-nav {
-  position: absolute;
+  /* ✅ PERMANENT FIX: Use fixed instead of absolute to ensure nav stays visible above phone system UI */
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
@@ -161,7 +162,7 @@
   /* ✅ CRITICAL FIX: Add safe-area-inset-bottom to padding to prevent iOS home indicator and Android gesture bar from hiding navigation */
   padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 20px));
   height: 60px; /* A fixed height is important for layout consistency - does NOT include safe area */
-  z-index: 100; /* A high z-index ensures it sits on top of page content */
+  z-index: 9999; /* ✅ INCREASED: Extremely high z-index to ensure it stays above all content and phone system UI */
 }
 
 /**
