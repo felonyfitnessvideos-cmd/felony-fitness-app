@@ -65,35 +65,59 @@ const desktopNavItems = [
 /**
  * Sidebar Navigation Component (for desktop/tablet)
  */
-const SidebarNav = ({ navItems }) => (
-  <nav className="sidebar-nav">
-    <div className="sidebar-header">
-      <h2>Felony Fitness</h2>
-    </div>
-    <div className="sidebar-links">
-      {navItems.map(({ to, icon: IconComponent, label }) => (
-        <NavLink key={to} to={to} className="sidebar-link">
-          <IconComponent size={20} />
-          <span>{label}</span>
-        </NavLink>
-      ))}
-    </div>
-  </nav>
-);
+const SidebarNav = ({ navItems }) => {
+  const getSidebarLinkClass = ({ isActive }, to) => {
+    // Highlight workout icon for both /workouts and /mesocycles routes
+    if (to === '/workouts') {
+      const currentPath = window.location.pathname;
+      const isWorkoutSection = currentPath.startsWith('/workouts') || currentPath.startsWith('/mesocycles');
+      return isWorkoutSection ? 'sidebar-link active' : 'sidebar-link';
+    }
+    return isActive ? 'sidebar-link active' : 'sidebar-link';
+  };
+
+  return (
+    <nav className="sidebar-nav">
+      <div className="sidebar-header">
+        <h2>Felony Fitness</h2>
+      </div>
+      <div className="sidebar-links">
+        {navItems.map(({ to, icon: IconComponent, label }) => (
+          <NavLink key={to} to={to} className={(props) => getSidebarLinkClass(props, to)}>
+            <IconComponent size={20} />
+            <span>{label}</span>
+          </NavLink>
+        ))}
+      </div>
+    </nav>
+  );
+};
 
 /**
  * Bottom Navigation Component (for mobile)
  */
-const BottomNav = ({ navItems }) => (
-  <nav className="bottom-nav">
-    {navItems.map(({ to, icon: IconComponent, label }) => (
-      <NavLink key={to} to={to} className="nav-link">
-        <IconComponent />
-        <span>{label}</span>
-      </NavLink>
-    ))}
-  </nav>
-);
+const BottomNav = ({ navItems }) => {
+  const getNavLinkClass = ({ isActive }, to) => {
+    // Highlight workout icon for both /workouts and /mesocycles routes
+    if (to === '/workouts') {
+      const currentPath = window.location.pathname;
+      const isWorkoutSection = currentPath.startsWith('/workouts') || currentPath.startsWith('/mesocycles');
+      return isWorkoutSection ? 'nav-link active' : 'nav-link';
+    }
+    return isActive ? 'nav-link active' : 'nav-link';
+  };
+
+  return (
+    <nav className="bottom-nav">
+      {navItems.map(({ to, icon: IconComponent, label }) => (
+        <NavLink key={to} to={to} className={(props) => getNavLinkClass(props, to)}>
+          <IconComponent />
+          <span>{label}</span>
+        </NavLink>
+      ))}
+    </nav>
+  );
+};
 
 
 
