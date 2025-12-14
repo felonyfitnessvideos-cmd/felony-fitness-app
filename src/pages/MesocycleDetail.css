@@ -43,6 +43,8 @@
   color: var(--text-primary);
   margin-right: 0.75rem;
   font-weight: 700;
+  position: relative;
+  padding-right: 0.5rem;
 }
 .mesocycle-routine-card .routine-info {
   display: flex;
@@ -96,10 +98,6 @@
 }
 .mesocycle-routine-card.completed h4 {
   color: #064e3b;
-}
-.mesocycle-routine-card .day-badge {
-  position: relative;
-  padding-right: 0.5rem;
 }
 .mesocycle-routine-card .check-icon {
   display: inline-flex;
@@ -210,6 +208,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  color: var(--text-primary);
 }
 .routine-card:hover .move-btn {
   border-color: var(--text-primary);
