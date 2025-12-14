@@ -103,6 +103,11 @@
   flex: 1;
   font-weight: 500;
   color: var(--text-primary);
+  /* Prevent long routine names from breaking layout */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0; /* Allow flex item to shrink below content size */
 }
 
 .day-select {
@@ -114,4 +119,5 @@
   font-size: 0.875rem;
   cursor: pointer;
   min-width: 120px;
+  flex-shrink: 0; /* Prevent dropdown from being squeezed */
 }
