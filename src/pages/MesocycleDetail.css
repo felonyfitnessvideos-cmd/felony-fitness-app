@@ -434,7 +434,7 @@
 
   /* Constrain routine list to match date scroller width */
   .routine-list {
-    max-width: 1140px; /* Match full 7-day date scroller width */
+    max-width: 100%; /* Match full 8-day date scroller width */
   }
 
   .date-pill {
@@ -574,7 +574,7 @@
 
   /* Constrain routine list to match date scroller width */
   .routine-list {
-    max-width: 1140px; /* Match full 7-day date scroller width */
+    max-width: 100%; /* Match full 8-day date scroller width */
   }
 
   .date-pill {
