@@ -74,6 +74,7 @@ function MesocycleDetail() {
   const [weeksData, setWeeksData] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [logsMap, setLogsMap] = useState({});
+  const [isLoadingRoutines, setIsLoadingRoutines] = useState(true);
   const [currentWeekIndex, setCurrentWeekIndex] = useState(1);
   const [autoCalculatedWeek, setAutoCalculatedWeek] = useState(1);
   const { user, loading } = useAuth();
@@ -207,17 +208,21 @@ function MesocycleDetail() {
     const { data } = await supabase.from('mesocycle_weeks').select('id,mesocycle_id,week_index,day_index,routine_id,notes').eq('mesocycle_id', mesocycleId).order('week_index', { ascending: true }).order('day_index', { ascending: true });
     weeksRows = data || [];
   }
+
+  // Load routine names BEFORE setting weeks data to prevent rendering with undefined routines
+  const routineIds = Array.from(new Set((weeksRows || []).map(w => w.routine_id).filter(Boolean)));
+  console.log('🔍 ROUTINE IDs found:', routineIds);
+  let routinesData = [];
+  if (routineIds.length > 0) {
+    const { data: rdata } = await supabase.from('workout_routines').select('id,routine_name').in('id', routineIds);
+    console.log('🔍 ROUTINES LOADED:', rdata);
+    routinesData = rdata || [];
+  }
+
+  // Now set both state values together
+  setRoutines(routinesData);
   setWeeksData(weeksRows || []);
-        // also load routine names referenced by this mesocycle via mesocycle_weeks
-        const routineIds = Array.from(new Set((weeksRows || []).map(w => w.routine_id).filter(Boolean)));
-        console.log('🔍 ROUTINE IDs found:', routineIds);
-        if (routineIds.length > 0) {
-          const { data: rdata } = await supabase.from('workout_routines').select('id,routine_name').in('id', routineIds);
-          console.log('🔍 ROUTINES LOADED:', rdata);
-          setRoutines(rdata || []);
-        } else {
-          setRoutines([]);
-        }
+  setIsLoadingRoutines(false);
 
   // load cycle_sessions for mesocycle (if any) to help map scheduled dates and completion
   try {
@@ -297,6 +302,18 @@ function MesocycleDetail() {
   }, [mesocycle, weeksData, sessions, logsMap]);
 
   // No generate function here — mesocycle renders week assignments directly
+
+  // Don't render until both mesocycle and routines are loaded
+  if (!mesocycle || isLoadingRoutines) {
+    return (
+      <div className="mesocycle-detail">
+        <SubPageHeader title="Loading..." backTo="/mesocycles" />
+        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          Loading mesocycle data...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mesocycle-detail">
