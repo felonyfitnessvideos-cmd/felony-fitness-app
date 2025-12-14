@@ -429,7 +429,7 @@ function MesocycleDetail() {
                         <button className="move-btn" title="Move up" onClick={(ev) => { ev.stopPropagation(); handleMoveDay(dayIndex, -1); }}><ArrowUp size={14} /></button>
                         <button className="move-btn" title="Move down" onClick={(ev) => { ev.stopPropagation(); handleMoveDay(dayIndex, 1); }}><ArrowDown size={14} /></button>
                       </div>
-                      <div style={{ display: 'inline-block', marginLeft: '8px' }}>Day {dayIndex}</div>
+                      <span className="day-label">Day {dayIndex}</span>
                       {completed && <span className="check-icon"><Check size={14} /></span>}
                     </div>
                     <div>
