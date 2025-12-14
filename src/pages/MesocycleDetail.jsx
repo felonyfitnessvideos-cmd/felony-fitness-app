@@ -187,26 +187,67 @@ function MesocycleDetail() {
     })();
   }, [mesocycleId, loading, user]);
 
-  // compute current week index based on mesocycle.start_date
+  // compute current week index based on completion status
+  // Show the first week that has incomplete workouts, or the date-based week if all prior weeks are complete
   useEffect(() => {
-    if (!mesocycle || !mesocycle.start_date) {
+    if (!mesocycle) {
       setCurrentWeekIndex(1);
       return;
     }
-    try {
-      const start = new Date(mesocycle.start_date);
-      const today = new Date();
-      // normalize times
-      start.setHours(0,0,0,0);
-      today.setHours(0,0,0,0);
-      const diff = Math.floor((today - start) / (1000 * 60 * 60 * 24));
-      const week = Math.floor(diff / 7) + 1;
-      const clamp = Math.max(1, Math.min(week, mesocycle.weeks || 1));
-      setCurrentWeekIndex(clamp);
-    } catch {
+
+    // Find the first week with any incomplete routines
+    let firstIncompleteWeek = null;
+    
+    if (weeksData && weeksData.length > 0) {
+      for (let weekIdx = 1; weekIdx <= (mesocycle.weeks || 1); weekIdx++) {
+        const weekRoutines = weeksData.filter(w => w.week_index === weekIdx && w.routine_id); // Only check assigned routines, not rest days
+        
+        if (weekRoutines.length > 0) {
+          // Check if any routine in this week is incomplete
+          const hasIncomplete = weekRoutines.some(wr => {
+            const routineId = wr.routine_id;
+            // Check sessions if available
+            if (sessions && sessions.length > 0) {
+              const session = sessions.find(s => s.routine_id === routineId && s.scheduled_date);
+              return !session || !session.is_complete;
+            }
+            // Fallback to logs
+            const logs = logsMap[routineId] || [];
+            return logs.length === 0 || !logs.some(log => log.is_complete);
+          });
+          
+          if (hasIncomplete) {
+            firstIncompleteWeek = weekIdx;
+            break;
+          }
+        }
+      }
+    }
+    
+    // If we found an incomplete week, use it
+    if (firstIncompleteWeek) {
+      setCurrentWeekIndex(firstIncompleteWeek);
+      return;
+    }
+    
+    // Otherwise, fall back to date-based calculation (for new mesocycles or all weeks complete)
+    if (mesocycle.start_date) {
+      try {
+        const start = new Date(mesocycle.start_date);
+        const today = new Date();
+        start.setHours(0,0,0,0);
+        today.setHours(0,0,0,0);
+        const diff = Math.floor((today - start) / (1000 * 60 * 60 * 24));
+        const week = Math.floor(diff / 7) + 1;
+        const clamp = Math.max(1, Math.min(week, mesocycle.weeks || 1));
+        setCurrentWeekIndex(clamp);
+      } catch {
+        setCurrentWeekIndex(1);
+      }
+    } else {
       setCurrentWeekIndex(1);
     }
-  }, [mesocycle]);
+  }, [mesocycle, weeksData, sessions, logsMap]);
 
   // No generate function here — mesocycle renders week assignments directly
 
