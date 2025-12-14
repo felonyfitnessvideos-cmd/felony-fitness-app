@@ -37,6 +37,8 @@
   border-radius: 12px;
   border: 1px solid var(--border-color);
   background: var(--card-color);
+  width: 100%;
+  box-sizing: border-box;
 }
 .mesocycle-routine-card .day-badge {
   font-size: 0.75rem;
@@ -45,11 +47,21 @@
   font-weight: 700;
   position: relative;
   padding-right: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.mesocycle-routine-card .day-label {
+  color: var(--text-primary);
+  font-weight: 600;
 }
 .mesocycle-routine-card .routine-info {
   display: flex;
   gap: 0.75rem;
   align-items: center;
+  flex: 1;
+  min-width: 0;
 }
 .mesocycle-routine-card h4 {
   margin: 0 0 0.25rem 0;
@@ -68,6 +80,8 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 .mesocycle-routine-card .routine-actions button {
   background: none;
