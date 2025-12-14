@@ -80,37 +80,40 @@ function MesocycleDetail() {
   const navigate = useNavigate();
 
   // Skip a routine (mark as complete without logging workout)
-  const handleSkipRoutine = async (routineId) => {
+  const handleSkipRoutine = async (routineId, dayIndex) => {
     if (!user || !routineId) return;
     
     try {
-      // Create a workout_log entry marked as complete but with a note indicating it was skipped
-      const now = new Date();
-      const { error } = await supabase.from('workout_logs').insert({
-        user_id: user.id,
-        routine_id: routineId,
-        is_complete: true,
-        notes: 'Skipped',
-        created_at: now.toISOString()
-      });
+      // Find the specific mesocycle_weeks entry for this week and day
+      const entry = weeksData.find(w => 
+        w.week_index === currentWeekIndex && 
+        w.day_index === dayIndex &&
+        w.routine_id === routineId
+      );
+      
+      if (!entry) {
+        console.error('Could not find mesocycle_weeks entry to skip');
+        return;
+      }
+      
+      // Update is_complete flag on this specific entry
+      const { error } = await supabase
+        .from('mesocycle_weeks')
+        .update({ 
+          is_complete: true, 
+          completed_at: new Date().toISOString() 
+        })
+        .eq('id', entry.id)
+        .eq('user_id', user.id);
       
       if (error) throw error;
       
-      // Update logsMap with the new skipped entry
-      const dateKey = toLocalDateString(now);
-      const key = `${routineId}::${dateKey}`;
-      const newLogsMap = { 
-        ...logsMap, 
-        [key]: { 
-          id: `skip-${Date.now()}`, 
-          routine_id: routineId, 
-          created_at: now.toISOString(), 
-          is_complete: true 
-        } 
-      };
-      setLogsMap(newLogsMap);
-      
-      // No alert needed - the UI will update immediately
+      // Update local state to reflect the skip
+      setWeeksData(prev => prev.map(w => 
+        w.id === entry.id 
+          ? { ...w, is_complete: true, completed_at: new Date().toISOString() }
+          : w
+      ));
     } catch (err) {
       console.error('Failed to skip routine:', err);
       alert('Failed to skip routine. Please try again.');
@@ -174,7 +177,7 @@ function MesocycleDetail() {
         setMesocycle(m || null);
 
   // load mesocycle_week assignments so we can render week layouts even when no sessions exist
-  const { data: weeksRows } = await supabase.from('mesocycle_weeks').select('*').eq('mesocycle_id', mesocycleId).order('week_index', { ascending: true }).order('day_index', { ascending: true });
+  const { data: weeksRows } = await supabase.from('mesocycle_weeks').select('id,mesocycle_id,week_index,day_index,routine_id,notes,day_type,is_complete,completed_at').eq('mesocycle_id', mesocycleId).order('week_index', { ascending: true }).order('day_index', { ascending: true });
   setWeeksData(weeksRows || []);
         // also load routine names referenced by this mesocycle via mesocycle_weeks
         const routineIds = Array.from(new Set((weeksRows || []).map(w => w.routine_id).filter(Boolean)));
@@ -245,43 +248,8 @@ function MesocycleDetail() {
       }
       
       // Check if ALL routines in this week are complete
-      const allComplete = weekRoutines.every(wr => {
-        const routineId = wr.routine_id;
-        
-        // Calculate scheduled date for this routine
-        let scheduledDateStr = null;
-        if (mesocycle.start_date) {
-          try {
-            const start = new Date(mesocycle.start_date);
-            const daysToAdd = (weekIdx - 1) * 7 + (wr.day_index - 1);
-            const d = new Date(start);
-            d.setDate(d.getDate() + daysToAdd);
-            scheduledDateStr = toLocalDateString(d);
-          } catch {
-            scheduledDateStr = null;
-          }
-        }
-        
-        // Check sessions if available
-        if (sessions && sessions.length > 0) {
-          const session = sessions.find(s => 
-            s.routine_id === routineId && 
-            s.mesocycle_id === mesocycle.id &&
-            s.is_complete
-          );
-          if (session) return true;
-        }
-        
-        // Check workout_logs ONLY for the specific scheduled date
-        // This ensures Week 2 routines don't count as complete just because Week 1 is done
-        if (scheduledDateStr) {
-          const logKey = `${routineId}::${scheduledDateStr}`;
-          const log = logsMap[logKey];
-          return Boolean(log && log.is_complete);
-        }
-        
-        return false;
-      });
+      // Simply check the is_complete flag - no date calculations needed!
+      const allComplete = weekRoutines.every(wr => Boolean(wr.is_complete));
       
       // If not all complete, this is the current week
       if (!allComplete) {
@@ -417,31 +385,12 @@ function MesocycleDetail() {
                 }
               }
 
-              const logKey = routineId && scheduledDateStr ? `${routineId}::${scheduledDateStr}` : null;
-              const log = logKey ? logsMap[logKey] : null;
-
-              // Check completion ONLY for the specific scheduled date
-              // This ensures each week's routines are tracked independently
-              let completed = false;
-              if (scheduledDateStr) {
-                const session = (sessions || []).find(s => {
-                  if (!s || !s.scheduled_date) return false;
-                  // compare YYYY-MM-DD
-                  return s.scheduled_date.slice(0,10) === scheduledDateStr;
-                });
-                if (session && typeof session.is_complete !== 'undefined') {
-                  completed = Boolean(session.is_complete);
-                } else {
-                  // Check ONLY the exact date match
-                  completed = Boolean(log && log.is_complete);
-                }
-              } else {
-                // No scheduled date (shouldn't happen with start_date set)
-                completed = Boolean(log && log.is_complete);
-              }
+              // Check completion directly from the mesocycle_weeks entry
+              // No date calculations or logsMap lookups needed!
+              const completed = Boolean(entry.is_complete);
 
               return (
-                <div key={dayIndex} className={`routine-card mesocycle-routine-card ${completed ? 'completed' : ''}`} onClick={() => routineId && navigate(`/log-workout/${routineId}?returnTo=/mesocycles/${mesocycleId}&date=${scheduledDateStr}`)}>
+                <div key={dayIndex} className={`routine-card mesocycle-routine-card ${completed ? 'completed' : ''}`} onClick={() => routineId && navigate(`/log-workout/${routineId}?mesocycleWeekId=${entry.id}&returnTo=/mesocycles/${mesocycleId}&date=${scheduledDateStr}`)}>
                   <div className="routine-info">
                     <div className="day-badge">
                       <div className="move-controls">
@@ -462,7 +411,7 @@ function MesocycleDetail() {
                         {!completed && (
                           <button 
                             className="action-button skip-button" 
-                            onClick={(ev) => { ev.stopPropagation(); handleSkipRoutine(routineId); }} 
+                            onClick={(ev) => { ev.stopPropagation(); handleSkipRoutine(routineId, dayIndex); }} 
                             title="Skip this workout">
                             Skip
                           </button>

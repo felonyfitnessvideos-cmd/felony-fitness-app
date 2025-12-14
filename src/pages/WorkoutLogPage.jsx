@@ -374,10 +374,13 @@ function WorkoutLogPage() {
   // Only call fetchAndStartWorkout when both userId and routineId are defined
   // Use a ref to prevent duplicate calls
   const hasFetchedRef = useRef(false);
+  const [mesocycleWeekId, setMesocycleWeekId] = useState(null);
   useEffect(() => {
     if (hasFetchedRef.current) return; // Prevent duplicate calls
     const params = new URLSearchParams(location.search);
     const mesocycleSessionId = params.get('mesocycle_session_id');
+    const mwid = params.get('mesocycleWeekId');
+    if (mwid) setMesocycleWeekId(mwid);
     if (userId && routineId) {
       // Debug log
       console.log('[DEBUG] useEffect: calling fetchAndStartWorkout with userId:', userId, 'routineId:', routineId);
@@ -718,6 +721,23 @@ function WorkoutLogPage() {
       // Ensure the update is scoped to the current user for safety.
       const { error: updateError } = await supabase.from('workout_logs').update(updatePayload).eq('id', workoutLogId).eq('user_id', userId);
       if (updateError) throw updateError;
+
+      // Mark mesocycle_weeks entry as complete if we have a mesocycleWeekId
+      if (mesocycleWeekId) {
+        try {
+          const { error: mwError } = await supabase
+            .from('mesocycle_weeks')
+            .update({ 
+              is_complete: true, 
+              completed_at: endTime.toISOString() 
+            })
+            .eq('id', mesocycleWeekId)
+            .eq('user_id', userId);
+          if (mwError) console.warn('Could not mark mesocycle_weeks complete:', mwError);
+        } catch (err) {
+          console.warn('Error updating mesocycle_weeks:', err);
+        }
+      }
 
       // Also mark cycle_session as complete if this log is associated with one
       try {
