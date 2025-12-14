@@ -219,28 +219,47 @@ function MesocycleDetail() {
         {(() => {
           // build week dates based on mesocycle.start_date and currentWeekIndex
           const items = [];
+          const todayIso = toLocalDateString(new Date());
+          
           try {
-            if (mesocycle && mesocycle.start_date) {
+            if (mesocycle?.start_date) {
               const start = new Date(mesocycle.start_date);
               const weekStart = new Date(start);
               weekStart.setDate(weekStart.getDate() + (currentWeekIndex - 1) * 7);
+              
               for (let i = 0; i < 7; i++) {
                 const d = new Date(weekStart);
                 d.setDate(d.getDate() + i);
-                const weekday = d.toLocaleDateString(undefined, { weekday: 'short' });
+                const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
                 const daynum = d.getDate();
                 const iso = toLocalDateString(d);
                 items.push({ weekday, daynum, iso });
               }
             } else {
-              // fallback to Mon-Sun labels
-              const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-              for (let i = 0; i < 7; i++) items.push({ weekday: names[i], daynum: '', iso: null });
+              // Fallback: show current week's dates even without mesocycle.start_date
+              const today = new Date();
+              const dayOfWeek = today.getDay(); // 0 = Sunday
+              const weekStart = new Date(today);
+              weekStart.setDate(today.getDate() - dayOfWeek); // Go to Sunday of current week
+              
+              for (let i = 0; i < 7; i++) {
+                const d = new Date(weekStart);
+                d.setDate(weekStart.getDate() + i);
+                const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
+                const daynum = d.getDate();
+                const iso = toLocalDateString(d);
+                items.push({ weekday, daynum, iso });
+              }
             }
-          } catch {
-            // noop
+          } catch (err) {
+            console.error('Error building date scroller:', err);
+            // Ultimate fallback: just show day names
+            const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+            for (let i = 0; i < 7; i++) {
+              items.push({ weekday: names[i], daynum: '?', iso: null });
+            }
           }
-          const todayIso = toLocalDateString(new Date());
+          
           return items.map(it => (
             <div key={it.iso || it.weekday} className={`date-pill ${it.iso === todayIso ? 'today' : ''}`}>
               <div className="date-weekday">{it.weekday}</div>
