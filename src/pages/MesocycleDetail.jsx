@@ -127,10 +127,10 @@ function MesocycleDetail() {
     const to = (weeksData || []).find(w => w.week_index === currentWeekIndex && w.day_index === dayIndex + direction);
     if (!from || !to) return; // nothing to swap
 
-    // Optimistic UI update: swap routine_id, notes, day_type between from and to
+    // Optimistic UI update: swap routine_id, notes, day_type, is_complete, completed_at between from and to
     const newWeeks = (weeksData || []).map(w => {
-      if (w.id === from.id) return { ...w, routine_id: to.routine_id, notes: to.notes, day_type: to.day_type };
-      if (w.id === to.id) return { ...w, routine_id: from.routine_id, notes: from.notes, day_type: from.day_type };
+      if (w.id === from.id) return { ...w, routine_id: to.routine_id, notes: to.notes, day_type: to.day_type, is_complete: to.is_complete, completed_at: to.completed_at };
+      if (w.id === to.id) return { ...w, routine_id: from.routine_id, notes: from.notes, day_type: from.day_type, is_complete: from.is_complete, completed_at: from.completed_at };
       return w;
     });
     setWeeksData(newWeeks);
@@ -142,11 +142,23 @@ function MesocycleDetail() {
         setWeeksData(weeksData);
         return;
       }
-      // persist swap to DB
+      // persist swap to DB - include is_complete and completed_at to preserve completion status
       // update 'from' row to take 'to' values
-      const { error: e1 } = await supabase.from('mesocycle_weeks').update({ routine_id: to.routine_id, notes: to.notes, day_type: to.day_type }).eq('id', from.id).eq('user_id', user.id);
+      const { error: e1 } = await supabase.from('mesocycle_weeks').update({ 
+        routine_id: to.routine_id, 
+        notes: to.notes, 
+        day_type: to.day_type,
+        is_complete: to.is_complete || false,
+        completed_at: to.completed_at || null
+      }).eq('id', from.id).eq('user_id', user.id);
       if (e1) throw e1;
-      const { error: e2 } = await supabase.from('mesocycle_weeks').update({ routine_id: from.routine_id, notes: from.notes, day_type: from.day_type }).eq('id', to.id).eq('user_id', user.id);
+      const { error: e2 } = await supabase.from('mesocycle_weeks').update({ 
+        routine_id: from.routine_id, 
+        notes: from.notes, 
+        day_type: from.day_type,
+        is_complete: from.is_complete || false,
+        completed_at: from.completed_at || null
+      }).eq('id', to.id).eq('user_id', user.id);
       if (e2) throw e2;
     } catch (err) {
       console.error('Failed to swap days', err);
