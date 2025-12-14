@@ -260,8 +260,8 @@ function MesocycleDetail() {
             }
           }
           
-          return items.map(it => (
-            <div key={it.iso || it.weekday} className={`date-pill ${it.iso === todayIso ? 'today' : ''}`}>
+          return items.map((it, idx) => (
+            <div key={it.iso || `${it.weekday}-${idx}`} className={`date-pill ${it.iso === todayIso ? 'today' : ''}`}>
               <div className="date-weekday">{it.weekday}</div>
               <div className="date-day">{it.daynum}</div>
             </div>
