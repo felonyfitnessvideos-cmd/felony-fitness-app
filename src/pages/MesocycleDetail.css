@@ -435,7 +435,6 @@
   /* Constrain routine list to match date scroller width */
   .routine-list {
     max-width: 600px;
-    margin: 0 auto;
   }
 
   .date-pill {
@@ -576,7 +575,6 @@
   /* Constrain routine list to match date scroller width */
   .routine-list {
     max-width: 650px;
-    margin: 0 auto;
   }
 
   .date-pill {
