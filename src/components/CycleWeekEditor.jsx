@@ -164,7 +164,11 @@ function CycleWeekEditor({ weeks = 4, focus = 'Hypertrophy', onAssignmentsChange
                   const idx = assignments.findIndex(a => a.week_index === w && a.day_index === d);
                   const current = idx >= 0 ? assignments[idx] : { type: 'rest', routine_id: null };
                   const selectedRoutine = routines.find(r => r.id === current.routine_id);
-                  const displayName = current.type === 'rest' ? 'Rest' : current.type === 'deload' ? 'Deload' : (selectedRoutine?.routine_name || 'Select Routine');
+                  // Capitalize rest/deload to match dropdown display
+                  let displayName = 'Select Routine';
+                  if (current.type === 'rest') displayName = 'Rest';
+                  else if (current.type === 'deload') displayName = 'Deload';
+                  else if (selectedRoutine) displayName = selectedRoutine.routine_name;
                   
                   return (
                     <div key={d} className="day-row">
