@@ -17,7 +17,8 @@ $buckets = @(
     "email-assets",
     "logo_banner",
     "Staff Headshots",
-    "BodyFatImages"
+    "BodyFatImages",
+    "exercise_icons"
 )
 
 $totalBuckets = $buckets.Count
