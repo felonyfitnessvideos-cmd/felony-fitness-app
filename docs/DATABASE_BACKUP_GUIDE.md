@@ -12,11 +12,17 @@ This guide covers reliable database backup methods for Supabase, with solutions 
 # One-time setup: Install PostgreSQL client tools
 choco install postgresql
 
-# Run backup
+# Run database backup
 .\scripts\backup-database.ps1
 
 # Custom backup name
 .\scripts\backup-database.ps1 -BackupName "pre-migration"
+
+# Run storage bucket backup (auto-cleans old backups, keeps 3 most recent)
+.\scripts\backup-storage-buckets.ps1
+
+# Keep only 2 most recent storage backups
+.\scripts\backup-storage-buckets.ps1 -KeepBackups 2
 ```
 
 ### Method 2: Supabase Dashboard (Easiest)
@@ -33,17 +39,20 @@ choco install postgresql
 ### Step 1: Install PostgreSQL Client Tools
 
 **Windows (Chocolatey):**
+
 ```powershell
 choco install postgresql
 ```
 
 **Windows (Manual):**
+
 1. Download from: https://www.postgresql.org/download/windows/
 2. Run installer
 3. Select "Command Line Tools" during installation
 4. Add to PATH: `C:\Program Files\PostgreSQL\16\bin`
 
 **Verify Installation:**
+
 ```powershell
 pg_dump --version
 # Should output: pg_dump (PostgreSQL) 16.x
@@ -63,6 +72,7 @@ SUPABASE_DB_PASSWORD=your-database-password-here
 ```
 
 **To find your credentials:**
+
 1. Go to: https://supabase.com/dashboard/project/wkmrdelhoeqhsdifrarn/settings/database
 2. Copy "Project ID" from URL (e.g., `wkmrdelhoeqhsdifrarn`)
 3. Copy "Database password" (set during project creation)
@@ -75,16 +85,20 @@ SUPABASE_DB_PASSWORD=your-database-password-here
 ### Issue 1: "Connection Timeout"
 
 **Symptoms:**
+
 - `pg_dump: error: connection to server at "db.xxx.supabase.co" ... failed`
 - Hangs for 30+ seconds then fails
 
 **Solutions:**
+
 1. **Check network connectivity:**
+
    ```powershell
    Test-Connection db.wkmrdelhoeqhsdifrarn.supabase.co
    ```
 
 2. **Verify port 5432 is open:**
+
    ```powershell
    Test-NetConnection -ComputerName db.wkmrdelhoeqhsdifrarn.supabase.co -Port 5432
    ```
@@ -104,9 +118,11 @@ SUPABASE_DB_PASSWORD=your-database-password-here
 ### Issue 2: "Authentication Failed"
 
 **Symptoms:**
+
 - `FATAL: password authentication failed for user "postgres"`
 
 **Solutions:**
+
 1. **Verify password:**
    - Check `.env.local` has correct password
    - No extra spaces or quotes around password
@@ -122,6 +138,7 @@ SUPABASE_DB_PASSWORD=your-database-password-here
 ### Issue 3: "SSL Connection Required"
 
 **Symptoms:**
+
 - `FATAL: no pg_hba.conf entry`
 - `SSL connection is required`
 
@@ -136,18 +153,22 @@ pg_dump --host=db.wkmrdelhoeqhsdifrarn.supabase.co ...
 ### Issue 4: "Out of Memory" / Large Database
 
 **Symptoms:**
+
 - Backup fails halfway through
 - PowerShell crashes
 - "Out of memory" error
 
 **Solutions:**
+
 1. **Use compressed format:**
+
    ```powershell
    # Modify script to use custom format (smaller file)
    --format=custom --compress=9
    ```
 
 2. **Backup specific tables:**
+
    ```powershell
    # Add to pg_dump command
    --table=food_servings --table=exercises
@@ -164,19 +185,23 @@ pg_dump --host=db.wkmrdelhoeqhsdifrarn.supabase.co ...
 ### Issue 5: "pg_dump not found"
 
 **Symptoms:**
+
 - `The term 'pg_dump' is not recognized`
 
 **Solutions:**
+
 1. **Add to PATH:**
+
    ```powershell
    # Find PostgreSQL installation
    Get-ChildItem "C:\Program Files\PostgreSQL" -Recurse -Filter "pg_dump.exe"
-   
+
    # Add to PATH (example - adjust version)
    $env:PATH += ";C:\Program Files\PostgreSQL\16\bin"
    ```
 
 2. **Use full path:**
+
    ```powershell
    & "C:\Program Files\PostgreSQL\16\bin\pg_dump.exe" --version
    ```
@@ -190,6 +215,7 @@ pg_dump --host=db.wkmrdelhoeqhsdifrarn.supabase.co ...
 ### When to Backup
 
 ✅ **Always backup before:**
+
 - Major schema changes (adding/dropping tables)
 - Bulk data imports (USDA foods, exercises)
 - Production deployments
@@ -197,6 +223,7 @@ pg_dump --host=db.wkmrdelhoeqhsdifrarn.supabase.co ...
 - Major version upgrades
 
 ✅ **Regular schedule:**
+
 - Daily: Supabase automatic backups (enabled by default)
 - Weekly: Manual full backup with script
 - Monthly: Download and archive locally
@@ -226,12 +253,14 @@ Select-String -Path backups\supabase-backup-*.sql -Pattern "CREATE TABLE" | Sele
 ### Restore from Local Backup
 
 **Option 1: Supabase Dashboard (Recommended)**
+
 1. Go to: Database → Backups
 2. Click "Upload Backup"
 3. Select your `.sql` file
 4. Click "Restore"
 
 **Option 2: Command Line**
+
 ```powershell
 # Set password
 $env:PGPASSWORD = "your-db-password"

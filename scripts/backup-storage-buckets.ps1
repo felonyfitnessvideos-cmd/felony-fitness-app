@@ -1,8 +1,10 @@
 # Backup Supabase Storage Buckets
 # Downloads all files from storage buckets to local directory
+# Keeps only the 3 most recent storage backups (auto-cleanup)
 
 param(
-    [string]$BackupName = "storage-backup-$(Get-Date -Format 'yyyy-MM-dd-HHmmss')"
+    [string]$BackupName = "storage-backup-$(Get-Date -Format 'yyyy-MM-dd-HHmmss')",
+    [int]$KeepBackups = 3
 )
 
 $backupDir = "backups\$BackupName"
@@ -10,6 +12,7 @@ New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
 
 Write-Host "`n=== 📦 Starting Storage Bucket Backup ===" -ForegroundColor Cyan
 Write-Host "Backup Directory: $backupDir" -ForegroundColor Gray
+Write-Host "Retention Policy: Keep $KeepBackups most recent storage backups" -ForegroundColor Gray
 
 # List of buckets to backup
 $buckets = @(
@@ -38,13 +41,21 @@ foreach ($bucket in $buckets) {
         $result = npx supabase storage cp --linked --experimental -r -j 4 "ss:///$bucket" $bucketDir 2>&1
         
         if ($LASTEXITCODE -eq 0) {
-            # Count files in bucket
+            # Verify backup integrity
             $fileCount = (Get-ChildItem $bucketDir -Recurse -File | Measure-Object).Count
             $bucketSize = (Get-ChildItem $bucketDir -Recurse -File | Measure-Object -Property Length -Sum).Sum
             $bucketSizeMB = [math]::Round($bucketSize / 1MB, 2)
             
-            Write-Host "   ✅ Downloaded $fileCount files ($bucketSizeMB MB)" -ForegroundColor Green
-            $successCount++
+            if ($fileCount -eq 0) {
+                Write-Host "   ⚠️  Warning: No files found in bucket (may be empty)" -ForegroundColor Yellow
+                $errorCount++
+            } elseif ($bucketSize -eq 0) {
+                Write-Host "   ❌ Error: Files downloaded but size is 0 bytes" -ForegroundColor Red
+                $errorCount++
+            } else {
+                Write-Host "   ✅ Downloaded $fileCount files ($bucketSizeMB MB) - Verified" -ForegroundColor Green
+                $successCount++
+            }
         } else {
             Write-Host "   ⚠️  Warning: $result" -ForegroundColor Yellow
             $errorCount++
@@ -88,6 +99,41 @@ if ($errorCount -gt 0) {
 }
 
 Write-Host "`n💡 To restore storage buckets, use: npx supabase storage cp -r <local-dir> ss:///bucket-name" -ForegroundColor Yellow
+
+# === CLEANUP OLD BACKUPS ===
+Write-Host "`n=== 🧹 Cleaning Up Old Storage Backups ===" -ForegroundColor Cyan
+
+# Get all storage backup directories
+$allStorageBackups = Get-ChildItem "backups\" -Directory | 
+    Where-Object { $_.Name -match '^storage-backup-' } | 
+    Sort-Object CreationTime -Descending
+
+$totalStorageBackups = $allStorageBackups.Count
+Write-Host "Found $totalStorageBackups storage backup(s)" -ForegroundColor Gray
+
+if ($totalStorageBackups -gt $KeepBackups) {
+    $backupsToDelete = $allStorageBackups | Select-Object -Skip $KeepBackups
+    $deleteCount = $backupsToDelete.Count
+    
+    Write-Host "Keeping $KeepBackups most recent, deleting $deleteCount old backup(s)..." -ForegroundColor Yellow
+    
+    foreach ($backup in $backupsToDelete) {
+        try {
+            $backupSize = (Get-ChildItem $backup.FullName -Recurse -File | Measure-Object -Property Length -Sum).Sum
+            $backupSizeMB = [math]::Round($backupSize / 1MB, 2)
+            
+            Write-Host "   🗑️  Deleting: $($backup.Name) ($backupSizeMB MB)..." -ForegroundColor Gray
+            Remove-Item $backup.FullName -Recurse -Force
+            Write-Host "   ✅ Deleted successfully" -ForegroundColor Green
+        } catch {
+            Write-Host "   ❌ Failed to delete $($backup.Name): $($_.Exception.Message)" -ForegroundColor Red
+        }
+    }
+    
+    Write-Host "`n✅ Cleanup complete: $deleteCount old backup(s) removed" -ForegroundColor Green
+} else {
+    Write-Host "No cleanup needed (total backups: $totalStorageBackups, keep: $KeepBackups)" -ForegroundColor Green
+}
 
 # Open backup folder
 explorer $backupDir
