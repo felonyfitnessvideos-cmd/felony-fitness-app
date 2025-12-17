@@ -46,6 +46,7 @@ const CalculatorDashboard = () => {
   const [bodyCompData, setBodyCompData] = useState({
     weight: '',
     height: '',
+    bodyFat: '',
     gender: 'male',
     activityLevel: '1.5'
   });
@@ -248,6 +249,7 @@ const CalculatorDashboard = () => {
   const handleBodyCompCalculate = () => {
     const weight = parseFloat(bodyCompData.weight);
     const height = parseFloat(bodyCompData.height);
+    const bodyFat = bodyCompData.bodyFat ? parseFloat(bodyCompData.bodyFat) : null;
     const activityLevel = parseFloat(bodyCompData.activityLevel);
 
     if (!weight || !height) {
@@ -255,7 +257,7 @@ const CalculatorDashboard = () => {
       return;
     }
 
-    const results = calculateBodyComp(weight, height, bodyCompData.gender, activityLevel);
+    const results = calculateBodyComp(weight, height, bodyCompData.gender, activityLevel, bodyFat);
     setBodyCompResults(results);
   };
 
@@ -511,6 +513,24 @@ const CalculatorDashboard = () => {
                 />
               </div>
               <div className="input-group">
+                <label htmlFor="body-fat">
+                  Body Fat % <span style={{ fontSize: '0.85em', fontWeight: 'normal', color: '#888' }}>(optional)</span>
+                </label>
+                <input
+                  id="body-fat"
+                  type="number"
+                  placeholder="15"
+                  min="5"
+                  max="50"
+                  step="0.1"
+                  value={bodyCompData.bodyFat}
+                  onChange={(e) => setBodyCompData({ ...bodyCompData, bodyFat: e.target.value })}
+                />
+                <small style={{ fontSize: '0.8em', color: '#666', marginTop: '4px' }}>
+                  {bodyCompData.bodyFat ? 'Using actual body fat % for precise LBM' : 'Will estimate LBM using Boer Formula'}
+                </small>
+              </div>
+              <div className="input-group">
                 <label htmlFor="gender">Gender</label>
                 <select
                   id="gender"
@@ -549,6 +569,21 @@ const CalculatorDashboard = () => {
                     <span className="last-saved">Last saved: {formatLastSaved(bodyCompResults.lastUpdated)}</span>
                   )}
                 </div>
+                {bodyCompResults.method && (
+                  <div style={{ 
+                    marginBottom: '12px', 
+                    padding: '8px 12px', 
+                    background: bodyCompResults.method === 'actual' ? '#e8f5e9' : '#fff3e0',
+                    border: `1px solid ${bodyCompResults.method === 'actual' ? '#4caf50' : '#ff9800'}`,
+                    borderRadius: '4px',
+                    fontSize: '0.9em'
+                  }}>
+                    <strong>{bodyCompResults.method === 'actual' ? '✓ Actual' : 'ⓘ Estimated'}:</strong>{' '}
+                    {bodyCompResults.method === 'actual' 
+                      ? 'Using your actual body fat % for precise lean mass calculation'
+                      : 'LBM estimated using Boer Formula (add body fat % for more accuracy)'}
+                  </div>
+                )}
                 <div className="results-grid">
                   <div className="result-highlight">
                     <span className="result-label">Lean Body Mass:</span>

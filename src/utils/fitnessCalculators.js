@@ -57,34 +57,50 @@ export const getPercentageChart = (oneRepMax) => {
  * @param {number} heightInches - Height in inches
  * @param {string} gender - 'male' or 'female'
  * @param {number} activityMult - Activity multiplier (1.2-1.9)
- * @returns {Object} LBM, BMR, and TDEE values
+ * @param {number|null} bodyFatPercent - Optional body fat % for accurate LBM (5-50)
+ * @returns {Object} LBM, BMR, TDEE values, and method used
  * 
  * @example
+ * // With body fat % (more accurate)
+ * calculateBodyComp(180, 72, 'male', 1.5, 15)
+ * // Returns { lbmLbs: 153, bmr: 1966, tdee: 2950, method: 'actual' }
+ * 
+ * // Without body fat % (estimated)
  * calculateBodyComp(180, 72, 'male', 1.5)
- * // Returns { lbmLbs: 150, bmr: 1850, tdee: 2775 }
+ * // Returns { lbmLbs: 150, bmr: 1850, tdee: 2775, method: 'estimated' }
  */
-export const calculateBodyComp = (weightLbs, heightInches, gender, activityMult) => {
+export const calculateBodyComp = (weightLbs, heightInches, gender, activityMult, bodyFatPercent = null) => {
   if (!weightLbs || !heightInches || !gender || !activityMult) {
-    return { lbmLbs: 0, bmr: 0, tdee: 0 };
+    return { lbmLbs: 0, bmr: 0, tdee: 0, method: 'none' };
   }
 
   if (isNaN(weightLbs) || isNaN(heightInches) || isNaN(activityMult)) {
-    return { lbmLbs: 0, bmr: 0, tdee: 0 };
+    return { lbmLbs: 0, bmr: 0, tdee: 0, method: 'none' };
   }
 
   const wKg = weightLbs * 0.453592;
-  const hCm = heightInches * 2.54;
+  let lbmKg;
+  let method;
   
-  // Boer Formula for LBM
-  let lbmKg = gender === 'male' 
-    ? (0.407 * wKg) + (0.267 * hCm) - 19.2
-    : (0.252 * wKg) + (0.473 * hCm) - 48.3;
+  // If body fat % provided, use actual calculation (more accurate)
+  if (bodyFatPercent !== null && !isNaN(bodyFatPercent) && bodyFatPercent >= 5 && bodyFatPercent <= 50) {
+    // Actual LBM = Weight × (1 - BodyFat%/100)
+    lbmKg = wKg * (1 - (bodyFatPercent / 100));
+    method = 'actual';
+  } else {
+    // Fall back to Boer Formula estimation
+    const hCm = heightInches * 2.54;
+    lbmKg = gender === 'male' 
+      ? (0.407 * wKg) + (0.267 * hCm) - 19.2
+      : (0.252 * wKg) + (0.473 * hCm) - 48.3;
+    method = 'estimated';
+  }
   
   const lbmLbs = Math.round(lbmKg * 2.20462);
   const bmr = 370 + (21.6 * lbmKg); // Katch-McArdle uses LBM
   const tdee = Math.round(bmr * activityMult);
 
-  return { lbmLbs, bmr: Math.round(bmr), tdee };
+  return { lbmLbs, bmr: Math.round(bmr), tdee, method };
 };
 
 /**
