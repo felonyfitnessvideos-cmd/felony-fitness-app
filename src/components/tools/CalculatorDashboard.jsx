@@ -332,14 +332,13 @@ const CalculatorDashboard = () => {
 
         {/* Client Selector */}
         <div className="client-selector">
-          <label htmlFor="client-select">Select Client:</label>
           <select
             id="client-select"
             value={selectedClientId}
             onChange={(e) => setSelectedClientId(e.target.value)}
             className="client-dropdown"
           >
-            <option value="">-- Choose a client to save results --</option>
+            <option value="">Select Client (optional - to save results)</option>
             {clients.map(client => (
               <option key={client.id} value={client.id}>
                 {client.full_name || client.email}
