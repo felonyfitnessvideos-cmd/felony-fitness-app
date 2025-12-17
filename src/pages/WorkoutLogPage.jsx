@@ -730,7 +730,7 @@ function WorkoutLogPage() {
       console.log('[MESOCYCLE DEBUG] Finishing workout - mesocycleWeekId:', mesocycleWeekId);
       if (mesocycleWeekId) {
         try {
-          console.log('[MESOCYCLE DEBUG] Attempting to mark mesocycle_weeks complete - ID:', mesocycleWeekId, 'UserID:', userId);
+          console.log('[MESOCYCLE DEBUG] Attempting to mark mesocycle_weeks complete - ID:', mesocycleWeekId);
           const { data: updateData, error: mwError } = await supabase
             .from('mesocycle_weeks')
             .update({ 
@@ -738,7 +738,6 @@ function WorkoutLogPage() {
               completed_at: endTime.toISOString() 
             })
             .eq('id', mesocycleWeekId)
-            .eq('user_id', userId)
             .select();
           if (mwError) {
             console.error('[MESOCYCLE DEBUG] Error marking mesocycle_weeks complete:', mwError);
