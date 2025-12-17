@@ -380,7 +380,11 @@ function WorkoutLogPage() {
     const params = new URLSearchParams(location.search);
     const mesocycleSessionId = params.get('mesocycle_session_id');
     const mwid = params.get('mesocycleWeekId');
-    if (mwid) setMesocycleWeekId(mwid);
+    console.log('[MESOCYCLE DEBUG] URL params - mesocycleWeekId:', mwid, 'Full URL:', location.search);
+    if (mwid) {
+      setMesocycleWeekId(mwid);
+      console.log('[MESOCYCLE DEBUG] mesocycleWeekId state set to:', mwid);
+    }
     if (userId && routineId) {
       // Debug log
       console.log('[DEBUG] useEffect: calling fetchAndStartWorkout with userId:', userId, 'routineId:', routineId);
@@ -723,20 +727,29 @@ function WorkoutLogPage() {
       if (updateError) throw updateError;
 
       // Mark mesocycle_weeks entry as complete if we have a mesocycleWeekId
+      console.log('[MESOCYCLE DEBUG] Finishing workout - mesocycleWeekId:', mesocycleWeekId);
       if (mesocycleWeekId) {
         try {
-          const { error: mwError } = await supabase
+          console.log('[MESOCYCLE DEBUG] Attempting to mark mesocycle_weeks complete - ID:', mesocycleWeekId, 'UserID:', userId);
+          const { data: updateData, error: mwError } = await supabase
             .from('mesocycle_weeks')
             .update({ 
               is_complete: true, 
               completed_at: endTime.toISOString() 
             })
             .eq('id', mesocycleWeekId)
-            .eq('user_id', userId);
-          if (mwError) console.warn('Could not mark mesocycle_weeks complete:', mwError);
+            .eq('user_id', userId)
+            .select();
+          if (mwError) {
+            console.error('[MESOCYCLE DEBUG] Error marking mesocycle_weeks complete:', mwError);
+          } else {
+            console.log('[MESOCYCLE DEBUG] Successfully marked mesocycle_weeks complete:', updateData);
+          }
         } catch (err) {
-          console.warn('Error updating mesocycle_weeks:', err);
+          console.error('[MESOCYCLE DEBUG] Exception updating mesocycle_weeks:', err);
         }
+      } else {
+        console.warn('[MESOCYCLE DEBUG] No mesocycleWeekId found - cannot mark complete');
       }
 
       // Also mark cycle_session as complete if this log is associated with one
