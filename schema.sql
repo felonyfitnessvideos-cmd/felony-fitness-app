@@ -401,18 +401,30 @@ CREATE TYPE storage.buckettype AS ENUM (
 
 CREATE FUNCTION analytics.get_daily_page_views(start_date date, end_date date) RETURNS TABLE(date date, page_path text, views bigint)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        DATE(created_at) as date,
-        page_path,
-        COUNT(*) as views
-    FROM analytics.page_views
-    WHERE DATE(created_at) BETWEEN start_date AND end_date
-    GROUP BY DATE(created_at), page_path
-    ORDER BY date DESC, views DESC;
-END;
+    AS $$
+
+BEGIN
+
+    RETURN QUERY
+
+    SELECT 
+
+        DATE(created_at) as date,
+
+        page_path,
+
+        COUNT(*) as views
+
+    FROM analytics.page_views
+
+    WHERE DATE(created_at) BETWEEN start_date AND end_date
+
+    GROUP BY DATE(created_at), page_path
+
+    ORDER BY date DESC, views DESC;
+
+END;
+
 $$;
 
 
@@ -822,18 +834,30 @@ $_$;
 CREATE FUNCTION public.add_tag_to_client(p_client_id uuid, p_tag_id text) RETURNS boolean
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-BEGIN
-    -- Add tag to client's tags array if not already present
-    UPDATE trainer_clients
-    SET tags = array_append(tags, p_tag_id),
-        updated_at = NOW()
-    WHERE client_id = p_client_id
-      AND trainer_id = auth.uid()
-      AND NOT (p_tag_id = ANY(tags)); -- Only add if not already present
-    
-    RETURN FOUND;
-END;
+    AS $$
+
+BEGIN
+
+    -- Add tag to client's tags array if not already present
+
+    UPDATE trainer_clients
+
+    SET tags = array_append(tags, p_tag_id),
+
+        updated_at = NOW()
+
+    WHERE client_id = p_client_id
+
+      AND trainer_id = auth.uid()
+
+      AND NOT (p_tag_id = ANY(tags)); -- Only add if not already present
+
+    
+
+    RETURN FOUND;
+
+END;
+
 $$;
 
 
@@ -843,46 +867,86 @@ $$;
 
 CREATE FUNCTION public.calculate_complexity_score(food_name text) RETURNS integer
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-DECLARE
-  base_score INTEGER := 70;  -- Start at "common"
-  word_count INTEGER;
-  comma_count INTEGER;
-  paren_penalty INTEGER;
-  length_penalty INTEGER;
-  qualifier_penalty INTEGER;
-  final_score INTEGER;
-BEGIN
-  -- Count words (split by spaces/commas)
-  word_count := array_length(regexp_split_to_array(food_name, '[,\s]+'), 1);
-  
-  -- Count commas (complex descriptions)
-  comma_count := LENGTH(food_name) - LENGTH(REPLACE(food_name, ',', ''));
-  
-  -- Parentheses indicate qualifiers
-  paren_penalty := CASE WHEN food_name LIKE '%(%)%' THEN 10 ELSE 0 END;
-  
-  -- Length penalty (very long names = obscure)
-  length_penalty := GREATEST(0, (LENGTH(food_name) - 20) / 3);
-  
-  -- Qualifier words that indicate specialty items
-  qualifier_penalty := 0;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%frozen%' THEN 3 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%canned%' THEN 3 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%dried%' THEN 3 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%powdered%' THEN 5 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%imitation%' THEN 8 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%prepared%' THEN 2 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%restaurant%' THEN 5 ELSE 0 END;
-  
-  -- Calculate final score
-  final_score := base_score - (word_count * 3) - (comma_count * 5) - paren_penalty - length_penalty - qualifier_penalty;
-  
-  -- Clamp to valid range (11-70 for auto-calculated scores)
-  -- Don't go below 11 (reserve 1-10 for manual rare assignments)
-  -- Don't go above 70 (reserve 71-100 for manual staples)
-  RETURN GREATEST(11, LEAST(70, final_score));
-END;
+    AS $$
+
+DECLARE
+
+  base_score INTEGER := 70;  -- Start at "common"
+
+  word_count INTEGER;
+
+  comma_count INTEGER;
+
+  paren_penalty INTEGER;
+
+  length_penalty INTEGER;
+
+  qualifier_penalty INTEGER;
+
+  final_score INTEGER;
+
+BEGIN
+
+  -- Count words (split by spaces/commas)
+
+  word_count := array_length(regexp_split_to_array(food_name, '[,\s]+'), 1);
+
+  
+
+  -- Count commas (complex descriptions)
+
+  comma_count := LENGTH(food_name) - LENGTH(REPLACE(food_name, ',', ''));
+
+  
+
+  -- Parentheses indicate qualifiers
+
+  paren_penalty := CASE WHEN food_name LIKE '%(%)%' THEN 10 ELSE 0 END;
+
+  
+
+  -- Length penalty (very long names = obscure)
+
+  length_penalty := GREATEST(0, (LENGTH(food_name) - 20) / 3);
+
+  
+
+  -- Qualifier words that indicate specialty items
+
+  qualifier_penalty := 0;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%frozen%' THEN 3 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%canned%' THEN 3 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%dried%' THEN 3 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%powdered%' THEN 5 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%imitation%' THEN 8 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%prepared%' THEN 2 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%restaurant%' THEN 5 ELSE 0 END;
+
+  
+
+  -- Calculate final score
+
+  final_score := base_score - (word_count * 3) - (comma_count * 5) - paren_penalty - length_penalty - qualifier_penalty;
+
+  
+
+  -- Clamp to valid range (11-70 for auto-calculated scores)
+
+  -- Don't go below 11 (reserve 1-10 for manual rare assignments)
+
+  -- Don't go above 70 (reserve 71-100 for manual staples)
+
+  RETURN GREATEST(11, LEAST(70, final_score));
+
+END;
+
 $$;
 
 
@@ -892,30 +956,54 @@ $$;
 
 CREATE FUNCTION public.calculate_nutrition_from_food() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-DECLARE
-  food_data RECORD;
-BEGIN
-  -- Only calculate if food_id is provided and nutrition fields are NULL
-  IF NEW.food_id IS NOT NULL THEN
-    -- Get food nutrition data
-    SELECT calories, protein_g, carbs_g, fat_g
-    INTO food_data
-    FROM foods
-    WHERE id = NEW.food_id;
-
-    IF FOUND THEN
-      -- Calculate nutrition based on quantity consumed
-      -- Foods table stores per 100g, so multiply by quantity_consumed
-      NEW.calories := ROUND((food_data.calories::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-      NEW.protein_g := ROUND((food_data.protein_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-      NEW.carbs_g := ROUND((food_data.carbs_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-      NEW.fat_g := ROUND((food_data.fat_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-    END IF;
-  END IF;
-
-  RETURN NEW;
-END;
+    AS $$
+
+DECLARE
+
+  food_data RECORD;
+
+BEGIN
+
+  -- Only calculate if food_id is provided and nutrition fields are NULL
+
+  IF NEW.food_id IS NOT NULL THEN
+
+    -- Get food nutrition data
+
+    SELECT calories, protein_g, carbs_g, fat_g
+
+    INTO food_data
+
+    FROM foods
+
+    WHERE id = NEW.food_id;
+
+
+
+    IF FOUND THEN
+
+      -- Calculate nutrition based on quantity consumed
+
+      -- Foods table stores per 100g, so multiply by quantity_consumed
+
+      NEW.calories := ROUND((food_data.calories::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+
+      NEW.protein_g := ROUND((food_data.protein_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+
+      NEW.carbs_g := ROUND((food_data.carbs_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+
+      NEW.fat_g := ROUND((food_data.fat_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+
+    END IF;
+
+  END IF;
+
+
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -925,27 +1013,48 @@ $$;
 
 CREATE FUNCTION public.generate_shopping_list(p_plan_id uuid, p_start_date date DEFAULT NULL::date, p_end_date date DEFAULT NULL::date) RETURNS TABLE(food_id bigint, food_name text, total_quantity numeric, category text, days_needed date[], meal_count bigint)
     LANGUAGE sql STABLE
-    AS $$
-  SELECT
-    f.id,
-    f.name::TEXT,
-    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
-    COALESCE(f.category, 'Other')::TEXT,
-    ARRAY_AGG(DISTINCT wmpe.plan_date ORDER BY wmpe.plan_date)::DATE[],
-    COUNT(DISTINCT wmpe.id)::BIGINT
-  FROM weekly_meal_plan_entries wmpe
-  JOIN user_meals um ON wmpe.user_meal_id = um.id
-  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
-  JOIN foods f ON umf.food_id = f.id
-  WHERE 
-    wmpe.plan_id = p_plan_id
-    AND wmpe.user_meal_id IS NOT NULL
-    AND (p_start_date IS NULL OR wmpe.plan_date >= p_start_date)
-    AND (p_end_date IS NULL OR wmpe.plan_date <= p_end_date)
-  GROUP BY f.id
-  ORDER BY 
-    COALESCE(f.category, 'Other'),
-    f.name
+    AS $$
+
+  SELECT
+
+    f.id,
+
+    f.name::TEXT,
+
+    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
+
+    COALESCE(f.category, 'Other')::TEXT,
+
+    ARRAY_AGG(DISTINCT wmpe.plan_date ORDER BY wmpe.plan_date)::DATE[],
+
+    COUNT(DISTINCT wmpe.id)::BIGINT
+
+  FROM weekly_meal_plan_entries wmpe
+
+  JOIN user_meals um ON wmpe.user_meal_id = um.id
+
+  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
+
+  JOIN foods f ON umf.food_id = f.id
+
+  WHERE 
+
+    wmpe.plan_id = p_plan_id
+
+    AND wmpe.user_meal_id IS NOT NULL
+
+    AND (p_start_date IS NULL OR wmpe.plan_date >= p_start_date)
+
+    AND (p_end_date IS NULL OR wmpe.plan_date <= p_end_date)
+
+  GROUP BY f.id
+
+  ORDER BY 
+
+    COALESCE(f.category, 'Other'),
+
+    f.name
+
 $$;
 
 
@@ -962,32 +1071,58 @@ COMMENT ON FUNCTION public.generate_shopping_list(p_plan_id uuid, p_start_date d
 
 CREATE FUNCTION public.generate_shopping_list_with_nutrition(p_plan_id uuid) RETURNS TABLE(food_id bigint, food_name text, total_quantity numeric, category text, days_needed date[], total_calories numeric, total_protein_g numeric, total_carbs_g numeric, total_fat_g numeric, calories_per_serving numeric, protein_per_serving numeric)
     LANGUAGE sql STABLE
-    AS $$
-  SELECT
-    f.id,
-    f.name::TEXT,
-    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
-    COALESCE(f.category, 'Other')::TEXT,
-    ARRAY_AGG(DISTINCT wmpe.plan_date ORDER BY wmpe.plan_date)::DATE[],
-    -- Total nutrition for all servings
-    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.calories)::NUMERIC(10,2),
-    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.protein_g)::NUMERIC(10,2),
-    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.carbs_g)::NUMERIC(10,2),
-    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.fat_g)::NUMERIC(10,2),
-    -- Reference values
-    f.calories::NUMERIC(10,2),
-    f.protein_g::NUMERIC(10,2)
-  FROM weekly_meal_plan_entries wmpe
-  JOIN user_meals um ON wmpe.user_meal_id = um.id
-  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
-  JOIN foods f ON umf.food_id = f.id
-  WHERE 
-    wmpe.plan_id = p_plan_id
-    AND wmpe.user_meal_id IS NOT NULL
-  GROUP BY f.id
-  ORDER BY 
-    COALESCE(f.category, 'Other'),
-    f.name
+    AS $$
+
+  SELECT
+
+    f.id,
+
+    f.name::TEXT,
+
+    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
+
+    COALESCE(f.category, 'Other')::TEXT,
+
+    ARRAY_AGG(DISTINCT wmpe.plan_date ORDER BY wmpe.plan_date)::DATE[],
+
+    -- Total nutrition for all servings
+
+    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.calories)::NUMERIC(10,2),
+
+    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.protein_g)::NUMERIC(10,2),
+
+    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.carbs_g)::NUMERIC(10,2),
+
+    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.fat_g)::NUMERIC(10,2),
+
+    -- Reference values
+
+    f.calories::NUMERIC(10,2),
+
+    f.protein_g::NUMERIC(10,2)
+
+  FROM weekly_meal_plan_entries wmpe
+
+  JOIN user_meals um ON wmpe.user_meal_id = um.id
+
+  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
+
+  JOIN foods f ON umf.food_id = f.id
+
+  WHERE 
+
+    wmpe.plan_id = p_plan_id
+
+    AND wmpe.user_meal_id IS NOT NULL
+
+  GROUP BY f.id
+
+  ORDER BY 
+
+    COALESCE(f.category, 'Other'),
+
+    f.name
+
 $$;
 
 
@@ -1004,20 +1139,34 @@ COMMENT ON FUNCTION public.generate_shopping_list_with_nutrition(p_plan_id uuid)
 
 CREATE FUNCTION public.generate_simplified_name(original_name text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-BEGIN
-  -- Convert to lowercase
-  -- Remove punctuation (keep only letters, numbers, spaces)
-  -- Normalize whitespace
-  RETURN lower(
-    trim(
-      regexp_replace(
-        regexp_replace(original_name, '[^a-zA-Z0-9\s]', ' ', 'g'),
-        '\s+', ' ', 'g'
-      )
-    )
-  );
-END;
+    AS $$
+
+BEGIN
+
+  -- Convert to lowercase
+
+  -- Remove punctuation (keep only letters, numbers, spaces)
+
+  -- Normalize whitespace
+
+  RETURN lower(
+
+    trim(
+
+      regexp_replace(
+
+        regexp_replace(original_name, '[^a-zA-Z0-9\s]', ' ', 'g'),
+
+        '\s+', ' ', 'g'
+
+      )
+
+    )
+
+  );
+
+END;
+
 $$;
 
 
@@ -1028,19 +1177,32 @@ $$;
 CREATE FUNCTION public.get_clients_by_tag(p_tag_id text) RETURNS TABLE(client_id uuid, full_name text, email text, tags text[])
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        tc.client_id,
-        tc.full_name,
-        tc.email,
-        tc.tags
-    FROM trainer_clients tc
-    WHERE tc.trainer_id = auth.uid()
-      AND p_tag_id = ANY(tc.tags)
-      AND tc.status = 'active';
-END;
+    AS $$
+
+BEGIN
+
+    RETURN QUERY
+
+    SELECT 
+
+        tc.client_id,
+
+        tc.full_name,
+
+        tc.email,
+
+        tc.tags
+
+    FROM trainer_clients tc
+
+    WHERE tc.trainer_id = auth.uid()
+
+      AND p_tag_id = ANY(tc.tags)
+
+      AND tc.status = 'active';
+
+END;
+
 $$;
 
 
@@ -1050,37 +1212,68 @@ $$;
 
 CREATE FUNCTION public.get_conversations() RETURNS TABLE(conversation_user_id uuid, conversation_user_name text, last_message text, last_message_time timestamp with time zone, unread_count bigint, is_trainer boolean)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    current_user_id UUID;
-BEGIN
-    current_user_id := auth.uid();
-    
-    IF current_user_id IS NULL THEN
-        RAISE EXCEPTION 'Authentication required';
-    END IF;
-    
-    RETURN QUERY
-    WITH conversation_partners AS (
-        SELECT DISTINCT
-            CASE 
-                WHEN dm.sender_id = current_user_id THEN dm.recipient_id
-                ELSE dm.sender_id 
-            END as partner_id
-        FROM direct_messages dm
-        WHERE dm.sender_id = current_user_id OR dm.recipient_id = current_user_id
-    )
-    SELECT 
-        cp.partner_id as conversation_user_id,
-        COALESCE(up.first_name || ' ' || up.last_name, up.email, 'Unknown User') as conversation_user_name,
-        ''::TEXT as last_message,
-        NOW()::TIMESTAMP WITH TIME ZONE as last_message_time,
-        0::BIGINT as unread_count,
-        false as is_trainer
-    FROM conversation_partners cp
-    LEFT JOIN user_profiles up ON up.id = cp.partner_id OR up.user_id = cp.partner_id
-    LIMIT 10;
-END;
+    AS $$
+
+DECLARE
+
+    current_user_id UUID;
+
+BEGIN
+
+    current_user_id := auth.uid();
+
+    
+
+    IF current_user_id IS NULL THEN
+
+        RAISE EXCEPTION 'Authentication required';
+
+    END IF;
+
+    
+
+    RETURN QUERY
+
+    WITH conversation_partners AS (
+
+        SELECT DISTINCT
+
+            CASE 
+
+                WHEN dm.sender_id = current_user_id THEN dm.recipient_id
+
+                ELSE dm.sender_id 
+
+            END as partner_id
+
+        FROM direct_messages dm
+
+        WHERE dm.sender_id = current_user_id OR dm.recipient_id = current_user_id
+
+    )
+
+    SELECT 
+
+        cp.partner_id as conversation_user_id,
+
+        COALESCE(up.first_name || ' ' || up.last_name, up.email, 'Unknown User') as conversation_user_name,
+
+        ''::TEXT as last_message,
+
+        NOW()::TIMESTAMP WITH TIME ZONE as last_message_time,
+
+        0::BIGINT as unread_count,
+
+        false as is_trainer
+
+    FROM conversation_partners cp
+
+    LEFT JOIN user_profiles up ON up.id = cp.partner_id OR up.user_id = cp.partner_id
+
+    LIMIT 10;
+
+END;
+
 $$;
 
 
@@ -1090,19 +1283,32 @@ $$;
 
 CREATE FUNCTION public.get_enrichment_status() RETURNS TABLE(status text, count bigint, avg_quality_before numeric, avg_quality_after numeric, total_improvements bigint)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        q.status,
-        COUNT(*)::BIGINT as count,
-        AVG(q.quality_score_before)::NUMERIC as avg_quality_before,
-        AVG(q.quality_score_after)::NUMERIC as avg_quality_after,
-        COUNT(CASE WHEN q.quality_score_after > q.quality_score_before THEN 1 END)::BIGINT as total_improvements
-    FROM public.nutrition_enrichment_queue q
-    GROUP BY q.status
-    ORDER BY q.status;
-END;
+    AS $$
+
+BEGIN
+
+    RETURN QUERY
+
+    SELECT 
+
+        q.status,
+
+        COUNT(*)::BIGINT as count,
+
+        AVG(q.quality_score_before)::NUMERIC as avg_quality_before,
+
+        AVG(q.quality_score_after)::NUMERIC as avg_quality_after,
+
+        COUNT(CASE WHEN q.quality_score_after > q.quality_score_before THEN 1 END)::BIGINT as total_improvements
+
+    FROM public.nutrition_enrichment_queue q
+
+    GROUP BY q.status
+
+    ORDER BY q.status;
+
+END;
+
 $$;
 
 
@@ -1112,42 +1318,78 @@ $$;
 
 CREATE FUNCTION public.get_quality_distribution() RETURNS TABLE(quality_range text, count bigint, percentage numeric)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    total_foods BIGINT;
-BEGIN
-    -- Get total count
-    SELECT COUNT(*) INTO total_foods FROM public.food_servings;
-    
-    -- Prevent division by zero
-    IF total_foods = 0 THEN
-        total_foods := 1;
-    END IF;
-    
-    RETURN QUERY
-    SELECT 
-        CASE 
-            WHEN f.quality_score = 0 THEN 'Not Scored (0)'
-            WHEN f.quality_score > 0 AND f.quality_score < 50 THEN 'Poor (1-49)'
-            WHEN f.quality_score >= 50 AND f.quality_score < 70 THEN 'Fair (50-69)'
-            WHEN f.quality_score >= 70 AND f.quality_score < 85 THEN 'Good (70-84)'
-            WHEN f.quality_score >= 85 THEN 'Excellent (85-100)'
-            ELSE 'Unknown'
-        END as quality_range,
-        COUNT(*)::BIGINT as count,
-        ROUND((COUNT(*)::NUMERIC / total_foods * 100), 2) as percentage
-    FROM public.food_servings f
-    GROUP BY quality_range
-    ORDER BY 
-        CASE quality_range
-            WHEN 'Excellent (85-100)' THEN 1
-            WHEN 'Good (70-84)' THEN 2
-            WHEN 'Fair (50-69)' THEN 3
-            WHEN 'Poor (1-49)' THEN 4
-            WHEN 'Not Scored (0)' THEN 5
-            ELSE 6
-        END;
-END;
+    AS $$
+
+DECLARE
+
+    total_foods BIGINT;
+
+BEGIN
+
+    -- Get total count
+
+    SELECT COUNT(*) INTO total_foods FROM public.food_servings;
+
+    
+
+    -- Prevent division by zero
+
+    IF total_foods = 0 THEN
+
+        total_foods := 1;
+
+    END IF;
+
+    
+
+    RETURN QUERY
+
+    SELECT 
+
+        CASE 
+
+            WHEN f.quality_score = 0 THEN 'Not Scored (0)'
+
+            WHEN f.quality_score > 0 AND f.quality_score < 50 THEN 'Poor (1-49)'
+
+            WHEN f.quality_score >= 50 AND f.quality_score < 70 THEN 'Fair (50-69)'
+
+            WHEN f.quality_score >= 70 AND f.quality_score < 85 THEN 'Good (70-84)'
+
+            WHEN f.quality_score >= 85 THEN 'Excellent (85-100)'
+
+            ELSE 'Unknown'
+
+        END as quality_range,
+
+        COUNT(*)::BIGINT as count,
+
+        ROUND((COUNT(*)::NUMERIC / total_foods * 100), 2) as percentage
+
+    FROM public.food_servings f
+
+    GROUP BY quality_range
+
+    ORDER BY 
+
+        CASE quality_range
+
+            WHEN 'Excellent (85-100)' THEN 1
+
+            WHEN 'Good (70-84)' THEN 2
+
+            WHEN 'Fair (50-69)' THEN 3
+
+            WHEN 'Poor (1-49)' THEN 4
+
+            WHEN 'Not Scored (0)' THEN 5
+
+            ELSE 6
+
+        END;
+
+END;
+
 $$;
 
 
@@ -1157,21 +1399,36 @@ $$;
 
 CREATE FUNCTION public.get_random_tip() RETURNS TABLE(tip text, category text)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-  tips TEXT[] := ARRAY[
-    'Aim for 0.8-1g of protein per kg of body weight daily',
-    'Drink water before you feel thirsty to stay properly hydrated',
-    'Include colorful vegetables in every meal for maximum nutrients',
-    'Eat protein within 30 minutes after strength training',
-    'Choose whole grains over refined grains for sustained energy'
-  ];
-  categories TEXT[] := ARRAY['Protein', 'Hydration', 'Vegetables', 'Recovery', 'Carbohydrates'];
-  random_index INT;
-BEGIN
-  random_index := floor(random() * array_length(tips, 1)) + 1;
-  RETURN QUERY SELECT tips[random_index], categories[random_index];
-END;
+    AS $$
+
+DECLARE
+
+  tips TEXT[] := ARRAY[
+
+    'Aim for 0.8-1g of protein per kg of body weight daily',
+
+    'Drink water before you feel thirsty to stay properly hydrated',
+
+    'Include colorful vegetables in every meal for maximum nutrients',
+
+    'Eat protein within 30 minutes after strength training',
+
+    'Choose whole grains over refined grains for sustained energy'
+
+  ];
+
+  categories TEXT[] := ARRAY['Protein', 'Hydration', 'Vegetables', 'Recovery', 'Carbohydrates'];
+
+  random_index INT;
+
+BEGIN
+
+  random_index := floor(random() * array_length(tips, 1)) + 1;
+
+  RETURN QUERY SELECT tips[random_index], categories[random_index];
+
+END;
+
 $$;
 
 
@@ -1181,21 +1438,36 @@ $$;
 
 CREATE FUNCTION public.get_shopping_list_category_summary(p_plan_id uuid) RETURNS TABLE(category text, unique_foods bigint, total_items numeric, estimated_calories numeric)
     LANGUAGE sql STABLE
-    AS $$
-  SELECT
-    COALESCE(f.category, 'Other')::TEXT,
-    COUNT(DISTINCT f.id)::BIGINT,
-    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
-    SUM(umf.quantity * COALESCE(wmpe.servings, 1) * f.calories)::NUMERIC(10,2)
-  FROM weekly_meal_plan_entries wmpe
-  JOIN user_meals um ON wmpe.user_meal_id = um.id
-  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
-  JOIN foods f ON umf.food_id = f.id
-  WHERE 
-    wmpe.plan_id = p_plan_id
-    AND wmpe.user_meal_id IS NOT NULL
-  GROUP BY COALESCE(f.category, 'Other')
-  ORDER BY 1
+    AS $$
+
+  SELECT
+
+    COALESCE(f.category, 'Other')::TEXT,
+
+    COUNT(DISTINCT f.id)::BIGINT,
+
+    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
+
+    SUM(umf.quantity * COALESCE(wmpe.servings, 1) * f.calories)::NUMERIC(10,2)
+
+  FROM weekly_meal_plan_entries wmpe
+
+  JOIN user_meals um ON wmpe.user_meal_id = um.id
+
+  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
+
+  JOIN foods f ON umf.food_id = f.id
+
+  WHERE 
+
+    wmpe.plan_id = p_plan_id
+
+    AND wmpe.user_meal_id IS NOT NULL
+
+  GROUP BY COALESCE(f.category, 'Other')
+
+  ORDER BY 1
+
 $$;
 
 
@@ -1212,32 +1484,58 @@ COMMENT ON FUNCTION public.get_shopping_list_category_summary(p_plan_id uuid) IS
 
 CREATE FUNCTION public.get_user_tags(target_user_id uuid DEFAULT NULL::uuid) RETURNS TABLE(tag_id uuid, tag_name character varying, tag_description text, tag_color character varying, assigned_at timestamp with time zone, assigned_by uuid)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    current_user_id UUID;
-    query_user_id UUID;
-BEGIN
-    current_user_id := auth.uid();
-    
-    IF current_user_id IS NULL THEN
-        RAISE EXCEPTION 'Authentication required';
-    END IF;
-    
-    query_user_id := COALESCE(target_user_id, current_user_id);
-    
-    RETURN QUERY
-    SELECT 
-        t.id as tag_id,
-        t.name as tag_name,
-        t.description as tag_description,
-        t.color as tag_color,
-        ut.assigned_at,
-        ut.assigned_by
-    FROM user_tags ut
-    JOIN tags t ON t.id = ut.tag_id
-    WHERE ut.user_id = query_user_id
-    ORDER BY ut.assigned_at DESC;
-END;
+    AS $$
+
+DECLARE
+
+    current_user_id UUID;
+
+    query_user_id UUID;
+
+BEGIN
+
+    current_user_id := auth.uid();
+
+    
+
+    IF current_user_id IS NULL THEN
+
+        RAISE EXCEPTION 'Authentication required';
+
+    END IF;
+
+    
+
+    query_user_id := COALESCE(target_user_id, current_user_id);
+
+    
+
+    RETURN QUERY
+
+    SELECT 
+
+        t.id as tag_id,
+
+        t.name as tag_name,
+
+        t.description as tag_description,
+
+        t.color as tag_color,
+
+        ut.assigned_at,
+
+        ut.assigned_by
+
+    FROM user_tags ut
+
+    JOIN tags t ON t.id = ut.tag_id
+
+    WHERE ut.user_id = query_user_id
+
+    ORDER BY ut.assigned_at DESC;
+
+END;
+
 $$;
 
 
@@ -1247,20 +1545,34 @@ $$;
 
 CREATE FUNCTION public.get_verification_stats() RETURNS TABLE(total_foods bigint, verified_foods bigint, needs_review_foods bigint, pending_verification_foods bigint, verification_rate numeric)
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  RETURN QUERY
-  SELECT 
-    COUNT(*)::BIGINT as total_foods,
-    COUNT(*) FILTER (WHERE is_verified = TRUE)::BIGINT as verified_foods,
-    COUNT(*) FILTER (WHERE needs_review = TRUE)::BIGINT as needs_review_foods,
-    COUNT(*) FILTER (WHERE enrichment_status IN ('completed', 'verified') AND (is_verified IS NULL OR is_verified = FALSE))::BIGINT as pending_verification_foods,
-    ROUND(
-      (COUNT(*) FILTER (WHERE is_verified = TRUE)::NUMERIC / NULLIF(COUNT(*), 0) * 100),
-      2
-    ) as verification_rate
-  FROM food_servings;
-END;
+    AS $$
+
+BEGIN
+
+  RETURN QUERY
+
+  SELECT 
+
+    COUNT(*)::BIGINT as total_foods,
+
+    COUNT(*) FILTER (WHERE is_verified = TRUE)::BIGINT as verified_foods,
+
+    COUNT(*) FILTER (WHERE needs_review = TRUE)::BIGINT as needs_review_foods,
+
+    COUNT(*) FILTER (WHERE enrichment_status IN ('completed', 'verified') AND (is_verified IS NULL OR is_verified = FALSE))::BIGINT as pending_verification_foods,
+
+    ROUND(
+
+      (COUNT(*) FILTER (WHERE is_verified = TRUE)::NUMERIC / NULLIF(COUNT(*), 0) * 100),
+
+      2
+
+    ) as verification_rate
+
+  FROM food_servings;
+
+END;
+
 $$;
 
 
@@ -1270,13 +1582,20 @@ $$;
 
 CREATE FUNCTION public.handle_new_user() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    INSERT INTO public.user_profiles (id, user_id, email, created_at, updated_at)
-    VALUES (NEW.id, NEW.id, NEW.email, NOW(), NOW());
-    
-    RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+    INSERT INTO public.user_profiles (id, user_id, email, created_at, updated_at)
+
+    VALUES (NEW.id, NEW.id, NEW.email, NOW(), NOW());
+
+    
+
+    RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1285,19 +1604,31 @@ $$;
 --
 
 CREATE FUNCTION public.increment_food_log_count() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Increment times_logged for the food that was just logged
-  -- nutrition_logs now has food_id directly (no food_servings table)
-  UPDATE foods
-  SET 
-    times_logged = times_logged + 1,
-    last_logged_at = NEW.created_at
-  WHERE id = NEW.food_id;
-  
-  RETURN NEW;
-END;
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+
+BEGIN
+
+  -- Increment times_logged for the food that was just logged
+
+  -- nutrition_logs now has food_id directly (no food_servings table)
+
+  UPDATE foods
+
+  SET 
+
+    times_logged = times_logged + 1,
+
+    last_logged_at = NEW.created_at
+
+  WHERE id = NEW.food_id;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1308,13 +1639,20 @@ $$;
 CREATE FUNCTION public.is_admin() RETURNS boolean
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'public', 'auth'
-    AS $$
-  SELECT EXISTS (
-    SELECT 1 
-    FROM public.user_profiles
-    WHERE id = auth.uid() 
-    AND is_admin = true
-  );
+    AS $$
+
+  SELECT EXISTS (
+
+    SELECT 1 
+
+    FROM public.user_profiles
+
+    WHERE id = auth.uid() 
+
+    AND is_admin = true
+
+  );
+
 $$;
 
 
@@ -1325,13 +1663,20 @@ $$;
 CREATE FUNCTION public.is_trainer() RETURNS boolean
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'public', 'auth'
-    AS $$
-  SELECT EXISTS (
-    SELECT 1 
-    FROM public.user_profiles
-    WHERE id = auth.uid() 
-    AND is_trainer = true
-  );
+    AS $$
+
+  SELECT EXISTS (
+
+    SELECT 1 
+
+    FROM public.user_profiles
+
+    WHERE id = auth.uid() 
+
+    AND is_trainer = true
+
+  );
+
 $$;
 
 
@@ -1342,14 +1687,22 @@ $$;
 CREATE FUNCTION public.is_trainer_for_client(client_id uuid) RETURNS boolean
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'public', 'auth'
-    AS $$
-  SELECT EXISTS (
-    SELECT 1 
-    FROM public.trainer_clients
-    WHERE trainer_id = auth.uid() 
-    AND trainer_clients.client_id = is_trainer_for_client.client_id
-    AND status = 'active'
-  );
+    AS $$
+
+  SELECT EXISTS (
+
+    SELECT 1 
+
+    FROM public.trainer_clients
+
+    WHERE trainer_id = auth.uid() 
+
+    AND trainer_clients.client_id = is_trainer_for_client.client_id
+
+    AND status = 'active'
+
+  );
+
 $$;
 
 
@@ -1359,64 +1712,122 @@ $$;
 
 CREATE FUNCTION public.log_food_item(p_external_food jsonb DEFAULT NULL::jsonb, p_food_serving_id uuid DEFAULT NULL::uuid, p_meal_type text DEFAULT 'Snack'::text, p_quantity_consumed numeric DEFAULT 1.0, p_user_id uuid DEFAULT NULL::uuid, p_log_date date DEFAULT CURRENT_DATE) RETURNS jsonb
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-  v_food_serving_id UUID;
-  v_result JSONB;
-  v_user_id UUID;
-BEGIN
-  v_user_id := COALESCE(p_user_id, auth.uid());
-  
-  IF v_user_id IS NULL THEN
-    RETURN json_build_object('error', 'Authentication required');
-  END IF;
-
-  IF p_external_food IS NOT NULL THEN
-    SELECT f.id INTO v_food_serving_id
-    FROM food_servings f
-    WHERE LOWER(f.food_name) = LOWER(p_external_food->>'name')
-    AND LOWER(f.serving_description) = LOWER(p_external_food->>'serving_description')
-    LIMIT 1;
-    
-    IF v_food_serving_id IS NULL THEN
-      INSERT INTO food_servings (
-        food_name, serving_description, calories, protein_g, carbs_g, fat_g, 
-        fiber_g, sugar_g, sodium_mg, calcium_mg, iron_mg, vitamin_c_mg
-      ) VALUES (
-        p_external_food->>'name',
-        p_external_food->>'serving_description',
-        COALESCE((p_external_food->>'calories')::DECIMAL, 0),
-        COALESCE((p_external_food->>'protein_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'carbs_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'fat_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'fiber_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'sugar_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'sodium_mg')::DECIMAL, 0),
-        COALESCE((p_external_food->>'calcium_mg')::DECIMAL, 0),
-        COALESCE((p_external_food->>'iron_mg')::DECIMAL, 0),
-        COALESCE((p_external_food->>'vitamin_c_mg')::DECIMAL, 0)
-      ) RETURNING id INTO v_food_serving_id;
-    END IF;
-  ELSE
-    v_food_serving_id := p_food_serving_id;
-  END IF;
-
-  INSERT INTO nutrition_logs (
-    user_id, food_serving_id, meal_type, quantity_consumed, log_date
-  ) VALUES (
-    v_user_id, v_food_serving_id, p_meal_type, p_quantity_consumed, p_log_date
-  );
-
-  RETURN json_build_object(
-    'success', true,
-    'message', 'Food logged successfully',
-    'food_serving_id', v_food_serving_id
-  );
-
-EXCEPTION
-  WHEN OTHERS THEN
-    RETURN json_build_object('error', 'Failed to log food: ' || SQLERRM);
-END;
+    AS $$
+
+DECLARE
+
+  v_food_serving_id UUID;
+
+  v_result JSONB;
+
+  v_user_id UUID;
+
+BEGIN
+
+  v_user_id := COALESCE(p_user_id, auth.uid());
+
+  
+
+  IF v_user_id IS NULL THEN
+
+    RETURN json_build_object('error', 'Authentication required');
+
+  END IF;
+
+
+
+  IF p_external_food IS NOT NULL THEN
+
+    SELECT f.id INTO v_food_serving_id
+
+    FROM food_servings f
+
+    WHERE LOWER(f.food_name) = LOWER(p_external_food->>'name')
+
+    AND LOWER(f.serving_description) = LOWER(p_external_food->>'serving_description')
+
+    LIMIT 1;
+
+    
+
+    IF v_food_serving_id IS NULL THEN
+
+      INSERT INTO food_servings (
+
+        food_name, serving_description, calories, protein_g, carbs_g, fat_g, 
+
+        fiber_g, sugar_g, sodium_mg, calcium_mg, iron_mg, vitamin_c_mg
+
+      ) VALUES (
+
+        p_external_food->>'name',
+
+        p_external_food->>'serving_description',
+
+        COALESCE((p_external_food->>'calories')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'protein_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'carbs_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'fat_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'fiber_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'sugar_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'sodium_mg')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'calcium_mg')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'iron_mg')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'vitamin_c_mg')::DECIMAL, 0)
+
+      ) RETURNING id INTO v_food_serving_id;
+
+    END IF;
+
+  ELSE
+
+    v_food_serving_id := p_food_serving_id;
+
+  END IF;
+
+
+
+  INSERT INTO nutrition_logs (
+
+    user_id, food_serving_id, meal_type, quantity_consumed, log_date
+
+  ) VALUES (
+
+    v_user_id, v_food_serving_id, p_meal_type, p_quantity_consumed, p_log_date
+
+  );
+
+
+
+  RETURN json_build_object(
+
+    'success', true,
+
+    'message', 'Food logged successfully',
+
+    'food_serving_id', v_food_serving_id
+
+  );
+
+
+
+EXCEPTION
+
+  WHEN OTHERS THEN
+
+    RETURN json_build_object('error', 'Failed to log food: ' || SQLERRM);
+
+END;
+
 $$;
 
 
@@ -1426,13 +1837,20 @@ $$;
 
 CREATE FUNCTION public.refresh_meal_plan_nutrition() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-  -- Refresh the materialized view concurrently (non-blocking)
-  -- Only refresh if there are changes to relevant tables
-  REFRESH MATERIALIZED VIEW CONCURRENTLY weekly_meal_plan_nutrition;
-  RETURN NULL;
-END;
+    AS $$
+
+BEGIN
+
+  -- Refresh the materialized view concurrently (non-blocking)
+
+  -- Only refresh if there are changes to relevant tables
+
+  REFRESH MATERIALIZED VIEW CONCURRENTLY weekly_meal_plan_nutrition;
+
+  RETURN NULL;
+
+END;
+
 $$;
 
 
@@ -1442,42 +1860,78 @@ $$;
 
 CREATE FUNCTION public.remove_category_prefix(food_name text, food_category text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-DECLARE
-  cleaned_name text;
-  category_singular text;
-BEGIN
-  cleaned_name := food_name;
-  
-  -- Don't process if category is unknown or null
-  IF food_category IS NULL OR food_category IN ('Unknown', '') THEN
-    RETURN cleaned_name;
-  END IF;
-  
-  -- Remove exact category name from start (case insensitive)
-  -- Pattern: "Category, rest of name" → "rest of name"
-  cleaned_name := regexp_replace(
-    cleaned_name, 
-    '^' || food_category || ',\s*', 
-    '', 
-    'i'
-  );
-  
-  -- Remove common category prefixes
-  cleaned_name := regexp_replace(cleaned_name, '^Beverages?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Vegetables?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Fruits?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Meats?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Dairy,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Grains?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Cereals?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Legumes?,\s*', '', 'i');
-  
-  -- Capitalize first letter after cleanup
-  cleaned_name := upper(substring(cleaned_name from 1 for 1)) || substring(cleaned_name from 2);
-  
-  RETURN cleaned_name;
-END;
+    AS $$
+
+DECLARE
+
+  cleaned_name text;
+
+  category_singular text;
+
+BEGIN
+
+  cleaned_name := food_name;
+
+  
+
+  -- Don't process if category is unknown or null
+
+  IF food_category IS NULL OR food_category IN ('Unknown', '') THEN
+
+    RETURN cleaned_name;
+
+  END IF;
+
+  
+
+  -- Remove exact category name from start (case insensitive)
+
+  -- Pattern: "Category, rest of name" → "rest of name"
+
+  cleaned_name := regexp_replace(
+
+    cleaned_name, 
+
+    '^' || food_category || ',\s*', 
+
+    '', 
+
+    'i'
+
+  );
+
+  
+
+  -- Remove common category prefixes
+
+  cleaned_name := regexp_replace(cleaned_name, '^Beverages?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Vegetables?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Fruits?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Meats?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Dairy,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Grains?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Cereals?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Legumes?,\s*', '', 'i');
+
+  
+
+  -- Capitalize first letter after cleanup
+
+  cleaned_name := upper(substring(cleaned_name from 1 for 1)) || substring(cleaned_name from 2);
+
+  
+
+  RETURN cleaned_name;
+
+END;
+
 $$;
 
 
@@ -1488,18 +1942,30 @@ $$;
 CREATE FUNCTION public.remove_tag_from_client(p_client_id uuid, p_tag_id text) RETURNS boolean
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-BEGIN
-    -- Remove tag from client's tags array
-    UPDATE trainer_clients
-    SET tags = array_remove(tags, p_tag_id),
-        updated_at = NOW()
-    WHERE client_id = p_client_id
-      AND trainer_id = auth.uid()
-      AND p_tag_id = ANY(tags); -- Only remove if present
-    
-    RETURN FOUND;
-END;
+    AS $$
+
+BEGIN
+
+    -- Remove tag from client's tags array
+
+    UPDATE trainer_clients
+
+    SET tags = array_remove(tags, p_tag_id),
+
+        updated_at = NOW()
+
+    WHERE client_id = p_client_id
+
+      AND trainer_id = auth.uid()
+
+      AND p_tag_id = ANY(tags); -- Only remove if present
+
+    
+
+    RETURN FOUND;
+
+END;
+
 $$;
 
 
@@ -1509,23 +1975,40 @@ $$;
 
 CREATE FUNCTION public.simplify_fast_food_name(food_name text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-DECLARE
-  cleaned_name text;
-  main_name text;
-BEGIN
-  cleaned_name := food_name;
-  
-  -- Pattern: "Fast foods, item" → "Item (fast food)"
-  IF cleaned_name ~* '^Fast foods?,\s*' THEN
-    main_name := regexp_replace(cleaned_name, '^Fast foods?,\s*', '', 'i');
-    -- Capitalize first letter
-    main_name := upper(substring(main_name from 1 for 1)) || substring(main_name from 2);
-    cleaned_name := main_name || ' (fast food)';
-  END IF;
-  
-  RETURN cleaned_name;
-END;
+    AS $$
+
+DECLARE
+
+  cleaned_name text;
+
+  main_name text;
+
+BEGIN
+
+  cleaned_name := food_name;
+
+  
+
+  -- Pattern: "Fast foods, item" → "Item (fast food)"
+
+  IF cleaned_name ~* '^Fast foods?,\s*' THEN
+
+    main_name := regexp_replace(cleaned_name, '^Fast foods?,\s*', '', 'i');
+
+    -- Capitalize first letter
+
+    main_name := upper(substring(main_name from 1 for 1)) || substring(main_name from 2);
+
+    cleaned_name := main_name || ' (fast food)';
+
+  END IF;
+
+  
+
+  RETURN cleaned_name;
+
+END;
+
 $$;
 
 
@@ -1535,40 +2018,74 @@ $$;
 
 CREATE FUNCTION public.simplify_food_name(original_name text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $_$
-DECLARE
-  cleaned_name text;
-BEGIN
-  cleaned_name := original_name;
-  
-  -- Remove parenthetical geographic qualifiers
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Alaska[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Native[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Indian[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Plains[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Hispanic[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Mexican[^)]*\)', '', 'gi');
-  
-  -- Remove standalone "wild" when it's the only descriptor before a comma
-  -- Keep "wild" if it's part of a compound name like "wild rice"
-  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*,', ',', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*$', '', 'gi');
-  
-  -- Remove "NFS" (Not Further Specified) - redundant information
-  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*$', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*,', ',', 'gi');
-  
-  -- Clean up multiple commas and spaces
-  cleaned_name := regexp_replace(cleaned_name, ',\s*,', ',', 'g');
-  cleaned_name := regexp_replace(cleaned_name, '\s+', ' ', 'g');
-  
-  -- Trim leading/trailing whitespace and commas
-  cleaned_name := regexp_replace(cleaned_name, '^\s*,\s*', '', 'g');
-  cleaned_name := regexp_replace(cleaned_name, '\s*,\s*$', '', 'g');
-  cleaned_name := trim(cleaned_name);
-  
-  RETURN cleaned_name;
-END;
+    AS $_$
+
+DECLARE
+
+  cleaned_name text;
+
+BEGIN
+
+  cleaned_name := original_name;
+
+  
+
+  -- Remove parenthetical geographic qualifiers
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Alaska[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Native[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Indian[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Plains[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Hispanic[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Mexican[^)]*\)', '', 'gi');
+
+  
+
+  -- Remove standalone "wild" when it's the only descriptor before a comma
+
+  -- Keep "wild" if it's part of a compound name like "wild rice"
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*,', ',', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*$', '', 'gi');
+
+  
+
+  -- Remove "NFS" (Not Further Specified) - redundant information
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*$', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*,', ',', 'gi');
+
+  
+
+  -- Clean up multiple commas and spaces
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*,', ',', 'g');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s+', ' ', 'g');
+
+  
+
+  -- Trim leading/trailing whitespace and commas
+
+  cleaned_name := regexp_replace(cleaned_name, '^\s*,\s*', '', 'g');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*,\s*$', '', 'g');
+
+  cleaned_name := trim(cleaned_name);
+
+  
+
+  RETURN cleaned_name;
+
+END;
+
 $_$;
 
 
@@ -1578,17 +2095,28 @@ $_$;
 
 CREATE FUNCTION public.sync_scheduled_routine_client_info() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Get client info from trainer_clients
-  SELECT full_name, email
-  INTO NEW.client_name, NEW.client_email
-  FROM trainer_clients
-  WHERE client_id = NEW.user_id
-  LIMIT 1;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Get client info from trainer_clients
+
+  SELECT full_name, email
+
+  INTO NEW.client_name, NEW.client_email
+
+  FROM trainer_clients
+
+  WHERE client_id = NEW.user_id
+
+  LIMIT 1;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1598,19 +2126,32 @@ $$;
 
 CREATE FUNCTION public.sync_scheduled_routine_client_info_on_trainer_client_update() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Update all scheduled_routines when trainer_clients data changes
-  IF NEW.full_name IS DISTINCT FROM OLD.full_name OR NEW.email IS DISTINCT FROM OLD.email THEN
-    UPDATE scheduled_routines
-    SET 
-      client_name = NEW.full_name,
-      client_email = NEW.email
-    WHERE user_id = NEW.client_id;
-  END IF;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Update all scheduled_routines when trainer_clients data changes
+
+  IF NEW.full_name IS DISTINCT FROM OLD.full_name OR NEW.email IS DISTINCT FROM OLD.email THEN
+
+    UPDATE scheduled_routines
+
+    SET 
+
+      client_name = NEW.full_name,
+
+      client_email = NEW.email
+
+    WHERE user_id = NEW.client_id;
+
+  END IF;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1620,15 +2161,24 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_email() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Get email from user_profiles and set it
-  SELECT email INTO NEW.email
-  FROM user_profiles
-  WHERE id = NEW.client_id;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Get email from user_profiles and set it
+
+  SELECT email INTO NEW.email
+
+  FROM user_profiles
+
+  WHERE id = NEW.client_id;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1638,17 +2188,28 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_email_on_profile_update() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Update all trainer_clients records when user_profiles.email changes
-  IF NEW.email IS DISTINCT FROM OLD.email THEN
-    UPDATE trainer_clients
-    SET email = NEW.email
-    WHERE client_id = NEW.id;
-  END IF;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Update all trainer_clients records when user_profiles.email changes
+
+  IF NEW.email IS DISTINCT FROM OLD.email THEN
+
+    UPDATE trainer_clients
+
+    SET email = NEW.email
+
+    WHERE client_id = NEW.id;
+
+  END IF;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1658,16 +2219,26 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_full_name() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Get full_name from user_profiles for the client_id
-  SELECT CONCAT(first_name, ' ', last_name)
-  INTO NEW.full_name
-  FROM user_profiles
-  WHERE id = NEW.client_id;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Get full_name from user_profiles for the client_id
+
+  SELECT CONCAT(first_name, ' ', last_name)
+
+  INTO NEW.full_name
+
+  FROM user_profiles
+
+  WHERE id = NEW.client_id;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1677,15 +2248,24 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_on_profile_update() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Update all trainer_clients records for this user
-  UPDATE trainer_clients
-  SET full_name = CONCAT(NEW.first_name, ' ', NEW.last_name)
-  WHERE client_id = NEW.id;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Update all trainer_clients records for this user
+
+  UPDATE trainer_clients
+
+  SET full_name = CONCAT(NEW.first_name, ' ', NEW.last_name)
+
+  WHERE client_id = NEW.id;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1695,15 +2275,24 @@ $$;
 
 CREATE FUNCTION public.sync_user_profile_email_from_auth() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-  -- Get email from auth.users and set it
-  SELECT email INTO NEW.email
-  FROM auth.users
-  WHERE id = NEW.id;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Get email from auth.users and set it
+
+  SELECT email INTO NEW.email
+
+  FROM auth.users
+
+  WHERE id = NEW.id;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1713,17 +2302,28 @@ $$;
 
 CREATE FUNCTION public.sync_user_profile_email_on_auth_update() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-  -- Update user_profiles when auth.users.email changes
-  IF NEW.email IS DISTINCT FROM OLD.email THEN
-    UPDATE user_profiles
-    SET email = NEW.email
-    WHERE id = NEW.id;
-  END IF;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Update user_profiles when auth.users.email changes
+
+  IF NEW.email IS DISTINCT FROM OLD.email THEN
+
+    UPDATE user_profiles
+
+    SET email = NEW.email
+
+    WHERE id = NEW.id;
+
+  END IF;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1733,31 +2333,56 @@ $$;
 
 CREATE FUNCTION public.unsubscribe_from_trainer_emails(p_email text) RETURNS json
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-  v_updated_count INTEGER;
-BEGIN
-  -- Update all trainer_clients records with this email
-  UPDATE trainer_clients
-  SET 
-    is_unsubscribed = TRUE,
-    updated_at = NOW()
-  WHERE email = p_email;
-  
-  GET DIAGNOSTICS v_updated_count = ROW_COUNT;
-  
-  RETURN json_build_object(
-    'success', TRUE,
-    'message', 'Successfully unsubscribed from trainer emails',
-    'updated_count', v_updated_count
-  );
-EXCEPTION
-  WHEN OTHERS THEN
-    RETURN json_build_object(
-      'success', FALSE,
-      'error', SQLERRM
-    );
-END;
+    AS $$
+
+DECLARE
+
+  v_updated_count INTEGER;
+
+BEGIN
+
+  -- Update all trainer_clients records with this email
+
+  UPDATE trainer_clients
+
+  SET 
+
+    is_unsubscribed = TRUE,
+
+    updated_at = NOW()
+
+  WHERE email = p_email;
+
+  
+
+  GET DIAGNOSTICS v_updated_count = ROW_COUNT;
+
+  
+
+  RETURN json_build_object(
+
+    'success', TRUE,
+
+    'message', 'Successfully unsubscribed from trainer emails',
+
+    'updated_count', v_updated_count
+
+  );
+
+EXCEPTION
+
+  WHEN OTHERS THEN
+
+    RETURN json_build_object(
+
+      'success', FALSE,
+
+      'error', SQLERRM
+
+    );
+
+END;
+
 $$;
 
 
@@ -1774,13 +2399,20 @@ COMMENT ON FUNCTION public.unsubscribe_from_trainer_emails(p_email text) IS 'Uns
 
 CREATE FUNCTION public.update_bug_report_timestamp() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    UPDATE bug_reports
-    SET updated_at = now()
-    WHERE id = NEW.bug_report_id;
-    RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+    UPDATE bug_reports
+
+    SET updated_at = now()
+
+    WHERE id = NEW.bug_report_id;
+
+    RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1790,11 +2422,16 @@ $$;
 
 CREATE FUNCTION public.update_scheduled_routines_updated_at() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  NEW.updated_at = NOW();
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1804,12 +2441,18 @@ $$;
 
 CREATE FUNCTION public.update_search_helpers() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  NEW.name_simplified := generate_simplified_name(NEW.name);
-  NEW.search_tokens := NEW.name_simplified;
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  NEW.name_simplified := generate_simplified_name(NEW.name);
+
+  NEW.search_tokens := NEW.name_simplified;
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1819,11 +2462,16 @@ $$;
 
 CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+    NEW.updated_at = NOW();
+
+    RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1833,11 +2481,16 @@ $$;
 
 CREATE FUNCTION public.update_user_meals_updated_at() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  NEW.updated_at = NOW();
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1847,27 +2500,48 @@ $$;
 
 CREATE FUNCTION public.update_user_preference_boost() RETURNS void
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Calculate boost based on times_logged (0-25 point boost)
-  -- Logarithmic scale: popular items get boost without overwhelming base score
-  UPDATE foods
-  SET user_boost_score = CASE
-    WHEN times_logged >= 1000 THEN 25  -- Very popular
-    WHEN times_logged >= 500 THEN 20
-    WHEN times_logged >= 250 THEN 15
-    WHEN times_logged >= 100 THEN 12
-    WHEN times_logged >= 50 THEN 10
-    WHEN times_logged >= 25 THEN 8
-    WHEN times_logged >= 10 THEN 5
-    WHEN times_logged >= 5 THEN 3
-    WHEN times_logged >= 1 THEN 1
-    ELSE 0
-  END
-  WHERE times_logged > 0;
-  
-  RAISE NOTICE '✅ Updated user preference boosts based on logging frequency';
-END;
+    AS $$
+
+BEGIN
+
+  -- Calculate boost based on times_logged (0-25 point boost)
+
+  -- Logarithmic scale: popular items get boost without overwhelming base score
+
+  UPDATE foods
+
+  SET user_boost_score = CASE
+
+    WHEN times_logged >= 1000 THEN 25  -- Very popular
+
+    WHEN times_logged >= 500 THEN 20
+
+    WHEN times_logged >= 250 THEN 15
+
+    WHEN times_logged >= 100 THEN 12
+
+    WHEN times_logged >= 50 THEN 10
+
+    WHEN times_logged >= 25 THEN 8
+
+    WHEN times_logged >= 10 THEN 5
+
+    WHEN times_logged >= 5 THEN 3
+
+    WHEN times_logged >= 1 THEN 1
+
+    ELSE 0
+
+  END
+
+  WHERE times_logged > 0;
+
+  
+
+  RAISE NOTICE '✅ Updated user preference boosts based on logging frequency';
+
+END;
+
 $$;
 
 

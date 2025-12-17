@@ -210,9 +210,18 @@ pg_dump --host=db.wkmrdelhoeqhsdifrarn.supabase.co ...
 
 ---
 
+**Database Backups:**
+
 ## 📋 Backup Best Practices
 
 ### When to Backup
+
+**Storage Bucket Backups:**
+
+- **Auto-cleanup enabled:** Keeps 3 most recent backups by default
+- **Size:** ~265 MB per backup (6 buckets)
+- **Frequency:** Run weekly or before major changes
+- **Override retention:** Use `-KeepBackups` parameter (e.g., `-KeepBackups 2`)
 
 ✅ **Always backup before:**
 
