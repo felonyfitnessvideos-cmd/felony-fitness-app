@@ -174,15 +174,8 @@ const CalculatorDashboard = () => {
   useEffect(() => {
     const loadClientMetrics = async () => {
       if (!selectedClientId) {
-        // Clear all data when no client selected
-        setStrengthData({ liftName: '', weight: '', reps: '' });
-        setBodyCompData({ weight: '', height: '', gender: 'male', activityLevel: '1.5' });
-        setHeartRateData({ age: '', restingHR: '' });
-        setMacroData({ lbm: '', tdee: '', goal: '0', proteinRatio: '1.0' });
-        setStrengthResults(null);
-        setBodyCompResults(null);
-        setHeartRateResults(null);
-        setMacroResults(null);
+        // Don't clear data - let localStorage persistence handle it
+        // This allows personal calculator use without selecting a client
         return;
       }
 
