@@ -28,12 +28,7 @@ import './CalculatorDashboard.css';
 
 const CalculatorDashboard = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('strength');
-  const [clients, setClients] = useState([]);
-  const [selectedClientId, setSelectedClientId] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [saveStatus, setSaveStatus] = useState('');
-
+  
   // Load saved state from localStorage or use defaults
   const loadSavedState = (key, defaultValue) => {
     try {
@@ -43,6 +38,14 @@ const CalculatorDashboard = () => {
       return defaultValue;
     }
   };
+
+  const [activeTab, setActiveTab] = useState(() => 
+    loadSavedState('activeTab', 'strength')
+  );
+  const [clients, setClients] = useState([]);
+  const [selectedClientId, setSelectedClientId] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('');
 
   // Strength Calculator State
   const [strengthData, setStrengthData] = useState(() => 
@@ -108,6 +111,10 @@ const CalculatorDashboard = () => {
   useEffect(() => {
     localStorage.setItem('calculator_macroResults', JSON.stringify(macroResults));
   }, [macroResults]);
+
+  useEffect(() => {
+    localStorage.setItem('calculator_activeTab', JSON.stringify(activeTab));
+  }, [activeTab]);
 
   // Load trainer clients
   useEffect(() => {
