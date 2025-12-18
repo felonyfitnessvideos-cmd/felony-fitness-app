@@ -42,6 +42,9 @@ import { Outlet, NavLink } from 'react-router-dom';
 import { Home, Dumbbell, Apple, TrendingUp, User, UserCog } from 'lucide-react';
 import { useResponsive } from './hooks/useResponsive';
 import { initPerformanceOptimizations } from './utils/performance.js';
+import { useAuth } from './AuthContext.jsx';
+import { useAchievements } from './hooks/useAchievements';
+import AchievementUnlocked from './components/achievements/AchievementUnlocked';
 import './App.css';
 
 /**
@@ -130,6 +133,8 @@ const BottomNav = ({ navItems }) => {
 function App() {
   const responsive = useResponsive();
   const { isTabletOrLarger } = responsive;
+  const { user } = useAuth();
+  const { currentAchievement, markAsSeen } = useAchievements(user?.id);
 
   // Initialize performance optimizations after app mounts
   useEffect(() => {
@@ -148,6 +153,14 @@ function App() {
       
       {/* Bottom navigation for mobile */}
       {!isTabletOrLarger && <BottomNav navItems={baseNavItems} />}
+      
+      {/* Achievement celebration modal */}
+      {currentAchievement && (
+        <AchievementUnlocked
+          achievement={currentAchievement.achievements}
+          onClose={() => markAsSeen(currentAchievement.id)}
+        />
+      )}
     </div>
   );
 }

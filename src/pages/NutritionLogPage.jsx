@@ -825,7 +825,7 @@ function NutritionLogPage() {
             <div key={log.id} className="food-item-card">
               <div className="food-item-details">
                 <h4>{log.foods.name}</h4>
-                <span>{log.quantity_consumed} x serving{log.quantity_consumed !== 1 ? 's' : ''} ({log.foods.brand_owner || 'No brand'})</span>
+                <span>{log.quantity_consumed}g {log.foods.brand_owner ? `(${log.foods.brand_owner})` : ''}</span>
               </div>
               <div className="food-item-actions">
                 <span className="food-item-calories">

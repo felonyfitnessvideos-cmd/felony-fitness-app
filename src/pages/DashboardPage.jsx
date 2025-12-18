@@ -34,6 +34,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
 import BugReportMessaging from '../components/BugReportMessaging.jsx';
 import ClientMessaging from '../components/ClientMessaging.jsx';
+import StatsWidget from '../components/achievements/StatsWidget';
 import { supabase } from '../supabaseClient.js';
 import './DashboardPage.css';
 
@@ -369,6 +370,9 @@ function DashboardPage() {
       {/* <div className="dashboard-card quote-card">
         <p>{quote}</p>
       </div> */}
+
+      {/* User Stats Widget - Level, XP, Achievements (Bonus section at bottom) */}
+      <StatsWidget userId={userId} />
 
       {/* Client Messaging - Only visible to clients */}
       <ClientMessaging />
