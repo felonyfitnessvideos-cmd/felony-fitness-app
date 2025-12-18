@@ -219,10 +219,6 @@
   transition: all 0.2s ease;
 }
 
-.input-group select {
-  color: #000;
-}
-
 .input-group select option {
   color: #000;
   background: #fff;

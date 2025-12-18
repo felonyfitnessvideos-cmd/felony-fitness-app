@@ -34,39 +34,80 @@ const CalculatorDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
 
+  // Load saved state from localStorage or use defaults
+  const loadSavedState = (key, defaultValue) => {
+    try {
+      const saved = localStorage.getItem(`calculator_${key}`);
+      return saved ? JSON.parse(saved) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  };
+
   // Strength Calculator State
-  const [strengthData, setStrengthData] = useState({
-    liftName: '',
-    weight: '',
-    reps: ''
-  });
-  const [strengthResults, setStrengthResults] = useState(null);
+  const [strengthData, setStrengthData] = useState(() => 
+    loadSavedState('strength', { liftName: '', weight: '', reps: '' })
+  );
+  const [strengthResults, setStrengthResults] = useState(() => 
+    loadSavedState('strengthResults', null)
+  );
 
   // Body Comp Calculator State
-  const [bodyCompData, setBodyCompData] = useState({
-    weight: '',
-    height: '',
-    bodyFat: '',
-    gender: 'male',
-    activityLevel: '1.5'
-  });
-  const [bodyCompResults, setBodyCompResults] = useState(null);
+  const [bodyCompData, setBodyCompData] = useState(() =>
+    loadSavedState('bodyComp', { weight: '', height: '', bodyFat: '', gender: 'male', activityLevel: '1.5' })
+  );
+  const [bodyCompResults, setBodyCompResults] = useState(() =>
+    loadSavedState('bodyCompResults', null)
+  );
 
   // Heart Rate Calculator State
-  const [heartRateData, setHeartRateData] = useState({
-    age: '',
-    restingHR: ''
-  });
-  const [heartRateResults, setHeartRateResults] = useState(null);
+  const [heartRateData, setHeartRateData] = useState(() =>
+    loadSavedState('heartRate', { age: '', restingHR: '' })
+  );
+  const [heartRateResults, setHeartRateResults] = useState(() =>
+    loadSavedState('heartRateResults', null)
+  );
 
   // Macro Calculator State
-  const [macroData, setMacroData] = useState({
-    lbm: '',
-    tdee: '',
-    goal: '0',
-    proteinRatio: '1.0'
-  });
-  const [macroResults, setMacroResults] = useState(null);
+  const [macroData, setMacroData] = useState(() =>
+    loadSavedState('macro', { lbm: '', tdee: '', goal: '0', proteinRatio: '1.0' })
+  );
+  const [macroResults, setMacroResults] = useState(() =>
+    loadSavedState('macroResults', null)
+  );
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('calculator_strength', JSON.stringify(strengthData));
+  }, [strengthData]);
+
+  useEffect(() => {
+    localStorage.setItem('calculator_strengthResults', JSON.stringify(strengthResults));
+  }, [strengthResults]);
+
+  useEffect(() => {
+    localStorage.setItem('calculator_bodyComp', JSON.stringify(bodyCompData));
+  }, [bodyCompData]);
+
+  useEffect(() => {
+    localStorage.setItem('calculator_bodyCompResults', JSON.stringify(bodyCompResults));
+  }, [bodyCompResults]);
+
+  useEffect(() => {
+    localStorage.setItem('calculator_heartRate', JSON.stringify(heartRateData));
+  }, [heartRateData]);
+
+  useEffect(() => {
+    localStorage.setItem('calculator_heartRateResults', JSON.stringify(heartRateResults));
+  }, [heartRateResults]);
+
+  useEffect(() => {
+    localStorage.setItem('calculator_macro', JSON.stringify(macroData));
+  }, [macroData]);
+
+  useEffect(() => {
+    localStorage.setItem('calculator_macroResults', JSON.stringify(macroResults));
+  }, [macroResults]);
 
   // Load trainer clients
   useEffect(() => {
@@ -572,10 +613,11 @@ const CalculatorDashboard = () => {
                   <div style={{ 
                     marginBottom: '12px', 
                     padding: '8px 12px', 
-                    background: bodyCompResults.method === 'actual' ? '#e8f5e9' : '#fff3e0',
-                    border: `1px solid ${bodyCompResults.method === 'actual' ? '#4caf50' : '#ff9800'}`,
+                    background: 'rgba(50, 50, 50, 0.5)',
+                    border: `1px solid rgba(255, 255, 255, 0.2)`,
                     borderRadius: '4px',
-                    fontSize: '0.9em'
+                    fontSize: '0.9em',
+                    color: 'var(--text-color)'
                   }}>
                     <strong>{bodyCompResults.method === 'actual' ? '✓ Actual' : 'ⓘ Estimated'}:</strong>{' '}
                     {bodyCompResults.method === 'actual' 
