@@ -1,3 +1,154 @@
+/**
+ * @fileoverview Daily nutrition tracking interface with food search and macro monitoring
+ * @description Comprehensive nutrition logging system allowing users to track food intake
+ * across meals (breakfast, lunch, dinner, snacks) and water consumption. Features optimized
+ * database queries with pre-calculated nutritional values, USDA food database integration,
+ * and real-time progress tracking against daily macro goals.
+ * 
+ * @author Felony Fitness Development Team
+ * @version 3.0.0
+ * @since 2025-11-02
+ * 
+ * @requires React
+ * @requires react-modal
+ * @requires lucide-react
+ * @requires AuthContext
+ * @requires supabaseClient
+ * @requires SubPageHeader
+ * 
+ * Core Features:
+ * - **Meal-Based Logging**: Separate tracking for breakfast, lunch, dinner, snacks
+ * - **Food Search**: Comprehensive database search with USDA integration
+ * - **Water Tracking**: Daily water intake monitoring (oz)
+ * - **Macro Progress**: Real-time visualization of calories, protein, water vs. goals
+ * - **Pre-Calculated Nutrition**: Database trigger auto-populates all 25 nutrients on INSERT/UPDATE
+ * - **Historical Accuracy**: Nutritional values frozen at time of logging (not affected by food updates)
+ * - **Quick Actions**: Edit quantity, delete entries, mark meals complete
+ * - **Barcode Scanner**: (Future) Camera-based food scanning
+ * 
+ * Database Architecture:
+ * 
+ * **nutrition_logs** table:
+ * - id: UUID primary key
+ * - user_id: FK to auth.users
+ * - food_id: FK to foods table
+ * - meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack' (lowercase in DB)
+ * - log_date: DATE (local timezone, not UTC)
+ * - quantity_consumed: NUMERIC (grams)
+ * - water_oz_consumed: NUMERIC (optional, for water entries)
+ * - calories: NUMERIC (pre-calculated by trigger)
+ * - protein_g: NUMERIC (pre-calculated)
+ * - carbs_g: NUMERIC (pre-calculated)
+ * - fat_g: NUMERIC (pre-calculated)
+ * - fiber_g: NUMERIC (pre-calculated)
+ * - ...plus 20 more micronutrients (vitamins, minerals)
+ * 
+ * **Database Trigger** (before_insert_or_update_nutrition_log):
+ * - Automatically calculates all 25 nutrients based on:
+ *   - Food's per-100g values from foods table
+ *   - quantity_consumed (in grams)
+ * - Formula: nutrient_value = (food.nutrient_per_100g / 100) * quantity_consumed
+ * - Runs on INSERT and UPDATE
+ * - Ensures historical accuracy (values frozen at log time)
+ * 
+ * **Performance Optimization**:
+ * - Zero aggregation cost at query time (just SELECT + SUM)
+ * - All 25 nutrients pre-calculated and stored
+ * - No joins needed for macro totals
+ * - Historical logs immune to food database updates
+ * - Prevents "retroactive nutrition changes" bug
+ * 
+ * State Management:
+ * - **activeMeal**: Currently selected meal tab ('breakfast', 'lunch', 'dinner', 'snack')
+ * - **todaysLogs**: Array of all nutrition_logs for today (all meals)
+ * - **goals**: User's daily targets (calories, protein, water) from user_profiles
+ * - **searchResults**: Foods matching search query
+ * - **editingLog**: Currently editing log entry (for quantity updates)
+ * 
+ * Data Flow:
+ * 1. Page loads → fetch today's logs + user goals
+ * 2. User selects meal tab (breakfast/lunch/dinner/snack)
+ * 3. User clicks "Add Food" → search modal opens
+ * 4. User searches → queries foods table + USDA API
+ * 5. User selects food → enters quantity in grams
+ * 6. Insert to nutrition_logs → trigger calculates all 25 nutrients
+ * 7. Refresh today's logs → update progress bars
+ * 8. User can edit quantity (updates nutrients via trigger)
+ * 9. User can delete entries
+ * 10. Progress updates in real-time
+ * 
+ * Meal Type Conventions:
+ * - **State & Database**: Always lowercase ('breakfast', 'lunch', 'dinner', 'snack')
+ * - **Display**: Use formatMealType() to capitalize for UI
+ * - **User Input**: Normalize to lowercase before saving
+ * - **Prevents bugs** from case mismatches in queries
+ * 
+ * Date Handling:
+ * - **Critical**: Uses local dates (YYYY-MM-DD), NOT UTC timestamps
+ * - Prevents "wrong day" bugs on mobile devices near midnight
+ * - toLocalDateString() helper ensures consistent local date format
+ * - Mobile Safari and Android Chrome compatible
+ * 
+ * Quantity Conventions:
+ * - **Always stored in grams** (not servings)
+ * - Display: "480g" (not "480 x servings")
+ * - User inputs grams consumed
+ * - Database calculates nutrients: (food.protein_per_100g / 100) * 480g
+ * 
+ * Water Tracking:
+ * - Separate entry type (food_id can be null for water-only logs)
+ * - Stored in water_oz_consumed column
+ * - Quick add button for common amounts (8oz, 16oz, 32oz)
+ * - Progress bar shows daily water goal
+ * 
+ * Search Implementation:
+ * - **Primary**: Local foods table (verified, accurate)
+ * - **Fallback**: USDA FoodData Central API (external)
+ * - **Duplicate Detection**: AI guardrails prevent duplicate imports
+ * - **Quality Scoring**: Ranks results by data completeness
+ * - **Brand Matching**: Searches both name and brand_owner
+ * 
+ * Error Handling:
+ * - Graceful fallback if goals not set (uses defaults: 2000 cal, 150g protein, 128oz water)
+ * - Validates numeric inputs (prevents NaN, negative values)
+ * - Sanitizes meal_type to lowercase
+ * - Handles missing food data (shows "No nutrition data")
+ * - Toast notifications for all CRUD operations
+ * 
+ * Achievement Integration:
+ * - Database trigger awards XP on nutrition log insert
+ * - +50 XP per food logged
+ * - Consistency achievements for daily logging streaks
+ * - "Nutrition Tracking" achievement on first log
+ * 
+ * Accessibility:
+ * - Keyboard navigation for search results
+ * - Screen reader labels for progress bars
+ * - Color-blind friendly progress indicators
+ * - Touch-friendly buttons (44x44px minimum)
+ * 
+ * @example
+ * // Route configuration
+ * <Route path="/nutrition-log" element={<NutritionLogPage />} />
+ * 
+ * @example
+ * // Typical user flow
+ * 1. Open Nutrition Log page
+ * 2. Select "Breakfast" tab
+ * 3. Click "Add Food"
+ * 4. Search "greek yogurt"
+ * 5. Select "Fage Total 0% Greek Yogurt"
+ * 6. Enter quantity: 200g
+ * 7. Confirm → inserted to DB
+ * 8. Trigger calculates: 114 calories, 20g protein (from 57 cal/10g per 100g)
+ * 9. Progress bar updates: 114/2000 calories
+ * 10. User sees: "Greek Yogurt - 200g (Fage)"
+ * 11. +50 XP awarded via achievement trigger
+ * 
+ * @see {@link ../utils/nutritionAPI.js} for food search implementation
+ * @see {@link ../constants/mealPlannerConstants.js} for formatMealType utility
+ * @see {@link ../../scripts/nutrition-log-optimization.sql} for database trigger
+ */
 
 /**
  * @file NutritionLogPage.jsx

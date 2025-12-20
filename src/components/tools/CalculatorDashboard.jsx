@@ -1,4 +1,123 @@
 /**
+ * @fileoverview Unified fitness calculator dashboard for personal trainers
+ * @description Comprehensive calculator suite providing trainers with four specialized
+ * fitness calculation tools with client integration, localStorage persistence, and the
+ * ability to save results directly to client profiles for progress tracking.
+ * 
+ * @author Felony Fitness Development Team
+ * @version 2.0.0
+ * @since 2025-12-15
+ * 
+ * @requires React
+ * @requires lucide-react
+ * @requires AuthContext
+ * @requires supabaseClient
+ * @requires fitnessCalculators
+ * @requires trainerService
+ * 
+ * Core Features:
+ * - **Four Specialized Calculators**:
+ *   1. Strength Calculator (1RM, training zones)
+ *   2. Body Composition Calculator (LBM, BMR, TDEE)
+ *   3. Heart Rate Calculator (max HR, training zones)
+ *   4. Macro Calculator (protein, carbs, fats for goals)
+ * 
+ * - **Client Integration**:
+ *   - Load all trainer's clients from trainer_clients table
+ *   - Select client to save calculator results to their profile
+ *   - Auto-populate with previously saved client metrics
+ *   - Track calculation history per client
+ * 
+ * - **localStorage Persistence**:
+ *   - All calculator inputs persist across sessions
+ *   - Results persist when switching windows/tabs
+ *   - Active calculator tab remembered
+ *   - Prevents data loss during multitasking
+ * 
+ * - **Real-time Calculations**:
+ *   - Instant updates as user types
+ *   - Input validation and error handling
+ *   - Auto-population between related calculators
+ *   - Clear visual feedback for invalid inputs
+ * 
+ * Calculator Details:
+ * 
+ * **1. Strength Calculator** (One-Rep Max):
+ * - Input: Lift name, weight, reps performed
+ * - Formula: Epley Formula (weight × (1 + reps/30))
+ * - Output: 1RM, percentage chart (95%-65% with rep ranges and training zones)
+ * - Use Case: Programming progressive overload, setting training intensities
+ * 
+ * **2. Body Composition Calculator**:
+ * - Input: Weight, height, gender, activity level, body fat % (optional)
+ * - Formulas:
+ *   - LBM: Boer Formula (estimated) OR Weight × (1 - BF%) (actual)
+ *   - BMR: Katch-McArdle (370 + 21.6 × LBM_kg)
+ *   - TDEE: BMR × Activity Multiplier
+ * - Output: Lean body mass, basal metabolic rate, total daily energy expenditure, method used
+ * - Use Case: Nutrition planning baseline, understanding metabolic needs
+ * 
+ * **3. Heart Rate Calculator**:
+ * - Input: Age, resting heart rate
+ * - Formula: Karvonen Formula ((MHR - RHR) × intensity% + RHR)
+ * - Output: Max HR, 5 training zones with HR ranges and purposes
+ * - Use Case: Cardio programming, endurance training zones
+ * 
+ * **4. Macro Calculator**:
+ * - Input: Lean body mass (auto-filled from Body Comp), TDEE, goal, protein ratio
+ * - Goals: Cut (-20%), Maintain (0%), Bulk (+10%)
+ * - Output: Protein, carbs, fats in grams, total adjusted calories
+ * - Use Case: Personalized nutrition plans, goal-specific macros
+ * 
+ * Data Flow:
+ * 1. User selects calculator tab (persisted to localStorage)
+ * 2. User enters calculation inputs (persisted on change)
+ * 3. Calculate button triggers formula utilities
+ * 4. Results displayed and persisted
+ * 5. Optional: Select client and save results to their profile
+ * 6. Body Comp results auto-populate Macro calculator LBM/TDEE
+ * 
+ * localStorage Keys:
+ * - calculator_activeTab: Current selected calculator
+ * - calculator_strength: Strength calculator inputs
+ * - calculator_strengthResults: Strength calculation results
+ * - calculator_bodyComp: Body comp calculator inputs
+ * - calculator_bodyCompResults: Body comp results
+ * - calculator_heartRate: Heart rate calculator inputs
+ * - calculator_heartRateResults: Heart rate results
+ * - calculator_macro: Macro calculator inputs
+ * - calculator_macroResults: Macro results
+ * 
+ * @example
+ * // Basic usage in trainer dashboard
+ * import CalculatorDashboard from './components/tools/CalculatorDashboard';
+ * 
+ * function TrainerTools() {
+ *   return (
+ *     <div>
+ *       <h1>Fitness Calculators</h1>
+ *       <CalculatorDashboard />
+ *     </div>
+ *   );
+ * }
+ * 
+ * @example
+ * // Calculation workflow
+ * 1. Trainer selects "Body Composition" tab
+ * 2. Enters: weight=180, height=72, gender=male, activity=1.5, bodyFat=15
+ * 3. Clicks "Calculate Body Composition"
+ * 4. Results: LBM=153lbs, BMR=1966, TDEE=2950 (actual method)
+ * 5. Switches to "Macros" tab (LBM and TDEE auto-filled)
+ * 6. Sets goal="cut", protein=1.0
+ * 7. Results: 2360 cal, 153g protein, 236g carbs, 52g fat
+ * 8. Selects client from dropdown
+ * 9. Clicks "Save to Client Profile"
+ * 10. Client metrics updated in trainer_clients.metrics JSON
+ * 
+ * @see {@link ../../utils/fitnessCalculators.js} for calculation formulas
+ * @see {@link ../../services/trainerService.js} for client profile updates
+ */
+/**
  * @file CalculatorDashboard.jsx
  * @description Unified fitness calculator dashboard for trainers
  * @author Felony Fitness Development Team
@@ -26,9 +145,49 @@ import {
 } from '../../utils/fitnessCalculators';
 import './CalculatorDashboard.css';
 
+/**
+ * Calculator Dashboard Component
+ * 
+ * @component
+ * @function CalculatorDashboard
+ * @returns {JSX.Element} Calculator dashboard with 4 tabs and client integration
+ * 
+ * @description Main calculator interface for trainers providing specialized fitness
+ * calculations with persistent state, client integration, and results saving.
+ * 
+ * **State Management**:
+ * - All inputs and results use lazy initialization from localStorage
+ * - Automatic persistence on every state change via useEffect hooks
+ * - Tab selection persisted separately
+ * 
+ * **Client Integration**:
+ * - Loads trainer's clients on mount
+ * - Displays client dropdown for saving results
+ * - Merges new calculations with existing client metrics
+ * 
+ * **Performance Optimizations**:
+ * - Lazy state initialization prevents unnecessary reads
+ * - Debounced localStorage writes (via useEffect)
+ * - Calculations only run on button click, not on every keystroke
+ */
 const CalculatorDashboard = () => {
   const { user } = useAuth();
   
+  /**
+   * Load saved calculator state from localStorage with error handling
+   * 
+   * @function loadSavedState
+   * @param {string} key - localStorage key (prefixed with 'calculator_')
+   * @param {*} defaultValue - Fallback value if no saved state exists
+   * @returns {*} Parsed saved state or defaultValue
+   * 
+   * @description Attempts to load and parse JSON from localStorage. Returns
+   * defaultValue if key doesn't exist, JSON is invalid, or any error occurs.
+   * Prevents crashes from corrupted localStorage data.
+   * 
+   * @example
+   * const data = loadSavedState('strength', { weight: '', reps: '' });
+   */
   // Load saved state from localStorage or use defaults
   const loadSavedState = (key, defaultValue) => {
     try {

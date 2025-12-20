@@ -1,11 +1,128 @@
 /**
- * WorkoutLogPage (doc): active workout logger for a selected routine.
- * Coordinates creating/editing `workout_logs` and manages entries for exercises.
- */
-/**
- * @file WorkoutLogPage.jsx
- * @description The main page for actively logging a workout session based on a selected routine.
- * @project Felony Fitness
+ * @fileoverview Active workout logging interface for resistance training sessions
+ * @description Comprehensive workout tracking system managing set-by-set logging with
+ * real-time progress tracking, RPE ratings, rest timers, historical performance data,
+ * and automatic achievement triggers. Integrates with mesocycle programming and provides
+ * intelligent form pre-filling based on previous workouts.
+ * 
+ * @author Felony Fitness Development Team  
+ * @version 3.0.0
+ * @since 2025-11-02
+ * 
+ * @requires React
+ * @requires react-router-dom
+ * @requires lucide-react
+ * @requires AuthContext
+ * @requires supabaseClient
+ * @requires LazyRecharts
+ * @requires RestTimerModal
+ * @requires RpeRatingModal
+ * @requires SubPageHeader
+ * @requires SuccessModal
+ * 
+ * Core Features:
+ * - **Set-by-Set Logging**: Track weight, reps, and RPE for every set
+ * - **Rest Timer Modal**: Configurable countdown timer between sets
+ * - **RPE Rating System**: Rate of Perceived Exertion (1-10 scale) per set
+ * - **Historical Data**: View previous performance for each exercise with charts
+ * - **Auto-Fill Logic**: Pre-populate weight/reps from last workout
+ * - **Mesocycle Integration**: Links workouts to specific training cycle sessions
+ * - **Achievement Triggers**: Automatic XP and achievement unlocks on completion
+ * - **Workout Summary**: Duration, total volume, calorie estimation
+ * - **Optimistic UI**: Instant updates with background sync
+ * 
+ * Database Tables:
+ * - **workout_logs**: Individual workout sessions (id, user_id, routine_id, date, duration, calories)
+ * - **workout_log_entries**: Individual sets (id, log_id, exercise_id, set_number, weight_lbs, reps_completed, rpe)
+ * - **cycle_sessions**: Mesocycle workout instances (id, mesocycle_id, scheduled_date, is_complete)
+ * - **routines**: Workout templates (id, name, exercise_ids)
+ * - **exercises**: Exercise library (id, name, primary_muscle, equipment_needed)
+ * 
+ * State Management Architecture:
+ * - **todaysLog**: Current workout_log row (created or resumed)
+ * - **entriesMap**: Object mapping exercise_id → array of set entries
+ * - **routine**: Selected routine template with exercises
+ * - **previousLogs**: Historical data for charts and auto-fill
+ * - **editingCell**: Currently focused input cell {exerciseId, setNum, field}
+ * 
+ * Workflow:
+ * 1. Load routine from URL params (routineId)
+ * 2. Check for existing workout_log for today's date
+ * 3. If none, create new workout_log via RPC
+ * 4. Load previous sets for this routine (auto-fill data)
+ * 5. User adds/edits sets (optimistic updates)
+ * 6. Auto-save sets via secure RPC on blur
+ * 7. User clicks "Finish Workout" → calculate duration/calories
+ * 8. Mark workout complete → trigger achievements → navigate to success
+ * 
+ * RPC Functions Used:
+ * - **create_workout_log**: Create new workout session
+ * - **save_or_update_set**: Upsert individual set with validation
+ * - **delete_set_entry**: Remove set from workout
+ * - **finish_workout**: Calculate summary and mark complete
+ * 
+ * Auto-Fill Logic:
+ * - Finds most recent completed workout for same routine
+ * - Pre-fills weight and reps from last session's corresponding sets
+ * - User can override or use as starting point
+ * - Helps maintain progressive overload consistency
+ * 
+ * RPE System (Rate of Perceived Exertion):
+ * - Optional per-set rating (1-10 scale)
+ * - 1-3: Very easy, could do many more reps
+ * - 4-6: Moderate, 3-6 reps in reserve
+ * - 7-8: Hard, 2-3 reps in reserve
+ * - 9: Very hard, 1 rep in reserve
+ * - 10: Max effort, complete failure
+ * - Helps track intensity and manage fatigue
+ * 
+ * Calorie Estimation:
+ * - Based on total volume (weight × reps) and duration
+ * - Formula: (Volume / 1000) × Duration × 0.8
+ * - Rough approximation for resistance training
+ * 
+ * Achievement Triggers (via database triggers):
+ * - First workout: +100 XP, "Getting Started" achievement
+ * - Every workout: +100 XP
+ * - New PRs: +200 XP, PR achievement
+ * - Workout streaks: Consistency achievements
+ * - Volume milestones: 100k lbs, 500k lbs, 1M lbs moved
+ * 
+ * Error Handling:
+ * - Graceful fallback if cycle_sessions table missing (pre-migration)
+ * - Validates numeric inputs (weight, reps, RPE)
+ * - Prevents duplicate sets
+ * - Confirms workout completion before navigation
+ * - Toast notifications for all state changes
+ * 
+ * Performance Optimizations:
+ * - Lazy loading of charts (LazyRecharts)
+ * - Optimistic UI updates for instant feedback
+ * - Debounced auto-save on input blur
+ * - Minimal re-renders with useCallback/useMemo
+ * - Selective data fetching (only needed exercises)
+ * 
+ * @example
+ * // Route configuration
+ * <Route path="/workout/:routineId" element={<WorkoutLogPage />} />
+ * 
+ * @example
+ * // Typical user flow
+ * 1. Select routine from dashboard or mesocycle
+ * 2. WorkoutLogPage loads with routine exercises
+ * 3. Previous sets auto-fill if available
+ * 4. User logs: Bench Press → 225lbs × 5 reps (RPE 8)
+ * 5. Rest timer counts down 90 seconds
+ * 6. User logs set 2: 225lbs × 4 reps (RPE 9)
+ * 7. Continues through all exercises
+ * 8. Clicks "Finish Workout"
+ * 9. System calculates: 45 min duration, 12,500 lbs volume, 450 cal burned
+ * 10. Achievement unlocked: "10 Workouts Complete" +50 XP
+ * 11. Redirects to success page with confetti
+ * 
+ * @see {@link ../components/RestTimerModal.jsx} for rest timer implementation
+ * @see {@link ../components/RpeRatingModal.jsx} for RPE rating interface
+ * @see {@link ../../scripts/create-achievement-system.sql} for achievement triggers
  */
 
 import { Check, Dumbbell, Edit2, Trash2, X } from 'lucide-react';

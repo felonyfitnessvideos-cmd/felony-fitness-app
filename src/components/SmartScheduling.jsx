@@ -1,4 +1,176 @@
 /**
+ * @fileoverview Intelligent drag-and-drop workout scheduler for trainer-client programming
+ * @description Advanced scheduling interface allowing trainers to assign workout routines
+ * to specific days of the week, export schedules to Google Calendar with recurring events,
+ * and send automated email notifications to clients about their programmed training sessions.
+ * 
+ * @author Felony Fitness Development Team
+ * @version 2.0.0
+ * @since 2025-11-15
+ * 
+ * @requires React
+ * @requires lucide-react
+ * @requires AuthContext
+ * @requires supabaseClient
+ * @requires googleCalendarService
+ * 
+ * Core Features:
+ * - **Drag-and-Drop Assignment**: Visual routine placement on weekly calendar
+ * - **Google Calendar Sync**: Export schedules as recurring calendar events
+ * - **Client Email Notifications**: Automated emails with workout details and schedule
+ * - **Program Integration**: Loads client's assigned program and generated routines
+ * - **Flexible Scheduling**: Customizable workout time and duration
+ * - **Visual Feedback**: Clear indication of assigned vs. empty days
+ * - **Recurring Events**: Creates repeating calendar events for consistency
+ * 
+ * Architecture:
+ * 
+ * **Data Sources**:
+ * 1. trainer_clients table → assigned_program_id, generated_routine_ids
+ * 2. trainer_programs table → program details
+ * 3. routines table → workout routine templates
+ * 4. user_profiles table → client email for notifications
+ * 
+ * **Weekly Schedule Structure**:
+ * ```javascript
+ * {
+ *   'Monday': { routineId: '123', routineName: 'Upper Body Push' },
+ *   'Tuesday': { routineId: '456', routineName: 'Lower Body Squat' },
+ *   'Wednesday': null, // Rest day
+ *   'Thursday': { routineId: '789', routineName: 'Upper Body Pull' },
+ *   'Friday': { routineId: '101', routineName: 'Lower Body Deadlift' }
+ * }
+ * ```
+ * 
+ * Workflow:
+ * 1. Trainer selects client (passed via props)
+ * 2. Component loads client's assigned program
+ * 3. Loads all routines generated for that program
+ * 4. Trainer drags routine from pool to day slot
+ * 5. Visual feedback shows assignment
+ * 6. Trainer sets workout time (default 8:00 AM) and duration (default 60 min)
+ * 7. Trainer clicks "Export to Calendar"
+ * 8. System creates Google Calendar events:
+ *    - Recurring weekly events
+ *    - With workout details in description
+ *    - Calendar shared with client email
+ * 9. Optional: Send email notification to client
+ * 
+ * Google Calendar Integration:
+ * - Uses OAuth 2.0 for trainer authentication
+ * - Creates events on trainer's calendar
+ * - Shares calendar with client email
+ * - Recurring rule: FREQ=WEEKLY;BYDAY=MO,TU,TH,FR (example)
+ * - Event structure:
+ *   ```
+ *   summary: "Upper Body Push - John Doe"
+ *   description: "Routine: Upper Body Push\nProgram: Strength Builder\nDuration: 60 min"
+ *   start: 2025-12-19T08:00:00
+ *   end: 2025-12-19T09:00:00
+ *   recurrence: ["RRULE:FREQ=WEEKLY;BYDAY=MO"]
+ *   attendees: [{ email: client@email.com }]
+ *   ```
+ * 
+ * Email Notification:
+ * - Sent via Supabase Edge Function
+ * - Contains schedule overview
+ * - Links to client dashboard
+ * - Includes workout descriptions
+ * - Professional HTML template
+ * 
+ * Drag-and-Drop Implementation:
+ * - **onDragStart**: Captures routine data
+ * - **onDragOver**: Allows drop on valid targets
+ * - **onDrop**: Assigns routine to day
+ * - **State Update**: Optimistic UI update
+ * - **Persistent**: Saves to database on calendar export
+ * 
+ * Days of Week:
+ * - Default: Monday-Friday (5-day split common)
+ * - Configurable: Can extend to include weekends
+ * - Visual: Sunday typically excluded for rest
+ * 
+ * Time Handling:
+ * - Default: 08:00:00 (8 AM)
+ * - User-configurable via time picker
+ * - Timezone: Uses client's local timezone
+ * - Duration: Default 60 minutes, adjustable
+ * 
+ * Error Handling:
+ * - Validates client has assigned program
+ * - Checks for generated routines
+ * - Handles Google Calendar API failures
+ * - Shows helpful error messages
+ * - Graceful degradation if calendar unavailable
+ * 
+ * State Management:
+ * - **clientProgram**: Assigned program details
+ * - **programRoutines**: Available routines to schedule
+ * - **weeklySchedule**: Day → routine mapping
+ * - **draggedRoutine**: Currently dragged routine
+ * - **scheduledTime**: Workout start time (HH:MM:SS)
+ * - **durationMinutes**: Workout duration
+ * - **isSaving**: Loading state during calendar export
+ * - **statusMessage**: User feedback for actions
+ * 
+ * Performance Optimizations:
+ * - useCallback for event handlers (prevent re-renders)
+ * - Lazy loading of program data
+ * - Optimistic UI updates
+ * - Batched calendar event creation
+ * 
+ * Accessibility:
+ * - Keyboard accessible drag-and-drop
+ * - Screen reader announcements for assignments
+ * - Focus management during drag operations
+ * - Clear visual feedback for drop targets
+ * 
+ * @example
+ * // Usage in trainer dashboard
+ * import SmartScheduling from './components/SmartScheduling';
+ * 
+ * function TrainerClientView() {
+ *   const [selectedClient, setSelectedClient] = useState(null);
+ * 
+ *   return (
+ *     <SmartScheduling 
+ *       selectedClient={selectedClient}
+ *       onScheduleCreated={(schedule) => {
+ *         console.log('Schedule created:', schedule);
+ *         showSuccessToast('Calendar events created!');
+ *       }}
+ *     />
+ *   );
+ * }
+ * 
+ * @example
+ * // Typical trainer workflow
+ * 1. Open Smart Scheduling interface
+ * 2. System loads: "Strength Builder" program with 4 routines
+ * 3. Drag "Upper Push" → Monday
+ * 4. Drag "Lower Squat" → Tuesday
+ * 5. Drag "Upper Pull" → Thursday
+ * 6. Drag "Lower Deadlift" → Friday
+ * 7. Set time: 6:00 AM
+ * 8. Set duration: 75 minutes
+ * 9. Click "Export to Calendar"
+ * 10. Google Calendar creates 4 recurring weekly events
+ * 11. Client receives email: "Your Training Schedule is Ready!"
+ * 12. Client sees workouts in their Google Calendar
+ * 
+ * @see {@link ../services/googleCalendar.js} for calendar API implementation
+ * @see {@link ../../supabase/functions/send-schedule-email} for email notifications
+ * 
+ * @param {Object} props - Component props
+ * @param {Object} props.selectedClient - Currently selected client object
+ * @param {string} props.selectedClient.id - Client's user_id in database
+ * @param {string} props.selectedClient.full_name - Client's display name
+ * @param {string} props.selectedClient.email - Client's email for calendar sharing
+ * @param {Function} props.onScheduleCreated - Callback when schedule exported to calendar
+ * @param {Object} props.onScheduleCreated.schedule - Created schedule object
+ * @returns {JSX.Element} Smart scheduling interface component
+ */
+/**
  * @file SmartScheduling.jsx
  * @description Drag-and-drop program scheduler for trainers to assign client workout routines
  * @project Felony Fitness
