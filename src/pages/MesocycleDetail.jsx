@@ -80,39 +80,34 @@ function MesocycleDetail() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
-  // Skip a routine (mark as complete without logging workout)
+  /**
+   * Skip a routine (set skipped=true, do NOT mark as complete)
+   * @param {string} routineId - Routine to skip
+   * @param {number} dayIndex - Day index in week
+   */
   const handleSkipRoutine = async (routineId, dayIndex) => {
     if (!user || !routineId) return;
-    
     try {
       // Find the specific mesocycle_weeks entry for this week and day
-      const entry = weeksData.find(w => 
-        w.week_index === currentWeekIndex && 
+      const entry = weeksData.find(w =>
+        w.week_index === currentWeekIndex &&
         w.day_index === dayIndex &&
         w.routine_id === routineId
       );
-      
       if (!entry) {
         console.error('Could not find mesocycle_weeks entry to skip');
         return;
       }
-      
-      // Update is_complete flag on this specific entry
+      // Update skipped flag only
       const { error } = await supabase
         .from('mesocycle_weeks')
-        .update({ 
-          is_complete: true, 
-          completed_at: new Date().toISOString() 
-        })
-        .eq('id', entry.id)
-        .eq('user_id', user.id);
-      
+        .update({ skipped: true })
+        .eq('id', entry.id);
       if (error) throw error;
-      
       // Update local state to reflect the skip
-      setWeeksData(prev => prev.map(w => 
-        w.id === entry.id 
-          ? { ...w, is_complete: true, completed_at: new Date().toISOString() }
+      setWeeksData(prev => prev.map(w =>
+        w.id === entry.id
+          ? { ...w, skipped: true }
           : w
       ));
     } catch (err) {
@@ -151,7 +146,7 @@ function MesocycleDetail() {
         day_type: to.day_type,
         is_complete: to.is_complete || false,
         completed_at: to.completed_at || null
-      }).eq('id', from.id).eq('user_id', user.id);
+      }).eq('id', from.id);
       if (e1) throw e1;
       const { error: e2 } = await supabase.from('mesocycle_weeks').update({ 
         routine_id: from.routine_id, 
@@ -159,7 +154,7 @@ function MesocycleDetail() {
         day_type: from.day_type,
         is_complete: from.is_complete || false,
         completed_at: from.completed_at || null
-      }).eq('id', to.id).eq('user_id', user.id);
+      }).eq('id', to.id);
       if (e2) throw e2;
     } catch (err) {
       console.error('Failed to swap days', err);
@@ -276,25 +271,19 @@ function MesocycleDetail() {
 
     // Find the first week with any incomplete assigned routines (routine_id != null)
     for (let weekIdx = 1; weekIdx <= (mesocycle.weeks || 1); weekIdx++) {
-      const weekRoutines = weeksData.filter(w => w.week_index === weekIdx && w.routine_id); 
-      
+      const weekRoutines = weeksData.filter(w => w.week_index === weekIdx && w.routine_id);
       if (weekRoutines.length === 0) {
         // Week has no assigned routines (all rest), skip it
         continue;
       }
-      
       // Check if ALL routines in this week are complete
-      // Simply check the is_complete flag - no date calculations needed!
       const allComplete = weekRoutines.every(wr => Boolean(wr.is_complete));
-      
-      // If not all complete, this is the current week
       if (!allComplete) {
         setAutoCalculatedWeek(weekIdx);
         setCurrentWeekIndex(weekIdx);
         return;
       }
     }
-    
     // All weeks are complete, show the last week
     const lastWeek = mesocycle.weeks || 1;
     setAutoCalculatedWeek(lastWeek);
@@ -453,14 +442,19 @@ function MesocycleDetail() {
                 }
               }
 
-              // Check completion directly from the mesocycle_weeks entry
+              // Check completion and skipped state directly from the mesocycle_weeks entry
               // No date calculations or logsMap lookups needed!
               const completed = Boolean(entry.is_complete);
+              const skipped = Boolean(entry.skipped);
 
-              console.log(`Day ${dayIndex} RENDER - Label: "${label}", Completed: ${completed}, RoutineId: ${routineId}`);
+              console.log(`Day ${dayIndex} RENDER - Label: "${label}", Completed: ${completed}, Skipped: ${skipped}, RoutineId: ${routineId}`);
 
               return (
-                <div key={dayIndex} className={`routine-card mesocycle-routine-card ${completed ? 'completed' : ''}`} onClick={() => routineId && navigate(`/log-workout/${routineId}?mesocycleWeekId=${entry.id}&returnTo=/mesocycles/${mesocycleId}&date=${scheduledDateStr}`)}>
+                <div
+                  key={dayIndex}
+                  className={`routine-card mesocycle-routine-card ${completed ? 'completed' : ''} ${skipped ? 'skipped' : ''}`}
+                  onClick={() => routineId && !skipped && !completed && navigate(`/log-workout/${routineId}?mesocycleWeekId=${entry.id}&returnTo=/mesocycles/${mesocycleId}&date=${scheduledDateStr}`)}
+                >
                   <div className="routine-info">
                     <div className="day-badge">
                       <div className="move-controls">
@@ -469,20 +463,23 @@ function MesocycleDetail() {
                       </div>
                       <span className="day-label">Day {dayIndex}</span>
                       {completed && <span className="check-icon"><Check size={14} /></span>}
+                      {skipped && !completed && <span className="skipped-icon" title="Skipped">⏭️</span>}
                     </div>
                     <div>
                       <h4>{label}</h4>
                       {routineId && <span className={`status-badge ${isDeload ? 'deload' : 'active'}`}>Routine</span>}
+                      {skipped && !completed && <span className="status-badge skipped">Skipped</span>}
                     </div>
                   </div>
                   <div className="routine-actions">
                     {routineId ? (
                       <>
-                        {!completed && (
-                          <button 
-                            className="action-button skip-button" 
-                            onClick={(ev) => { ev.stopPropagation(); handleSkipRoutine(routineId, dayIndex); }} 
-                            title="Skip this workout">
+                        {!completed && !skipped && (
+                          <button
+                            className="action-button skip-button"
+                            onClick={(ev) => { ev.stopPropagation(); handleSkipRoutine(routineId, dayIndex); }}
+                            title="Skip this workout"
+                          >
                             Skip
                           </button>
                         )}

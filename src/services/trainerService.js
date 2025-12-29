@@ -113,6 +113,63 @@ export const getClientMetrics = async (clientId) => {
 };
 
 /**
+ * Fetch client details (notes + metrics) from trainer_clients row
+ * @param {string} relationshipId - UUID of the trainer_clients row
+ * @returns {Promise<Object>} { notes: string|null, metrics: Object }
+ */
+export const getClientDetails = async (relationshipId) => {
+  if (!relationshipId) throw new Error('relationshipId is required');
+
+  try {
+    const { data, error } = await supabase
+      .from('trainer_clients')
+      .select('notes, metrics')
+      .eq('id', relationshipId)
+      .single();
+
+    if (error) {
+      console.error('❌ Error fetching client details:', error);
+      throw error;
+    }
+
+    return {
+      notes: data?.notes ?? null,
+      metrics: data?.metrics || {}
+    };
+  } catch (error) {
+    console.error('❌ Error in getClientDetails:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update notes for a trainer_clients row
+ * @param {string} relationshipId - UUID of the trainer_clients row
+ * @param {string|null} notes - Notes content to save
+ * @returns {Promise<void>}
+ */
+export const updateClientNotes = async (relationshipId, notes) => {
+  if (!relationshipId) throw new Error('relationshipId is required');
+
+  try {
+    const { error } = await supabase
+      .from('trainer_clients')
+      .update({ notes, updated_at: new Date().toISOString() })
+      .eq('id', relationshipId);
+
+    if (error) {
+      console.error('❌ Error updating client notes:', error);
+      throw error;
+    }
+
+    return;
+  } catch (error) {
+    console.error('❌ Error in updateClientNotes:', error);
+    throw error;
+  }
+};
+
+/**
  * Delete a specific metric category from client profile
  * 
  * @param {string} clientId - UUID of the client

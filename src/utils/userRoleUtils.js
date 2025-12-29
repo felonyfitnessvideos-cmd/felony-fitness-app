@@ -490,8 +490,11 @@ export const getTrainerClients = async (trainerId) => {
         }
 
         // Transform the data to match expected format
+        // Include the actual trainer_clients row id as `relationship_id` so callers can
+        // perform row-level operations (metrics, notes) against the trainer_clients table.
         const transformedData = (data || []).map(relationship => ({
-            id: `${trainerId}-${relationship.client_id}`,
+            // Keep both relationship_id (the DB row id) and client_id (user id)
+            relationship_id: relationship.id,
             trainer_id: trainerId,
             client_id: relationship.client_id,
             status: relationship.status,
