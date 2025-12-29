@@ -22,9 +22,11 @@
   border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
 }
 
+/* Improved containment and responsiveness for level badge */
 .level-badge {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 0.5rem 1rem;
@@ -32,6 +34,19 @@
   color: white;
   font-weight: 600;
   margin-bottom: 1rem;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 1.1rem;
+  box-sizing: border-box;
+}
+
+/* Ensure text truncates if needed */
+.level-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .level-icon {
@@ -219,6 +234,11 @@
 @media (max-width: 480px) {
   .level-badge {
     width: 100%;
-    justify-content: center;
+    max-width: 100%;
+    font-size: 1rem;
+    padding: 0.5rem 0.5rem;
+  }
+  .level-text {
+    font-size: 0.95rem;
   }
 }
