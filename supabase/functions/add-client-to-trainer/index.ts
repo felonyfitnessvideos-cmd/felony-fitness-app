@@ -155,13 +155,55 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body
+    // Parse request body and destructure all new fields
     const payload = await req.json();
     const {
       trainer_user_id,
       client_user_id,
       client_email,
-      relationship_notes
+      // Personal Information
+      first_name,
+      last_name,
+      phone,
+      date_of_birth,
+      gender,
+      address,
+      city,
+      state,
+      zip_code,
+      // Emergency Contact
+      emergency_name,
+      emergency_phone,
+      emergency_relationship,
+      // Initial Metrics
+      height,
+      weight,
+      body_fat_percentage,
+      resting_heart_rate,
+      blood_pressure,
+      // Health Information
+      medical_conditions,
+      medications,
+      injuries,
+      allergies,
+      doctor_clearance,
+      // Fitness Goals
+      primary_goal,
+      secondary_goals,
+      target_weight,
+      timeframe,
+      // Preferences
+      workout_days,
+      preferred_time,
+      session_length,
+      exercise_preferences,
+      exercise_restrictions,
+      // Program Details
+      program_type,
+      nutrition_coaching,
+      start_date,
+      // Optionally still allow notes
+      notes
     } = payload;
 
     // Validate required parameters - need either client_user_id or client_email
@@ -268,16 +310,58 @@ serve(async (req) => {
       );
     }
 
-    // Step 5: Insert new trainer-client relationship
+    // Step 5: Insert new trainer-client relationship with all fields
     const { data: newRelationship, error: insertError } = await supabase
       .from("trainer_clients")
       .insert({
         trainer_id: trainer_user_id,
         client_id: finalClientId,
         status: "active",
-        notes: relationship_notes || null,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        // Personal Information
+        first_name,
+        last_name,
+        phone,
+        date_of_birth,
+        gender,
+        address,
+        city,
+        state,
+        zip_code,
+        // Emergency Contact
+        emergency_name,
+        emergency_phone,
+        emergency_relationship,
+        // Initial Metrics
+        height,
+        weight,
+        body_fat_percentage,
+        resting_heart_rate,
+        blood_pressure,
+        // Health Information
+        medical_conditions,
+        medications,
+        injuries,
+        allergies,
+        doctor_clearance,
+        // Fitness Goals
+        primary_goal,
+        secondary_goals,
+        target_weight,
+        timeframe,
+        // Preferences
+        workout_days,
+        preferred_time,
+        session_length,
+        exercise_preferences,
+        exercise_restrictions,
+        // Program Details
+        program_type,
+        nutrition_coaching,
+        start_date,
+        // Optionally still allow notes
+        notes: notes || null
       })
       .select("id")
       .single();

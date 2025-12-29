@@ -380,37 +380,30 @@ export const getAllTags = async () => {
  * @param {string} clientEmail - Email of the client (optional if clientId provided)
  * @returns {Promise<string|null>} Relationship ID if successful, null if failed
  */
-export const addClientToTrainer = async (trainerId, clientId, notes = null, clientEmail = null) => {
+export const addClientToTrainer = async (trainerId, clientId, clientData, clientEmail = null) => {
     try {
         const body = {
             trainer_user_id: trainerId,
-            relationship_notes: notes
+            ...clientData
         };
-
-        // Include either client_user_id or client_email
         if (clientId) {
             body.client_user_id = clientId;
         }
         if (clientEmail) {
             body.client_email = clientEmail;
         }
-
         const { data, error } = await supabase.functions.invoke('add-client-to-trainer', {
             body
         });
-
-        // Check if the response data contains an error message
         if (data?.error) {
             console.error('❌ Server error:', data.error);
             console.error('❌ Server details:', data.details || 'No additional details');
             return null;
         }
-
         if (error) {
             console.error('Error adding client to trainer:', error);
             return null;
         }
-
         return data?.relationship_id || null;
     } catch (error) {
         console.error('Error in addClientToTrainer:', error);

@@ -255,67 +255,60 @@ const ClientOnboarding = () => {
         // Check if lookup was successful
         lookupMessage.includes('✅');
 
-        // Step 3: Create trainer-client relationship
-        // Prepare comprehensive intake notes with all collected data
-        const intakeData = {
-          personalInfo: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email,
-            phone: formData.phone,
-            dateOfBirth: formData.dateOfBirth,
-            gender: formData.gender,
-            address: formData.address,
-            city: formData.city,
-            state: formData.state,
-            zipCode: formData.zipCode
-          },
-          emergencyContact: {
-            name: formData.emergencyName,
-            phone: formData.emergencyPhone,
-            relationship: formData.emergencyRelationship
-          },
-          metricsHealth: {
-            height: formData.height,
-            weight: formData.weight,
-            bodyFatPercentage: formData.bodyFatPercentage,
-            restingHeartRate: formData.restingHeartRate,
-            bloodPressure: formData.bloodPressure,
-            medicalConditions: formData.medicalConditions,
-            medications: formData.medications,
-            injuries: formData.injuries,
-            allergies: formData.allergies,
-            doctorClearance: formData.doctorClearance
-          },
-          goalsPreferences: {
-            primaryGoal: formData.primaryGoal,
-            secondaryGoals: formData.secondaryGoals,
-            targetWeight: formData.targetWeight,
-            timeframe: formData.timeframe,
-            workoutDays: formData.workoutDays,
-            preferredTime: formData.preferredTime,
-            sessionLength: formData.sessionLength,
-            exercisePreferences: formData.exercisePreferences,
-            exerciseRestrictions: formData.exerciseRestrictions
-          },
-          programSetup: {
-            programType: formData.programType,
-            nutritionCoaching: formData.nutritionCoaching,
-            startDate: formData.startDate,
-            notes: formData.notes
-          },
-          onboardedAt: new Date().toISOString()
+
+        // Step 3: Create trainer-client relationship with flat fields
+        const clientData = {
+          // Personal Information
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          phone: formData.phone,
+          date_of_birth: formData.dateOfBirth,
+          gender: formData.gender,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          zip_code: formData.zipCode,
+          // Emergency Contact
+          emergency_name: formData.emergencyName,
+          emergency_phone: formData.emergencyPhone,
+          emergency_relationship: formData.emergencyRelationship,
+          // Initial Metrics
+          height: formData.height,
+          weight: formData.weight,
+          body_fat_percentage: formData.bodyFatPercentage,
+          resting_heart_rate: formData.restingHeartRate,
+          blood_pressure: formData.bloodPressure,
+          // Health Information
+          medical_conditions: formData.medicalConditions,
+          medications: formData.medications,
+          injuries: formData.injuries,
+          allergies: formData.allergies,
+          doctor_clearance: formData.doctorClearance,
+          // Fitness Goals
+          primary_goal: formData.primaryGoal,
+          secondary_goals: formData.secondaryGoals,
+          target_weight: formData.targetWeight,
+          timeframe: formData.timeframe,
+          // Preferences
+          workout_days: formData.workoutDays,
+          preferred_time: formData.preferredTime,
+          session_length: formData.sessionLength,
+          exercise_preferences: formData.exercisePreferences,
+          exercise_restrictions: formData.exerciseRestrictions,
+          // Program Details
+          program_type: formData.programType,
+          nutrition_coaching: formData.nutritionCoaching,
+          start_date: formData.startDate,
+          // Optionally still allow notes
+          notes: formData.notes
         };
 
-        const relationshipNotes = `CLIENT INTAKE DATA:\n${JSON.stringify(intakeData, null, 2)}`;
-
-        // Use UUID if it was looked up, otherwise use email
         const { addClientToTrainer } = await import('../../utils/userRoleUtils.js');
         const relationshipId = await addClientToTrainer(
           trainer.id,
-          trimmedUuid || null, // Use UUID if available
-          relationshipNotes, // Send comprehensive intake data as notes
-          !trimmedUuid ? formData.email : null // Use email only if no UUID
+          trimmedUuid || null,
+          clientData,
+          !trimmedUuid ? formData.email : null
         );
 
         if (!relationshipId) {
