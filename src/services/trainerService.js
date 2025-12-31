@@ -27,7 +27,7 @@ import { supabase } from '../supabaseClient';
  *   timestamp: new Date().toISOString()
  * });
  */
-export const updateClientMetrics = async (clientId, category, data) => {
+export const updateClientMetrics = async (clientId, category, data, inputs) => {
   if (!clientId || !category || !data) {
     throw new Error('Missing required parameters: clientId, category, and data are required');
   }
@@ -56,13 +56,39 @@ export const updateClientMetrics = async (clientId, category, data) => {
       [category]: timestampedData 
     };
 
+    // Prepare the main update payload
+    const updatePayload = {
+      metrics: updatedMetrics,
+      updated_at: new Date().toISOString()
+    };
+
+    // Add denormalized fields based on category
+    if (category === 'bodyComp' && inputs) {
+      if (inputs.weight) updatePayload.weight = parseFloat(inputs.weight);
+      if (inputs.height) updatePayload.height = parseFloat(inputs.height);
+      if (inputs.gender) updatePayload.gender = inputs.gender;
+      if (inputs.activityLevel) updatePayload.activity_level = parseFloat(inputs.activityLevel);
+      if (inputs.bodyFat) updatePayload.body_fat_percentage = parseFloat(inputs.bodyFat);
+      if (data.lbmLbs) updatePayload.lean_body_mass_lbs = data.lbmLbs;
+      if (data.tdee) updatePayload.tdee = data.tdee;
+    }
+
+    if (category === 'heartRate' && inputs) {
+      if (inputs.age) updatePayload.age = parseInt(inputs.age);
+      if (inputs.restingHR) updatePayload.resting_heart_rate = parseInt(inputs.restingHR);
+      if (data.maxHR) updatePayload.calculated_max_hr = data.maxHR;
+    }
+    
+    if (category === 'macros' && data) {
+        if (data.protein?.g) updatePayload.calculated_protein_g = data.protein.g;
+        if (data.fat?.g) updatePayload.calculated_fat_g = data.fat.g;
+        if (data.carbs?.g) updatePayload.calculated_carbs_g = data.carbs.g;
+    }
+
     // Save back to database
     const { error: updateError } = await supabase
       .from('trainer_clients')
-      .update({ 
-        metrics: updatedMetrics,
-        updated_at: new Date().toISOString()
-      })
+      .update(updatePayload)
       .eq('id', clientId);
     
     if (updateError) {
@@ -70,7 +96,7 @@ export const updateClientMetrics = async (clientId, category, data) => {
       throw updateError;
     }
 
-    console.log('✅ Client metrics updated successfully:', category);
+    console.log('✅ Client metrics and denormalized columns updated successfully:', category);
     return updatedMetrics;
   } catch (error) {
     console.error('❌ Error in updateClientMetrics:', error);

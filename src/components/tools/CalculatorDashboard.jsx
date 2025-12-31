@@ -286,7 +286,6 @@ const CalculatorDashboard = () => {
       console.log('📊 [CalculatorDashboard] Loading clients for user:', user.id);
       
       try {
-        // Query trainer_clients directly to get the actual row IDs
         const { data, error } = await supabase
           .from('trainer_clients')
           .select(`
@@ -294,6 +293,15 @@ const CalculatorDashboard = () => {
             client_id,
             full_name,
             email,
+            weight,
+            height,
+            gender,
+            age,
+            activity_level,
+            body_fat_percentage,
+            resting_heart_rate,
+            lean_body_mass_lbs,
+            tdee,
             user_profiles!trainer_clients_client_id_fkey (
               first_name,
               last_name,
@@ -311,7 +319,6 @@ const CalculatorDashboard = () => {
 
         console.log('📊 [CalculatorDashboard] Raw client data:', data);
         
-        // Transform to build display names
         const formattedClients = (data || []).map(row => {
           const profile = row.user_profiles;
           const displayName = profile?.first_name && profile?.last_name
@@ -319,10 +326,11 @@ const CalculatorDashboard = () => {
             : row.full_name || row.email || profile?.email || 'Unknown Client';
           
           return {
-            id: row.id, // This is the actual trainer_clients.id UUID we need
+            id: row.id,
             client_id: row.client_id,
             full_name: displayName,
-            email: row.email || profile?.email || ''
+            email: row.email || profile?.email || '',
+            ...row
           };
         });
         
@@ -336,64 +344,41 @@ const CalculatorDashboard = () => {
     loadClients();
   }, [user]);
 
-  // Load saved metrics when client is selected
+  // Pre-populate calculators when a client is selected
   useEffect(() => {
-    const loadClientMetrics = async () => {
-      if (!selectedClientId) {
-        // Don't clear data - let localStorage persistence handle it
-        // This allows personal calculator use without selecting a client
-        return;
-      }
+    if (!selectedClientId) {
+      // Clear inputs if "Select Client" is re-selected, or rely on localStorage
+      return;
+    }
 
-      try {
-        const { data, error } = await supabase
-          .from('trainer_clients')
-          .select('metrics')
-          .eq('id', selectedClientId)
-          .single();
+    const client = clients.find(c => c.id === selectedClientId);
+    if (!client) return;
 
-        if (error) {
-          console.error('Error loading client metrics:', error);
-          return;
-        }
+    console.log('📊 [CalculatorDashboard] Populating calculators for client:', client.full_name);
 
-        const metrics = data?.metrics || {};
-        console.log('📊 Loaded metrics for client:', metrics);
+    // Populate Body Comp data
+    setBodyCompData({
+      weight: client.weight?.toString() || '',
+      height: client.height?.toString() || '',
+      bodyFat: client.body_fat_percentage?.toString() || '',
+      gender: client.gender || 'male',
+      activityLevel: client.activity_level?.toString() || '1.5'
+    });
 
-        // Populate strength data if exists
-        if (metrics.strength) {
-          setStrengthData({
-            liftName: metrics.strength.liftName || '',
-            weight: metrics.strength.weight?.toString() || '',
-            reps: metrics.strength.reps?.toString() || ''
-          });
-          setStrengthResults(metrics.strength);
-        }
+    // Populate Heart Rate data
+    setHeartRateData({
+      age: client.age?.toString() || '',
+      restingHR: client.resting_heart_rate?.toString() || ''
+    });
 
-        // Populate body comp data if exists
-        if (metrics.bodyComp) {
-          // Note: We don't store the input values, just results, so we can't pre-fill inputs
-          setBodyCompResults(metrics.bodyComp);
-        }
+    // Populate Macro data (with latest calculated values)
+    setMacroData(prev => ({
+      ...prev,
+      lbm: client.lean_body_mass_lbs?.toString() || prev.lbm,
+      tdee: client.tdee?.toString() || prev.tdee
+    }));
 
-        // Populate heart rate data if exists
-        if (metrics.heartRate) {
-          // Same - just show results
-          setHeartRateResults(metrics.heartRate);
-        }
-
-        // Populate macro data if exists
-        if (metrics.macros) {
-          setMacroResults(metrics.macros);
-        }
-
-      } catch (error) {
-        console.error('Error loading client metrics:', error);
-      }
-    };
-
-    loadClientMetrics();
-  }, [selectedClientId]);
+  }, [selectedClientId, clients]);
 
   // Auto-populate macro calculator with body comp results
   useEffect(() => {
@@ -492,7 +477,7 @@ const CalculatorDashboard = () => {
   };
 
   // Generic save handler
-  const handleSave = async (category, data) => {
+  const handleSave = async (category, data, inputs) => {
     if (!selectedClientId) {
       alert('Please select a client first');
       return;
@@ -507,7 +492,7 @@ const CalculatorDashboard = () => {
     setSaveStatus('');
 
     try {
-      await updateClientMetrics(selectedClientId, category, data);
+      await updateClientMetrics(selectedClientId, category, data, inputs);
       setSaveStatus('✅ Saved successfully!');
       setTimeout(() => setSaveStatus(''), 3000);
     } catch (error) {
@@ -671,7 +656,7 @@ const CalculatorDashboard = () => {
 
                 <button
                   className="save-button"
-                  onClick={() => handleSave('strength', strengthResults)}
+                  onClick={() => handleSave('strength', strengthResults, strengthData)}
                   disabled={loading}
                 >
                   {loading ? 'Saving...' : 'Save to Client Profile'}
@@ -801,7 +786,7 @@ const CalculatorDashboard = () => {
 
                 <button
                   className="save-button"
-                  onClick={() => handleSave('bodyComp', bodyCompResults)}
+                  onClick={() => handleSave('bodyComp', bodyCompResults, bodyCompData)}
                   disabled={loading}
                 >
                   {loading ? 'Saving...' : 'Save to Client Profile'}
@@ -880,7 +865,7 @@ const CalculatorDashboard = () => {
 
                 <button
                   className="save-button"
-                  onClick={() => handleSave('heartRate', heartRateResults)}
+                  onClick={() => handleSave('heartRate', heartRateResults, heartRateData)}
                   disabled={loading}
                 >
                   {loading ? 'Saving...' : 'Save to Client Profile'}
@@ -996,7 +981,7 @@ const CalculatorDashboard = () => {
 
                 <button
                   className="save-button"
-                  onClick={() => handleSave('macros', macroResults)}
+                  onClick={() => handleSave('macros', macroResults, macroData)}
                   disabled={loading}
                 >
                   {loading ? 'Saving...' : 'Save to Client Profile'}
