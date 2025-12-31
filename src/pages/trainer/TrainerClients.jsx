@@ -52,7 +52,6 @@ export function TrainerClients({ onClientSelect }) {
   const [expandedClient, setExpandedClient] = useState(null);
   const [clientNotes, setClientNotes] = useState('');
   const [notesSaving, setNotesSaving] = useState(false);
-    const [clientMetrics] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -78,25 +77,56 @@ export function TrainerClients({ onClientSelect }) {
                     .select(`
                         id,
                         client_id,
-                        full_name,
                         created_at,
                         notes,
-                        status
+                        status,
+                        full_name,
+                        email,
+                        phone,
+                        date_of_birth,
+                        medical_conditions,
+                        emergency_name,
+                        emergency_phone,
+                        primary_goal,
+                        secondary_goals,
+                        height,
+                        weight,
+                        body_fat_percentage,
+                        resting_heart_rate,
+                        blood_pressure
                     `)
                     .eq('trainer_id', user.id)
                     .eq('status', 'active')
                     .order('created_at', { ascending: false });
+
                 console.log('[TrainerClients] Supabase response:', { data, error });
+
                 if (error) throw error;
+
                 // Map DB fields to UI fields for consistency
-                const mapped = (data || []).map(row => ({
-                    relationshipId: row.id,
-                    clientId: row.client_id,
-                    name: row.full_name,
-                    joinDate: row.created_at,
-                    notes: row.notes,
-                    status: row.status
-                }));
+                const mapped = (data || []).map(row => {
+                    const goals = [row.primary_goal, ...(row.secondary_goals || [])].filter(Boolean).join(', ');
+                    return {
+                        relationshipId: row.id,
+                        clientId: row.client_id,
+                        name: row.full_name,
+                        email: row.email,
+                        phone: row.phone,
+                        joinDate: row.created_at,
+                        notes: row.notes,
+                        status: row.status,
+                        dateOfBirth: row.date_of_birth,
+                        fitnessGoals: goals,
+                        medicalConditions: row.medical_conditions,
+                        emergencyContact: row.emergency_name,
+                        emergencyPhone: row.emergency_phone,
+                        height: row.height,
+                        weight: row.weight,
+                        bodyFatPercentage: row.body_fat_percentage,
+                        restingHeartRate: row.resting_heart_rate,
+                        bloodPressure: row.blood_pressure,
+                    };
+                });
                 console.log('[TrainerClients] Mapped clients:', mapped);
                 setClients(mapped);
                 setFilteredClients(mapped);
@@ -248,28 +278,16 @@ export function TrainerClients({ onClientSelect }) {
                                         )}
                                         <div className="info-section">
                                             <h4>Client Stats</h4>
-                                            {clientMetrics && Object.keys(clientMetrics).length > 0 ? (
-                                                <div className="stats-list">
-                                                    {Object.entries(clientMetrics).map(([key, val]) => (
-                                                        <div className="stat-row" key={key}>
-                                                            <strong>{key}:</strong>
-                                                            <span style={{marginLeft:8}}>
-                                                                {typeof val === 'object' && val !== null ? (
-                                                                    <>
-                                                                        {Object.entries(val).filter(([k]) => k !== 'lastUpdated').map(([k, v]) => (
-                                                                            <span key={k} style={{display:'block'}}>
-                                                                                <strong style={{fontWeight:400}}>{k}:</strong> {String(v)}
-                                                                            </span>
-                                                                        ))}
-                                                                        <span style={{fontSize:'0.85em',color:'#888'}}>Last updated: {val.lastUpdated ? new Date(val.lastUpdated).toLocaleString() : 'N/A'}</span>
-                                                                    </>
-                                                                ) : String(val)}
-                                                            </span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
+                                            {!client.height && !client.weight && !client.bodyFatPercentage && !client.restingHeartRate && !client.bloodPressure ? (
                                                 <div className="no-stats">No metrics available.</div>
+                                            ) : (
+                                                <div className="stats-list">
+                                                    {client.height && <div className="stat-row"><strong>Height:</strong><span> {client.height}</span></div>}
+                                                    {client.weight && <div className="stat-row"><strong>Weight:</strong><span> {client.weight} lbs</span></div>}
+                                                    {client.bodyFatPercentage && <div className="stat-row"><strong>Body Fat %:</strong><span> {client.bodyFatPercentage}</span></div>}
+                                                    {client.restingHeartRate && <div className="stat-row"><strong>Resting HR:</strong><span> {client.restingHeartRate} bpm</span></div>}
+                                                    {client.bloodPressure && <div className="stat-row"><strong>Blood Pressure:</strong><span> {client.bloodPressure}</span></div>}
+                                                </div>
                                             )}
                                         </div>
                                         <div className="info-section">
