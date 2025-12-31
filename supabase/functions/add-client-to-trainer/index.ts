@@ -221,29 +221,35 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client with service role key for admin operations
+    // Define Supabase connection details from environment variables
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+
+    // 1. Create a client with the user's token to securely get the user
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
 
-    // Get the authenticated user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       return new Response(
-        JSON.stringify({ error: "Authentication failed" }),
+        JSON.stringify({ error: "Authentication failed", details: userError?.message }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    
+    // 2. Create an admin client to perform elevated-privilege operations
+    const adminSupabase = createClient(supabaseUrl, supabaseServiceKey);
+
 
     // Step 1: Determine final client_user_id
     let finalClientId = client_user_id;
 
     // If only email provided, look up user by email
     if (!finalClientId && client_email) {
-      const { data: clientProfile } = await supabase
+      const { data: clientProfile } = await adminSupabase
         .from("user_profiles")
         .select("id")
         .eq("email", client_email)
@@ -252,7 +258,6 @@ serve(async (req) => {
       if (clientProfile) {
         finalClientId = clientProfile.id;
       } else {
-        // User doesn't exist yet - that's okay, we'll note this
         return new Response(
           JSON.stringify({
             error: "Client user not found. Please ensure the client has created an account first."
@@ -263,7 +268,7 @@ serve(async (req) => {
     }
 
     // Step 2: Update is_trainer flag for trainer (idempotent)
-    const { error: trainerUpdateError } = await supabase
+    const { error: trainerUpdateError } = await adminSupabase
       .from("user_profiles")
       .update({ is_trainer: true, updated_at: new Date().toISOString() })
       .eq("id", trainer_user_id);
@@ -277,7 +282,7 @@ serve(async (req) => {
     }
 
     // Step 3: Update is_client flag for client (idempotent)
-    const { error: clientUpdateError } = await supabase
+    const { error: clientUpdateError } = await adminSupabase
       .from("user_profiles")
       .update({ is_client: true, updated_at: new Date().toISOString() })
       .eq("id", finalClientId);
@@ -291,112 +296,117 @@ serve(async (req) => {
     }
 
     // Step 4: Check if relationship already exists
-    const { data: existingRelationship, error: checkError } = await supabase
+    const { data: existingRelationship, error: checkError } = await adminSupabase
       .from("trainer_clients")
       .select("id")
       .eq("trainer_id", trainer_user_id)
       .eq("client_id", finalClientId)
       .single();
 
-    // If relationship already exists, return existing ID
+    if (checkError && checkError.code !== 'PGRST116') {
+      throw checkError; // Throw actual errors
+    }
+
+    const relationshipData = {
+      trainer_id: trainer_user_id,
+      client_id: finalClientId,
+      status: "active",
+      updated_at: new Date().toISOString(),
+      // Personal Information & Sanitization
+      first_name,
+      last_name,
+      phone,
+      date_of_birth: date_of_birth || null,
+      gender,
+      address,
+      city,
+      state,
+      zip_code,
+      // Emergency Contact
+      emergency_name,
+      emergency_phone,
+      emergency_relationship,
+      // Initial Metrics (convert empty strings to null for numeric types)
+      height: height === '' ? null : Number(height),
+      weight: weight === '' ? null : Number(weight),
+      body_fat_percentage: body_fat_percentage === '' ? null : Number(body_fat_percentage),
+      resting_heart_rate: resting_heart_rate === '' ? null : Number(resting_heart_rate),
+      blood_pressure,
+      // Health Information
+      medical_conditions,
+      medications,
+      injuries,
+      allergies,
+      doctor_clearance,
+      // Fitness Goals
+      primary_goal,
+      secondary_goals,
+      target_weight: target_weight === '' ? null : Number(target_weight),
+      timeframe,
+      // Preferences
+      workout_days,
+      preferred_time,
+      session_length,
+      exercise_preferences,
+      exercise_restrictions,
+      // Program Details
+      program_type,
+      nutrition_coaching,
+      start_date: start_date || null,
+      notes: notes || null
+    };
+
+    let relationship_id;
+    let message;
+
     if (existingRelationship) {
-      return new Response(
-        JSON.stringify({
-          relationship_id: existingRelationship.id,
-          message: "Relationship already exists",
-          roles_assigned: false
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      // --- UPDATE EXISTING RELATIONSHIP ---
+      const { data: updatedRelationship, error: updateError } = await adminSupabase
+        .from("trainer_clients")
+        .update(relationshipData)
+        .eq("id", existingRelationship.id)
+        .select("id")
+        .single();
+      
+      if (updateError) {
+        console.error("Error updating trainer-client relationship:", updateError);
+        throw new Error(`Failed to update relationship: ${updateError.message}`);
+      }
+      relationship_id = updatedRelationship.id;
+      message = "Trainer-client relationship updated successfully";
+
+    } else {
+      // --- INSERT NEW RELATIONSHIP ---
+      relationshipData.created_at = new Date().toISOString(); // Add created_at for inserts
+      const { data: newRelationship, error: insertError } = await adminSupabase
+        .from("trainer_clients")
+        .insert(relationshipData)
+        .select("id")
+        .single();
+
+      if (insertError) {
+        console.error("Error inserting trainer-client relationship:", insertError);
+        throw new Error(`Failed to create relationship: ${insertError.message}`);
+      }
+      relationship_id = newRelationship.id;
+      message = "Trainer-client relationship created successfully";
     }
 
-    // Step 5: Insert new trainer-client relationship with all fields
-    const { data: newRelationship, error: insertError } = await supabase
-      .from("trainer_clients")
-      .insert({
-        trainer_id: trainer_user_id,
-        client_id: finalClientId,
-        status: "active",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        // Personal Information
-        first_name,
-        last_name,
-        phone,
-        date_of_birth,
-        gender,
-        address,
-        city,
-        state,
-        zip_code,
-        // Emergency Contact
-        emergency_name,
-        emergency_phone,
-        emergency_relationship,
-        // Initial Metrics
-        height,
-        weight,
-        body_fat_percentage,
-        resting_heart_rate,
-        blood_pressure,
-        // Health Information
-        medical_conditions,
-        medications,
-        injuries,
-        allergies,
-        doctor_clearance,
-        // Fitness Goals
-        primary_goal,
-        secondary_goals,
-        target_weight,
-        timeframe,
-        // Preferences
-        workout_days,
-        preferred_time,
-        session_length,
-        exercise_preferences,
-        exercise_restrictions,
-        // Program Details
-        program_type,
-        nutrition_coaching,
-        start_date,
-        // Optionally still allow notes
-        notes: notes || null
-      })
-      .select("id")
-      .single();
-
-    if (insertError) {
-      console.error("Error inserting trainer-client relationship:", insertError);
-      return new Response(
-        JSON.stringify({ error: `Failed to create relationship: ${insertError.message}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!relationship_id) {
+      throw new Error("Failed to save relationship: No ID returned after insert/update");
     }
 
-    if (!newRelationship) {
-      console.error("No relationship data returned after insert");
-      return new Response(
-        JSON.stringify({ error: "Failed to create relationship: No data returned" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Step 6: Auto-assign role tags (optional, for additional RBAC if using tags)
-    const trainerRoleAssigned = await assignRoleTag(supabase, trainer_user_id, "Trainer");
-    const clientRoleAssigned = await assignRoleTag(supabase, finalClientId, "Client");
+    // Step 6: Auto-assign role tags (optional)
+    await assignRoleTag(adminSupabase, trainer_user_id, "Trainer");
+    await assignRoleTag(adminSupabase, finalClientId, "Client");
 
     // Return success with relationship ID
     return new Response(
-      JSON.stringify({
-        relationship_id: newRelationship.id,
-        message: "Trainer-client relationship created successfully",
-        roles_assigned: trainerRoleAssigned && clientRoleAssigned
-      }),
+      JSON.stringify({ relationship_id, message }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
-    // Catch-all error handler with detailed logging
+    // Catch-all error handler
     console.error("Unexpected error in add-client-to-trainer:", err);
     return new Response(
       JSON.stringify({

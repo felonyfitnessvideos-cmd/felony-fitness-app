@@ -20,20 +20,6 @@ serve(async (req) => {
     // as it comes from Supabase's auth system directly
     console.log('Processing auth hook request')
     
-    // Simple test response first
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Function called successfully',
-        method: req.method,
-        headers: Object.fromEntries(req.headers.entries())
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      },
-    )
-    
     // Create Supabase client with service role key for admin access
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -81,7 +67,7 @@ serve(async (req) => {
       .from('users')
       .insert({
         id: userId,
-        user_email: userEmail,
+        email: userEmail,
         created_at: new Date().toISOString()
       })
       .select()
@@ -101,7 +87,6 @@ serve(async (req) => {
         id: userId,
         user_id: userId,
         email: userEmail,
-        plan_type: ['Sponsored'], // Default plan type
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })

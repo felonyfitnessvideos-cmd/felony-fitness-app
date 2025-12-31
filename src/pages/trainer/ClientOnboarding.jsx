@@ -130,10 +130,8 @@ const ClientOnboarding = () => {
       setLookupMessage('Please enter a UUID');
       return;
     }
-
-    // Validate UUID format
     if (!isValidUuid(clientUuid.trim())) {
-      setLookupMessage('Invalid UUID format. Expected format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
+      setLookupMessage('Invalid UUID format.');
       return;
     }
 
@@ -141,61 +139,100 @@ const ClientOnboarding = () => {
     setLookupMessage('');
 
     try {
-      // Query user_profiles by ID
-      const { data: profile, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', clientUuid.trim())
-        .single();
-
-      if (error || !profile) {
-        setLookupMessage('User not found. Please check the UUID and try again.');
+      const { data: { user: trainer } } = await supabase.auth.getUser();
+      if (!trainer) {
+        setLookupMessage('Could not identify trainer. Please log in again.');
         setLookupLoading(false);
         return;
       }
 
-      // Query body_metrics for most recent body fat percentage
-      const { data: metrics } = await supabase
-        .from('body_metrics')
-        .select('body_fat_percentage, weight_lbs')
-        .eq('user_id', clientUuid.trim())
-        .order('created_at', { ascending: false })
-        .limit(1)
+      // First, try to find an existing relationship in trainer_clients
+      const { data: existingClient, error: clientError } = await supabase
+        .from('trainer_clients')
+        .select('*')
+        .eq('trainer_id', trainer.id)
+        .eq('client_id', clientUuid.trim())
         .single();
 
-      // Convert height_cm back to inches for the form
-      let heightInInches = '';
-      if (profile.height_cm) {
-        heightInInches = Math.round(profile.height_cm / 2.54).toString();
+      if (clientError && clientError.code !== 'PGRST116') { // PGRST116 means no rows found, which is ok
+        throw clientError;
       }
 
-      // Auto-fill form with existing data
-      setFormData(prev => ({
-        ...prev,
-        firstName: profile.first_name || '',
-        lastName: profile.last_name || '',
-        email: profile.email || '',
-        phone: profile.phone || '',
-        dateOfBirth: profile.date_of_birth || '',
-        gender: profile.sex || '',
-        address: profile.address || '',
-        city: profile.city || '',
-        state: profile.state || '',
-        zipCode: profile.zip_code || '',
-        height: heightInInches,
-        weight: profile.current_weight_lbs ? profile.current_weight_lbs.toString() : (metrics?.weight_lbs ? metrics.weight_lbs.toString() : ''),
-        bodyFatPercentage: metrics?.body_fat_percentage ? metrics.body_fat_percentage.toString() : ''
-      }));
+      if (existingClient) {
+        // --- CLIENT FOUND ---
+        // Populate the form with all the data from the existing trainer_clients record
+        setFormData({
+          firstName: existingClient.first_name || '',
+          lastName: existingClient.last_name || '',
+          email: existingClient.email || '',
+          phone: existingClient.phone || '',
+          dateOfBirth: existingClient.date_of_birth || '',
+          gender: existingClient.gender || '',
+          address: existingClient.address || '',
+          city: existingClient.city || '',
+          state: existingClient.state || '',
+          zipCode: existingClient.zip_code || '',
+          emergencyName: existingClient.emergency_name || '',
+          emergencyPhone: existingClient.emergency_phone || '',
+          emergencyRelationship: existingClient.emergency_relationship || '',
+          height: existingClient.height?.toString() || '',
+          weight: existingClient.weight?.toString() || '',
+          bodyFatPercentage: existingClient.body_fat_percentage?.toString() || '',
+          restingHeartRate: existingClient.resting_heart_rate?.toString() || '',
+          bloodPressure: existingClient.blood_pressure || '',
+          medicalConditions: existingClient.medical_conditions || '',
+          medications: existingClient.medications || '',
+          injuries: existingClient.injuries || '',
+          allergies: existingClient.allergies || '',
+          doctorClearance: existingClient.doctor_clearance || false,
+          primaryGoal: existingClient.primary_goal || '',
+          secondaryGoals: existingClient.secondary_goals || [],
+          targetWeight: existingClient.target_weight?.toString() || '',
+          timeframe: existingClient.timeframe || '',
+          workoutDays: existingClient.workout_days || [],
+          preferredTime: existingClient.preferred_time || '',
+          sessionLength: existingClient.session_length || '',
+          exercisePreferences: existingClient.exercise_preferences || [],
+          exerciseRestrictions: existingClient.exercise_restrictions || '',
+          programType: existingClient.program_type || '',
+          nutritionCoaching: existingClient.nutrition_coaching || false,
+          startDate: existingClient.start_date || '',
+          notes: existingClient.notes || ''
+        });
+        const userName = existingClient.first_name ? `${existingClient.first_name} ${existingClient.last_name}` : existingClient.email;
+        setLookupMessage(`✅ Loaded existing client: ${userName}`);
 
-      // Create user display name
-      const userName = profile.first_name && profile.last_name
-        ? `${profile.first_name} ${profile.last_name}`
-        : profile.email || 'User';
+      } else {
+        // --- NEW USER LOOKUP ---
+        // No existing relationship found, fall back to looking up the user profile
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', clientUuid.trim())
+          .single();
 
-      setLookupMessage(`✅ User found: ${userName}`);
+        if (profileError || !profile) {
+          setLookupMessage('User not found. Please check the UUID and try again.');
+          setLookupLoading(false);
+          return;
+        }
+
+        // Auto-fill form with basic data from user_profiles
+        setFormData(prev => ({
+          ...prev,
+          firstName: profile.first_name || '',
+          lastName: profile.last_name || '',
+          email: profile.email || '',
+          phone: profile.phone || '',
+          dateOfBirth: profile.date_of_birth || '',
+          gender: profile.sex || '',
+        }));
+        const userName = profile.first_name ? `${profile.first_name} ${profile.last_name}` : profile.email;
+        setLookupMessage(`✅ Found new user: ${userName}`);
+      }
     } catch (err) {
       console.error('Error looking up user:', err);
-      setLookupMessage('Error looking up user. Please try again.');
+      setLookupMessage('An error occurred during lookup. Please try again.');
     } finally {
       setLookupLoading(false);
     }
