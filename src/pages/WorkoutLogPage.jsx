@@ -127,7 +127,7 @@
 
 import { Check, Dumbbell, Edit2, Trash2, X } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
 import LazyRecharts from '../components/LazyRecharts.jsx';
 import RestTimerModal from '../components/RestTimerModal.jsx';
@@ -488,29 +488,28 @@ function WorkoutLogPage() {
     return () => { delete window.refetchUserSettings; };
   }, [fetchUserSettings]);
 
-  // Only call fetchAndStartWorkout when both userId and routineId are defined
-  // Use a ref to prevent duplicate calls
-  const hasFetchedRef = useRef(false);
+  const location = useLocation();
   const [mesocycleWeekId, setMesocycleWeekId] = useState(null);
+
   useEffect(() => {
-    if (hasFetchedRef.current) return; // Prevent duplicate calls
     const params = new URLSearchParams(location.search);
-    const mesocycleSessionId = params.get('mesocycle_session_id');
     const mwid = params.get('mesocycleWeekId');
-    console.log('[MESOCYCLE DEBUG] URL params - mesocycleWeekId:', mwid, 'Full URL:', location.search);
     if (mwid) {
       setMesocycleWeekId(mwid);
       console.log('[MESOCYCLE DEBUG] mesocycleWeekId state set to:', mwid);
+    } else {
+      // Clear it if the URL no longer has the param
+      setMesocycleWeekId(null);
     }
+
     if (userId && routineId) {
-      // Debug log
+      const mesocycleSessionId = params.get('mesocycle_session_id');
       console.log('[DEBUG] useEffect: calling fetchAndStartWorkout with userId:', userId, 'routineId:', routineId);
-      hasFetchedRef.current = true;
       fetchAndStartWorkout(userId, { mesocycleSessionId });
     } else {
       setLoading(false);
     }
-  }, [userId, routineId, fetchAndStartWorkout]);
+  }, [userId, routineId, location.search, fetchAndStartWorkout]);
 
   const fetchChartDataForExercise = useCallback(async (metric, exerciseId) => {
     if (!userId || !exerciseId) return;
@@ -848,18 +847,17 @@ function WorkoutLogPage() {
       if (mesocycleWeekId) {
         try {
           console.log('[MESOCYCLE DEBUG] Attempting to mark mesocycle_weeks complete - ID:', mesocycleWeekId);
-          const { data: updateData, error: mwError } = await supabase
+          const { error: mwError } = await supabase
             .from('mesocycle_weeks')
             .update({ 
               is_complete: true, 
               completed_at: endTime.toISOString() 
             })
-            .eq('id', mesocycleWeekId)
-            .select();
+            .eq('id', mesocycleWeekId);
           if (mwError) {
             console.error('[MESOCYCLE DEBUG] Error marking mesocycle_weeks complete:', mwError);
           } else {
-            console.log('[MESOCYCLE DEBUG] Successfully marked mesocycle_weeks complete:', updateData);
+            console.log('[MESOCYCLE DEBUG] Successfully marked mesocycle_weeks complete for id:', mesocycleWeekId);
           }
         } catch (err) {
           console.error('[MESOCYCLE DEBUG] Exception updating mesocycle_weeks:', err);

@@ -191,7 +191,7 @@ function MesocycleDetail() {
   let weeksRows = [];
   try {
     // Try to select new columns (is_complete, completed_at, day_type) if migration has been run
-    const { data, error } = await supabase.from('mesocycle_weeks').select('id,mesocycle_id,week_index,day_index,routine_id,notes,day_type,is_complete,completed_at').eq('mesocycle_id', mesocycleId).order('week_index', { ascending: true }).order('day_index', { ascending: true });
+    const { data, error } = await supabase.from('mesocycle_weeks').select('id,mesocycle_id,week_index,day_index,routine_id,notes,day_type,is_complete,completed_at,skipped').eq('mesocycle_id', mesocycleId).order('week_index', { ascending: true }).order('day_index', { ascending: true });
     if (error) throw error;
     weeksRows = data || [];
     console.log('🔍 WEEKS DATA LOADED:', weeksRows.length, 'rows');

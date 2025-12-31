@@ -1969,28 +1969,72 @@ $$;
 --
 
 CREATE FUNCTION public.update_stats_on_mesocycle_complete() RETURNS trigger
+
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  IF NEW.is_complete = true AND (OLD.is_complete IS NULL OR OLD.is_complete = false) THEN
-    -- Update mesocycle count
-    UPDATE user_stats SET
-      mesocycles_completed = user_stats.mesocycles_completed + 1,
-      total_xp = user_stats.total_xp + 500,
-      current_level = calculate_level(user_stats.total_xp + 500),
-      updated_at = NOW()
-    WHERE user_id = NEW.user_id;
-    
-    -- Log XP for mesocycle completion
-    INSERT INTO xp_transactions (user_id, amount, source, reference_id)
-    VALUES (NEW.user_id, 500, 'mesocycle_complete', NEW.id);
-    
-    -- Check mesocycle achievements
-    PERFORM check_and_award_achievements(NEW.user_id, 'mesocycle_complete');
-  END IF;
-  RETURN NEW;
-END;
-$$;
+
+    AS $
+
+DECLARE
+
+  v_user_id UUID;
+
+BEGIN
+
+  -- Check if the is_complete flag was just flipped to true
+
+  IF NEW.is_complete = true AND (OLD.is_complete IS NULL OR OLD.is_complete = false) THEN
+
+    -- Get the user_id from the parent mesocycle
+
+    SELECT user_id INTO v_user_id
+
+    FROM public.mesocycles
+
+    WHERE id = NEW.mesocycle_id;
+
+
+
+    -- Proceed only if we found a user_id
+
+    IF v_user_id IS NOT NULL THEN
+
+      -- Update mesocycle count in user_stats
+
+      UPDATE public.user_stats SET
+
+        mesocycles_completed = user_stats.mesocycles_completed + 1,
+
+        total_xp = user_stats.total_xp + 500,
+
+        current_level = calculate_level(user_stats.total_xp + 500),
+
+        updated_at = NOW()
+
+      WHERE user_id = v_user_id;
+
+      
+
+      -- Log XP for mesocycle completion
+
+      INSERT INTO public.xp_transactions (user_id, amount, source, reference_id)
+
+      VALUES (v_user_id, 500, 'mesocycle_complete', NEW.id);
+
+      
+
+      -- Check mesocycle achievements
+
+      PERFORM public.check_and_award_achievements(v_user_id, 'mesocycle_complete');
+
+    END IF;
+
+  END IF;
+
+  RETURN NEW;
+
+END;
+
+$;
 
 
 --
