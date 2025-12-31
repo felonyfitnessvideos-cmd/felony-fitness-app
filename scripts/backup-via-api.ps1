@@ -22,7 +22,7 @@ $SUPABASE_URL = $env:VITE_SUPABASE_URL
 $SUPABASE_SERVICE_KEY = $env:SUPABASE_SERVICE_ROLE_KEY
 
 if (-not $SUPABASE_URL -or -not $SUPABASE_SERVICE_KEY) {
-    Write-Host "❌ Error: Missing Supabase credentials in .env.local" -ForegroundColor Red
+    Write-Host "[FAIL] Error: Missing Supabase credentials in .env.local" -ForegroundColor Red
     Write-Host "   Required: VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY" -ForegroundColor Yellow
     exit 1
 }
@@ -30,7 +30,7 @@ if (-not $SUPABASE_URL -or -not $SUPABASE_SERVICE_KEY) {
 $backupDir = "backups\$BackupName"
 New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
 
-Write-Host "`n=== 📦 Starting API Backup ===" -ForegroundColor Cyan
+Write-Host "`n=== [BACKUP] Starting API Backup ===" -ForegroundColor Cyan
 Write-Host "Backup Directory: $backupDir" -ForegroundColor Gray
 Write-Host "Supabase URL: $SUPABASE_URL" -ForegroundColor Gray
 
@@ -42,7 +42,7 @@ $tables = @(
     "trainer_clients",
     
     # Nutrition & Food
-    "food_servings",
+    "portions",
     "foods",
     "nutrition_logs",
     "meals",
@@ -115,7 +115,7 @@ foreach ($table in $tables) {
         $hasMore = $true
         
         while ($hasMore) {
-            $url = "$SUPABASE_URL/rest/v1/$table`?select=*&limit=$limit&offset=$offset"
+            $url = ('{0}/rest/v1/{1}?select=*&limit={2}&offset={3}' -f $SUPABASE_URL, $table, $limit, $offset)
             
             $response = Invoke-RestMethod -Uri $url -Method Get -Headers $headers -TimeoutSec 30
             
@@ -139,14 +139,16 @@ foreach ($table in $tables) {
         $allRecords | ConvertTo-Json -Depth 10 | Set-Content $outputFile -Encoding UTF8
         
         $fileSizeKB = [math]::Round((Get-Item $outputFile).Length / 1KB, 2)
-        Write-Host "   ✅ Saved $($allRecords.Count) records ($fileSizeKB KB)" -ForegroundColor Green
+        Write-Host "   [OK] Saved $($allRecords.Count) records ($fileSizeKB KB)" -ForegroundColor Green
         
     } catch {
-        Write-Host "   ❌ Failed: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "   [FAIL] An error occurred for table: $table" -ForegroundColor Red
+        $errorDetails = $_ | ConvertTo-Json -Depth 5
+        Write-Host $errorDetails
         
         # Save error log
-        $errorFile = Join-Path $backupDir "$table.error.txt"
-        $_.Exception | Out-File $errorFile
+        $errorFile = Join-Path $backupDir "$table.error.json" # save as json
+        $errorDetails | Out-File $errorFile
     }
 }
 
@@ -162,12 +164,12 @@ $metadata = @{
 $metadata | Set-Content (Join-Path $backupDir "metadata.json") -Encoding UTF8
 
 # Copy schema and types files
-Write-Host "`n=== 📋 Copying Schema Files ===" -ForegroundColor Cyan
+Write-Host "`n=== [SCHEMA] Copying Schema Files ===" -ForegroundColor Cyan
 
 if (Test-Path "schema.sql") {
     Copy-Item "schema.sql" -Destination (Join-Path $backupDir "schema.sql")
     $schemaSizeKB = [math]::Round((Get-Item (Join-Path $backupDir "schema.sql")).Length / 1KB, 2)
-    Write-Host "✅ Copied schema.sql ($schemaSizeKB KB)" -ForegroundColor Green
+    Write-Host "[OK] Copied schema.sql ($schemaSizeKB KB)" -ForegroundColor Green
 } else {
     Write-Host "⚠️  schema.sql not found in root directory" -ForegroundColor Yellow
 }
@@ -175,7 +177,7 @@ if (Test-Path "schema.sql") {
 if (Test-Path "src\types\database.types.ts") {
     Copy-Item "src\types\database.types.ts" -Destination (Join-Path $backupDir "database.types.ts")
     $typesSizeKB = [math]::Round((Get-Item (Join-Path $backupDir "database.types.ts")).Length / 1KB, 2)
-    Write-Host "✅ Copied database.types.ts ($typesSizeKB KB)" -ForegroundColor Green
+    Write-Host "[OK] Copied database.types.ts ($typesSizeKB KB)" -ForegroundColor Green
 } else {
     Write-Host "⚠️  database.types.ts not found in src/types/" -ForegroundColor Yellow
 }
@@ -184,26 +186,26 @@ if (Test-Path "src\types\database.types.ts") {
 $totalSize = (Get-ChildItem $backupDir -Recurse | Measure-Object -Property Length -Sum).Sum
 $totalSizeMB = [math]::Round($totalSize / 1MB, 2)
 
-Write-Host "`n=== ✅ Backup Complete ===" -ForegroundColor Green
+Write-Host "`n=== [OK] Backup Complete ===" -ForegroundColor Green
 Write-Host "Location: $backupDir" -ForegroundColor Cyan
 Write-Host "Total Size: $totalSizeMB MB" -ForegroundColor Cyan
 Write-Host "Files: $(Get-ChildItem $backupDir | Measure-Object | Select-Object -ExpandProperty Count)" -ForegroundColor Cyan
 
 # Cleanup: Keep only last 7 backups
-Write-Host "`n=== 🧹 Cleanup: Maintaining 7 Most Recent Backups ===" -ForegroundColor Yellow
+Write-Host "`n=== [CLEANUP] Cleanup: Maintaining 7 Most Recent Backups ===" -ForegroundColor Yellow
 $allBackups = Get-ChildItem backups | Sort-Object Name -Descending
 if ($allBackups.Count -gt 7) {
     $toDelete = $allBackups | Select-Object -Skip 7
     foreach ($backup in $toDelete) {
-        Write-Host "🗑️  Deleting old backup: $($backup.Name)" -ForegroundColor DarkGray
+        Write-Host "[DEL]  Deleting old backup: $($backup.Name)" -ForegroundColor DarkGray
         Remove-Item -Path $backup.FullName -Recurse -Force
     }
-    Write-Host "✅ Cleanup complete - kept $($allBackups.Count - $toDelete.Count) backups" -ForegroundColor Green
+    Write-Host "[OK] Cleanup complete - kept $($allBackups.Count - $toDelete.Count) backups" -ForegroundColor Green
 } else {
-    Write-Host "✅ Backup count OK ($($allBackups.Count)/7)" -ForegroundColor Green
+    Write-Host "[OK] Backup count OK ($($allBackups.Count)/7)" -ForegroundColor Green
 }
 
-Write-Host "`n💡 To restore from this backup, use the restore-from-api.ps1 script" -ForegroundColor Yellow
+Write-Host "`n[INFO] To restore from this backup, use the restore-from-api.ps1 script" -ForegroundColor Yellow
 
 # Open backup folder
 explorer $backupDir

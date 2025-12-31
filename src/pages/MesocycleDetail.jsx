@@ -70,11 +70,8 @@ import { useAuth } from '../AuthContext.jsx';
 function MesocycleDetail() {
   const { mesocycleId } = useParams();
   const [mesocycle, setMesocycle] = useState(null);
-  const [routines, setRoutines] = useState([]);
   const [weeksData, setWeeksData] = useState([]);
-  const [sessions, setSessions] = useState([]);
-  const [logsMap, setLogsMap] = useState({});
-  const [isLoadingRoutines, setIsLoadingRoutines] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentWeekIndex, setCurrentWeekIndex] = useState(1);
   const [autoCalculatedWeek, setAutoCalculatedWeek] = useState(1);
   const { user, loading } = useAuth();
@@ -164,100 +161,59 @@ function MesocycleDetail() {
   };
 
   useEffect(() => {
-  if (!mesocycleId) return;
-    (async () => {
+    if (!mesocycleId) return;
+
+    const fetchMesocycleData = async () => {
       try {
-        // wait for auth state
-        if (loading) return;
-        if (!user) {
-          setMesocycle(null);
-          // no sessions state here — detail shows weeks data
+        setIsLoading(true);
+        if (loading || !user) {
           return;
         }
 
-        const { data: m } = await supabase
+        // Fetch mesocycle details
+        const { data: m, error: mError } = await supabase
           .from('mesocycles')
           .select('*')
           .eq('id', mesocycleId)
           .eq('user_id', user.id)
           .maybeSingle();
 
+        if (mError) throw mError;
         setMesocycle(m || null);
-
-        console.log('🔍 MESOCYCLE DATA LOADED:');
-        console.log('Mesocycle:', JSON.stringify(m, null, 2));
-
-  // load mesocycle_week assignments so we can render week layouts even when no sessions exist
-  let weeksRows = [];
-  try {
-    // Try to select new columns (is_complete, completed_at, day_type) if migration has been run
-    const { data, error } = await supabase.from('mesocycle_weeks').select('id,mesocycle_id,week_index,day_index,routine_id,notes,day_type,is_complete,completed_at,skipped').eq('mesocycle_id', mesocycleId).order('week_index', { ascending: true }).order('day_index', { ascending: true });
-    if (error) throw error;
-    weeksRows = data || [];
-    console.log('🔍 WEEKS DATA LOADED:', weeksRows.length, 'rows');
-    console.log('Current week index:', currentWeekIndex);
-    console.log('Week 2 data:', weeksRows.filter(w => w.week_index === 2));
-  } catch (err) {
-    // If new columns don't exist yet, fall back to selecting only basic columns
-    console.warn('Could not load new columns (migration not run yet), falling back:', err?.message ?? err);
-    const { data } = await supabase.from('mesocycle_weeks').select('id,mesocycle_id,week_index,day_index,routine_id,notes').eq('mesocycle_id', mesocycleId).order('week_index', { ascending: true }).order('day_index', { ascending: true });
-    weeksRows = data || [];
-  }
-
-  // Load routine names BEFORE setting weeks data to prevent rendering with undefined routines
-  const routineIds = Array.from(new Set((weeksRows || []).map(w => w.routine_id).filter(Boolean)));
-  console.log('🔍 ROUTINE IDs found:', routineIds);
-  let routinesData = [];
-  if (routineIds.length > 0) {
-    const { data: rdata } = await supabase.from('workout_routines').select('id,routine_name').in('id', routineIds);
-    console.log('🔍 ROUTINES LOADED:', rdata);
-    routinesData = rdata || [];
-  }
-
-  // Now set both state values together
-  setRoutines(routinesData);
-  setWeeksData(weeksRows || []);
-  setIsLoadingRoutines(false);
-
-  // load cycle_sessions for mesocycle (if any) to help map scheduled dates and completion
-  try {
-    const { data: cs } = await supabase.from('cycle_sessions').select('id,scheduled_date,is_deload,is_complete,planned_volume_multiplier').eq('mesocycle_id', mesocycleId).order('scheduled_date', { ascending: true });
-    setSessions(cs || []);
-  } catch (err) {
-    // If the migration hasn't been applied yet (or column selection fails), fall back to using workout_logs only.
-    console.warn('Could not load cycle_sessions (possibly missing DB migration):', err?.message ?? err);
-    setSessions([]);
-  }
-
-        // Fetch ALL workout logs for the routines in this mesocycle (regardless of date)
-        // This allows users to complete workouts early or make up missed sessions
-        if (routineIds.length > 0) {
-          const { data: logs } = await supabase
-            .from('workout_logs')
-            .select('id,routine_id,created_at,is_complete')
-            .eq('user_id', user.id)
-            .in('routine_id', routineIds)
-            .eq('is_complete', true)
-            .order('created_at', { ascending: false });
-          
-          // Map logs by routine_id and date for lookup
-          const map = {};
-          (logs || []).forEach(l => {
-            const dateKey = toLocalDateString(new Date(l.created_at));
-            const key = `${l.routine_id}::${dateKey}`;
-            // Keep most recent log for each routine+date combo
-            if (!map[key]) {
-              map[key] = l;
-            }
-          });
-          setLogsMap(map);
-        } else {
-          setLogsMap({});
+        if (!m) {
+            setIsLoading(false);
+            return;
         }
+
+        // Fetch all week data for the mesocycle
+        // Now includes routine_name directly
+        const { data: weeksRows, error: weeksError } = await supabase
+          .from('mesocycle_weeks')
+          .select('*') // Select all columns, including the new routine_name
+          .eq('mesocycle_id', mesocycleId)
+          .order('week_index', { ascending: true })
+          .order('day_index', { ascending: true });
+
+        if (weeksError) {
+          // Attempt fallback for backwards compatibility if new columns fail
+          console.warn('Could not load all columns, falling back to basic select:', weeksError.message);
+          const { data: fallbackData, error: fallbackError } = await supabase.from('mesocycle_weeks').select('id,mesocycle_id,week_index,day_index,routine_id,notes').eq('mesocycle_id', mesocycleId).order('week_index', { ascending: true }).order('day_index', { ascending: true });
+          if(fallbackError) throw fallbackError;
+          setWeeksData(fallbackData || []);
+        } else {
+            setWeeksData(weeksRows || []);
+        }
+
       } catch (err) {
         console.error('Failed to load mesocycle detail', err.message ?? err);
+        setMesocycle(null);
+        setWeeksData([]);
+      } finally {
+        setIsLoading(false);
       }
-    })();
+    };
+
+    fetchMesocycleData();
   }, [mesocycleId, loading, user]);
 
   // Compute current week index based ONLY on completion status (no dates)
@@ -288,12 +244,12 @@ function MesocycleDetail() {
     const lastWeek = mesocycle.weeks || 1;
     setAutoCalculatedWeek(lastWeek);
     setCurrentWeekIndex(lastWeek);
-  }, [mesocycle, weeksData, sessions, logsMap]);
+  }, [mesocycle, weeksData]);
 
   // No generate function here — mesocycle renders week assignments directly
 
   // Don't render until both mesocycle and routines are loaded
-  if (!mesocycle || isLoadingRoutines) {
+  if (isLoading) {
     return (
       <div className="mesocycle-detail">
         <SubPageHeader title="Loading..." backTo="/mesocycles" />
@@ -413,8 +369,8 @@ function MesocycleDetail() {
               const routineId = entry.routine_id;
               const isDeload = entry.notes === 'deload' || entry.day_type === 'deload';
               // Determine display label: prefer routine name, then explicit notes (rest/deload), otherwise 'Unassigned'
-              let label = 'Unassigned';
-              if (routineId) label = routines.find(r => r.id === routineId)?.routine_name || 'Routine';
+              let label = entry.routine_name || 'Unassigned';
+              if (!entry.routine_name && routineId) label = 'Routine'; // Fallback if name is missing but ID exists
               else if (entry.notes === 'rest') label = 'Rest Day';
               else if (entry.notes === 'deload') label = 'Deload Day';
               else if (entry.notes) label = entry.notes;
@@ -425,7 +381,7 @@ function MesocycleDetail() {
               console.log('routineId:', routineId);
               console.log('label:', label);
               console.log('isDeload:', isDeload);
-              console.log('Routine found:', routines.find(r => r.id === routineId));
+
               console.log('===========================');
 
               // compute scheduled date for this week/day if we have a start date

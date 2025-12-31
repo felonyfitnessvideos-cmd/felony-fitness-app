@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ecuab70iNOrdw1dxilKh3N93s5GO6xVdUU5fFsoD52QFAIXKZ9eV10ZYrBKmcD4
+\restrict PhLV2vmhUToRNAyBCEWGbhaybg2BejQ36ZD2DqSie4YiQtwuNauvBzzWJeMi3tp
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.7
@@ -1969,72 +1969,39 @@ $$;
 --
 
 CREATE FUNCTION public.update_stats_on_mesocycle_complete() RETURNS trigger
-
     LANGUAGE plpgsql
-
-    AS $
-
-DECLARE
-
-  v_user_id UUID;
-
-BEGIN
-
-  -- Check if the is_complete flag was just flipped to true
-
-  IF NEW.is_complete = true AND (OLD.is_complete IS NULL OR OLD.is_complete = false) THEN
-
-    -- Get the user_id from the parent mesocycle
-
-    SELECT user_id INTO v_user_id
-
-    FROM public.mesocycles
-
-    WHERE id = NEW.mesocycle_id;
-
-
-
-    -- Proceed only if we found a user_id
-
-    IF v_user_id IS NOT NULL THEN
-
-      -- Update mesocycle count in user_stats
-
-      UPDATE public.user_stats SET
-
-        mesocycles_completed = user_stats.mesocycles_completed + 1,
-
-        total_xp = user_stats.total_xp + 500,
-
-        current_level = calculate_level(user_stats.total_xp + 500),
-
-        updated_at = NOW()
-
-      WHERE user_id = v_user_id;
-
-      
-
-      -- Log XP for mesocycle completion
-
-      INSERT INTO public.xp_transactions (user_id, amount, source, reference_id)
-
-      VALUES (v_user_id, 500, 'mesocycle_complete', NEW.id);
-
-      
-
-      -- Check mesocycle achievements
-
-      PERFORM public.check_and_award_achievements(v_user_id, 'mesocycle_complete');
-
-    END IF;
-
-  END IF;
-
-  RETURN NEW;
-
-END;
-
-$;
+    AS $$
+DECLARE
+  v_user_id UUID;
+BEGIN
+  -- Check if the is_complete flag was just flipped to true
+  IF NEW.is_complete = true AND (OLD.is_complete IS NULL OR OLD.is_complete = false) THEN
+    -- Get the user_id from the parent mesocycle
+    SELECT user_id INTO v_user_id
+    FROM public.mesocycles
+    WHERE id = NEW.mesocycle_id;
+
+    -- Proceed only if we found a user_id
+    IF v_user_id IS NOT NULL THEN
+      -- Update mesocycle count in user_stats
+      UPDATE public.user_stats SET
+        mesocycles_completed = user_stats.mesocycles_completed + 1,
+        total_xp = user_stats.total_xp + 500,
+        current_level = calculate_level(user_stats.total_xp + 500),
+        updated_at = NOW()
+      WHERE user_id = v_user_id;
+      
+      -- Log XP for mesocycle completion
+      INSERT INTO public.xp_transactions (user_id, amount, source, reference_id)
+      VALUES (v_user_id, 500, 'mesocycle_complete', NEW.id);
+      
+      -- Check mesocycle achievements
+      PERFORM public.check_and_award_achievements(v_user_id, 'mesocycle_complete');
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
 
 
 --
@@ -5830,6 +5797,14 @@ CREATE TABLE public.trainer_clients (
     exercise_restrictions text,
     program_type text,
     nutrition_coaching boolean DEFAULT false,
+    activity_level text,
+    age integer DEFAULT 0,
+    calculated_max_hr integer DEFAULT 0,
+    calculated_protein_g integer DEFAULT 50,
+    calculated_fat_g integer DEFAULT 5,
+    calculated_carbs_g integer DEFAULT 100,
+    lean_body_mass_lbs integer DEFAULT 0,
+    tdee bigint DEFAULT '0'::bigint,
     CONSTRAINT trainer_clients_status_check CHECK (((status)::text = ANY (ARRAY[('active'::character varying)::text, ('inactive'::character varying)::text, ('pending'::character varying)::text, ('blocked'::character varying)::text])))
 );
 
@@ -11260,5 +11235,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ecuab70iNOrdw1dxilKh3N93s5GO6xVdUU5fFsoD52QFAIXKZ9eV10ZYrBKmcD4
+\unrestrict PhLV2vmhUToRNAyBCEWGbhaybg2BejQ36ZD2DqSie4YiQtwuNauvBzzWJeMi3tp
 
