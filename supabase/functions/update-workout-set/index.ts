@@ -161,7 +161,7 @@ serve(async (req) => {
     // Verify the entry exists and belongs to user's workout log
     const { data: entry, error: fetchError } = await supabase
       .from("workout_log_entries")
-      .select("id, log_id")
+      .select("id, workout_log_id")
       .eq("id", entry_id)
       .maybeSingle();
 
@@ -183,7 +183,7 @@ serve(async (req) => {
     const { data: workoutLog, error: logError } = await supabase
       .from("workout_logs")
       .select("user_id")
-      .eq("id", entry.log_id)
+      .eq("id", entry.workout_log_id)
       .single();
 
     if (logError || !workoutLog || workoutLog.user_id !== user.id) {
@@ -194,7 +194,12 @@ serve(async (req) => {
     }
 
     // Build update object with only provided fields
-    const updateData: any = {};
+    interface UpdateData {
+      weight_lbs?: number;
+      reps_completed?: number;
+    }
+
+    const updateData: UpdateData = {};
     if (weight_lbs !== undefined && weight_lbs !== null) {
       updateData.weight_lbs = Number(weight_lbs);
     }
@@ -223,10 +228,11 @@ serve(async (req) => {
       JSON.stringify({ entry: updatedEntry }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Catch-all error handler for unexpected errors
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: err?.message || "Unknown error" }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

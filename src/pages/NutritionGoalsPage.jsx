@@ -40,42 +40,34 @@ function NutritionGoalsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const userId = user?.id;
-  /** @type {[NutritionGoals, React.Dispatch<React.SetStateAction<NutritionGoals>>]} */
   const [goals, setGoals] = useState({
     daily_calorie_goal: '',
-    daily_protein_goal: '',
-    daily_carb_goal: '',
-    daily_fat_goal: '',
+    daily_protein_goal_g: '',
+    daily_carb_goal_g: '',
+    daily_fat_goal_g: '',
     daily_water_goal_oz: ''
   });
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false); // <-- 2. ADDED new state
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
-  /**
-   * Fetches the user's current nutrition goals from their profile.
-   * @param {string} userId - The UUID of the authenticated user.
-   * @async
-   */
   const fetchGoals = useCallback(async (userId) => {
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('daily_calorie_goal, daily_protein_goal, daily_carb_goal, daily_fat_goal, daily_water_goal_oz')
+        .select('daily_calorie_goal, daily_protein_goal_g, daily_carb_goal_g, daily_fat_goal_g, daily_water_goal_oz')
         .eq('id', userId)
         .single();
 
-      // Ignore the "no rows found" error, as it's expected for new users.
       if (error && error.code !== 'PGRST116') throw error;
       
       if (data) {
-        // Populate the state with fetched data, using empty strings as a fallback.
         setGoals({
           daily_calorie_goal: data.daily_calorie_goal || '',
-          daily_protein_goal: data.daily_protein_goal || '',
-          daily_carb_goal: data.daily_carb_goal || '',
-          daily_fat_goal: data.daily_fat_goal || '',
+          daily_protein_goal_g: data.daily_protein_goal_g || '',
+          daily_carb_goal_g: data.daily_carb_goal_g || '',
+          daily_fat_goal_g: data.daily_fat_goal_g || '',
           daily_water_goal_oz: data.daily_water_goal_oz || ''
         });
       }
@@ -87,9 +79,6 @@ function NutritionGoalsPage() {
     }
   }, []);
 
-  // Effect to trigger the initial data fetch when the user session is available.
-  // Only depend on the user's id and the stable fetchGoals callback. This
-  // avoids unnecessary re-fetches when the user object's reference changes.
   useEffect(() => {
     if (userId) {
       fetchGoals(userId);
@@ -98,67 +87,57 @@ function NutritionGoalsPage() {
     }
   }, [userId, fetchGoals]);
 
-  /**
-   * NutritionGoalsPage — manage user's nutrition goals (calories, macros).
-   *
-   * Responsibilities:
-   * - load and persist nutrition goals to `user_profiles` or a goals table
-   * - show inline status messages instead of blocking alerts
-   *
-   * Notes:
-   * - guards are in place for staged DB deployments where columns may be
-   *   missing; UI shows best-effort state.
-   */
-  /**
-   * Handles changes to the form's input fields, updating the local state.
-   * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event.
-   */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    // Allow empty strings for clearing inputs, otherwise parse to a number.
-    setGoals(prev => ({ ...prev, [name]: value === '' ? '' : parseInt(value, 10) }));
+    setGoals(prev => ({ ...prev, [name]: value === '' ? '' : parseFloat(value) }));
   };
 
-  /**
-   * Saves the user's updated goals to the `user_profiles` table using an upsert operation.
-   * @async
-   */
   const handleSaveGoals = async () => {
     if (!user?.id) {
-      // Surface the inline status message instead of a blocking alert so
-      // assistive tech and page layout can display the message non-disruptively.
       setMessage('You must be logged in.');
       return;
     }
 
     setMessage('Saving...');
     try {
-      // Prepare the payload for Supabase, converting empty strings to null.
       const updates = {
-        id: user.id, // The primary key to identify the row for upserting.
         daily_calorie_goal: goals.daily_calorie_goal || null,
-        daily_protein_goal: goals.daily_protein_goal || null,
-        daily_carb_goal: goals.daily_carb_goal || null,
-        daily_fat_goal: goals.daily_fat_goal || null,
+        daily_protein_goal_g: goals.daily_protein_goal_g || null,
+        daily_carb_goal_g: goals.daily_carb_goal_g || null,
+        daily_fat_goal_g: goals.daily_fat_goal_g || null,
         daily_water_goal_oz: goals.daily_water_goal_oz || null,
       };
-      const { error } = await supabase.from('user_profiles').upsert(updates);
 
-      if (error) throw error;
+      const { data: profile, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      if (profile) {
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update(updates)
+          .eq('id', user.id);
+        if (updateError) throw updateError;
+      } else {
+        const insertPayload = { ...updates, id: user.id, theme: 'dark' };
+        const { error: insertError } = await supabase
+          .from('user_profiles')
+          .insert(insertPayload);
+        if (insertError) throw insertError;
+      }
       
-      // <-- 4. UPDATED this block -->
-      setMessage(''); // Clear "Saving..." message
-      setIsSuccessModalOpen(true); // Show success modal
+      setMessage('');
+      setIsSuccessModalOpen(true);
       
     } catch (error) {
       setMessage(`Error: ${error.message}`);
     }
   };
 
-  // <-- 3. ADDED new handler function -->
-  /**
-   * Closes the success modal and navigates the user to the dashboard.
-   */
   const handleCloseSuccessModal = () => {
     setIsSuccessModalOpen(false);
     navigate('/dashboard');
@@ -213,8 +192,8 @@ function NutritionGoalsPage() {
             <input 
               type="number" 
               id="protein"
-              name="daily_protein_goal"
-              value={goals.daily_protein_goal || ''}
+              name="daily_protein_goal_g"
+              value={goals.daily_protein_goal_g || ''}
               onChange={handleInputChange}
               placeholder="e.g., 150" 
             />
@@ -228,8 +207,8 @@ function NutritionGoalsPage() {
             <input 
               type="number" 
               id="carbs"
-              name="daily_carb_goal"
-              value={goals.daily_carb_goal || ''}
+              name="daily_carb_goal_g"
+              value={goals.daily_carb_goal_g || ''}
               onChange={handleInputChange}
               placeholder="e.g., 250" 
             />
@@ -243,8 +222,8 @@ function NutritionGoalsPage() {
             <input 
               type="number" 
               id="fat"
-              name="daily_fat_goal"
-              value={goals.daily_fat_goal || ''}
+              name="daily_fat_goal_g"
+              value={goals.daily_fat_goal_g || ''}
               onChange={handleInputChange}
               placeholder="e.g., 70" 
             />
@@ -254,14 +233,12 @@ function NutritionGoalsPage() {
         <button className="save-goals-button" onClick={handleSaveGoals}>
           Save Goals
         </button>
-        {/* Live region for assistive tech: always present but empty when no message */}
         <div className="status-message" role="status" aria-live="polite" aria-atomic="true">{message || ''}</div>
       </div>
 
-      {/* <-- 5. ADDED the new Modal component --> */}
       <Modal
         isOpen={isSuccessModalOpen}
-        onRequestClose={handleCloseSuccessModal} // Closes modal if user clicks outside
+        onRequestClose={handleCloseSuccessModal}
         contentLabel="Success"
         overlayClassName="custom-modal-overlay"
         className="custom-modal-content"
@@ -271,9 +248,9 @@ function NutritionGoalsPage() {
           <div className="action-footer" style={{justifyContent: 'center'}}>
             <button 
               type="button" 
-              className="save-goals-button" // Re-using your button style
+              className="save-goals-button"
               onClick={handleCloseSuccessModal}
-              style={{marginTop: '1rem'}} // Added a little space
+              style={{marginTop: '1rem'}}
             >
               OK
             </button>

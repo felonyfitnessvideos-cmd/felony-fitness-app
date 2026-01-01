@@ -190,7 +190,9 @@
 /**
  * Generic form styles, likely used within a modal for adding/editing goals.
  */
-.form-group, .form-row, .action-footer {
+.form-group,
+.form-row,
+.action-footer {
   margin-bottom: 1rem;
 }
 .form-group label {
@@ -199,6 +201,7 @@
   font-size: 0.9rem;
 }
 .form-group input {
+  box-sizing: border-box;
   width: 100%;
   padding: 0.8rem;
   background-color: var(--background-color);
@@ -216,7 +219,8 @@
   justify-content: flex-end;
   gap: 1rem;
 }
-.cancel-button, .save-button {
+.cancel-button,
+.save-button {
   padding: 0.8rem 1.5rem;
   border: none;
   border-radius: 8px;
@@ -251,7 +255,7 @@
   padding: 2rem 1.5rem;
   max-width: 400px;
   width: 100%;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
   position: relative;
   z-index: 1010;
   color: var(--text-primary, #fff);

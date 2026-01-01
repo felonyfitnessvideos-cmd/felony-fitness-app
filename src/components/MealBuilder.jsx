@@ -91,23 +91,30 @@ const MealBuilder = ({
    * Loads existing meal data for editing mode or resets form for new meal
    */
   useEffect(() => {
-    if (editingMeal) {
+    if (isOpen && editingMeal) {
       setMealData({
-        name: editingMeal.name || '',
+        name: editingMeal.custom_name || editingMeal.name || '',
         category: editingMeal.category || 'breakfast',
-        tags: editingMeal.tags || []
+        tags: editingMeal.tags || [],
       });
 
-      // Load existing meal foods if editing
-      if (editingMeal.id) {
-        loadMealFoods(editingMeal.id);
-      }
+      // Use the `user_meal_foods` array passed directly in the `editingMeal` prop.
+      // This is more efficient as it avoids a redundant network request.
+      const initialFoods = (editingMeal.user_meal_foods || []).map(item => ({
+        ...item,
+        // Defensively ensure the nested `foods` object exists. If it's null
+        // (e.g., due to a broken foreign key), substitute a placeholder to
+        // prevent the component from crashing on render.
+        foods: item.foods || { name: 'Unknown/Deleted Food', calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 },
+      }));
+      setMealFoods(initialFoods);
+
     } else {
-      // Reset form for new meal
+      // Reset form for a new meal.
       setMealData({
         name: '',
         category: 'breakfast',
-        tags: []
+        tags: [],
       });
       setMealFoods([]);
     }
@@ -123,6 +130,11 @@ const MealBuilder = ({
     const totals = mealFoods.reduce((acc, item) => {
       const food = item.foods;
       const quantity = item.quantity || 0;
+
+      // Ensure food object exists before trying to access its properties
+      if (!food) {
+        return acc;
+      }
 
       return {
         calories: acc.calories + (food.calories * quantity || 0),
@@ -160,54 +172,8 @@ const MealBuilder = ({
     };
   }, []);
 
-  /**
-   * Load existing meal foods from database for editing mode
-   * Fetches meal foods with their associated food_servings data including nutrition information
-   * and maps them to the component's expected format for display and editing
-   * 
-   * @async
-   * @param {number} mealId - ID of the meal to load foods for
-   * @returns {Promise<void>}
-   * @throws {Error} When database query fails or meal foods cannot be loaded
-   * 
-   * @example
-   * await loadMealFoods(123); // Loads foods for meal ID 123
-   */
-  const loadMealFoods = async (mealId) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_meal_foods')  // Changed from meal_foods to user_meal_foods
-        .select(`
-          *,
-          foods (
-            id,
-            name,
-            calories,
-            protein_g,
-            carbs_g,
-            fat_g
-          )
-        `)
-        .eq('user_meal_id', mealId);  // Changed from meal_id to user_meal_id
-
-      if (error) throw error;
-
-
-      // Map the data to match the expected structure
-      const mappedFoods = data.map(item => ({
-        id: item.id,
-        food_id: item.food_id, // Use new DB column name
-        quantity: item.quantity,
-        notes: item.notes,
-        foods: item.foods
-      }));
-
-      setMealFoods(mappedFoods);
-    } catch (error) {
-      // Error loading meal foods - log for debugging
-      console.error('[MealBuilder] Error loading meal foods:', error);
-    }
-  };
+  // The `loadMealFoods` function is no longer needed because the meal data,
+  // including its foods, is now passed directly via the `editingMeal` prop.
 
   /**
    * Search for foods using comprehensive database and external API search

@@ -62,6 +62,7 @@ function MesocycleBuilder() {
   const location = useLocation();
   const query = new URLSearchParams(location.search);
   const editingMesocycleId = query.get('mesocycleId');
+  const [originalWeeks, setOriginalWeeks] = useState([]);
 
   useEffect(() => {
     // If mesocycleId provided, load existing mesocycle and weeks for editing
@@ -81,6 +82,7 @@ function MesocycleBuilder() {
           const { data: wdata } = await supabase.from('mesocycle_weeks').select('*').eq('mesocycle_id', editingMesocycleId);
           if (!mounted) return;
             if (wdata && wdata.length > 0) {
+            setOriginalWeeks(wdata);
             // Derive type explicitly for readability and future maintenance:
             // - explicit note values ('rest' | 'deload') take precedence
             // - if a routine_id exists it's a 'routine'
@@ -143,11 +145,19 @@ function MesocycleBuilder() {
         // Ensure a user_profile row exists for this user so foreign key constraints
         // on mesocycles (which reference user_profiles.id) won't fail.
         // Use upsert so this is a no-op if the profile already exists.
-        const { error: profileErr } = await supabase.from('user_profiles').upsert({ id: user.id });
-        if (profileErr) {
-          console.warn('user_profiles upsert warning', profileErr.message || profileErr);
-          setErrorMessage('Could not ensure user profile exists: ' + (profileErr.message || String(profileErr)));
+        const { data: profile, error: fetchError } = await supabase.from('user_profiles').select('id').eq('id', user.id).maybeSingle();
+        if (fetchError) {
+          setErrorMessage('Could not check for user profile: ' + (fetchError.message || String(fetchError)));
           return;
+        }
+
+        if (!profile) {
+          const { error: insertError } = await supabase.from('user_profiles').insert({ id: user.id, theme: 'dark' });
+          if (insertError) {
+            console.warn('user_profiles insert warning', insertError.message || insertError);
+            setErrorMessage('Could not create user profile: ' + (insertError.message || String(insertError)));
+            return;
+          }
         }
 
         const payload = {
@@ -188,12 +198,18 @@ function MesocycleBuilder() {
         if (assignments && assignments.length > 0) {
           for (const a of assignments) {
             let routineId = a.type === 'routine' ? a.routine_id : null;
+            
+            const originalWeek = editingMesocycleId ? originalWeeks.find(w => w.week_index === a.week_index && w.day_index === a.day_index) : null;
+            
             toInsert.push({
               mesocycle_id: mesocycleId,
               week_index: a.week_index,
               day_index: a.day_index,
               routine_id: routineId,
               notes: a.type === 'rest' || a.type === 'deload' ? a.type : null,
+              is_complete: originalWeek ? originalWeek.is_complete : false,
+              completed_at: originalWeek ? originalWeek.completed_at : null,
+              skipped: originalWeek ? originalWeek.skipped : false,
             });
           }
         } else {

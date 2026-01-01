@@ -306,13 +306,13 @@ function WorkoutGoalsPage() {
               <input name="goal_description" value={newGoal.goal_description} onChange={handleInputChange} required />
             </div>
             <div className="form-group" style={{ marginBottom: '1.5rem', width: '100%' }}>
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   name="isWeightGoal"
                   checked={!!newGoal.isWeightGoal}
                   onChange={e => setNewGoal({ ...newGoal, isWeightGoal: e.target.checked })}
-                  style={{ marginRight: '0.5rem' }}
+                  style={{ marginRight: '0.25rem' }}
                 />
                 Select if this is a weight related goal
               </label>
