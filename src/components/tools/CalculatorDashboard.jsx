@@ -279,11 +279,11 @@ const CalculatorDashboard = () => {
   useEffect(() => {
     const loadClients = async () => {
       if (!user?.id) {
-        console.log('📊 [CalculatorDashboard] No user ID available');
+        // console.log('📊 [CalculatorDashboard] No user ID available');
         return;
       }
       
-      console.log('📊 [CalculatorDashboard] Loading clients for user:', user.id);
+      // console.log('📊 [CalculatorDashboard] Loading clients for user:', user.id);
       
       try {
         const { data, error } = await supabase
@@ -317,7 +317,7 @@ const CalculatorDashboard = () => {
           return;
         }
 
-        console.log('📊 [CalculatorDashboard] Raw client data:', data);
+        // console.log('📊 [CalculatorDashboard] Raw client data:', data);
         
         const formattedClients = (data || []).map(row => {
           const profile = row.user_profiles;
@@ -334,7 +334,7 @@ const CalculatorDashboard = () => {
           };
         });
         
-        console.log('📊 [CalculatorDashboard] Formatted clients:', formattedClients);
+        // console.log('📊 [CalculatorDashboard] Formatted clients:', formattedClients);
         setClients(formattedClients);
       } catch (error) {
         console.error('❌ [CalculatorDashboard] Error loading clients:', error);
@@ -354,7 +354,7 @@ const CalculatorDashboard = () => {
     const client = clients.find(c => c.id === selectedClientId);
     if (!client) return;
 
-    console.log('📊 [CalculatorDashboard] Populating calculators for client:', client.full_name);
+    // console.log('📊 [CalculatorDashboard] Populating calculators for client:', client.full_name);
 
     // Populate Body Comp data
     setBodyCompData({
@@ -494,6 +494,23 @@ const CalculatorDashboard = () => {
     try {
       await updateClientMetrics(selectedClientId, category, data, inputs);
       setSaveStatus('✅ Saved successfully!');
+
+      // Manually update the results object with a new timestamp to refresh the UI
+      const timestampedData = {
+        ...data,
+        lastUpdated: new Date().toISOString()
+      };
+
+      if (category === 'strength') {
+        setStrengthResults(timestampedData);
+      } else if (category === 'bodyComp') {
+        setBodyCompResults(timestampedData);
+      } else if (category === 'heartRate') {
+        setHeartRateResults(timestampedData);
+      } else if (category === 'macros') {
+        setMacroResults(timestampedData);
+      }
+
       setTimeout(() => setSaveStatus(''), 3000);
     } catch (error) {
       console.error('Error saving metrics:', error);

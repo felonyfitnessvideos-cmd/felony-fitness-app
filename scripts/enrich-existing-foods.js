@@ -65,7 +65,6 @@ async function main() {
   
   // Create lookup map of database food IDs
   const dbFoodIds = new Set(dbFoods.map(f => f.id));
-  const _dbFoodNames = new Map(dbFoods.map(f => [f.id, f.name]));
   
   // Step 2: Load USDA food.csv - only keep foods that exist in our DB
   console.log('📥 Step 2: Loading USDA food.csv (filtering to our foods)...');

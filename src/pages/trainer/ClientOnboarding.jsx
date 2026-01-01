@@ -102,7 +102,7 @@ const ClientOnboarding = () => {
     exerciseRestrictions: '',
 
     // Program Details
-    programType: '',
+    additional_programs: '',
     nutritionCoaching: false,
     startDate: '',
     notes: ''
@@ -194,7 +194,7 @@ const ClientOnboarding = () => {
           sessionLength: existingClient.session_length || '',
           exercisePreferences: existingClient.exercise_preferences || [],
           exerciseRestrictions: existingClient.exercise_restrictions || '',
-          programType: existingClient.program_type || '',
+          additional_programs: existingClient.additional_programs || '',
           nutritionCoaching: existingClient.nutrition_coaching || false,
           startDate: existingClient.start_date || '',
           notes: existingClient.notes || ''
@@ -333,7 +333,7 @@ const ClientOnboarding = () => {
           exercise_preferences: formData.exercisePreferences,
           exercise_restrictions: formData.exerciseRestrictions,
           // Program Details
-          program_type: formData.programType,
+          additional_programs: formData.additional_programs || null,
           nutrition_coaching: formData.nutritionCoaching,
           start_date: formData.startDate,
           // Optionally still allow notes
@@ -411,7 +411,7 @@ const ClientOnboarding = () => {
           injuries: '', allergies: '', doctorClearance: false, primaryGoal: '',
           secondaryGoals: [], targetWeight: '', timeframe: '', workoutDays: [],
           preferredTime: '', sessionLength: '', exercisePreferences: [],
-          exerciseRestrictions: '', programType: '', nutritionCoaching: false,
+          exerciseRestrictions: '', additional_programs: '', nutritionCoaching: false,
           startDate: '', notes: ''
         });
         setCurrentSection('personal');
@@ -868,16 +868,17 @@ const ClientOnboarding = () => {
       <h3>Program Details</h3>
 
       <div className="form-group">
-        <label>Program Type</label>
+        <label>Additional Programs</label>
         <select
-          value={formData.programType}
-          onChange={(e) => handleInputChange('programType', e.target.value)}
+          value={formData.additional_programs}
+          onChange={(e) => handleInputChange('additional_programs', e.target.value)}
         >
           <option value="">Select Program Type</option>
           <option value="personal-training">Personal Training</option>
-          <option value="small-group">Small Group Training</option>
+          <option value="small-group-training">Small Group Training</option>
           <option value="online-coaching">Online Coaching</option>
-          <option value="hybrid">Hybrid (In-person + Online)</option>
+          <option value="hybrid-in-person-and-online">Hybrid (In-person + Online)</option>
+          <option value="None">None</option>
         </select>
       </div>
 

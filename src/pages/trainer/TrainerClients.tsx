@@ -24,10 +24,15 @@
 import { Activity, Calendar, Mail, Phone, Search, UserPlus } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Client } from '../../types';
 import { updateClientNotes } from '../../services/trainerService.js';
 import { useAuth } from '../../AuthContext.jsx';
 import { supabase } from '../../supabaseClient.js';
 import './TrainerClients.css';
+
+interface TrainerClientsProps {
+  onClientSelect: (client: Client | null) => void;
+}
 
 /**
  * TrainerClients Component
@@ -45,11 +50,11 @@ import './TrainerClients.css';
  */
 
 
-export function TrainerClients({ onClientSelect }) {
-  const [clients, setClients] = useState([]);
-  const [filteredClients, setFilteredClients] = useState([]);
+export function TrainerClients({ onClientSelect }: TrainerClientsProps) {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedClient, setExpandedClient] = useState(null);
+  const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [clientNotes, setClientNotes] = useState('');
   const [notesSaving, setNotesSaving] = useState(false);
   const [loading, setLoading] = useState(true);

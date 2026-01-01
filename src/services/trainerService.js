@@ -1,31 +1,24 @@
 /**
  * @file trainerService.js
- * @description Service layer for trainer-specific operations
+ * @description Service layer for trainer-specific operations.
+ * This version is refactored to work directly with denormalized columns
+ * in the trainer_clients table, removing the dependency on a 'metrics' JSON blob.
  * @author Felony Fitness Development Team
- * @version 1.0.0
+ * @version 1.1.0
  * @project Felony Fitness
  */
 
 import { supabase } from '../supabaseClient';
 
 /**
- * Update client metrics in trainer_clients table
- * Merges new data with existing metrics JSON object
+ * Update denormalized client metric columns in the trainer_clients table.
  * 
  * @param {string} clientId - UUID of the client in trainer_clients table
- * @param {string} category - Metric category ('strength', 'bodyComp', 'heartRate', 'macros')
- * @param {Object} data - The data object to save
- * @returns {Promise<Object>} Updated metrics object
+ * @param {string} category - The category of metrics being updated ('bodyComp', 'heartRate', 'macros')
+ * @param {Object} data - The calculated data object
+ * @param {Object} inputs - The raw user inputs
+ * @returns {Promise<Object>} The payload sent for the update
  * @throws {Error} If update fails
- * 
- * @example
- * await updateClientMetrics(clientId, 'strength', {
- *   liftName: 'Bench Press',
- *   weight: 225,
- *   reps: 5,
- *   oneRepMax: 264,
- *   timestamp: new Date().toISOString()
- * });
  */
 export const updateClientMetrics = async (clientId, category, data, inputs) => {
   if (!clientId || !category || !data) {
@@ -33,36 +26,11 @@ export const updateClientMetrics = async (clientId, category, data, inputs) => {
   }
 
   try {
-    // Fetch current metrics first
-    const { data: client, error: fetchError } = await supabase
-      .from('trainer_clients')
-      .select('metrics')
-      .eq('id', clientId)
-      .single();
-
-    if (fetchError) {
-      console.error('❌ Error fetching client metrics:', fetchError);
-      throw fetchError;
-    }
-
-    // Merge new data with timestamp
-    const currentMetrics = client?.metrics || {};
-    const timestampedData = {
-      ...data,
-      lastUpdated: new Date().toISOString()
-    };
-    const updatedMetrics = { 
-      ...currentMetrics, 
-      [category]: timestampedData 
-    };
-
-    // Prepare the main update payload
     const updatePayload = {
-      metrics: updatedMetrics,
       updated_at: new Date().toISOString()
     };
 
-    // Add denormalized fields based on category
+    // Add denormalized fields to payload based on the calculator category
     if (category === 'bodyComp' && inputs) {
       if (inputs.weight) updatePayload.weight = parseFloat(inputs.weight);
       if (inputs.height) updatePayload.height = parseFloat(inputs.height);
@@ -74,8 +42,8 @@ export const updateClientMetrics = async (clientId, category, data, inputs) => {
     }
 
     if (category === 'heartRate' && inputs) {
-      if (inputs.age) updatePayload.age = parseInt(inputs.age);
-      if (inputs.restingHR) updatePayload.resting_heart_rate = parseInt(inputs.restingHR);
+      if (inputs.age) updatePayload.age = parseInt(inputs.age, 10);
+      if (inputs.restingHR) updatePayload.resting_heart_rate = parseInt(inputs.restingHR, 10);
       if (data.maxHR) updatePayload.calculated_max_hr = data.maxHR;
     }
     
@@ -85,19 +53,25 @@ export const updateClientMetrics = async (clientId, category, data, inputs) => {
         if (data.carbs?.g) updatePayload.calculated_carbs_g = data.carbs.g;
     }
 
-    // Save back to database
+    // Do not send an update to Supabase if only `updated_at` is present
+    if (Object.keys(updatePayload).length <= 1) {
+      // console.log(`No direct columns to update for category: ${category}. Skipping database call.`);
+      return {};
+    }
+
+    // Save the updated columns back to the database
     const { error: updateError } = await supabase
       .from('trainer_clients')
       .update(updatePayload)
       .eq('id', clientId);
     
     if (updateError) {
-      console.error('❌ Error updating client metrics:', updateError);
+      console.error('❌ Error updating client columns:', updateError);
       throw updateError;
     }
 
-    console.log('✅ Client metrics and denormalized columns updated successfully:', category);
-    return updatedMetrics;
+    // console.log(`✅ Client columns updated successfully for category: ${category}`);
+    return updatePayload; // Return the payload that was sent
   } catch (error) {
     console.error('❌ Error in updateClientMetrics:', error);
     throw error;
@@ -105,43 +79,25 @@ export const updateClientMetrics = async (clientId, category, data, inputs) => {
 };
 
 /**
- * Fetch client metrics from trainer_clients table
+ * @deprecated This function is deprecated as the 'metrics' column is no longer in use.
+ * Fetches client metrics from trainer_clients table.
+ * Returns an empty object to avoid breaking legacy calls.
  * 
  * @param {string} clientId - UUID of the client in trainer_clients table
- * @returns {Promise<Object>} Metrics object or empty object
- * 
- * @example
- * const metrics = await getClientMetrics(clientId);
- * console.log(metrics.strength); // Access strength metrics
+ * @returns {Promise<Object>} Empty object
  */
 export const getClientMetrics = async (clientId) => {
   if (!clientId) {
-    throw new Error('clientId is required');
+    return Promise.resolve({});
   }
-
-  try {
-    const { data, error } = await supabase
-      .from('trainer_clients')
-      .select('metrics')
-      .eq('id', clientId)
-      .single();
-
-    if (error) {
-      console.error('❌ Error fetching client metrics:', error);
-      throw error;
-    }
-
-    return data?.metrics || {};
-  } catch (error) {
-    console.error('❌ Error in getClientMetrics:', error);
-    throw error;
-  }
+  console.warn('`getClientMetrics` is deprecated as the `metrics` column is no longer in use. Fetch individual client columns instead.');
+  return Promise.resolve({});
 };
 
 /**
- * Fetch client details (notes + metrics) from trainer_clients row
+ * Fetches client details (notes and calculator-related columns) from a trainer_clients row.
  * @param {string} relationshipId - UUID of the trainer_clients row
- * @returns {Promise<Object>} { notes: string|null, metrics: Object }
+ * @returns {Promise<Object>} An object containing client details.
  */
 export const getClientDetails = async (relationshipId) => {
   if (!relationshipId) throw new Error('relationshipId is required');
@@ -149,7 +105,7 @@ export const getClientDetails = async (relationshipId) => {
   try {
     const { data, error } = await supabase
       .from('trainer_clients')
-      .select('notes, metrics')
+      .select('notes, weight, height, gender, activity_level, body_fat_percentage, lean_body_mass_lbs, tdee, age, resting_heart_rate, date_of_birth, calculated_max_hr, calculated_protein_g, calculated_fat_g, calculated_carbs_g')
       .eq('id', relationshipId)
       .single();
 
@@ -158,15 +114,13 @@ export const getClientDetails = async (relationshipId) => {
       throw error;
     }
 
-    return {
-      notes: data?.notes ?? null,
-      metrics: data?.metrics || {}
-    };
+    return data || {};
   } catch (error) {
     console.error('❌ Error in getClientDetails:', error);
     throw error;
   }
 };
+
 
 /**
  * Update notes for a trainer_clients row
@@ -196,42 +150,14 @@ export const updateClientNotes = async (relationshipId, notes) => {
 };
 
 /**
- * Delete a specific metric category from client profile
+ * @deprecated This function is deprecated as it operated on the 'metrics' JSON object.
+ * To clear metrics, update the specific columns to null via a dedicated function if needed.
  * 
  * @param {string} clientId - UUID of the client
  * @param {string} category - Category to delete
- * @returns {Promise<Object>} Updated metrics object
+ * @returns {Promise<Object>} Empty object
  */
-export const deleteClientMetric = async (clientId, category) => {
-  if (!clientId || !category) {
-    throw new Error('clientId and category are required');
-  }
-
-  try {
-    const { data: client, error: fetchError } = await supabase
-      .from('trainer_clients')
-      .select('metrics')
-      .eq('id', clientId)
-      .single();
-
-    if (fetchError) throw fetchError;
-
-    const currentMetrics = client?.metrics || {};
-    delete currentMetrics[category];
-
-    const { error: updateError } = await supabase
-      .from('trainer_clients')
-      .update({ 
-        metrics: currentMetrics,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', clientId);
-    
-    if (updateError) throw updateError;
-
-    return currentMetrics;
-  } catch (error) {
-    console.error('❌ Error in deleteClientMetric:', error);
-    throw error;
-  }
+export const deleteClientMetric = async (_clientId, _category) => {
+  console.warn('`deleteClientMetric` is deprecated. To clear metrics, update the specific columns to null.');
+  return Promise.resolve({});
 };

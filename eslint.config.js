@@ -3,54 +3,167 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import globals from 'globals'
+import typescriptEslint from '@typescript-eslint/eslint-plugin'
+import tsParser from '@typescript-eslint/parser'
+
+// Manually extracted rules from typescriptEslint.configs.recommended
+const tsRecommendedRules = {
+  "@typescript-eslint/ban-ts-comment": "error",
+  "no-array-constructor": "off",
+  "@typescript-eslint/no-array-constructor": "error",
+  "@typescript-eslint/no-duplicate-enum-values": "error",
+  "@typescript-eslint/no-empty-object-type": "error",
+  "@typescript-eslint/no-explicit-any": "error",
+  "@typescript-eslint/no-extra-non-null-assertion": "error",
+  "@typescript-eslint/no-misused-new": "error",
+  "@typescript-eslint/no-namespace": "error",
+  "@typescript-eslint/no-non-null-asserted-optional-chain": "error",
+  "@typescript-eslint/no-require-imports": "error",
+  "@typescript-eslint/no-this-alias": "error",
+  "@typescript-eslint/no-unnecessary-type-constraint": "error",
+  "@typescript-eslint/no-unsafe-declaration-merging": "error",
+  "@typescript-eslint/no-unsafe-function-type": "error",
+  "no-unused-expressions": "off",
+  "@typescript-eslint/no-unused-expressions": "error",
+  "no-unused-vars": "off",
+  "@typescript-eslint/no-unused-vars": "error",
+  "@typescript-eslint/no-wrapper-object-types": "error",
+  "@typescript-eslint/prefer-as-const": "error",
+  "@typescript-eslint/prefer-namespace-keyword": "error",
+  "@typescript-eslint/triple-slash-reference": "error"
+};
+
 
 export default defineConfig([
-  // Centralized ignore patterns (migrated from .eslintignore)
   globalIgnores([
-    'dist',
-    'node_modules',
-    'public',
-    'supabase/functions/**/*.ts',
-    'supabase/database.types.ts', // Auto-generated Supabase types
-    'src/database.types.ts',
-    'src/types/**/*.ts', // Ignore TypeScript type files
-    'OldFiles/**/*',
-    'backups/**/*'
+    'dist', 'node_modules', 'public', 'OldFiles/**/*', 'backups/**/*'
   ]),
+
+  // Base JavaScript rules (applies to all files unless overridden)
+  js.configs.recommended,
+
+  // Configuration for JavaScript and JSX files (no TypeScript-specific parser options)
   {
-    // Additional explicit ignores via top-level `ignores` for clarity
-    ignores: ['*.log'],
     files: ['**/*.{js,jsx}'],
-    extends: [
-      js.configs.recommended,
-      reactHooks.configs['recommended-latest'],
-      reactRefresh.configs.vite,
-    ],
     languageOptions: {
-      // Consolidated ECMAScript target for project
       ecmaVersion: 2024,
+      sourceType: 'module',
       globals: {
         ...globals.browser,
-        process: 'readonly', // Allow process for environment checks
+        process: 'readonly',
+        React: 'readonly', // Explicitly add React global
       },
+      parser: tsParser, // Use tsParser even for JS/JSX for consistency and JSX support
       parserOptions: {
-        ecmaVersion: 2024,
         ecmaFeatures: { jsx: true },
-        sourceType: 'module',
+        // No project here, as it's for JS/JSX
       },
     },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
     rules: {
-      'no-unused-vars': ['error', {
-        varsIgnorePattern: '^[A-Z_]|^IconComponent$',
-        argsIgnorePattern: '^_|^IconComponent$',
-        destructuredArrayIgnorePattern: '^_'
+      ...reactHooks.configs['recommended-latest'].rules,
+      ...reactRefresh.configs.recommended.rules,
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      // Configure @typescript-eslint/no-unused-vars to ignore variables starting with an underscore
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_'
       }],
       'no-undef': 'error',
     },
   },
-  // Test files configuration
+
+  // Configuration for main application TypeScript and TSX files (under src/)
   {
-    files: ['**/*.test.{js,jsx}', '**/test/**/*.{js,jsx}', '**/tests/**/*.{js,jsx}', '**/src/__tests__/**/*.{js,jsx}'],
+    files: ['src/**/*.{ts,tsx}'], // Only apply project to files under src/
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 2024,
+        sourceType: 'module',
+        ecmaFeatures: { jsx: true },
+        project: './tsconfig.json', // Enable type-aware linting for TS files
+      },
+      globals: {
+        ...globals.browser,
+        process: 'readonly',
+        React: 'readonly', // Explicitly add React global
+      },
+    },
+    plugins: {
+      '@typescript-eslint': typescriptEslint,
+    },
+    rules: {
+      ...tsRecommendedRules, // Manually apply the extracted rules
+      // Override no-unused-vars from tsRecommendedRules to ignore variables starting with an underscore
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_'
+      }],
+    },
+  },
+
+  // Configuration for other TypeScript files (like database.types.ts, but NOT supabase/functions)
+  // These files are outside src/ and might not be part of the main tsconfig.json.
+  // We'll lint them as TS but without project-based rules.
+  {
+    files: ['**/*.ts', '!src/**/*.{ts,tsx}', '!supabase/functions/**/*.{ts,js}'], // All .ts files EXCEPT those under src/ or supabase/functions/
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 2024,
+        sourceType: 'module',
+        ecmaFeatures: { jsx: true },
+        // NO project here
+      },
+      globals: {
+        ...globals.browser,
+        process: 'readonly',
+        NodeJS: 'readonly', // Add NodeJS global if these are also Node.js related
+        console: 'readonly',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': typescriptEslint,
+    },
+    rules: {
+      ...tsRecommendedRules, // Apply recommended rules, but without project context
+      // Override no-unused-vars from tsRecommendedRules to ignore variables starting with an underscore
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_'
+      }],
+    },
+  },
+
+  // Configuration for project-level JavaScript files (like eslint.config.js, vite.config.js)
+  {
+    files: ['*.js', '*.config.js', '*.mjs'], // Target JavaScript config files
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: 'module',
+      globals: {
+        ...globals.node, // Ensure Node.js globals for config files
+        NodeJS: 'readonly', // Add NodeJS global
+        console: 'readonly', // Explicitly allow console for these files
+      },
+      // Do NOT set parserOptions.project here
+    },
+    rules: {
+      'no-console': 'off', // Allow console in config files
+      'no-undef': 'error', // Ensure basic undef checks
+    },
+  },
+
+  // Test files configuration (re-introducing with tsParser for TS/TSX files)
+  {
+    files: ['**/*.test.{js,jsx,ts,tsx}', '**/test/**/*.{js,jsx,ts,tsx}', '**/tests/**/*.{js,jsx,ts,tsx}', '**/src/__tests__/**/*.{js,jsx,ts,tsx}'],
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -59,34 +172,45 @@ export default defineConfig([
         global: 'readonly',
         describe: 'readonly',
         it: 'readonly',
-        test: 'readonly', // Added for Jest
-        jest: 'readonly', // Added for Jest
+        test: 'readonly',
+        jest: 'readonly',
         expect: 'readonly',
         beforeEach: 'readonly',
         afterEach: 'readonly',
         beforeAll: 'readonly',
         afterAll: 'readonly',
+        React: 'readonly', // Explicitly add React global for tests
+        NodeJS: 'readonly', // Explicitly add NodeJS global for tests
+        console: 'readonly',
+      },
+      parser: tsParser,
+      parserOptions: {
+        project: './tsconfig.json',
       },
     },
+    plugins: {
+        '@typescript-eslint': typescriptEslint,
+    },
     rules: {
-      'no-unused-vars': ['error', { 
+      'no-unused-vars': ['error', {
         varsIgnorePattern: '^[A-Z_]|^_',
         argsIgnorePattern: '^_',
         destructuredArrayIgnorePattern: '^_'
       }],
     },
   },
-  // Lint Node scripts with a Node environment and appropriate parser options
-  // Ensure scripts and backend functions are linted with Node globals and
-  // do NOT receive browser globals from the top-level override above.
+
+  // Node scripts
   {
-    files: ['scripts/**/*.{js,mjs}', 'lighthouserc.js', 'test-*.js', '*.config.js', '*.config.mjs'],
+    files: ['scripts/**/*.{js,mjs}', 'lighthouserc.js'], // Specific Node scripts, excluding config files covered above
     languageOptions: {
       globals: {
         ...globals.node,
-        __dirname: 'readonly', // Added for Node.js
-        __filename: 'readonly', // Added for Node.js
-        global: 'readonly', // Added for Node.js
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        global: 'readonly',
+        NodeJS: 'readonly', // Add NodeJS global
+        console: 'readonly', // Allow console for scripts
       },
       parserOptions: {
         ecmaVersion: 2024,
@@ -94,17 +218,16 @@ export default defineConfig([
       },
     },
     rules: {
-      // Allow commonjs style in scripts where necessary
       'no-console': 'off'
     }
   },
-  // Supabase Edge Functions (Deno environment) - ignore TypeScript parsing
+
+  // Supabase Edge Functions
   {
     files: ['supabase/functions/**/*.{js,ts}'],
-    ignores: ['supabase/functions/**/*.ts'], // Skip TypeScript files to avoid parsing errors
     languageOptions: {
       globals: {
-        ...globals.browser, // Basic globals
+        ...globals.browser,
         Deno: 'readonly',
         Request: 'readonly',
         Response: 'readonly',
@@ -121,16 +244,23 @@ export default defineConfig([
         Promise: 'readonly',
         Error: 'readonly',
         RegExp: 'readonly',
+        NodeJS: 'readonly', // Add NodeJS global if needed
+        getCurrentUserId: 'readonly', // Add Supabase global
       },
+      parser: tsParser,
       parserOptions: {
         ecmaVersion: 2024,
         sourceType: 'module',
+        // REMOVED project: './tsconfig.json'
       },
+    },
+    plugins: {
+        '@typescript-eslint': typescriptEslint,
     },
     rules: {
       'no-console': 'off',
       'no-unused-vars': ['error', { args: 'none', varsIgnorePattern: '^_' }],
-      'no-undef': 'error', // Restore undef protection now that globals are properly defined
+      'no-undef': 'error',
     }
   }
 ])

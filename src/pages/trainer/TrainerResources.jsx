@@ -251,7 +251,7 @@ const TrainerResources = () => {
                     onClick={() => setActiveTab('resources')}
                 >
                     <Folder size={18} />
-                    <span>Resources</span>
+                    <span>ISSA CPT Text</span>
                 </button>
                 <button 
                     className={`tab-btn ${activeTab === 'forms' ? 'active' : ''}`}

@@ -97,11 +97,11 @@ const NutritionPage = React.lazy(() => import('./pages/NutritionPage.jsx'));
 const ProgressPage = React.lazy(() => import('./pages/ProgressPage.jsx'));
 const MyPlanPage = React.lazy(() => import('./pages/MyPlanPage.jsx'));
 const WorkoutGoalsPage = React.lazy(() => import('./pages/WorkoutGoalsPage.jsx'));
-const WorkoutRoutinePage = React.lazy(() => import('./pages/WorkoutRoutinePage.jsx'));
+const WorkoutRoutinePage = React.lazy(() => import('./pages/WorkoutRoutinePage.tsx'));
 const SelectRoutineLogPage = React.lazy(() => import('./pages/SelectRoutineLogPage.jsx'));
 const WorkoutLogPage = React.lazy(() => import('./pages/WorkoutLogPage.jsx'));
 const WorkoutRecsPage = React.lazy(() => import('./pages/WorkoutRecsPage.jsx'));
-const EditRoutinePage = React.lazy(() => import('./pages/EditRoutinePage.jsx'));
+const EditRoutinePage = React.lazy(() => import('./pages/EditRoutinePage.tsx'));
 const SelectProRoutinePage = React.lazy(() => import('./pages/SelectProRoutinePage.jsx'));
 const ProRoutineCategoryPage = React.lazy(() => import('./pages/ProRoutineCategoryPage.jsx'));
 const NutritionGoalsPage = React.lazy(() => import('./pages/NutritionGoalsPage.jsx'));
@@ -117,7 +117,7 @@ const MesocycleLogPage = React.lazy(() => import('./pages/MesocycleLogPage.jsx')
 const WeeklyMealPlannerPage = React.lazy(() => import('./pages/WeeklyMealPlannerPage.jsx'));
 const MyMealsPage = React.lazy(() => import('./pages/MyMealsPage.jsx'));
 // Trainer Dashboard
-const TrainerDashboard = React.lazy(() => import('./pages/TrainerDashboard.jsx'));
+const TrainerDashboard = React.lazy(() => import('./pages/TrainerDashboard.tsx'));
 
 // Binds the modal to the app's root element for accessibility (e.g., screen readers).
 Modal.setAppElement('#root'); 

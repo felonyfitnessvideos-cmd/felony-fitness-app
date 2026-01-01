@@ -25,28 +25,28 @@ import {
   MessageSquare,
   Timer,
   TrendingUp,
-  UserPlus,
   Users
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
-import useResponsive from '../hooks/useResponsive.jsx';
+import useResponsive from '../hooks/useResponsive';
+import { Client } from '../types';
 import { getUnreadMessageCount } from '../utils/messagingUtils';
 // import { subscribeToMessages } from '../utils/messagingUtils'; // TEMPORARILY DISABLED - WebSocket causing errors
-import SmartScheduling from '../components/SmartScheduling.jsx';
-import CalculatorDashboard from '../components/tools/CalculatorDashboard.jsx';
-import ClientProgress from '../components/trainer/ClientProgress.jsx';
-import WorkoutBuilder from '../components/trainer/WorkoutBuilder.jsx';
-import NutritionPlanner from '../components/trainer/NutritionPlanner.jsx';
-import MessagingHub from '../components/trainer/MessagingHub.jsx';
-import ClientOnboarding from './trainer/ClientOnboarding.jsx';
-import IntervalTimer from './trainer/IntervalTimer.jsx';
-import TrainerCalendar from './trainer/TrainerCalendar.jsx';
-import TrainerClients from './trainer/TrainerClients.jsx';
-import TrainerMessages from './trainer/TrainerMessages.jsx';
-import TrainerPrograms from './trainer/TrainerPrograms.jsx';
-import TrainerResources from './trainer/TrainerResources.jsx';
+import SmartScheduling from '../components/SmartScheduling';
+import CalculatorDashboard from '../components/tools/CalculatorDashboard';
+import ClientProgress from '../components/trainer/ClientProgress';
+import WorkoutBuilder from '../components/trainer/WorkoutBuilder';
+import NutritionPlanner from '../components/trainer/NutritionPlanner';
+import MessagingHub from '../components/trainer/MessagingHub';
+import ClientOnboarding from './trainer/ClientOnboarding';
+import IntervalTimer from './trainer/IntervalTimer';
+import TrainerCalendar from './trainer/TrainerCalendar';
+import { TrainerClients } from './trainer/TrainerClients';
+import TrainerMessages from './trainer/TrainerMessages';
+import TrainerPrograms from './trainer/TrainerPrograms';
+import TrainerResources from './trainer/TrainerResources';
 import './TrainerDashboard.css';
 
 /**
@@ -97,7 +97,7 @@ const TrainerDashboard = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   /** @type {[Object|null, Function]} Selected client for workspace tools */
-  const [selectedClient, setSelectedClient] = useState(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   // Navigation functions for trainer sections
   const navigateToCalendar = () => navigate('/trainer-dashboard/calendar');
@@ -109,7 +109,7 @@ const TrainerDashboard = () => {
 
   /**
    * Initialize trainer dashboard
-   * 
+   *
    * @async
    * @returns {Promise<void>}
    */
@@ -150,7 +150,7 @@ const TrainerDashboard = () => {
   useEffect(() => {
     if (!user) return;
 
-    let subscription = null;
+    let subscription: { unsubscribe: () => void; } | null = null;
 
     const loadUnreadCount = async () => {
       try {
@@ -200,18 +200,18 @@ const TrainerDashboard = () => {
 
   /**
    * Render workspace content based on active tool
-   * 
+   *
    * 🚨 LAYOUT CRITICAL: Uses uniform card system to prevent layout shifts
-   * 
+   *
    * All tools use the same renderToolCards() function to ensure:
    * - Consistent 2x2 grid layout (tool-cards-grid)
    * - Uniform card heights (70-90px each)
    * - Same content structure prevents workspace repositioning
    * - Maintains 30% workspace height allocation
-   * 
+   *
    * DO NOT change to variable content without extensive testing.
    * Variable content heights cause the workspace to jump/shift.
-   * 
+   *
    * @returns {JSX.Element} Uniform workspace content for selected tool
    */
   const renderWorkspaceContent = () => {
@@ -274,9 +274,7 @@ const TrainerDashboard = () => {
           <span>Back to Main Dashboard</span>
         </button>
         <div className="header-title-wrapper">
-          <h1>Trainer Dashboard</h1>
-          <p>Manage and track your clients' progress</p>
-        </div>
+          <h1>Trainer Dashboard</h1> </div>
         <div className="header-logo">
           <button onClick={handleBackToDashboard} className="logo-button" aria-label="Go to main dashboard">
             <img

@@ -32,7 +32,7 @@ async function runAudit() {
     console.log('📊 OVERALL STATISTICS');
     console.log('─────────────────────\n');
     
-    const { data: _stats, error: statsError } = await supabase.rpc('get_food_stats');
+    const { error: statsError } = await supabase.rpc('get_food_stats');
     
     if (statsError) {
       // Fallback: Direct query
@@ -112,7 +112,7 @@ async function runAudit() {
     console.log('  TIER 3: Foods logged 1-4 times (MEDIUM)');
     console.log('  TIER 4: Never logged (LOW)\n');
     
-    const { data: _tierCounts } = await supabase.rpc('count_foods_by_log_tier');
+    await supabase.rpc('get_foods_by_tier');
     
     // Fallback: Manual tier counting
     const tier1 = await supabase.from('foods').select('id', { count: 'exact', head: true }).gte('times_logged', 10);

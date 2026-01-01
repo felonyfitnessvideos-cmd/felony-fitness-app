@@ -9,8 +9,29 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient.js';
 import { TrendingUp, Dumbbell, Flame, BarChart3, Apple, Target } from 'lucide-react';
-import LazyRecharts from '../LazyRecharts.jsx';
+import LazyRecharts from '../LazyRecharts';
+import { Client } from '../../types';
+import { Tables } from '../../database.types.js';
 import './ClientProgress.css';
+
+interface ClientProgressProps {
+  client: Client | null;
+}
+
+interface Stats {
+  totalWorkouts: number;
+  avgDuration: number;
+  avgCalories: number;
+  avgBurn: number;
+  activeGoals: number;
+}
+
+interface TrendPoint {
+  date: string;
+  duration?: number;
+  calories?: number;
+  burn?: number;
+}
 
 /**
  * ClientProgress Component
@@ -23,24 +44,24 @@ import './ClientProgress.css';
  * @param {Object} props.client - Selected client object with id and name
  * @returns {JSX.Element} Compact progress dashboard
  */
-const ClientProgress = ({ client }) => {
-  const [stats, setStats] = useState({ 
+const ClientProgress = ({ client }: ClientProgressProps) => {
+  const [stats, setStats] = useState<Stats>({ 
     totalWorkouts: 0, 
     avgDuration: 0, 
     avgCalories: 0, 
     avgBurn: 0, 
     activeGoals: 0 
   });
-  const [nutritionTrends, setNutritionTrends] = useState([]);
-  const [workoutDurationTrends, setWorkoutDurationTrends] = useState([]);
-  const [goals, setGoals] = useState([]);
+  const [nutritionTrends, setNutritionTrends] = useState<TrendPoint[]>([]);
+  const [workoutDurationTrends, setWorkoutDurationTrends] = useState<TrendPoint[]>([]);
+  const [goals, setGoals] = useState<Tables<'goals'>[]>([]);
   const [loading, setLoading] = useState(true);
 
   /**
    * Fetch all progress data for selected client
    */
   useEffect(() => {
-    const fetchClientProgress = async (clientId) => {
+    const fetchClientProgress = async (clientId: string) => {
       try {
         setLoading(true);
 
@@ -71,8 +92,8 @@ const ClientProgress = ({ client }) => {
         const avgDuration = totalWorkouts > 0 ? Math.round(totalDuration / totalWorkouts) : 0;
         
         // Group by local date for charts
-        const durationMap = new Map();
-        const burnMap = new Map();
+        const durationMap = new Map<string, TrendPoint>();
+        const burnMap = new Map<string, TrendPoint>();
         
         workoutLogs.forEach(log => {
           const dt = new Date(log.created_at);
@@ -83,17 +104,17 @@ const ClientProgress = ({ client }) => {
           const displayDate = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
           const existingDuration = durationMap.get(localSortKey) || { date: displayDate, duration: 0 };
-          existingDuration.duration += (log.duration_minutes || 0);
+          existingDuration.duration! += (log.duration_minutes || 0);
           durationMap.set(localSortKey, existingDuration);
           
           const existingBurn = burnMap.get(localSortKey) || { date: displayDate, burn: 0 };
-          existingBurn.burn += (log.calories_burned || 0);
+          existingBurn.burn! += (log.calories_burned || 0);
           burnMap.set(localSortKey, existingBurn);
         });
         
-        const workoutArray = Array.from(durationMap, ([iso, val]) => ({ iso, ...val }))
-          .sort((a, b) => a.iso.localeCompare(b.iso))
-          .map(({ date, duration }) => ({ date, duration }))
+        const workoutArray = Array.from(durationMap.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([, val]) => ({ date: val.date, duration: val.duration }))
           .slice(-7); // Last 7 days only for compact view
         
         setWorkoutDurationTrends(workoutArray);
@@ -105,7 +126,7 @@ const ClientProgress = ({ client }) => {
         if (nutritionLogsRes.error) throw nutritionLogsRes.error;
         const nutritionLogs = nutritionLogsRes.data || [];
 
-        const calorieMap = new Map();
+        const calorieMap = new Map<string, TrendPoint>();
         nutritionLogs.forEach(log => {
           const dt = new Date(log.created_at);
           const year = dt.getFullYear();
@@ -116,16 +137,14 @@ const ClientProgress = ({ client }) => {
 
           const existing = calorieMap.get(localSortKey) || { date: displayDate, calories: 0 };
           
-          // Calories are calculated by the database trigger
-          // The trigger uses: (foods.calories * quantity_consumed / 100)
-          existing.calories += (log.calories || 0);
+          existing.calories! += (log.calories || 0);
           
           calorieMap.set(localSortKey, existing);
         });
         
-        const nutritionArray = Array.from(calorieMap, ([iso, val]) => ({ iso, ...val }))
-          .sort((a, b) => a.iso.localeCompare(b.iso))
-          .map(({ date, calories }) => ({ date, calories: Math.round(calories) }))
+        const nutritionArray = Array.from(calorieMap.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([, val]) => ({ date: val.date, calories: Math.round(val.calories!) }))
           .slice(-7); // Last 7 days only
         
         setNutritionTrends(nutritionArray);
@@ -272,15 +291,17 @@ const ClientProgress = ({ client }) => {
               <h4><Target size={12} /> Goals Progress</h4>
               <div className="goals-list-compact">
                 {goals.map(goal => {
-                  const progress = goal.target_value > 0 
-                    ? Math.min(100, Math.round((goal.current_value / goal.target_value) * 100))
+                  const targetValue = goal.target_value ?? 0;
+                  const currentValue = goal.current_value ?? 0;
+                  const progress = targetValue > 0 
+                    ? Math.min(100, Math.round((currentValue / targetValue) * 100))
                     : 0;
                   
                   return (
                     <div key={goal.id} className="goal-item-compact">
                       <div className="goal-text">
                         <span className="goal-desc">{goal.goal_description}</span>
-                        <span className="goal-values">{goal.current_value} / {goal.target_value}</span>
+                        <span className="goal-values">{currentValue} / {targetValue}</span>
                       </div>
                       <div className="goal-progress-bar">
                         <div className="goal-progress-fill" style={{ width: `${progress}%` }}></div>

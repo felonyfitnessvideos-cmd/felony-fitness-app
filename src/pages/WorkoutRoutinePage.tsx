@@ -29,18 +29,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
-import SubPageHeader from '../components/SubPageHeader.jsx';
+import SubPageHeader from '../components/SubPageHeader';
 import { Dumbbell, PlusCircle, Trash2, Edit, ToggleLeft, ToggleRight, Zap, Copy } from 'lucide-react';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../AuthContext';
+import { Tables } from '../database.types.js';
 import './WorkoutRoutinePage.css';
 
-/**
- * @typedef {object} Routine
- * @property {string} id - The UUID of the workout routine.
- * @property {string} routine_name - The name of the routine.
- * @property {boolean} is_active - Whether the routine is available for logging.
- * @property {string} created_at - The timestamp of when the routine was created.
- */
+type Routine = Tables<'workout_routines'>;
 
 /**
  * WorkoutRoutinePage
@@ -51,8 +46,7 @@ import './WorkoutRoutinePage.css';
 function WorkoutRoutinePage() {
   const { user } = useAuth();
   const userId = user?.id;
-  /** @type {[Routine[], React.Dispatch<React.SetStateAction<Routine[]>>]} */
-  const [routines, setRoutines] = useState([]);
+  const [routines, setRoutines] = useState<Routine[]>([]);
   const [loading, setLoading] = useState(true);
 
   /**
@@ -60,7 +54,7 @@ function WorkoutRoutinePage() {
    * @param {string} userId - The UUID of the authenticated user.
    * @async
    */
-  const fetchRoutines = useCallback(async (userId) => {
+  const fetchRoutines = useCallback(async (userId: string) => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -93,7 +87,7 @@ function WorkoutRoutinePage() {
    * @param {string} routineId - The UUID of the routine to be deleted.
    * @async
    */
-  const handleDeleteRoutine = async (routineId) => {
+  const handleDeleteRoutine = async (routineId: string) => {
     if (!userId) return;
 
     try {
@@ -121,7 +115,7 @@ function WorkoutRoutinePage() {
    * @param {Routine} routine - The routine object to be updated.
    * @async
    */
-  const handleToggleActive = async (routine) => {
+  const handleToggleActive = async (routine: Routine) => {
     if (!userId) return;
 
     try {
@@ -153,14 +147,14 @@ function WorkoutRoutinePage() {
    * @param {Routine} routine - The routine object to be duplicated
    * @async
    */
-  const handleDuplicateRoutine = async (routine) => {
+  const handleDuplicateRoutine = async (routine: Routine) => {
     if (!userId) return;
 
     try {
       // Step 1: Fetch the full routine with exercises
       const { data: fullRoutine, error: fetchError } = await supabase
         .from('workout_routines')
-        .select('*, routine_exercises(*, exercises(*))')
+        .select('*, routine_exercises(*)')
         .eq('id', routine.id)
         .single();
 
@@ -198,12 +192,19 @@ function WorkoutRoutinePage() {
       }
 
       // Step 4: Add new routine to UI without refetch
-      const newRoutineDisplay = {
+      const newRoutineDisplay: Routine = {
         id: newRoutine.id,
         routine_name: newRoutineName,
         is_active: false,
         created_at: new Date().toISOString(),
-        user_id: userId
+        user_id: userId,
+        description: null,
+        difficulty_level: null,
+        estimated_duration_minutes: null,
+        is_public: false,
+        name: null,
+        routine_type: null,
+        updated_at: null,
       };
       setRoutines(prev => [newRoutineDisplay, ...prev]);
     } catch (error) {

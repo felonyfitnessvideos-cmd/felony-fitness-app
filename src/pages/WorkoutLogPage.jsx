@@ -8,121 +8,6 @@
  * @author Felony Fitness Development Team  
  * @version 3.0.0
  * @since 2025-11-02
- * 
- * @requires React
- * @requires react-router-dom
- * @requires lucide-react
- * @requires AuthContext
- * @requires supabaseClient
- * @requires LazyRecharts
- * @requires RestTimerModal
- * @requires RpeRatingModal
- * @requires SubPageHeader
- * @requires SuccessModal
- * 
- * Core Features:
- * - **Set-by-Set Logging**: Track weight, reps, and RPE for every set
- * - **Rest Timer Modal**: Configurable countdown timer between sets
- * - **RPE Rating System**: Rate of Perceived Exertion (1-10 scale) per set
- * - **Historical Data**: View previous performance for each exercise with charts
- * - **Auto-Fill Logic**: Pre-populate weight/reps from last workout
- * - **Mesocycle Integration**: Links workouts to specific training cycle sessions
- * - **Achievement Triggers**: Automatic XP and achievement unlocks on completion
- * - **Workout Summary**: Duration, total volume, calorie estimation
- * - **Optimistic UI**: Instant updates with background sync
- * 
- * Database Tables:
- * - **workout_logs**: Individual workout sessions (id, user_id, routine_id, date, duration, calories)
- * - **workout_log_entries**: Individual sets (id, log_id, exercise_id, set_number, weight_lbs, reps_completed, rpe)
- * - **cycle_sessions**: Mesocycle workout instances (id, mesocycle_id, scheduled_date, is_complete)
- * - **routines**: Workout templates (id, name, exercise_ids)
- * - **exercises**: Exercise library (id, name, primary_muscle, equipment_needed)
- * 
- * State Management Architecture:
- * - **todaysLog**: Current workout_log row (created or resumed)
- * - **entriesMap**: Object mapping exercise_id → array of set entries
- * - **routine**: Selected routine template with exercises
- * - **previousLogs**: Historical data for charts and auto-fill
- * - **editingCell**: Currently focused input cell {exerciseId, setNum, field}
- * 
- * Workflow:
- * 1. Load routine from URL params (routineId)
- * 2. Check for existing workout_log for today's date
- * 3. If none, create new workout_log via RPC
- * 4. Load previous sets for this routine (auto-fill data)
- * 5. User adds/edits sets (optimistic updates)
- * 6. Auto-save sets via secure RPC on blur
- * 7. User clicks "Finish Workout" → calculate duration/calories
- * 8. Mark workout complete → trigger achievements → navigate to success
- * 
- * RPC Functions Used:
- * - **create_workout_log**: Create new workout session
- * - **save_or_update_set**: Upsert individual set with validation
- * - **delete_set_entry**: Remove set from workout
- * - **finish_workout**: Calculate summary and mark complete
- * 
- * Auto-Fill Logic:
- * - Finds most recent completed workout for same routine
- * - Pre-fills weight and reps from last session's corresponding sets
- * - User can override or use as starting point
- * - Helps maintain progressive overload consistency
- * 
- * RPE System (Rate of Perceived Exertion):
- * - Optional per-set rating (1-10 scale)
- * - 1-3: Very easy, could do many more reps
- * - 4-6: Moderate, 3-6 reps in reserve
- * - 7-8: Hard, 2-3 reps in reserve
- * - 9: Very hard, 1 rep in reserve
- * - 10: Max effort, complete failure
- * - Helps track intensity and manage fatigue
- * 
- * Calorie Estimation:
- * - Based on total volume (weight × reps) and duration
- * - Formula: (Volume / 1000) × Duration × 0.8
- * - Rough approximation for resistance training
- * 
- * Achievement Triggers (via database triggers):
- * - First workout: +100 XP, "Getting Started" achievement
- * - Every workout: +100 XP
- * - New PRs: +200 XP, PR achievement
- * - Workout streaks: Consistency achievements
- * - Volume milestones: 100k lbs, 500k lbs, 1M lbs moved
- * 
- * Error Handling:
- * - Graceful fallback if cycle_sessions table missing (pre-migration)
- * - Validates numeric inputs (weight, reps, RPE)
- * - Prevents duplicate sets
- * - Confirms workout completion before navigation
- * - Toast notifications for all state changes
- * 
- * Performance Optimizations:
- * - Lazy loading of charts (LazyRecharts)
- * - Optimistic UI updates for instant feedback
- * - Debounced auto-save on input blur
- * - Minimal re-renders with useCallback/useMemo
- * - Selective data fetching (only needed exercises)
- * 
- * @example
- * // Route configuration
- * <Route path="/workout/:routineId" element={<WorkoutLogPage />} />
- * 
- * @example
- * // Typical user flow
- * 1. Select routine from dashboard or mesocycle
- * 2. WorkoutLogPage loads with routine exercises
- * 3. Previous sets auto-fill if available
- * 4. User logs: Bench Press → 225lbs × 5 reps (RPE 8)
- * 5. Rest timer counts down 90 seconds
- * 6. User logs set 2: 225lbs × 4 reps (RPE 9)
- * 7. Continues through all exercises
- * 8. Clicks "Finish Workout"
- * 9. System calculates: 45 min duration, 12,500 lbs volume, 450 cal burned
- * 10. Achievement unlocked: "10 Workouts Complete" +50 XP
- * 11. Redirects to success page with confetti
- * 
- * @see {@link ../components/RestTimerModal.jsx} for rest timer implementation
- * @see {@link ../components/RpeRatingModal.jsx} for RPE rating interface
- * @see {@link ../../scripts/create-achievement-system.sql} for achievement triggers
  */
 
 import { Check, Dumbbell, Edit2, Trash2, X } from 'lucide-react';
@@ -150,61 +35,13 @@ const formatSetCount = (num) => {
   return ''; // Don't show anything if 0 or null/undefined
 };
 
-/**
- * @typedef {object} SetEntry
- * @property {string} id
- * @property {number} set_number
- * @property {number} reps_completed
- * @property {number} weight_lbs - Weight in pounds
- * @property {string} exercise_id
- */
-
-/** @typedef {{[exerciseId: string]: SetEntry[]}} LogMap */
-
-/**
- * @typedef {object} ChartDataPoint
- * @property {string} date
- * @property {number} value
- */
-
-/**
- * Render the workout logging page for a selected routine and coordinate creating, updating, and finishing workout logs and their entries.
- *
- * Manages loading the routine, fetching previous and today's entries, creating or resuming a workout_log for the selected day, saving/editing/deleting sets via secure RPCs, fetching chart data for exercises, and finishing a workout (including duration and calorie calculation). Intentionally tolerant of missing DB migrations for optional columns used to link cycle sessions; logs and alerts surface only on critical failures.
- * @returns {JSX.Element} The WorkoutLogPage React component UI.
- */
-
-
 function WorkoutLogPage() {
-    // --- Update user_profiles setting for RPE or Rest Timer ---
-    /**
-     * Updates a user_profiles field (use_rpe or use_rest_timer) for the current user.
-     * @param {string} field - The field to update ('use_rpe' or 'use_rest_timer')
-     * @param {boolean} value - The value to set
-     */
-    const updateUserSetting = async (field, value) => {
-      if (!userId) return;
-      // Optimistically update UI
-      if (field === 'use_rpe') setShowRpeModal(value);
-      if (field === 'use_rest_timer') setShowRestTimer(value);
-      await supabase
-        .from('user_profiles')
-        .update({ [field]: value })
-        .eq('user_id', userId);
-      // Optionally, refetch settings to ensure sync
-      fetchUserSettings();
-    };
-  // --- Always get routineId first ---
   const { routineId } = useParams();
-  // --- Restore missing state and helpers ---
-  // (DEBUG LOG MOVED BELOW STATE/HOOKS)
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+  const userId = user?.id;
 
-
-
-  // --- Restore missing state and helpers ---
-  // (Declarations moved below state/hooks)
-
-  // --- State declarations must come first ---
   const [routine, setRoutine] = useState(null);
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState(0);
   const [saveSetLoading, setSaveSetLoading] = useState(false);
@@ -221,25 +58,34 @@ function WorkoutLogPage() {
     return localStorage.getItem('workoutLogId') || null;
   });
   const [currentSet, setCurrentSet] = useState({ weight: '', reps: '' });
-  /** @type {[LogMap, React.Dispatch<React.SetStateAction<LogMap>>]} */
   const [todaysLog, setTodaysLog] = useState({});
-  /** @type {[LogMap, React.Dispatch<React.SetStateAction<LogMap>>]} */
   const [previousLog, setPreviousLog] = useState({});
   const [isTimerOpen, setIsTimerOpen] = useState(false);
   const [isRpeModalOpen, setIsRpeModalOpen] = useState(false);
   const [pendingSetForRpe, setPendingSetForRpe] = useState(null);
   const [activeView, setActiveView] = useState('log');
-  /** @type {[ChartDataPoint[], React.Dispatch<React.SetStateAction<ChartDataPoint[]>>]} */
   const [chartData, setChartData] = useState([]);
   const [chartMetric, setChartMetric] = useState('1RM');
   const [editingSet, setEditingSet] = useState(null);
   const [editSetValue, setEditSetValue] = useState({ weight: '', reps: '' });
   const [isSuccessModalOpen, setSuccessModalOpen] = useState(false);
   const [userWeightLbs] = useState(150);
+  const [mesocycleWeekId, setMesocycleWeekId] = useState(null);
 
+  // --- Update user_profiles setting for RPE or Rest Timer ---
+  const updateUserSetting = async (field, value) => {
+    if (!userId) return;
+    // Optimistically update UI
+    if (field === 'use_rpe') setShowRpeModal(value);
+    if (field === 'use_rest_timer') setShowRestTimer(value);
+    await supabase
+      .from('user_profiles')
+      .update({ [field]: value })
+      .eq('user_id', userId);
+    // Optionally, refetch settings to ensure sync
+    fetchUserSettings();
+  };
 
-
-  // --- Restore missing state and helpers ---
   const selectedExercise = useMemo(() => {
     if (!routine || !routine.routine_exercises) return null;
     return routine.routine_exercises[selectedExerciseIndex]?.exercises || null;
@@ -249,12 +95,6 @@ function WorkoutLogPage() {
     if (!routine || !routine.routine_exercises) return null;
     return routine.routine_exercises[selectedExerciseIndex] || null;
   }, [routine, selectedExerciseIndex]);
-
-  // DEBUG: Log at render to verify keys and selected exercise
-  if (typeof window !== 'undefined' && selectedExercise) {
-     
-    console.log('[RENDER DEBUG] selectedExercise.id:', selectedExercise.id, 'todaysLog keys:', Object.keys(todaysLog), 'todaysLog[selectedExercise.id]:', todaysLog[String(selectedExercise.id)], 'FULL todaysLog:', todaysLog);
-  }
 
   // --- Prefill last set values for selected exercise ---
   useEffect(() => {
@@ -269,8 +109,7 @@ function WorkoutLogPage() {
     } else {
       setCurrentSet({ weight: '', reps: '' });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedExerciseIndex, selectedExercise?.id]);
+  }, [selectedExerciseIndex, selectedExercise, todaysLog]);
 
   // --- Fetch routine from Supabase on mount or when routineId changes ---
   useEffect(() => {
@@ -296,10 +135,7 @@ function WorkoutLogPage() {
 
   useEffect(() => { isMountedRef.current = true; return () => { isMountedRef.current = false; }; }, []);
 
-  // ...existing code...
-
   // Target sets (with deload/volume multiplier logic if needed)
-  const targetSets = selectedRoutineExercise?.target_sets || 1;
   const adjustedTargetSets = useMemo(() => {
     if (!selectedRoutineExercise) return 1;
     let sets = Number(selectedRoutineExercise.target_sets) || 1;
@@ -311,31 +147,21 @@ function WorkoutLogPage() {
 
   /**
    * Fetches or creates the workout log for today, loads previous log, and sets up session meta.
-   * @param {string} userId - The current user's ID
-   * @param {object} options - Options, e.g. { mesocycleSessionId }
    */
   const fetchAndStartWorkout = useCallback(async (userId, options = {}) => {
     setLoading(true);
     try {
-      // 1. Fetch routine (already handled by routine effect)
       if (!routineId || !userId) {
         setLoading(false);
         return;
       }
 
-      // 2. Determine user's local date (YYYY-MM-DD) for log_date matching
       const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const day = String(now.getDate()).padStart(2, '0');
       const todayLocalDate = `${year}-${month}-${day}`;
       
-      // DEBUG: Log the date for today's log search
-       
-      console.log('[DEBUG] Searching for logs with log_date:', todayLocalDate, 'Local time:', now.toString());
-
-      // 3. Try to find an existing workout log for today using log_date (much simpler and reliable)
-      // Order by created_at DESC and take the most recent one if multiple exist
       let { data: logs, error: logError } = await supabase
         .from('workout_logs')
         .select('*')
@@ -346,26 +172,19 @@ function WorkoutLogPage() {
         .order('created_at', { ascending: false })
         .limit(1);
 
-      // DEBUG: Log search result
-       
-      console.log('[DEBUG] Log search result - logs:', logs, 'error:', logError);
+      if (logError) console.error('Log fetch error:', logError);
       
       const log = logs && logs.length > 0 ? logs[0] : null;
-
       let logId = log?.id;
-      // DEBUG: Log the logId being used to fetch entries
-       
-      console.log('[DEBUG] fetchAndStartWorkout: logId for today:', logId, 'log found:', log, 'routineId:', routineId, 'userId:', userId);
+
       if (!logId) {
-        // 4. If not found, create a new workout log
         const payload = {
           user_id: userId,
           routine_id: routineId,
           is_complete: false,
           started_at: null,
-          log_date: todayLocalDate, // Explicitly set log_date to local date
+          log_date: todayLocalDate,
         };
-        // Link to cycle_session if available
         if (options.mesocycleSessionId) {
           payload.cycle_session_id = options.mesocycleSessionId;
         }
@@ -376,24 +195,16 @@ function WorkoutLogPage() {
           .single();
         if (newLogError) throw newLogError;
         logId = newLog.id;
-        // DEBUG: Log the new logId created
-         
-        console.log('[DEBUG] fetchAndStartWorkout: created new logId:', logId, 'payload:', payload);
       }
       setWorkoutLogId(logId);
       if (logId) localStorage.setItem('workoutLogId', logId);
 
-
-      // 5. Fetch today's log entries (use workout_log_id)
       const { data: todayEntries, error: todayEntriesError } = await supabase
         .from('workout_log_entries')
         .select('*')
         .eq('workout_log_id', logId);
       if (todayEntriesError) throw todayEntriesError;
-      // DEBUG: Log raw todayEntries from DB
-       
-      console.log('[DEBUG] todayEntries from DB:', todayEntries);
-      // Group by exercise_id (normalize to string)
+
       const todaysLogMap = {};
       for (const entry of todayEntries) {
         const exId = String(entry.exercise_id);
@@ -402,7 +213,6 @@ function WorkoutLogPage() {
       }
       setTodaysLog(todaysLogMap);
 
-      // 6. Fetch previous log entries (last completed log for this routine)
       const { data: prevLog } = await supabase
         .from('workout_logs')
         .select('id')
@@ -423,12 +233,10 @@ function WorkoutLogPage() {
           previousLogMap[entry.exercise_id].push(entry);
         }
       }
-      // Only set if not empty
       if (Object.keys(previousLogMap).length > 0) {
         setPreviousLog(previousLogMap);
       }
 
-      // 7. Fetch session meta if needed (e.g., planned_volume_multiplier, is_deload)
       if (log?.cycle_session_id || options.mesocycleSessionId) {
         const sessionId = log?.cycle_session_id || options.mesocycleSessionId;
         const { data: session, error: sessionError } = await supabase
@@ -445,14 +253,9 @@ function WorkoutLogPage() {
     } finally {
       setLoading(false);
     }
-  }, [routineId, setWorkoutLogId, setTodaysLog, setSessionMeta]);
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const userId = user?.id;
-
+  }, [routineId]);
 
   // --- USER SETTINGS: Fetch from user_profiles ---
-  // Refetchable function for polling or manual update
   const fetchUserSettings = useCallback(async () => {
     if (!userId) return;
     const { data: profile, error } = await supabase
@@ -461,19 +264,16 @@ function WorkoutLogPage() {
       .eq('user_id', userId)
       .single();
     if (!error && profile) {
-      setShowRpeModal(profile.use_rpe !== false); // default true
-      setShowRestTimer(profile.use_rest_timer !== false); // default true
+      setShowRpeModal(profile.use_rpe !== false);
+      setShowRestTimer(profile.use_rest_timer !== false);
     }
     setUserSettingsLoaded(true);
   }, [userId]);
 
-
-  // Initial fetch on mount or userId change
   useEffect(() => {
     fetchUserSettings();
   }, [fetchUserSettings]);
 
-  // Poll for user settings every 5 seconds to reflect changes made elsewhere
   useEffect(() => {
     if (!userId) return;
     const interval = setInterval(() => {
@@ -482,29 +282,17 @@ function WorkoutLogPage() {
     return () => clearInterval(interval);
   }, [userId, fetchUserSettings]);
 
-  // (Optional) Expose for manual testing in console
-  useEffect(() => {
-    window.refetchUserSettings = fetchUserSettings;
-    return () => { delete window.refetchUserSettings; };
-  }, [fetchUserSettings]);
-
-  const location = useLocation();
-  const [mesocycleWeekId, setMesocycleWeekId] = useState(null);
-
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const mwid = params.get('mesocycleWeekId');
     if (mwid) {
       setMesocycleWeekId(mwid);
-      console.log('[MESOCYCLE DEBUG] mesocycleWeekId state set to:', mwid);
     } else {
-      // Clear it if the URL no longer has the param
       setMesocycleWeekId(null);
     }
 
     if (userId && routineId) {
       const mesocycleSessionId = params.get('mesocycle_session_id');
-      console.log('[DEBUG] useEffect: calling fetchAndStartWorkout with userId:', userId, 'routineId:', routineId);
       fetchAndStartWorkout(userId, { mesocycleSessionId });
     } else {
       setLoading(false);
@@ -554,32 +342,27 @@ function WorkoutLogPage() {
 
   const handleSaveSet = async () => {
     if (!currentSet.reps || !currentSet.weight || !selectedExercise) return;
-    if (saveSetLoading) return; // prevent double submits
+    if (saveSetLoading) return;
     setSaveSetLoading(true);
     
     try {
-      // If we don't have a workout log yet, create one NOW (when user actually saves first set)
       let logIdToUse = workoutLogId;
       
       if (!logIdToUse) {
-
-        // Determine the date for this workout (today or scheduled date, local boundaries)
         const now = new Date();
         const startOfDayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-        // Use local date instead of UTC to prevent timezone issues
         const year = startOfDayLocal.getFullYear();
         const month = String(startOfDayLocal.getMonth() + 1).padStart(2, '0');
         const day = String(startOfDayLocal.getDate()).padStart(2, '0');
-        const scheduledDateStr = `${year}-${month}-${day}`; // for cycle_sessions
+        const scheduledDateStr = `${year}-${month}-${day}`;
         
         const payload = {
           user_id: userId,
           routine_id: routine.id,
           is_complete: false,
-          started_at: new Date().toISOString(), // Set started_at immediately when first set is saved
+          started_at: new Date().toISOString(),
         };
         
-        // Try to link to cycle_session if available
         const { data: matchingSession } = await supabase
           .from('cycle_sessions')
           .select('id,mesocycle_id')
@@ -614,14 +397,13 @@ function WorkoutLogPage() {
         }
 
       } else {
-        // If this is the first set of an existing workout, set started_at if not already set
         const isFirstSetOfWorkout = Object.keys(todaysLog).every(key => !todaysLog[key] || todaysLog[key].length === 0);
         if (isFirstSetOfWorkout) {
           const { error: updateError } = await supabase
             .from('workout_logs')
             .update({ started_at: new Date().toISOString() })
             .eq('id', workoutLogId)
-            .is('started_at', null); // Only set if not already set
+            .is('started_at', null);
           
           if (updateError) {
             console.warn('Could not set started_at:', updateError);
@@ -637,13 +419,9 @@ function WorkoutLogPage() {
         reps_completed: parseInt(currentSet.reps, 10),
         weight_lbs: parseInt(currentSet.weight, 10),
       };
-      // DEBUG: Log the payload and logId used for set insert
-       
-      console.log('[DEBUG] handleSaveSet: inserting set with workout_log_id:', logIdToUse, 'payload:', newSetPayload);
+      
       const { data: newEntry, error } = await supabase.from('workout_log_entries').insert(newSetPayload).select().single();
-      // DEBUG: Log the result of the insert
-       
-      console.log('[DEBUG] handleSaveSet: insert result:', newEntry, 'error:', error);
+      
       if (error) {
         console.error('[WorkoutLog] Failed to save set:', error);
         alert("Could not save set. Please try again." + (error?.message ? ` (${error.message})` : ''));
@@ -655,13 +433,11 @@ function WorkoutLogPage() {
 
       setTodaysLog(newTodaysLog);
 
-      // Persist last entered values for this exercise
       setCurrentSet({
         weight: newEntry.weight_lbs?.toString() || '',
         reps: newEntry.reps_completed?.toString() || ''
       });
 
-      // --- SUPERSET ADVANCEMENT LOGIC ---
       const currentRoutineExercise = routine.routine_exercises[selectedExerciseIndex];
       const currentExerciseId = currentRoutineExercise?.exercises?.id;
       const setsForCurrent = (newTodaysLog[currentExerciseId] || []).length;
@@ -671,7 +447,6 @@ function WorkoutLogPage() {
       const currentSupersetId = currentRoutineExercise?.superset_id;
 
       if (currentSupersetId) {
-        // Find all routine exercises in this superset
         const supersetExercises = routine.routine_exercises
           .map((ex, idx) => ({ ...ex, idx }))
           .filter(ex => ex.superset_id === currentSupersetId);
@@ -679,22 +454,18 @@ function WorkoutLogPage() {
         const isLastSupersetExercise = supersetIdx === supersetExercises.length - 1;
 
         if (!isLastSetOfCurrent) {
-          // Not last set for this exercise: advance to next superset exercise (or loop to first)
           if (!isLastSupersetExercise) {
             setSelectedExerciseIndex(supersetExercises[supersetIdx + 1].idx);
           } else {
             setSelectedExerciseIndex(supersetExercises[0].idx);
           }
         } else {
-          // Last set for this exercise
-          // Check if all sets for all superset exercises are complete
           const allSupersetSetsComplete = supersetExercises.every(ex => {
             const setsDone = (newTodaysLog[ex.exercises.id] || []).length;
             const setsTarget = Number(ex.target_sets) || 1;
             return setsDone >= setsTarget;
           });
           if (allSupersetSetsComplete) {
-            // Advance to next routine exercise after superset
             const afterSupersetIdx = supersetExercises[supersetExercises.length - 1].idx + 1;
             if (afterSupersetIdx < routine.routine_exercises.length) {
               setSelectedExerciseIndex(afterSupersetIdx);
@@ -702,7 +473,6 @@ function WorkoutLogPage() {
               setIsWorkoutCompletable(true);
             }
           } else {
-            // Not all sets complete: loop to first superset exercise with incomplete sets
             const firstIncomplete = supersetExercises.find(ex => {
               const setsDone = (newTodaysLog[ex.exercises.id] || []).length;
               const setsTarget = Number(ex.target_sets) || 1;
@@ -716,7 +486,6 @@ function WorkoutLogPage() {
           }
         }
       } else {
-        // Not a superset: normal advancement
         if (isLastSetOfCurrent) {
           if (!isLastExercise) {
             setSelectedExerciseIndex(selectedExerciseIndex + 1);
@@ -727,12 +496,9 @@ function WorkoutLogPage() {
       }
       setPendingSetForRpe({ ...newEntry, _showRestTimer: true });
       
-      // Handle RPE and Rest Timer independently
       if (userSettingsLoaded && showRpeModal) {
-        // RPE enabled: show RPE modal (rest timer shows after RPE is handled)
         setIsRpeModalOpen(true);
       } else if (userSettingsLoaded && showRestTimer) {
-        // RPE disabled but rest timer enabled: show rest timer immediately
         setIsTimerOpen(true);
       }
       
@@ -744,13 +510,8 @@ function WorkoutLogPage() {
     }
   };
 
-  /**
-   * Handles RPE rating selection
-   * Updates the set with the selected RPE rating, then shows rest timer
-   */
   const handleRpeRating = async (rating) => {
     if (pendingSetForRpe && rating) {
-      // Update the set entry with RPE rating
       const { error } = await supabase
         .from('workout_log_entries')
         .update({ rpe_rating: rating })
@@ -758,7 +519,6 @@ function WorkoutLogPage() {
       if (error) {
         console.error('[WorkoutLog] Failed to save RPE rating:', error);
       } else {
-        // Update local state
         setTodaysLog(prev => {
           const updated = { ...prev };
           const exId = String(selectedExercise.id);
@@ -774,9 +534,7 @@ function WorkoutLogPage() {
       }
     }
     setIsRpeModalOpen(false);
-    // Only show rest timer if flagged by advancement logic and settings allow
-     
-    console.log('[DEBUG] handleRpeRating: pendingSetForRpe?', !!pendingSetForRpe, '_showRestTimer?', pendingSetForRpe?._showRestTimer, 'userSettingsLoaded?', userSettingsLoaded, 'showRestTimer?', showRestTimer);
+    
     if (
       pendingSetForRpe &&
       pendingSetForRpe._showRestTimer &&
@@ -788,15 +546,8 @@ function WorkoutLogPage() {
     setPendingSetForRpe(null);
   };
 
-  /**
-   * Handles skipping RPE rating
-   * User chose not to rate this set, proceed directly to rest timer
-   */
   const handleSkipRpe = () => {
     setIsRpeModalOpen(false);
-    // Only show rest timer if flagged by advancement logic and settings allow
-     
-    console.log('[DEBUG] handleSkipRpe: pendingSetForRpe?', !!pendingSetForRpe, '_showRestTimer?', pendingSetForRpe?._showRestTimer, 'userSettingsLoaded?', userSettingsLoaded, 'showRestTimer?', showRestTimer);
     if (
       pendingSetForRpe &&
       pendingSetForRpe._showRestTimer &&
@@ -810,7 +561,6 @@ function WorkoutLogPage() {
 
   const handleTimerClose = () => {
     setIsTimerOpen(false);
-    // setSupersetAdvance removed for ESLint compliance
   };
 
   const handleFinishWorkout = async () => {
@@ -821,11 +571,10 @@ function WorkoutLogPage() {
       const { data: logData, error: fetchError } = await supabase.from('workout_logs').select('started_at, created_at').eq('id', workoutLogId).single();
       if (fetchError) throw fetchError;
 
-      // Use started_at if available (first set logged), otherwise fall back to created_at
       const startTime = logData.started_at ? new Date(logData.started_at) : new Date(logData.created_at);
       const endTime = new Date();
       const duration_minutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
-      const MET_VALUE = 5.0; // General MET value for weightlifting
+      const MET_VALUE = 5.0;
       const weight_kg = userWeightLbs * 0.453592;
       const duration_hours = duration_minutes / 60;
       const calories_burned = Math.round(MET_VALUE * weight_kg * duration_hours);
@@ -838,42 +587,27 @@ function WorkoutLogPage() {
         calories_burned
       };
 
-      // Ensure the update is scoped to the current user for safety.
       const { error: updateError } = await supabase.from('workout_logs').update(updatePayload).eq('id', workoutLogId).eq('user_id', userId);
       if (updateError) throw updateError;
 
-      // Mark mesocycle_weeks entry as complete if we have a mesocycleWeekId
-      console.log('[MESOCYCLE DEBUG] Finishing workout - mesocycleWeekId:', mesocycleWeekId);
       if (mesocycleWeekId) {
         try {
-          console.log('[MESOCYCLE DEBUG] Attempting to mark mesocycle_weeks complete - ID:', mesocycleWeekId);
-          const { error: mwError } = await supabase
+          await supabase
             .from('mesocycle_weeks')
             .update({ 
               is_complete: true, 
               completed_at: endTime.toISOString() 
             })
             .eq('id', mesocycleWeekId);
-          if (mwError) {
-            console.error('[MESOCYCLE DEBUG] Error marking mesocycle_weeks complete:', mwError);
-          } else {
-            console.log('[MESOCYCLE DEBUG] Successfully marked mesocycle_weeks complete for id:', mesocycleWeekId);
-          }
         } catch (err) {
-          console.error('[MESOCYCLE DEBUG] Exception updating mesocycle_weeks:', err);
+          console.error('[MESOCYCLE] Exception updating mesocycle_weeks:', err);
         }
-      } else {
-        console.warn('[MESOCYCLE DEBUG] No mesocycleWeekId found - cannot mark complete');
       }
 
-      // Also mark cycle_session as complete if this log is associated with one
       try {
-        // Prefer sessionMeta.id if available
         if (sessionMeta?.id) {
-          // Mark session complete only if it belongs to the current user
           if (userId) await supabase.from('cycle_sessions').update({ is_complete: true }).eq('id', sessionMeta.id).eq('user_id', userId);
         } else {
-          // fallback: find cycle_session by user, routine and date
           const createdDate = new Date(logData.created_at);
           const year = createdDate.getFullYear();
           const month = String(createdDate.getMonth() + 1).padStart(2, '0');
@@ -885,12 +619,10 @@ function WorkoutLogPage() {
           }
         }
       } catch (err) {
-        // ignore missing-column errors (42703) if migrations haven't been applied yet
         if (err?.code && err.code !== '42703') console.warn('Could not mark cycle_session complete:', err?.message ?? err);
       }
 
       setSuccessModalOpen(true);
-      // Clear workoutLogId from localStorage on finish
       localStorage.removeItem('workoutLogId');
     } catch (error) {
       alert(`Error finishing workout: ${error.message}`);
@@ -902,12 +634,10 @@ function WorkoutLogPage() {
     navigate('/dashboard');
   };
 
-  /** Deletes a specific set from the current log securely. */
   const handleDeleteSet = async (entryId) => {
     if (rpcLoading) return;
     setRpcLoading(true);
     try {
-      // SECURITY FIX: Call the secure Edge Function.
       const { error } = await supabase.functions.invoke('delete-workout-set', {
         body: { entry_id: entryId }
       });
@@ -916,10 +646,8 @@ function WorkoutLogPage() {
         return alert("Could not delete set." + (error?.message ? ` (${error.message})` : ''));
       }
       
-      // Update local state instead of refetching entire page
       setTodaysLog(prevLog => {
         const updatedLog = { ...prevLog };
-        // Find and remove the deleted entry from the appropriate exercise
         Object.keys(updatedLog).forEach(exerciseId => {
           updatedLog[exerciseId] = updatedLog[exerciseId].filter(entry => entry.id !== entryId);
         });
@@ -931,23 +659,19 @@ function WorkoutLogPage() {
     }
   };
 
-  /** Enters "edit mode" for a specific set. */
   const handleEditSetClick = (set) => {
     setEditingSet({ entryId: set.id });
     setEditSetValue({ weight: set.weight_lbs, reps: set.reps_completed });
   };
 
-  /** Saves the updated values for a set being edited securely. */
   const handleUpdateSet = async () => {
     if (!editingSet) return;
     if (rpcLoading) return;
     setRpcLoading(true);
     try {
-
       const newWeight = parseInt(editSetValue.weight, 10);
       const newReps = parseInt(editSetValue.reps, 10);
       
-      // SECURITY FIX: Call the secure Edge Function.
       const { error } = await supabase.functions.invoke('update-workout-set', {
         body: {
           entry_id: editingSet.entryId,
@@ -961,11 +685,8 @@ function WorkoutLogPage() {
         return alert("Could not update set." + (error?.message ? ` (${error.message})` : ''));
       }
 
-      // CRITICAL FIX: Update local state instead of refetching everything
-      // This prevents UI from clearing and is much faster
       setTodaysLog(prevLog => {
         const updatedLog = { ...prevLog };
-        // Find and update the specific entry in all exercises
         Object.keys(updatedLog).forEach(exerciseId => {
           updatedLog[exerciseId] = updatedLog[exerciseId].map(entry => {
             if (entry.id === editingSet.entryId) {
@@ -993,14 +714,6 @@ function WorkoutLogPage() {
 
   const handleCancelEdit = () => setEditingSet(null);
 
-  if (loading) return <div className="loading-message">Loading Workout...</div>;
-
-  // Allow an optional returnTo query param so callers (like mesocycle log) can
-  // control where the back button should go after viewing/editing a session.
-  const queryParams = new URLSearchParams(location.search);
-  const returnTo = queryParams.get('returnTo') || '/workouts/select-routine-log';
-
-
   if (loading) {
     return (
       <div className="workout-log-page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
@@ -1008,6 +721,11 @@ function WorkoutLogPage() {
       </div>
     );
   }
+
+  // Allow an optional returnTo query param so callers (like mesocycle log) can
+  // control where the back button should go after viewing/editing a session.
+  const queryParams = new URLSearchParams(location.search);
+  const returnTo = queryParams.get('returnTo') || '/workouts/select-routine-log';
 
   return (
     <div className="workout-log-page-container">
@@ -1086,13 +804,11 @@ function WorkoutLogPage() {
         ))}
       </div>
 
-      {/* --- This JSX remains the same, but will now use the new function --- */}
       <h2 className="current-exercise-name">
         {selectedExercise?.name}
         {adjustedTargetSets > 0 && (
           <span className="set-count-subtitle">
             &nbsp;- {formatSetCount(adjustedTargetSets)}
-            {/* Routine-level tags: Negative, Drop Set, Superset, Warmup */}
             {selectedRoutineExercise?.negative && (
               <span className="negative-badge" style={{
                 background: '#fee2e2',
@@ -1146,7 +862,7 @@ function WorkoutLogPage() {
               }}>Warmup</span>
             )}
             {sessionMeta && sessionMeta.planned_volume_multiplier !== 1 && (
-              <em style={{ marginLeft: '0.5rem', fontWeight: 400, fontSize: '0.85rem' }}> (base: {formatSetCount(targetSets)})</em>
+              <em style={{ marginLeft: '0.5rem', fontWeight: 400, fontSize: '0.85rem' }}> (base: {formatSetCount(selectedRoutineExercise?.target_sets)})</em>
             )}
           </span>
         )}
@@ -1160,8 +876,6 @@ function WorkoutLogPage() {
           <div className="log-inputs">
             <div className="input-group">
               <label>Weight</label>
-              {/* Use text + inputMode to avoid mobile numeric input quirks while still
-                    presenting a numeric keyboard. Allow decimal points for fractional weights. */}
               <input type="text" inputMode="decimal" pattern="[0-9.]*" value={currentSet.weight} onChange={(e) => setCurrentSet(prev => ({ ...prev, weight: e.target.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\./g, '$1') }))} placeholder="0" />
             </div>
             <div className="input-group">
@@ -1250,7 +964,7 @@ function WorkoutLogPage() {
             ) : chartData.length > 0 ? (
               <LazyRecharts fallback={<div className="loading-message">Loading chart...</div>}>
                 {// libs is used inside JSX via property access; ESLint sometimes flags this as unused
-                  // eslint-disable-next-line no-unused-vars
+                   
                   (libs) => (
                     <libs.ResponsiveContainer width="100%" height={250}>
                       <libs.LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
@@ -1276,7 +990,6 @@ function WorkoutLogPage() {
         onSkip={handleSkipRpe}
       />
 
-      {/* Only show RestTimerModal if not in superset, or in superset and last in group */}
       <RestTimerModal
         isOpen={isTimerOpen}
         onClose={handleTimerClose}

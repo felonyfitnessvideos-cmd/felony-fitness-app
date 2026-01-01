@@ -31,32 +31,40 @@ import { ArrowDownCircle, ArrowUpCircle, Dumbbell, Loader2, Trash2 } from 'lucid
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Modal from 'react-modal';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../AuthContext.jsx';
-import SubPageHeader from '../components/SubPageHeader.jsx';
+import { useAuth } from '../AuthContext';
+import SubPageHeader from '../components/SubPageHeader';
 import { supabase } from '../supabaseClient.js';
+import { Tables } from '../database.types.js';
 import './EditRoutinePage.css';
 
 // Modal styling moved to CSS (.custom-modal-overlay, .custom-modal-content)
+type MuscleGroup = Tables<'muscle_groups'>;
 
-/**
- * @typedef {object} MuscleGroup
- * @property {string} id
- * @property {string} name
- */
+interface ExerciseInRoutine {
+  id: string; // exercise_id
+  name: string;
+  thumbnail_url: string | null;
+  sets: number | string;
+  reps: string;
+  is_warmup: boolean;
+  // plus other fields used in the form
+  negative?: boolean;
+  drop_set?: boolean;
+  drop_set_percentage?: number | string | null;
+  superset_id?: string | null;
+  is_external?: boolean; // from search
+  description?: string | null,
+  instructions?: string | null,
+  primary_muscle?: string | null,
+  secondary_muscle?: string | null,
+  tertiary_muscle?: string | null,
+  equipment_needed?: string | null,
+  difficulty_level?: string | null,
+  exercise_type?: string | null,
+  type?: string,
+  video_url?: string | null
+}
 
-/**
- * @typedef {object} Exercise
- * @property {string} id - The UUID of the exercise.
- * @property {string} name - The name of the exercise.
- * @property {string} [description] - A short description.
- * @property {string} [category_id] - The UUID for the category (e.g., Strength).
- * @property {string} [type] - The type of exercise (e.g., 'Strength').
- * @property {boolean} [is_external] - Flag indicating if the exercise is from the AI.
- * @property {number | string} sets - The number of sets for the routine.
- * @property {string} reps - The rep range (e.g., "8-12").
- * @property {Array<object>} [exercise_muscle_groups] - Join table data.
- * @property {string} [primary_muscle] - The primary muscle from the AI response.
- */
 
 function EditRoutinePage() {
   const { routineId } = useParams();
@@ -64,8 +72,7 @@ function EditRoutinePage() {
   const { user } = useAuth();
 
   const [routineName, setRoutineName] = useState('');
-  /** @type {[Exercise[], React.Dispatch<React.SetStateAction<Exercise[]>>]} */
-  const [routineExercises, setRoutineExercises] = useState([]);
+  const [routineExercises, setRoutineExercises] = useState<ExerciseInRoutine[]>([]);
 
   // Helper to generate UUID for supersets
   const generateUUID = () => {
@@ -79,16 +86,15 @@ function EditRoutinePage() {
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const searchAbortControllerRef = useRef(null);
-  const searchDebounceRef = useRef(null);
+  const [searchResults, setSearchResults] = useState<ExerciseInRoutine[]>([]);
+  const searchAbortControllerRef = useRef<AbortController | null>(null);
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [customExerciseName, setCustomExerciseName] = useState('');
   const [selectedMuscleGroupId, setSelectedMuscleGroupId] = useState('');
 
-  /** @type {[MuscleGroup[], React.Dispatch<React.SetStateAction<MuscleGroup[]>>]} */
-  const [allMuscleGroups, setAllMuscleGroups] = useState([]);
+  const [allMuscleGroups, setAllMuscleGroups] = useState<MuscleGroup[]>([]);
 
 
   const fetchInitialData = useCallback(async () => {
@@ -100,7 +106,7 @@ function EditRoutinePage() {
       if (routineId !== 'new') {
         const { data, error } = await supabase
           .from('workout_routines')
-          .select(`*, routine_exercises(*, exercises(*))`)
+          .select(`*, routine_exercises(*)`)
           .eq('id', routineId)
           .single();
         if (error) throw error;
@@ -110,8 +116,9 @@ function EditRoutinePage() {
           const rawItems = Array.isArray(data.routine_exercises) ? data.routine_exercises : [];
           const sortedExercises = rawItems.sort((a, b) => (a.exercise_order || 0) - (b.exercise_order || 0));
           const formattedExercises = sortedExercises.map(item => ({
-            // Guard nested relation; some DB/RLS setups may omit nested `exercises`.
-            ...(item.exercises || {}),
+            id: item.exercise_id,
+            name: item.exercise_name,
+            thumbnail_url: item.exercise_thumbnail_url,
             sets: item.target_sets,
             reps: item.target_reps || '8-12',
             is_warmup: item.is_warmup || false

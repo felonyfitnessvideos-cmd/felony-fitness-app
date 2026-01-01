@@ -150,6 +150,7 @@ async function insertFood(food) {
 					break;
 				case 'Vitamin E (alpha-tocopherol)':
 					serving.vitamin_e_mg = n.value;
+					break; // Added break statement
 				case 'Vitamin K (phylloquinone)':
 					serving.vitamin_k_mcg = n.value;
 					break;
