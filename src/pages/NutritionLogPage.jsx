@@ -180,7 +180,7 @@ import { formatMealType } from '../constants/mealPlannerConstants.js';
  * - ALWAYS uses lowercase meal types ('breakfast', 'lunch', 'dinner', 'snack')
  *   for state and database operations. Use formatMealType() for display only.
  */
-import { Apple, Camera, Droplets, Loader2, Search, Trash2, X } from 'lucide-react';
+import { Apple, Droplets, Loader2, Search, Trash2, X } from 'lucide-react';
 import Modal from 'react-modal';
 import { useAuth } from '../AuthContext.jsx';
 import './NutritionLogPage.css';
@@ -311,7 +311,7 @@ function NutritionLogPage() {
       }
 
     } catch (error) {
-      console.error("A critical error occurred during data fetch:", error);
+
     } finally {
       setLoading(false);
     }
@@ -345,7 +345,7 @@ function NutritionLogPage() {
       const day = String(todayDate.getDate()).padStart(2, '0');
       const today = `${year}-${month}-${day}`; // YYYY-MM-DD in LOCAL timezone
       
-      console.log(`[fetchScheduledMeal] Querying for: userId=${userId}, mealType="${mealType}", date=${today}`);
+
       
       const { data, error} = await supabase
         .from('weekly_meal_plan_entries')
@@ -371,16 +371,16 @@ function NutritionLogPage() {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching scheduled meal:', error);
+
         setScheduledMeal(null);
         return;
       }
 
-      console.log(`[fetchScheduledMeal] Query result for "${mealType}":`, data);
+
 
       // Only show button if there's actually a meal assigned (user_meal_id is not null)
       if (data && data.user_meal_id && data.user_meals) {
-        console.log(`[fetchScheduledMeal] Found scheduled meal: "${data.user_meals.name}"`);
+
         setScheduledMeal({
           entryId: data.id,
           mealId: data.user_meal_id,
@@ -388,15 +388,11 @@ function NutritionLogPage() {
           servings: data.servings || 1
         });
       } else {
-        if (data && !data.user_meal_id) {
-          console.log(`[fetchScheduledMeal] Meal slot exists but no meal assigned for "${mealType}"`);
-        } else {
-          console.log(`[fetchScheduledMeal] No scheduled meal found for "${mealType}"`);
-        }
+
         setScheduledMeal(null);
       }
     } catch (error) {
-      console.error('Error in fetchScheduledMeal:', error);
+
       setScheduledMeal(null);
     }
   }, []);
@@ -448,7 +444,7 @@ function NutritionLogPage() {
 
       setIsSearching(true);
       try {
-        console.log('[DEBUG] Searching for:', term);
+
         
         // Escape commas in search term to prevent PostgREST syntax errors
         // PostgREST interprets commas as OR separators, so we need to replace them
@@ -478,10 +474,10 @@ function NutritionLogPage() {
           !food.name.toLowerCase().includes('beer')
         ).slice(0, 50);  // Limit to top 50 results
         
-        console.log('[DEBUG] Search results:', filtered.length, 'foods found (filtered from', results?.length || 0, ')');
+
         
         if (searchError) {
-          console.error('Food search error:', searchError);
+
           setSearchResults([]);
           return;
         }
@@ -538,15 +534,12 @@ function NutritionLogPage() {
           };
         });
 
-        console.log('[DEBUG] Top 10 results:', filtered.slice(0, 10).map(f => f.name));
-        console.log('[DEBUG] Standardized results:', standardizedResults.length);
+
         setSearchResults(standardizedResults);
       } catch (error) {
         if (error?.name === 'AbortError') {
           // ignore
-        } else {
-          console.error('Error searching food:', error?.message || error);
-        }
+
       } finally {
         setIsSearching(false);
         searchAbortControllerRef.current = null;
@@ -565,7 +558,7 @@ function NutritionLogPage() {
           .single();
 
         if (error) {
-          console.error('Error fetching food data:', error);
+
           return;
         }
 
@@ -586,14 +579,8 @@ function NutritionLogPage() {
             needs_serving_fetch: false
           };
           setSelectedFood(updatedFood);
-        } else {
-          console.error('No portions found for food:', food.name);
-          return;
-        }
-      } catch (error) {
-        console.error('Error fetching food portions:', error);
-        return;
-      }
+
+
     } else {
       setSelectedFood(food);
     }
@@ -657,7 +644,7 @@ function NutritionLogPage() {
           .single();
 
         if (foodError) {
-          console.error('Error creating food record:', foodError);
+
           alert(`Error saving food: ${foodError.message}`);
           return;
         }
@@ -673,10 +660,7 @@ function NutritionLogPage() {
             portion_description: selectedFood.serving_description || '1 serving'
           });
 
-        if (portionError) {
-          console.error('Error creating portion record:', portionError);
-          // Continue anyway, we have the food
-        }
+
 
         servingId = newFood.id;
       }
@@ -703,17 +687,11 @@ function NutritionLogPage() {
         })
         .select();
 
-      if (error) {
-        console.error('Error logging food:', error);
-        alert(`Error logging food: ${error.message}`);
-      } else {
+
         await fetchLogData(user.id);
         closeLogModal();
       }
-    } catch (error) {
-      console.error('Unexpected error:', error);
-      alert(`Error logging food: ${error.message}`);
-    }
+
   };
 
   /**
@@ -762,11 +740,7 @@ function NutritionLogPage() {
         `)
         .eq('user_meal_id', scheduledMeal.mealId);
 
-      if (mealFoodsError) {
-        console.error('Error fetching meal foods:', mealFoodsError);
-        alert(`Error fetching meal foods: ${mealFoodsError.message}`);
-        return;
-      }
+
 
       if (!mealFoods || mealFoods.length === 0) {
         alert('This meal has no foods assigned.');
@@ -802,21 +776,12 @@ function NutritionLogPage() {
         .from('nutrition_logs')
         .insert(nutritionLogs);
 
-      if (insertError) {
-        console.error('Error logging meal plan:', insertError);
-        alert(`Error logging meal plan: ${insertError.message}`);
-        return;
-      }
+
 
       // Refresh data to show new logs
       await fetchLogData(user.id);
       setScheduledMeal(null); // Hide button after adding
-    } catch (error) {
-      console.error('Unexpected error adding meal plan:', error);
-      alert(`Error adding meal plan: ${error.message}`);
-    } finally {
-      setIsAddingMealPlan(false);
-    }
+
   };
 
   const handleLogWater = async (ounces) => {
@@ -871,10 +836,7 @@ function NutritionLogPage() {
       .eq('id', logId)
       .eq('user_id', user.id); // Extra security check
 
-    if (error) {
-      console.error('Error deleting food log:', error);
-      alert(`Error deleting food entry: ${error.message}`);
-    } else {
+
       await fetchLogData(user.id); // Refresh the data
     }
   };
@@ -939,7 +901,9 @@ function NutritionLogPage() {
           onChange={(e) => handleSearch(e.target.value)}
           disabled={!user}
         />
-        <button className="camera-btn"><Camera size={20} /></button>
+        {/** 
+        *<button className="camera-btn"><Camera size={20} /></button> */}
+
         {(isSearching || searchResults.length > 0) && (
           <div className="food-search-results">
             {isSearching && <div className="search-loading"><Loader2 className="animate-spin" /></div>}

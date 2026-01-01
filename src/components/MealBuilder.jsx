@@ -39,6 +39,7 @@ const MealBuilder = ({
   onClose,
   onSave,
   editingMeal = null,
+  isPremade = false,
   categories = ['breakfast', 'lunch', 'dinner', 'snack']
 }) => {
   /** @type {[Object, Function]} State for meal metadata and details */
@@ -100,7 +101,7 @@ const MealBuilder = ({
 
       // Use the `user_meal_foods` array passed directly in the `editingMeal` prop.
       // This is more efficient as it avoids a redundant network request.
-      const initialFoods = (editingMeal.user_meal_foods || []).map(item => ({
+      const initialFoods = (isPremade ? editingMeal.meal_foods : editingMeal.user_meal_foods || []).map(item => ({
         ...item,
         // Defensively ensure the nested `foods` object exists. If it's null
         // (e.g., due to a broken foreign key), substitute a placeholder to
@@ -118,7 +119,7 @@ const MealBuilder = ({
       });
       setMealFoods([]);
     }
-  }, [editingMeal, isOpen]);
+  }, [editingMeal, isOpen, isPremade]);
 
   /**
    * Calculate total nutrition values for all foods in the meal
@@ -415,6 +416,10 @@ const MealBuilder = ({
    * await handleSaveMeal();
    */
   const handleSaveMeal = async () => {
+    if (isPremade) {
+      alert('You cannot edit a premade meal. Please duplicate the meal to make changes.');
+      return;
+    }
     if (!mealData.name.trim()) {
       alert('Please enter a meal name');
       return;

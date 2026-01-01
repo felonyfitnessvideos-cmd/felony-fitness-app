@@ -60,6 +60,7 @@ const MyMealsPage = () => {
   
   /** @type {[string|null, Function]} Success message for toast notifications */
   const [successMessage, setSuccessMessage] = useState(null);
+  const [isPremade, setIsPremade] = useState(false);
 
   /** @constant {Array<Object>} Available meal categories for filtering */
   const categories = MEAL_CATEGORIES;
@@ -505,8 +506,9 @@ const MyMealsPage = () => {
     }
   };
 
-  const handleEditMeal = (meal) => {
+  const handleEditMeal = (meal, isPremade = false) => {
     setEditingMeal(meal);
+    setIsPremade(isPremade);
     setShowMealBuilder(true);
   };
 
@@ -638,13 +640,22 @@ const MyMealsPage = () => {
                           </div>
                         </div>
                       </div>
-                      <button
-                        onClick={() => addPremadeMeal(meal)}
-                        className="add-meal-btn"
-                      >
-                        <Plus className="icon" />
-                        Add to My Meals
-                      </button>
+                      <div className="meal-actions">
+                        <button
+                          onClick={() => handleEditMeal(meal, true)}
+                          className="action-btn edit"
+                          title="Edit meal"
+                        >
+                          <Edit className="icon" />
+                        </button>
+                        <button
+                          onClick={() => addPremadeMeal(meal)}
+                          className="add-meal-btn"
+                        >
+                          <Plus className="icon" />
+                          Add to My Meals
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -863,6 +874,8 @@ const MyMealsPage = () => {
         }}
         onSave={handleMealSaved}
         editingMeal={editingMeal}
+        premadeMeals={premadeMeals}
+        isPremade={isPremade}
       />
     </div>
   );
