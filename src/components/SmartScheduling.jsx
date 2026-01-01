@@ -163,8 +163,8 @@
  * 
  * @param {Object} props - Component props
  * @param {Object} props.selectedClient - Currently selected client object
- * @param {string} props.selectedClient.id - Client's user_id in database
- * @param {string} props.selectedClient.full_name - Client's display name
+ * @param {string} props.selectedClient.clientId - Client's user_id in database
+ * @param {string} props.selectedClient.name - Client's display name
  * @param {string} props.selectedClient.email - Client's email for calendar sharing
  * @param {Function} props.onScheduleCreated - Callback when schedule exported to calendar
  * @param {Object} props.onScheduleCreated.schedule - Created schedule object
@@ -235,18 +235,20 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
    * Load client's assigned program and generated routines
    */
   const loadClientProgram = useCallback(async () => {
-    if (!selectedClient?.id) return;
+    if (!selectedClient?.clientId || !_user?.id) return;
 
     try {
       // Get client's trainer_clients record to find assigned program
       const { data: trainerClient, error: tcError } = await supabase
         .from('trainer_clients')
         .select('assigned_program_id, generated_routine_ids, notes')
-        .eq('client_id', selectedClient.id)
+        .eq('trainer_id', _user.id)
+        .eq('client_id', selectedClient.clientId)
         .single();
 
       if (tcError || !trainerClient?.assigned_program_id) {
         setStatusMessage('No program assigned to this client yet');
+        setClientProgram(null);
         return;
       }
 
@@ -272,6 +274,7 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
 
       // Add workoutDays to program data
       setClientProgram({ ...program, workoutDays });
+      setStatusMessage('');
 
       // Get generated routines for this client
       if (trainerClient.generated_routine_ids && trainerClient.generated_routine_ids.length > 0) {
@@ -279,7 +282,7 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
           .from('workout_routines')
           .select('*')
           .in('id', trainerClient.generated_routine_ids)
-          .eq('user_id', selectedClient.id);
+          .eq('user_id', selectedClient.clientId);
 
         if (routError) throw routError;
 
@@ -290,7 +293,7 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
       console.error('Error loading client program:', error);
       setStatusMessage('Error loading program data');
     }
-  }, [selectedClient]);
+  }, [selectedClient, _user]);
 
   /**
    * Load client program and routines when client selected
@@ -448,7 +451,7 @@ const SmartScheduling = ({ selectedClient, onScheduleCreated }) => {
           const { error: dbError } = await supabase
             .from('scheduled_routines')
             .insert({
-              user_id: selectedClient.id,
+              user_id: selectedClient.clientId,
               routine_id: routine.id,
               scheduled_date: firstOccurrence.toISOString().split('T')[0],
               scheduled_time: scheduledTime,

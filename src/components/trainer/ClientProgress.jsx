@@ -6,7 +6,7 @@
  * @project Felony Fitness
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient.js';
 import { TrendingUp, Dumbbell, Flame, BarChart3, Apple, Target } from 'lucide-react';
 import LazyRecharts from '../LazyRecharts.jsx';
@@ -39,117 +39,124 @@ const ClientProgress = ({ client }) => {
   /**
    * Fetch all progress data for selected client
    */
-  const fetchClientProgress = useCallback(async (clientId) => {
-    try {
-      setLoading(true);
+  useEffect(() => {
+    const fetchClientProgress = async (clientId) => {
+      try {
+        setLoading(true);
 
-      const [workoutLogsRes, nutritionLogsRes, goalsRes] = await Promise.all([
-        // Fetch completed workouts
-        supabase.from('workout_logs')
-          .select('duration_minutes, created_at, calories_burned')
-          .eq('user_id', clientId)
-          .gt('duration_minutes', 0),
+        const [workoutLogsRes, nutritionLogsRes, goalsRes] = await Promise.all([
+          // Fetch completed workouts
+          supabase.from('workout_logs')
+            .select('duration_minutes, created_at, calories_burned')
+            .eq('user_id', clientId)
+            .gt('duration_minutes', 0),
+          
+          // Fetch nutrition logs
+          supabase.from('nutrition_logs')
+            .select('created_at, calories')
+            .eq('user_id', clientId),
+          
+          // Fetch active goals
+          supabase.from('goals')
+            .select('*')
+            .eq('user_id', clientId)
+        ]);
+
+        if (workoutLogsRes.error) throw workoutLogsRes.error;
+        const workoutLogs = workoutLogsRes.data || [];
         
-        // Fetch nutrition logs
-        supabase.from('nutrition_logs')
-          .select('created_at, calories')
-          .eq('user_id', clientId),
+        // Calculate workout statistics
+        const totalWorkouts = workoutLogs.length;
+        const totalDuration = workoutLogs.reduce((sum, log) => sum + (log.duration_minutes || 0), 0);
+        const avgDuration = totalWorkouts > 0 ? Math.round(totalDuration / totalWorkouts) : 0;
         
-        // Fetch active goals
-        supabase.from('goals')
-          .select('*')
-          .eq('user_id', clientId)
-      ]);
-
-      if (workoutLogsRes.error) throw workoutLogsRes.error;
-      const workoutLogs = workoutLogsRes.data || [];
-      
-      // Calculate workout statistics
-      const totalWorkouts = workoutLogs.length;
-      const totalDuration = workoutLogs.reduce((sum, log) => sum + (log.duration_minutes || 0), 0);
-      const avgDuration = totalWorkouts > 0 ? Math.round(totalDuration / totalWorkouts) : 0;
-      
-      // Group by local date for charts
-      const durationMap = new Map();
-      const burnMap = new Map();
-      
-      workoutLogs.forEach(log => {
-        const dt = new Date(log.created_at);
-        const year = dt.getFullYear();
-        const month = (dt.getMonth() + 1).toString().padStart(2, '0');
-        const day = dt.getDate().toString().padStart(2, '0');
-        const localSortKey = `${year}-${month}-${day}`;
-        const displayDate = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-        const existingDuration = durationMap.get(localSortKey) || { date: displayDate, duration: 0 };
-        existingDuration.duration += (log.duration_minutes || 0);
-        durationMap.set(localSortKey, existingDuration);
+        // Group by local date for charts
+        const durationMap = new Map();
+        const burnMap = new Map();
         
-        const existingBurn = burnMap.get(localSortKey) || { date: displayDate, burn: 0 };
-        existingBurn.burn += (log.calories_burned || 0);
-        burnMap.set(localSortKey, existingBurn);
-      });
-      
-      const workoutArray = Array.from(durationMap, ([iso, val]) => ({ iso, ...val }))
-        .sort((a, b) => a.iso.localeCompare(b.iso))
-        .map(({ date, duration }) => ({ date, duration }))
-        .slice(-7); // Last 7 days only for compact view
-      
-      setWorkoutDurationTrends(workoutArray);
-      
-      const totalBurn = Array.from(burnMap.values()).reduce((sum, obj) => sum + (obj.burn || 0), 0);
-      const avgBurn = burnMap.size > 0 ? Math.round(totalBurn / burnMap.size) : 0;
+        workoutLogs.forEach(log => {
+          const dt = new Date(log.created_at);
+          const year = dt.getFullYear();
+          const month = (dt.getMonth() + 1).toString().padStart(2, '0');
+          const day = dt.getDate().toString().padStart(2, '0');
+          const localSortKey = `${year}-${month}-${day}`;
+          const displayDate = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-      // Calculate nutrition statistics
-      if (nutritionLogsRes.error) throw nutritionLogsRes.error;
-      const nutritionLogs = nutritionLogsRes.data || [];
-
-      const calorieMap = new Map();
-      nutritionLogs.forEach(log => {
-        const dt = new Date(log.created_at);
-        const year = dt.getFullYear();
-        const month = (dt.getMonth() + 1).toString().padStart(2, '0');
-        const day = dt.getDate().toString().padStart(2, '0');
-        const localSortKey = `${year}-${month}-${day}`;
-        const displayDate = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-        const existing = calorieMap.get(localSortKey) || { date: displayDate, calories: 0 };
+          const existingDuration = durationMap.get(localSortKey) || { date: displayDate, duration: 0 };
+          existingDuration.duration += (log.duration_minutes || 0);
+          durationMap.set(localSortKey, existingDuration);
+          
+          const existingBurn = burnMap.get(localSortKey) || { date: displayDate, burn: 0 };
+          existingBurn.burn += (log.calories_burned || 0);
+          burnMap.set(localSortKey, existingBurn);
+        });
         
-        // Calories are calculated by the database trigger
-        // The trigger uses: (foods.calories * quantity_consumed / 100)
-        existing.calories += (log.calories || 0);
+        const workoutArray = Array.from(durationMap, ([iso, val]) => ({ iso, ...val }))
+          .sort((a, b) => a.iso.localeCompare(b.iso))
+          .map(({ date, duration }) => ({ date, duration }))
+          .slice(-7); // Last 7 days only for compact view
         
-        calorieMap.set(localSortKey, existing);
-      });
-      
-      const nutritionArray = Array.from(calorieMap, ([iso, val]) => ({ iso, ...val }))
-        .sort((a, b) => a.iso.localeCompare(b.iso))
-        .map(({ date, calories }) => ({ date, calories: Math.round(calories) }))
-        .slice(-7); // Last 7 days only
-      
-      setNutritionTrends(nutritionArray);
-      
-      const totalCalories = Array.from(calorieMap.values()).reduce((sum, val) => sum + (Number(val?.calories) || 0), 0);
-      const avgCalories = calorieMap.size > 0 ? Math.round(totalCalories / calorieMap.size) : 0;
-      
-      // Set goals data
-      if (goalsRes.error) throw goalsRes.error;
-      const activeGoals = goalsRes.data || [];
-      setGoals(activeGoals.slice(0, 3)); // Show top 3 goals only
-      
-      setStats({ totalWorkouts, avgDuration, avgCalories, avgBurn, activeGoals: activeGoals.length });
-    } catch (error) {
-      console.error("Error fetching client progress:", error);
-    } finally {
+        setWorkoutDurationTrends(workoutArray);
+        
+        const totalBurn = Array.from(burnMap.values()).reduce((sum, obj) => sum + (obj.burn || 0), 0);
+        const avgBurn = burnMap.size > 0 ? Math.round(totalBurn / burnMap.size) : 0;
+
+        // Calculate nutrition statistics
+        if (nutritionLogsRes.error) throw nutritionLogsRes.error;
+        const nutritionLogs = nutritionLogsRes.data || [];
+
+        const calorieMap = new Map();
+        nutritionLogs.forEach(log => {
+          const dt = new Date(log.created_at);
+          const year = dt.getFullYear();
+          const month = (dt.getMonth() + 1).toString().padStart(2, '0');
+          const day = dt.getDate().toString().padStart(2, '0');
+          const localSortKey = `${year}-${month}-${day}`;
+          const displayDate = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+          const existing = calorieMap.get(localSortKey) || { date: displayDate, calories: 0 };
+          
+          // Calories are calculated by the database trigger
+          // The trigger uses: (foods.calories * quantity_consumed / 100)
+          existing.calories += (log.calories || 0);
+          
+          calorieMap.set(localSortKey, existing);
+        });
+        
+        const nutritionArray = Array.from(calorieMap, ([iso, val]) => ({ iso, ...val }))
+          .sort((a, b) => a.iso.localeCompare(b.iso))
+          .map(({ date, calories }) => ({ date, calories: Math.round(calories) }))
+          .slice(-7); // Last 7 days only
+        
+        setNutritionTrends(nutritionArray);
+        
+        const totalCalories = Array.from(calorieMap.values()).reduce((sum, val) => sum + (Number(val?.calories) || 0), 0);
+        const avgCalories = calorieMap.size > 0 ? Math.round(totalCalories / calorieMap.size) : 0;
+        
+        // Set goals data
+        if (goalsRes.error) throw goalsRes.error;
+        const activeGoals = goalsRes.data || [];
+        setGoals(activeGoals.slice(0, 3)); // Show top 3 goals only
+        
+        setStats({ totalWorkouts, avgDuration, avgCalories, avgBurn, activeGoals: activeGoals.length });
+      } catch (error) {
+        console.error("Error fetching client progress:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (client?.clientId) {
+      fetchClientProgress(client.clientId);
+    } else {
+      // Clear data and loading state if no client is selected
+      setStats({ totalWorkouts: 0, avgDuration: 0, avgCalories: 0, avgBurn: 0, activeGoals: 0 });
+      setNutritionTrends([]);
+      setWorkoutDurationTrends([]);
+      setGoals([]);
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    if (client?.id) {
-      fetchClientProgress(client.id);
-    }
-  }, [client?.id, fetchClientProgress]);
+  }, [client]);
 
   if (!client) {
     return (
