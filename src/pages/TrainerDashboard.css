@@ -396,6 +396,8 @@
     padding: 0.5rem 0.25rem;
   }
   
+  
+  
   .content-container {
     max-width: 90vw;
   }
@@ -534,6 +536,8 @@
     padding: 0.75rem 1rem;
   }
   
+ 
+  
   .trainer-header h1 {
     font-size: 1.5rem;
   }
@@ -669,4 +673,11 @@
   height: 100%;
   color: var(--error-color);
   text-align: center;
+}
+
+/* Tablet Portrait - Hide duplicate home button */
+@media screen and (orientation: portrait) and (min-width: 630px) and (max-width: 900px) {
+  .quick-tools-sidebar .tool-item.home-btn {
+    display: none;
+  }
 }

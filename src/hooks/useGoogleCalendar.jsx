@@ -187,7 +187,6 @@ export default function useGoogleCalendar() {
   const initialize = useCallback(async () => {
     // Skip if already initialized or initialization in progress
     if (isInitialized || initializationAttempted.current || initializationInProgress.current) {
-      console.log(`🔍 Skipping initialization: initialized=${isInitialized}, attempted=${initializationAttempted.current}, inProgress=${initializationInProgress.current}`);
       return;
     }
 
@@ -199,7 +198,6 @@ export default function useGoogleCalendar() {
     // Note: Removed abort controller logic as it was causing issues with React Strict Mode
     
     try {
-      console.log('🔍 Initializing Google Calendar hook...');
       
       // Validate configuration
       if (!configuredStatus) {
@@ -211,12 +209,10 @@ export default function useGoogleCalendar() {
       }
       
       setIsConfigured(true);
-      console.log('✅ Google Calendar configuration validated');
       
       // Continue with initialization (removed abort controller check)
       
       // Initialize the service
-      console.log('🔍 Initializing Google Calendar service...');
       const success = await googleCalendarService.initialize(
         config.apiKey,
         config.clientId
@@ -228,7 +224,6 @@ export default function useGoogleCalendar() {
         setIsInitialized(true);
         const authState = googleCalendarService.isAuthenticated();
         setIsAuthenticated(authState);
-        console.log(`✅ Google Calendar hook initialized successfully - Auth: ${authState}`);
         
         // Mark initialization as truly complete
         initializationAttempted.current = true;
@@ -271,7 +266,6 @@ export default function useGoogleCalendar() {
    */
   const loadCalendars = useCallback(async () => {
     if (!isAuthenticated) {
-      console.warn('⚠️ Cannot load calendars: not authenticated');
       return [];
     }
     
@@ -279,12 +273,10 @@ export default function useGoogleCalendar() {
     setError(null);
     
     try {
-      console.log('🔍 Loading user calendars...');
       
       const calendarList = await googleCalendarService.getCalendars();
       setCalendars(calendarList || []);
       
-      console.log(`✅ Loaded ${calendarList?.length || 0} calendars`);
       return calendarList || [];
     } catch (err) {
       const errorMsg = err.message || 'Failed to load calendars';
@@ -333,7 +325,6 @@ export default function useGoogleCalendar() {
     // Validate authentication
     if (!isAuthenticated) {
       const errorMsg = 'Cannot load events: not authenticated with Google Calendar';
-      console.warn('⚠️', errorMsg);
       if (updateState) {
         setError(errorMsg);
       }
@@ -374,7 +365,6 @@ export default function useGoogleCalendar() {
     }
     
     try {
-      console.log(`🔍 Loading events from ${calendarId} (${startDate.toISOString()} to ${endDate.toISOString()})`);
       
       const eventList = await googleCalendarService.getEvents(calendarId, startDate, endDate, {
         maxResults,
@@ -385,7 +375,6 @@ export default function useGoogleCalendar() {
         setEvents(eventList || []);
       }
       
-      console.log(`✅ Loaded ${eventList?.length || 0} events from ${calendarId}`);
       return eventList || [];
     } catch (err) {
       const errorMsg = err.message || 'Failed to load events';
@@ -437,7 +426,6 @@ export default function useGoogleCalendar() {
     try {
       // Ensure service is initialized
       if (!isInitialized) {
-        console.log('🔍 Service not initialized, initializing...');
         await initialize();
         
         // Check if initialization succeeded
@@ -449,7 +437,6 @@ export default function useGoogleCalendar() {
       setIsLoading(true);
       setError(null);
       
-      console.log('🔍 Starting Google Calendar sign-in...');
       
       const success = await googleCalendarService.signIn({
         forceConsent,
@@ -458,10 +445,8 @@ export default function useGoogleCalendar() {
       
       if (success) {
         setIsAuthenticated(true);
-        console.log('✅ Google Calendar sign-in successful');
         
         if (loadData) {
-          console.log('🔍 Loading post-authentication data...');
           
           // Load data in parallel for better performance
           const dataPromises = [];
@@ -486,7 +471,6 @@ export default function useGoogleCalendar() {
           
           // Wait for data loading (but don't fail sign-in if data loading fails)
           await Promise.allSettled(dataPromises);
-          console.log('✅ Post-authentication data loading completed');
         }
         
         return true;
@@ -527,7 +511,6 @@ export default function useGoogleCalendar() {
     setError(null);
     
     try {
-      console.log('🔍 Signing out from Google Calendar...');
       
       await googleCalendarService.signOut();
       
@@ -536,7 +519,6 @@ export default function useGoogleCalendar() {
       setCalendars([]);
       setEvents([]);
       
-      console.log('✅ Successfully signed out from Google Calendar');
       return true;
     } catch (err) {
       const errorMsg = err.message || 'Failed to sign out';
@@ -625,12 +607,6 @@ export default function useGoogleCalendar() {
     setError(null);
     
     try {
-      console.log(`🔍 Creating event in ${calendarId}:`, {
-        client: appointmentData.clientName,
-        type: appointmentData.type,
-        date: appointmentData.date.toISOString(),
-        duration: appointmentData.duration
-      });
       
       const eventData = googleCalendarService.formatAppointmentForCalendar(appointmentData);
       const createdEvent = await googleCalendarService.createEvent(eventData, calendarId);
@@ -647,7 +623,6 @@ export default function useGoogleCalendar() {
         });
       }
       
-      console.log('✅ Event created successfully:', createdEvent.id);
       return createdEvent;
     } catch (err) {
       const errorMsg = err.message || 'Failed to create event';
@@ -676,7 +651,9 @@ export default function useGoogleCalendar() {
    * @throws {Error} Throws error if eventId is invalid
    * @throws {Error} Throws error if update fails
    */
-  const updateEvent = useCallback(async (eventId, appointmentData, calendarId = 'primary') => {
+  const updateEvent = useCallback(async (eventId, appointmentData, calendarId = 'primary', options = {}) => {
+    const { refreshStart, refreshEnd } = options;
+
     if (!isAuthenticated) {
       throw new Error('Cannot update event: not authenticated with Google Calendar');
     }
@@ -693,9 +670,9 @@ export default function useGoogleCalendar() {
       const updatedEvent = await googleCalendarService.updateEvent(eventId, eventData, calendarId);
       
       // Refresh events after update (in background)
-      const today = new Date();
-      const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
-      loadEvents(calendarId, today, nextMonth).catch(err => {
+      const startDate = refreshStart || new Date();
+      const endDate = refreshEnd || new Date(startDate.getFullYear(), startDate.getMonth() + 1, startDate.getDate());
+      loadEvents(calendarId, startDate, endDate).catch(err => {
         console.warn('⚠️ Failed to refresh events after update:', err.message);
       });
       
@@ -725,7 +702,9 @@ export default function useGoogleCalendar() {
    * @throws {Error} Throws error if eventId is invalid
    * @throws {Error} Throws error if deletion fails
    */
-  const deleteEvent = useCallback(async (eventId, calendarId = 'primary') => {
+  const deleteEvent = useCallback(async (eventId, calendarId = 'primary', options = {}) => {
+    const { refreshStart, refreshEnd } = options;
+
     if (!isAuthenticated) {
       throw new Error('Cannot delete event: not authenticated with Google Calendar');
     }
@@ -741,9 +720,9 @@ export default function useGoogleCalendar() {
       await googleCalendarService.deleteEvent(eventId, calendarId);
       
       // Refresh events after deletion (in background)
-      const today = new Date();
-      const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
-      loadEvents(calendarId, today, nextMonth).catch(err => {
+      const startDate = refreshStart || new Date();
+      const endDate = refreshEnd || new Date(startDate.getFullYear(), startDate.getMonth() + 1, startDate.getDate());
+      loadEvents(calendarId, startDate, endDate).catch(err => {
         console.warn('⚠️ Failed to refresh events after deletion:', err.message);
       });
       
@@ -849,34 +828,14 @@ export default function useGoogleCalendar() {
     if (isInitialized) {
       const actualAuthState = googleCalendarService.isAuthenticated();
       if (actualAuthState !== isAuthenticated) {
-        console.log(`🔄 Syncing auth state: ${isAuthenticated} -> ${actualAuthState}`);
         setIsAuthenticated(actualAuthState);
       }
     }
   }, [isInitialized, isAuthenticated]);
 
-  // Load events when authentication is restored
-  useEffect(() => {
-    if (isAuthenticated && isInitialized) {
-      const loadInitialEvents = async () => {
-        try {
-          console.log('🔍 Loading initial events after authentication...');
-          const today = new Date();
-          const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
-          await loadEvents('primary', today, nextMonth, { updateState: true });
-        } catch (err) {
-          console.error('❌ Failed to load initial events:', err);
-          // Don't set error state here as it might interfere with sign-in flow
-        }
-      };
-      loadInitialEvents();
-    }
-  }, [isAuthenticated, isInitialized, loadEvents]);
-
   // Cleanup effect
   useEffect(() => {
     return () => {
-      console.log('🧹 Cleanup effect running');
       
       // Clear any pending error clear timers
       if (errorClearTimer.current) {

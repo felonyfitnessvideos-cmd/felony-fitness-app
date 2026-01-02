@@ -21,11 +21,12 @@
  * }
  */
 
-import { AlertCircle, Calendar, CheckCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, Calendar, CheckCircle, Edit, RefreshCw, Trash2 } from 'lucide-react';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../AuthContext';
 import { supabase } from '../../supabaseClient';
 import useGoogleCalendar from '../../hooks/useGoogleCalendar.jsx';
+import EditEventModal from '../../components/trainer/EditEventModal';
 import './TrainerCalendar.css';
 
 /**
@@ -99,6 +100,25 @@ const TrainerCalendar = memo(() => {
   // Error boundary state
   /** @type {[string|null, Function]} Component-level error state */
   const [componentError, setComponentError] = useState(null);
+  const [editingEvent, setEditingEvent] = useState(null);
+
+  const handleDeleteEvent = async (eventId) => {
+    if (window.confirm('Are you sure you want to delete this event?')) {
+      try {
+        const startOfWeek = getWeekDates(currentWeek)[0];
+        const endOfWeek = new Date(getWeekDates(currentWeek)[6]);
+        endOfWeek.setDate(endOfWeek.getDate() + 1);
+
+        await deleteEvent(eventId, 'primary', {
+          refreshStart: startOfWeek,
+          refreshEnd: endOfWeek,
+        });
+      } catch (error) {
+        console.error('Failed to delete event:', error);
+        alert(`Error: ${error.message}`);
+      }
+    }
+  };
 
   // Refs for scroll functionality
   /** @type {React.MutableRefObject<HTMLDivElement|null>} Reference to calendar scroll container */
@@ -121,7 +141,9 @@ const TrainerCalendar = memo(() => {
     signOut,
     loadEvents,
     createEvent,
-    clearError
+    clearError,
+    updateEvent,
+    deleteEvent,
   } = useGoogleCalendar();
 
   /**
@@ -557,7 +579,7 @@ const TrainerCalendar = memo(() => {
 
       // Check Google Calendar events
       if (events && Array.isArray(events)) {
-        const googleEvent = events.find(event => {
+        const googleEvents = events.filter(event => {
           try {
             if (!event || (!event.start?.dateTime && !event.start?.date)) {
               return false;
@@ -571,18 +593,20 @@ const TrainerCalendar = memo(() => {
                 return false;
               }
 
-              const eventDate = eventStart.toDateString();
-              const eventHour = eventStart.getHours();
-              return eventDate === date.toDateString() && eventHour === hour;
+              const sameDay = eventStart.getFullYear() === date.getFullYear() &&
+                            eventStart.getMonth() === date.getMonth() &&
+                            eventStart.getDate() === date.getDate();
+
+              return sameDay && eventStart.getHours() === hour;
             } else if (event.start.date) {
               // All-day event - show in 8 AM slot
-              eventStart = new Date(event.start.date);
-              if (isNaN(eventStart.getTime())) {
-                return false;
-              }
+              // To reliably compare, format the column date to 'YYYY-MM-DD'
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              const columnDateString = `${year}-${month}-${day}`;
 
-              const eventDate = eventStart.toDateString();
-              return eventDate === date.toDateString() && hour === 8;
+              return event.start.date === columnDateString && hour === 8;
             }
 
             return false;
@@ -592,8 +616,8 @@ const TrainerCalendar = memo(() => {
           }
         });
 
-        if (googleEvent) {
-          eventsForSlot.push(googleEvent);
+        if (googleEvents.length > 0) {
+          googleEvents.forEach(gEvent => eventsForSlot.push({ ...gEvent, source: 'google' }));
         }
       }
 
@@ -992,6 +1016,16 @@ const TrainerCalendar = memo(() => {
                                             }) : 'All Day'
                                           }
                                         </div>
+                                        {event.source === 'google' && (
+                                          <div className="event-actions">
+                                            <button className="event-action-btn edit-event-btn" onClick={() => setEditingEvent(event)}>
+                                              <Edit size={12} />
+                                            </button>
+                                            <button className="event-action-btn delete-event-btn" onClick={() => handleDeleteEvent(event.id)}>
+                                              <Trash2 size={12} />
+                                            </button>
+                                          </div>
+                                        )}
                                       </div>
                                     ))}
                                   </div>
@@ -1042,6 +1076,28 @@ const TrainerCalendar = memo(() => {
           )}
         </div>
       </div>
+      {editingEvent && (
+        <EditEventModal
+          event={editingEvent}
+          onClose={() => setEditingEvent(null)}
+          onSave={async (eventId, updatedData) => {
+            try {
+              const startOfWeek = getWeekDates(currentWeek)[0];
+              const endOfWeek = new Date(getWeekDates(currentWeek)[6]);
+              endOfWeek.setDate(endOfWeek.getDate() + 1);
+
+              await updateEvent(eventId, updatedData, 'primary', {
+                refreshStart: startOfWeek,
+                refreshEnd: endOfWeek,
+              });
+              setEditingEvent(null);
+            } catch (error) {
+              console.error('Failed to update event:', error);
+              alert(`Error: ${error.message}`);
+            }
+          }}
+        />
+      )}
     </div>
   );
 });

@@ -1,0 +1,145 @@
+/**
+ * @fileoverview CSS styles for the EditEventModal component.
+ */
+
+.edit-event-modal {
+  background: var(--card-background);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 500px;
+  animation: slide-up 0.3s ease;
+}
+
+.edit-event-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.edit-event-modal .modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.edit-event-modal .close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.edit-event-modal .close-btn:hover {
+  background-color: var(--hover-color);
+}
+
+.edit-event-modal .modal-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.edit-event-modal .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.edit-event-modal .form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.edit-event-modal .form-group input,
+.edit-event-modal .form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--background-color);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.edit-event-modal .form-group input:focus,
+.edit-event-modal .form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.2);
+}
+
+.edit-event-modal .form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.edit-event-modal .form-row .form-group {
+  flex: 1;
+}
+
+.edit-event-modal .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--background-color);
+  border-radius: 0 0 12px 12px;
+}
+
+/* Re-using button styles from other components */
+.edit-event-modal .btn-primary,
+.edit-event-modal .btn-secondary {
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.edit-event-modal .btn-secondary {
+  background: var(--button-background);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.edit-event-modal .btn-secondary:hover {
+  background: var(--hover-color);
+}
+
+.edit-event-modal .btn-primary {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+}
+
+.edit-event-modal .btn-primary:hover {
+  background: var(--primary-color-dark);
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

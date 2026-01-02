@@ -218,6 +218,7 @@ const ProgramBuilderModal = ({ onClose, onSave }) => {
         target_muscle_groups: Array.from(muscleGroups),
         is_active: true,
         created_by: user.id,
+        trainer_id: user.id,
         created_at: new Date().toISOString()
       };
 

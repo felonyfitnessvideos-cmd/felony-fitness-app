@@ -764,7 +764,13 @@
 }
 
 /* Program Edit Button */
-.program-edit-btn {
+.program-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.program-edit-btn, .program-delete-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -772,19 +778,31 @@
   background: rgba(26, 32, 44, 0.5);
   border: 1px solid rgba(74, 85, 104, 0.5);
   border-radius: 6px;
-  color: var(--text-secondary, #a0aec0);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  margin-bottom: 12px;
   width: fit-content;
+}
+
+.program-edit-btn {
+  color: var(--text-secondary, #a0aec0);
 }
 
 .program-edit-btn:hover {
   background: rgba(45, 55, 72, 0.8);
   border-color: #f97316;
   color: #f97316;
+}
+
+.program-delete-btn {
+  color: #e53e3e;
+}
+
+.program-delete-btn:hover {
+  background: rgba(229, 62, 62, 0.1);
+  border-color: #c53030;
+  color: #c53030;
 }
 
 .program-edit-btn svg {

@@ -18,13 +18,11 @@
  */
 
 import {
-  Activity,
   ArrowLeft,
   BookOpen,
   Edit,
-  Home,
   Plus,
-  TrendingUp,
+  Trash2,
   X
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -33,9 +31,7 @@ import { useAuth } from '../../AuthContext';
 import ProgramBuilderModal from '../../components/trainer/ProgramBuilderModal';
 import ProgramEditorModal from '../../components/trainer/ProgramEditorModal';
 import CustomMuscleMap from '../../components/workout-builder/CustomMuscleMap';
-import InteractiveMuscleMap from '../../components/workout-builder/InteractiveMuscleMap';
 import { supabase } from '../../supabaseClient';
-import { calculateProgramEngagement, generateHeatmapData } from '../../utils/programAnalytics';
 import { generateRoutines } from '../../utils/routineGenerator';
 import './TrainerPrograms.css';
 
@@ -67,178 +63,6 @@ import './TrainerPrograms.css';
  */
 
 /**
- * Program Muscle Map Component
- * Displays muscle engagement visualization for a program
- */
-const ProgramMuscleMap = ({ program, routines = [] }) => {
-  const [heatmapData, setHeatmapData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [analysisData, setAnalysisData] = useState(null);
-
-  useEffect(() => {
-    generateProgramHeatmap();
-    // generateProgramHeatmap changes on every render, so we can't include it safely
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [program, routines]);
-
-  const generateProgramHeatmap = async () => {
-    try {
-      setLoading(true);
-
-      if (!program || routines.length === 0) {
-        setHeatmapData([]);
-        setAnalysisData(null);
-        return;
-      }
-
-      // Fetch detailed exercise data for all routines
-      const routinesWithExercises = await Promise.all(
-        routines.map(async (routine) => {
-          // Use routine_id if available (from program_routines join), otherwise use id
-          const routineId = routine.routine_id ?? routine.id;
-
-          if (!routineId) {
-            console.warn('Routine missing both routine_id and id:', routine);
-            return { ...routine, exercises: [] };
-          }
-
-          const { data: routineExercises, error } = await supabase
-            .from('routine_exercises')
-            .select(`
-              *,
-              exercises(
-                *,
-                primary_muscle_groups:muscle_groups!primary_muscle_group_id(id, name),
-                secondary_muscle_groups:muscle_groups!secondary_muscle_group_id(id, name),
-                tertiary_muscle_groups:muscle_groups!tertiary_muscle_group_id(id, name)
-              )
-            `)
-            .eq('routine_id', routineId);
-
-          if (error) {
-            console.warn('Error fetching routine exercises:', error);
-            return { ...routine, exercises: [] };
-          }
-
-          return {
-            ...routine,
-            exercises: routineExercises || []
-          };
-        })
-      );
-
-      // Create program structure for analysis
-      const programForAnalysis = {
-        ...program,
-        routines: routinesWithExercises
-      };
-
-      // Calculate engagement using our analytics
-      const engagementData = calculateProgramEngagement(programForAnalysis, {
-        includeVolume: true,
-        volumeMultiplier: 1.2
-      });
-
-      // Generate heatmap data
-      const heatmap = generateHeatmapData(engagementData);
-
-      setHeatmapData(heatmap);
-      setAnalysisData(engagementData);
-
-    } catch (error) {
-      console.error('Error generating program heatmap:', error);
-      setHeatmapData([]);
-      setAnalysisData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="program-muscle-map loading">
-        <div className="map-loading-spinner"></div>
-        <span>Analyzing program...</span>
-      </div>
-    );
-  }
-
-  if (!analysisData || heatmapData.length === 0) {
-    return (
-      <div className="program-muscle-map empty">
-        <Activity size={24} />
-        <span>No muscle data available</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="program-muscle-map">
-      <div className="muscle-map-container">
-        <InteractiveMuscleMap
-          heatmapData={heatmapData}
-          interactive={false}
-          showLabels={false}
-          className="program-map-display"
-        />
-      </div>
-
-      <div className="muscle-engagement-summary">
-        <div className="engagement-stats">
-          <div className="stat-item">
-            <TrendingUp size={16} />
-            <span>{analysisData.programStats.uniqueMusclesTargeted} muscles targeted</span>
-          </div>
-          <div className="stat-item">
-            <Activity size={16} />
-            <span>{analysisData.programStats.totalExercises} total exercises</span>
-          </div>
-          <div className="stat-item balance-indicator">
-            <span className={`balance-status ${analysisData.balanceAnalysis.overall}`}>
-              {analysisData.balanceAnalysis.overall === 'balanced' ? '✓ Balanced' :
-                analysisData.balanceAnalysis.overall === 'moderately_imbalanced' ? '⚠ Moderate' :
-                  analysisData.balanceAnalysis.overall === 'imbalanced' ? '⚠ Imbalanced' : 'Unknown'}
-            </span>
-          </div>
-        </div>
-
-        {analysisData.sortedMuscles.length > 0 && (
-          <div className="top-muscles">
-            <span className="top-muscles-label">Primary focus:</span>
-            <div className="muscle-tags">
-              {analysisData.sortedMuscles.slice(0, 3).map((muscle, index) => (
-                <span key={muscle.muscle} className={`muscle-tag rank-${index + 1}`}>
-                  {muscle.muscle} ({muscle.percentage.toFixed(0)}%)
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {analysisData.balanceAnalysis.recommendations.length > 0 && (
-          <div className="program-recommendations">
-            <details className="recommendations-details">
-              <summary className="recommendations-summary">
-                <span>💡 {analysisData.balanceAnalysis.recommendations.length} recommendation{analysisData.balanceAnalysis.recommendations.length > 1 ? 's' : ''}</span>
-              </summary>
-              <div className="recommendations-list">
-                {analysisData.balanceAnalysis.recommendations.slice(0, 2).map((rec, index) => (
-                  <div key={index} className="recommendation-item">
-                    {rec}
-                  </div>
-                ))}
-              </div>
-            </details>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-
-
-/**
  * Main Program Library Component
  */
 const ProgramLibrary = () => {
@@ -258,13 +82,44 @@ const ProgramLibrary = () => {
   const [fullscreenMuscleMap, setFullscreenMuscleMap] = useState(null); // { muscles: [], programName: '' }
   const [expandedDescriptions, setExpandedDescriptions] = useState({}); // programId -> boolean mapping
 
+  const handleDeleteProgram = async (programId) => {
+    const programToDelete = programs.find(p => p.id === programId);
+    if (!programToDelete) return;
+
+    if (window.confirm(`Are you sure you want to delete the program "${programToDelete.name}"? This action cannot be undone.`)) {
+      try {
+        const { error } = await supabase
+          .from('programs')
+          .delete()
+          .eq('id', programId)
+          .eq('trainer_id', user.id); // ensure user can only delete their own.
+
+        if (error) {
+          // RLS will prevent deletion, but this is an extra check.
+          if (error.code === '42501') { // row-level security violation
+             alert('You do not have permission to delete this program.');
+          } else {
+            throw error;
+          }
+        } else {
+            setPrograms(prevPrograms => prevPrograms.filter(p => p.id !== programId));
+            alert('Program deleted successfully.');
+        }
+
+      } catch (err) {
+        console.error('Error deleting program:', err);
+        alert(`Failed to delete program: ${err.message}`);
+      }
+    }
+  };
+
   const categories = [
-    { name: 'Strength', icon: '💪' },
-    { name: 'Hypertrophy', icon: '📈' },
+    { name: 'Strength', icon: '🏋️' },
+    { name: 'Hypertrophy', icon: '💪' },
     { name: 'Endurance', icon: '🏃' },
-    { name: 'Flexibility', icon: '🧘' },
-    { name: 'Balance', icon: '⚖️' },
-    { name: 'Recovery', icon: '🩹' }
+    { name: 'Flexibility', icon: '🤸' },
+    { name: 'Balance', icon: '🧘' },
+    { name: 'Recovery', icon: '⚕️' }
   ];
 
   /**
@@ -427,23 +282,23 @@ const ProgramLibrary = () => {
    * @returns {boolean} Whether program matches category
    */
   const getCategoryMatch = (program, category) => {
-    // First check program_type column (preferred method)
+    const categoryLower = category.toLowerCase();
+
+    // If program_type is defined, use it as the source of truth.
     if (program.program_type) {
       const programType = program.program_type.toLowerCase();
-      const categoryLower = category.toLowerCase();
       
-      // Direct match (e.g., 'strength' === 'strength')
-      if (programType === categoryLower) {
-        return true;
+      // For the 'Balance' category, we allow 'strength' and 'flexibility' types as well,
+      // as balance is often a component of these.
+      if (categoryLower === 'balance') {
+        return ['balance', 'strength', 'flexibility'].includes(programType);
       }
       
-      // Handle special case: 'Balance' category doesn't have a program_type
-      if (category === 'Balance') {
-        return programType === 'flexibility' || programType === 'recovery';
-      }
+      // For all other categories, require an exact match.
+      return programType === categoryLower;
     }
-    
-    // Fallback to text matching for programs without program_type set
+
+    // Fallback to text matching ONLY if program_type is not set.
     const programName = (program?.name || '').toLowerCase();
     const programDesc = (program?.description || '').toLowerCase();
 
@@ -451,47 +306,36 @@ const ProgramLibrary = () => {
       case 'Strength':
         return programName.includes('strength') ||
           programName.includes('power') ||
-          programName.includes('foundation') ||
-          programDesc.includes('strength') ||
-          programDesc.includes('compound');
+          programDesc.includes('strength');
 
       case 'Hypertrophy':
         return programName.includes('hypertrophy') ||
           programName.includes('builder') ||
-          programName.includes('muscle') ||
-          programDesc.includes('muscle growth') ||
-          programDesc.includes('hypertrophy');
+          programDesc.includes('muscle growth');
 
       case 'Endurance':
         return programName.includes('endurance') ||
           programName.includes('cardio') ||
-          programName.includes('conditioning') ||
-          programDesc.includes('endurance') ||
-          programDesc.includes('cardio');
+          programDesc.includes('endurance');
 
       case 'Flexibility':
         return programName.includes('flexibility') ||
-          programName.includes('stretch') ||
           programName.includes('mobility') ||
-          programDesc.includes('flexibility') ||
-          programDesc.includes('mobility');
+          programDesc.includes('flexibility');
 
       case 'Balance':
         return programName.includes('balance') ||
           programName.includes('stability') ||
-          programName.includes('functional') ||
-          programDesc.includes('balance') ||
-          programDesc.includes('functional');
+          programDesc.includes('balance');
 
       case 'Recovery':
         return programName.includes('recovery') ||
           programName.includes('restore') ||
-          programName.includes('flow') ||
-          programDesc.includes('recovery') ||
-          programDesc.includes('gentle');
+          programDesc.includes('recovery');
 
       default:
-        return true;
+        // If category is not matched, don't show the program
+        return false;
     }
   };
 
@@ -830,15 +674,22 @@ const ProgramLibrary = () => {
                     </div>
                   </div>
                   
-                  {/* Edit button */}
-                  <button 
-                    className="program-edit-btn"
-                    onClick={() => setEditingProgram(program)}
-                    title="Edit Program"
-                  >
-                    <Edit size={14} />
-                    Edit Program
-                  </button>
+                  <div className="program-card-actions">
+                    <button 
+                      className="program-edit-btn"
+                      onClick={() => setEditingProgram(program)}
+                      title="Edit Program"
+                    >
+                      <Edit size={14} />
+                    </button>
+                    <button
+                      className="program-delete-btn"
+                      onClick={() => handleDeleteProgram(program.id)}
+                      title="Delete Program"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
 
                   <div className="program-description-container">
                     <p className={`program-description ${expandedDescriptions[program.id] ? 'expanded' : ''}`}>

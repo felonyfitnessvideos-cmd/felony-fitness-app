@@ -687,9 +687,9 @@
 
 .day-header-fixed {
   flex: 0 0 auto;
-  min-width: 100px;
-  max-width: 100px;
-  width: 100px;
+  min-width: 200px;
+  max-width: 200px;
+  width: 200px;
   height: 50px;
   display: flex;
   flex-direction: column;
@@ -848,9 +848,9 @@
 
 .day-column {
   flex: 0 0 auto;
-  min-width: 100px;
-  max-width: 100px;
-  width: 100px;
+  min-width: 200px;
+  max-width: 200px;
+  width: 200px;
   height: 100%;
   border-right: 1px solid var(--border-color);
   display: flex;
@@ -972,6 +972,68 @@
 
 .event-block:hover {
   transform: scale(1.02);
+}
+
+.edit-event-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.event-block:hover .edit-event-btn {
+  opacity: 1;
+}
+
+.edit-event-btn:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.event-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.event-block:hover .event-actions {
+  opacity: 1;
+}
+
+.event-action-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.event-action-btn.edit-event-btn:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.event-action-btn.delete-event-btn:hover {
+  background: #ef4444; /* Red for delete hover */
 }
 
 /* Scheduled routine events - distinct styling */

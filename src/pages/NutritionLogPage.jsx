@@ -311,7 +311,8 @@ function NutritionLogPage() {
       }
 
     } catch (error) {
-
+      console.error('Error fetching nutrition log data:', error);
+      setDailyTotals({ calories: 0, protein: 0, water: 0 }); // Reset on error
     } finally {
       setLoading(false);
     }
@@ -344,8 +345,6 @@ function NutritionLogPage() {
       const month = String(todayDate.getMonth() + 1).padStart(2, '0');
       const day = String(todayDate.getDate()).padStart(2, '0');
       const today = `${year}-${month}-${day}`; // YYYY-MM-DD in LOCAL timezone
-      
-
       
       const { data, error} = await supabase
         .from('weekly_meal_plan_entries')
@@ -579,6 +578,12 @@ function NutritionLogPage() {
             needs_serving_fetch: false
           };
           setSelectedFood(updatedFood);
+        } else {
+          return;
+        }
+      } catch (error) {
+        return;
+      }
 
 
     } else {
@@ -687,11 +692,15 @@ function NutritionLogPage() {
         })
         .select();
 
-
+      if (error) {
+        alert(`Error logging food: ${error.message}`);
+      } else {
         await fetchLogData(user.id);
         closeLogModal();
       }
-
+    } catch (error) {
+      alert(`Error logging food: ${error.message}`);
+    }
   };
 
   /**
@@ -836,9 +845,7 @@ function NutritionLogPage() {
       .eq('id', logId)
       .eq('user_id', user.id); // Extra security check
 
-
-      await fetchLogData(user.id); // Refresh the data
-    }
+    await fetchLogData(user.id); // Refresh the data
   };
 
   // Cleanup debounce timer and abort controller on unmount

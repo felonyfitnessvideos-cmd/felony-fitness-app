@@ -923,7 +923,8 @@ class GoogleCalendarService {
           maxResults: maxResults,
           singleEvents: singleEvents,
           orderBy: orderBy,
-          showDeleted: showDeleted
+          showDeleted: showDeleted,
+          fields: 'items(id,summary,description,start,end,location,attendees)'
         };
 
         // Add optional time zone
