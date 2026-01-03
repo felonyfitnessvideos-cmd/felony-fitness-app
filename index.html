@@ -11,6 +11,17 @@
     <meta name="build-time" content="2025-12-12T09:00:00Z" />
     <meta name="build-version" content="v1.0.5-mobile-responsive" />
     
+      <!-- *** SECURITY UPDATE: Content Security Policy *** -->
+    <!-- This allows scripts from Supabase, Google, Vercel, and TinyMCE -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self'; 
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://wkmrdelhoeqhsdifrarn.supabase.co https://*.google.com https://*.googleapis.com https://vercel.live https://cdn.tiny.cloud; 
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud; 
+      font-src 'self' data: https://fonts.gstatic.com https://cdn.tiny.cloud; 
+      img-src 'self' data: https://*.supabase.co https://*.googleusercontent.com https://placehold.co https://sp.tinymce.com; 
+      connect-src 'self' https://wkmrdelhoeqhsdifrarn.supabase.co https://*.googleapis.com https://vercel.live https://cdn.tiny.cloud;
+    ">
+    
     <!-- Performance optimizations -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
