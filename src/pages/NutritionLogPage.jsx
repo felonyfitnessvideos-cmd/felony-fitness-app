@@ -10,7 +10,6 @@
  * @since 2025-11-02
  * 
  * @requires React
- * @requires react-modal
  * @requires lucide-react
  * @requires AuthContext
  * @requires supabaseClient
@@ -181,7 +180,6 @@ import { formatMealType } from '../constants/mealPlannerConstants.js';
  *   for state and database operations. Use formatMealType() for display only.
  */
 import { Apple, Droplets, Loader2, Search, Trash2, X } from 'lucide-react';
-import Modal from 'react-modal';
 import { useAuth } from '../AuthContext.jsx';
 import './NutritionLogPage.css';
 
@@ -242,12 +240,18 @@ function NutritionLogPage() {
   });
   const [scheduledMeal, setScheduledMeal] = useState(null);
   const [isAddingMealPlan, setIsAddingMealPlan] = useState(false);
+  const [error, setError] = useState(null);
 
   const mealLogs = todaysLogs.filter(log => 
     log.meal_type?.toLowerCase() === activeMeal.toLowerCase()
   );
   
   const calorieProgress = goals.daily_calorie_goal > 0 ? (dailyTotals.calories / goals.daily_calorie_goal) * 100 : 0;
+
+  const showError = (message) => {
+    setError(message);
+    setTimeout(() => setError(null), 5000);
+  };
 
   /**
    * Fetches all nutrition data for the current day and calculates totals.
@@ -261,6 +265,8 @@ function NutritionLogPage() {
    * @async
    */
   const fetchLogData = useCallback(async (userId) => {
+    if (!userId) return;
+    
     setLoading(true);
     try {
       // **TIMEZONE FIX**: Use local date, not UTC date
@@ -312,6 +318,7 @@ function NutritionLogPage() {
 
     } catch (error) {
       console.error('Error fetching nutrition log data:', error);
+      showError('Failed to load nutrition data. Please try again.');
       setDailyTotals({ calories: 0, protein: 0, water: 0 }); // Reset on error
     } finally {
       setLoading(false);
@@ -338,6 +345,8 @@ function NutritionLogPage() {
    * @see {@link handleAddMealPlanToLog} - Called when user clicks the button
    */
   const fetchScheduledMeal = useCallback(async (userId, mealType) => {
+    if (!userId || !mealType) return;
+    
     try {
       // **TIMEZONE FIX**: Use local date, not UTC date
       const todayDate = new Date();
@@ -370,16 +379,13 @@ function NutritionLogPage() {
         .maybeSingle();
 
       if (error) {
-
+        console.error('Error fetching scheduled meal:', error);
         setScheduledMeal(null);
         return;
       }
 
-
-
       // Only show button if there's actually a meal assigned (user_meal_id is not null)
       if (data && data.user_meal_id && data.user_meals) {
-
         setScheduledMeal({
           entryId: data.id,
           mealId: data.user_meal_id,
@@ -387,11 +393,10 @@ function NutritionLogPage() {
           servings: data.servings || 1
         });
       } else {
-
         setScheduledMeal(null);
       }
     } catch (error) {
-
+      console.error('Error in fetchScheduledMeal:', error);
       setScheduledMeal(null);
     }
   }, []);
@@ -426,7 +431,9 @@ function NutritionLogPage() {
 
     if (term.length < 3) {
       if (searchAbortControllerRef.current) {
-        try { searchAbortControllerRef.current.abort(); } catch (_err) { void _err; /* ignore */ }
+        try { searchAbortControllerRef.current.abort(); } catch (err) { 
+          console.error('Abort error:', err);
+        }
         searchAbortControllerRef.current = null;
       }
       setSearchResults([]);
@@ -436,15 +443,15 @@ function NutritionLogPage() {
 
     searchDebounceRef.current = setTimeout(async () => {
       if (searchAbortControllerRef.current) {
-        try { searchAbortControllerRef.current.abort(); } catch (_err) { void _err; /* ignore */ }
+        try { searchAbortControllerRef.current.abort(); } catch (err) { 
+          console.error('Abort error:', err);
+        }
       }
       const controller = new AbortController();
       searchAbortControllerRef.current = controller;
 
       setIsSearching(true);
       try {
-
-        
         // Escape commas in search term to prevent PostgREST syntax errors
         // PostgREST interprets commas as OR separators, so we need to replace them
         const sanitizedTerm = term.replace(/,/g, ' ').toLowerCase();
@@ -473,10 +480,9 @@ function NutritionLogPage() {
           !food.name.toLowerCase().includes('beer')
         ).slice(0, 50);  // Limit to top 50 results
         
-
-        
         if (searchError) {
-
+          console.error('Search error:', searchError);
+          showError('Search failed. Please try again.');
           setSearchResults([]);
           return;
         }
@@ -533,12 +539,15 @@ function NutritionLogPage() {
           };
         });
 
-
         setSearchResults(standardizedResults);
       } catch (error) {
         if (error?.name === 'AbortError') {
-          // ignore
-
+          // Search was aborted, ignore
+        } else {
+          console.error('Search error:', error);
+          showError('Search failed. Please try again.');
+          setSearchResults([]);
+        }
       } finally {
         setIsSearching(false);
         searchAbortControllerRef.current = null;
@@ -547,6 +556,8 @@ function NutritionLogPage() {
   }, []);
 
   const openLogModal = async (food) => {
+    if (!food) return;
+    
     if (food.needs_serving_fetch) {
       // Fetch portions for this food from new structure
       try {
@@ -557,7 +568,8 @@ function NutritionLogPage() {
           .single();
 
         if (error) {
-
+          console.error('Error fetching food portions:', error);
+          showError('Failed to load food details. Please try again.');
           return;
         }
 
@@ -579,13 +591,14 @@ function NutritionLogPage() {
           };
           setSelectedFood(updatedFood);
         } else {
+          showError('No portion data available for this food.');
           return;
         }
       } catch (error) {
+        console.error('Error in openLogModal:', error);
+        showError('Failed to load food details. Please try again.');
         return;
       }
-
-
     } else {
       setSelectedFood(food);
     }
@@ -603,7 +616,21 @@ function NutritionLogPage() {
   const handleLogFood = async () => {
     // Normalize quantity to a number for validation and payload.
     const qty = typeof quantity === 'string' ? parseFloat(quantity) : quantity;
-    if (!selectedFood || !qty || qty <= 0 || Number.isNaN(qty) || !user) return;
+    
+    if (!selectedFood) {
+      showError('Please select a food item.');
+      return;
+    }
+    
+    if (!qty || qty <= 0 || Number.isNaN(qty)) {
+      showError('Please enter a valid quantity.');
+      return;
+    }
+    
+    if (!user) {
+      showError('You must be logged in to log food.');
+      return;
+    }
 
     try {
       let servingId = selectedFood.serving_id;
@@ -649,8 +676,8 @@ function NutritionLogPage() {
           .single();
 
         if (foodError) {
-
-          alert(`Error saving food: ${foodError.message}`);
+          console.error('Error saving food:', foodError);
+          showError(`Error saving food: ${foodError.message}`);
           return;
         }
 
@@ -665,7 +692,9 @@ function NutritionLogPage() {
             portion_description: selectedFood.serving_description || '1 serving'
           });
 
-
+        if (portionError) {
+          console.error('Error creating portion:', portionError);
+        }
 
         servingId = newFood.id;
       }
@@ -681,7 +710,7 @@ function NutritionLogPage() {
       const portionGrams = selectedFood.gram_weight || selectedFood.portion_gram_weight || 100;
       const quantityInGrams = qty * portionGrams;
       
-      const { data: _data, error } = await supabase
+      const { error: insertError } = await supabase
         .from('nutrition_logs')
         .insert({
           user_id: user.id,
@@ -692,14 +721,17 @@ function NutritionLogPage() {
         })
         .select();
 
-      if (error) {
-        alert(`Error logging food: ${error.message}`);
-      } else {
-        await fetchLogData(user.id);
-        closeLogModal();
+      if (insertError) {
+        console.error('Error logging food:', insertError);
+        showError(`Error logging food: ${insertError.message}`);
+        return;
       }
+
+      await fetchLogData(user.id);
+      closeLogModal();
     } catch (error) {
-      alert(`Error logging food: ${error.message}`);
+      console.error('Error in handleLogFood:', error);
+      showError(`Error logging food: ${error.message}`);
     }
   };
 
@@ -749,10 +781,14 @@ function NutritionLogPage() {
         `)
         .eq('user_meal_id', scheduledMeal.mealId);
 
-
+      if (mealFoodsError) {
+        console.error('Error fetching meal foods:', mealFoodsError);
+        showError('Failed to load meal plan foods.');
+        return;
+      }
 
       if (!mealFoods || mealFoods.length === 0) {
-        alert('This meal has no foods assigned.');
+        showError('This meal has no foods assigned.');
         return;
       }
 
@@ -785,32 +821,47 @@ function NutritionLogPage() {
         .from('nutrition_logs')
         .insert(nutritionLogs);
 
-
+      if (insertError) {
+        console.error('Error inserting meal plan:', insertError);
+        showError('Failed to add meal plan to log.');
+        return;
+      }
 
       // Refresh data to show new logs
       await fetchLogData(user.id);
       setScheduledMeal(null); // Hide button after adding
-
+    } catch (error) {
+      console.error('Error in handleAddMealPlanToLog:', error);
+      showError('Failed to add meal plan to log.');
+    } finally {
+      setIsAddingMealPlan(false);
+    }
   };
 
   const handleLogWater = async (ounces) => {
-    if (!user) return;
+    if (!user) {
+      showError('You must be logged in to log water.');
+      return;
+    }
     
     // **TIMEZONE FIX**: Use local date, not UTC
     const today = new Date();
     const logDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     
-    const { error } = await supabase.from('nutrition_logs').insert({
+    const { error: waterError } = await supabase.from('nutrition_logs').insert({
       user_id: user.id,
       meal_type: 'water', // Use lowercase to match schema constraint
       water_oz_consumed: ounces,
       log_date: logDate
     });
-    if (error) {
-      alert(`Error logging water: ${error.message}`);
-    } else {
-      await fetchLogData(user.id);
+    
+    if (waterError) {
+      console.error('Error logging water:', waterError);
+      showError(`Error logging water: ${waterError.message}`);
+      return;
     }
+    
+    await fetchLogData(user.id);
   };
 
   /**
@@ -839,11 +890,17 @@ function NutritionLogPage() {
   const handleDeleteFoodLog = async (logId) => {
     if (!user || !logId) return;
 
-    const { error } = await supabase
+    const { error: deleteError } = await supabase
       .from('nutrition_logs')
       .delete()
       .eq('id', logId)
       .eq('user_id', user.id); // Extra security check
+
+    if (deleteError) {
+      console.error('Error deleting log:', deleteError);
+      showError('Failed to delete entry.');
+      return;
+    }
 
     await fetchLogData(user.id); // Refresh the data
   };
@@ -861,7 +918,9 @@ function NutritionLogPage() {
         searchDebounceRef.current = null;
       }
       if (searchAbortControllerRef.current) {
-        try { searchAbortControllerRef.current.abort(); } catch { /* ignore */ }
+        try { searchAbortControllerRef.current.abort(); } catch (err) { 
+          console.error('Cleanup abort error:', err);
+        }
         searchAbortControllerRef.current = null;
       }
     };
@@ -875,8 +934,20 @@ function NutritionLogPage() {
     <div className="nutrition-log-page-container">
       <SubPageHeader title="Log" icon={<Apple size={28} />} iconColor="#f97316" backTo="/nutrition" />
 
+      {error && (
+        <div style={{
+          background: '#ef4444',
+          color: 'white',
+          padding: '1rem',
+          margin: '1rem',
+          borderRadius: '8px'
+        }}>
+          {error}
+        </div>
+      )}
+
       <div className="meal-tabs">
-        {['breakfast', 'lunch', 'dinner', 'snack1'].map(meal => (
+        {['breakfast', 'lunch', 'dinner', 'snack'].map(meal => (
           <button 
             key={meal} 
             className={activeMeal === meal ? 'active' : ''} 
@@ -908,8 +979,6 @@ function NutritionLogPage() {
           onChange={(e) => handleSearch(e.target.value)}
           disabled={!user}
         />
-        {/** 
-        *<button className="camera-btn"><Camera size={20} /></button> */}
 
         {(isSearching || searchResults.length > 0) && (
           <div className="food-search-results">
@@ -976,23 +1045,71 @@ function NutritionLogPage() {
         </div>
       </div>
 
-      <Modal
-        isOpen={isLogModalOpen}
-        onRequestClose={closeLogModal}
-        contentLabel="Log Food Item"
-        overlayClassName="custom-modal-overlay"
-        className="custom-modal-content log-food-modal"
-      >
-        {selectedFood && (
-          <div className="log-food-modal">
-            <div className="modal-header">
-              <h3>{selectedFood.name}</h3>
-              <button onClick={closeLogModal} className="close-modal-btn"><X size={24} /></button>
+      {isLogModalOpen && selectedFood && (
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeLogModal();
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }}
+        >
+          <div style={{
+            background: '#1a1a1a',
+            borderRadius: '12px',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '1.5rem',
+              borderBottom: '1px solid #333'
+            }}>
+              <h3 style={{ margin: 0 }}>{selectedFood.name}</h3>
+              <button
+                onClick={closeLogModal}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'white',
+                  cursor: 'pointer',
+                  padding: '0.5rem'
+                }}
+              >
+                <X size={24} />
+              </button>
             </div>
-            <div className="modal-body">
-              <p>Serving: {selectedFood.serving_description} ({Math.round(selectedFood.calories)} cal)</p>
-              <div className="quantity-input">
-                <label htmlFor="quantity">Quantity</label>
+            
+            <div style={{ padding: '1.5rem' }}>
+              <p style={{ color: '#999', marginBottom: '1.5rem' }}>
+                Serving: {selectedFood.serving_description} ({Math.round(selectedFood.calories)} cal)
+              </p>
+              
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label 
+                  htmlFor="quantity" 
+                  style={{ 
+                    display: 'block', 
+                    marginBottom: '0.5rem',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Quantity
+                </label>
                 <input
                   id="quantity"
                   type="number"
@@ -1003,26 +1120,45 @@ function NutritionLogPage() {
                   value={quantity}
                   onChange={(e) => {
                     const value = e.target.value;
-                    // Allow empty string or valid decimal numbers (e.g., 0.5, 1.5, 2)
                     if (value === '' || /^\d*\.?\d*$/.test(value)) {
                       setQuantity(value);
                     }
                   }}
                   placeholder="1"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: '#0a0a0a',
+                    border: '1px solid #333',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '1rem'
+                  }}
                 />
               </div>
-            </div>
-            <div className="modal-footer">
-              <button className="log-food-btn" onClick={handleLogFood}>
+              
+              <button
+                onClick={handleLogFood}
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  background: '#f97316',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: '1rem'
+                }}
+              >
                 Add to {formatMealType(activeMeal)}
               </button>
             </div>
           </div>
-        )}
-      </Modal>
+        </div>
+      )}
     </div>
   );
 }
 
 export default NutritionLogPage;
-

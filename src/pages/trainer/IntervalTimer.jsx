@@ -2,13 +2,9 @@
  * @file IntervalTimer.jsx
  * @description Full-screen interval timer for training sessions
  * @project Felony Fitness
- * 
- * This component provides a customizable interval timer with:
- * - Work/rest time configuration
- * - Full-screen countdown display
- * - Visual cues (green for work, yellow for rest)
- * - Countdown animations for final 4 seconds
- * - Continuous cycling until stopped
+ * * Updates:
+ * - Fixed bug where round counter incremented on every phase change (1, 3, 5...)
+ * - Logic now only increments round when switching from Rest -> Work
  */
 
 import { Pause, Play, Settings, StopCircle, X } from 'lucide-react';
@@ -17,8 +13,7 @@ import './IntervalTimer.css';
 
 /**
  * IntervalTimer component for workout interval training
- * 
- * @component
+ * * @component
  * @param {Object} props
  * @param {Function} props.onClose - Callback to close the timer
  * @returns {JSX.Element} Interval timer with full-screen display
@@ -39,153 +34,134 @@ const IntervalTimer = ({ onClose }) => {
     /** @type {[number|string, Function]} Rest time in seconds */
     const [restTime, setRestTime] = useState('');
 
-    /** @type {[number, Function]} Current countdown value */
-    const [currentTime, setCurrentTime] = useState(0);
+    /** @type {[number, Function]} Current time remaining */
+    const [timeLeft, setTimeLeft] = useState(0);
 
-    /** @type {[string, Function]} Current phase: 'work' or 'rest' */
+    /** @type {[string, Function]} Current phase: 'work' | 'rest' */
     const [phase, setPhase] = useState('work');
 
-    /** @type {[number, Function]} Round counter */
+    /** @type {[number, Function]} Current round number */
     const [round, setRound] = useState(1);
 
-    const intervalRef = useRef(null);
-    const timeoutRef = useRef(null);
+    /** @type {Object} Audio context refs */
+    const audioContextRef = useRef(null);
 
-    /**
-     * Start the timer
-     */
-    const handleStart = () => {
-        const work = parseInt(workTime) || 30;
-        setShowConfig(false);
-        setShowTimer(true);
-        setIsRunning(true);
-        setCurrentTime(work);
-        setPhase('work');
-    };
-
-    /**
-     * Stop the timer and return to config
-     */
-    const handleStop = () => {
-        setIsRunning(false);
-        setShowTimer(false);
-        setShowConfig(false);
-        setCurrentTime(0);
-        setPhase('work');
-        setRound(1);
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-        }
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-        }
-        if (onClose) {
-            onClose();
-        }
-    };
-
-    /**
-     * Toggle pause/resume
-     */
-    const handlePause = () => {
-        setIsRunning(!isRunning);
-    };
-
-    /**
-     * Timer countdown logic
-     */
+    // Initialize audio context on mount
     useEffect(() => {
-        if (isRunning) {
-            const work = parseInt(workTime) || 30;
-            const rest = parseInt(restTime) || 15;
+        // Create audio context only on user interaction to comply with browser policies
+        // We'll initialize it in handleStart
+        return () => {
+            if (audioContextRef.current) {
+                audioContextRef.current.close();
+            }
+        };
+    }, []);
 
-            intervalRef.current = setInterval(() => {
-                setCurrentTime(prev => {
-                    if (prev <= 0) {
-                        // Phase complete - switch to next phase
-                        if (phase === 'work') {
-                            setPhase('rest');
-                            return rest;
-                        } else {
-                            // Delay before switching to work to show "GO!"
-                            timeoutRef.current = setTimeout(() => {
-                                setPhase('work');
-                                setRound(r => r + 1);
-                                setCurrentTime(work);
-                            }, 1000);
-                            return 0; // Keep at 0 to display "GO!"
-                        }
+    const playBeep = (freq = 440, type = 'sine', duration = 0.1) => {
+        if (!audioContextRef.current) {
+            audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        const ctx = audioContextRef.current;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+    };
+
+    // Timer Logic
+    useEffect(() => {
+        let interval = null;
+
+        if (isRunning && timeLeft > 0) {
+            interval = setInterval(() => {
+                setTimeLeft((prev) => {
+                    // Beep on last 3 seconds (3, 2, 1)
+                    if (prev <= 4 && prev > 1) {
+                        playBeep(440, 'sine', 0.1); // Low beep
+                    } else if (prev === 1) {
+                        playBeep(880, 'square', 0.3); // High beep on zero/switch
                     }
                     return prev - 1;
                 });
             }, 1000);
-        } else {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
-        }
-
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-        };
-    }, [isRunning, phase, workTime, restTime]);
-
-    /**
-     * Format time as MM:SS
-     */
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    /**
-     * Get display text based on phase and time remaining
-     */
-    const getDisplayText = () => {
-        const rest = parseInt(restTime) || 15;
-
-        if (phase === 'rest') {
-            if (currentTime === rest) {
-                return 'BREAK!';
-            } else if (currentTime <= 4 && currentTime > 0) {
-                return currentTime.toString();
-            } else if (currentTime === 0) {
-                return 'GO!';
+        } else if (isRunning && timeLeft === 0) {
+            // Switch phases
+            if (phase === 'work') {
+                // Work -> Rest
+                setPhase('rest');
+                setTimeLeft(Number(restTime));
+                // Do NOT increment round here
             } else {
-                return formatTime(currentTime);
+                // Rest -> Work
+                setPhase('work');
+                setTimeLeft(Number(workTime));
+                setRound((prev) => prev + 1); // Only increment when starting new Work round
             }
         }
-        if (phase === 'work') {
-            return formatTime(currentTime);
+
+        return () => clearInterval(interval);
+    }, [isRunning, timeLeft, phase, workTime, restTime]);
+
+    const handleStart = () => {
+        if (!workTime || !restTime) return;
+        
+        // Initialize audio on first user interaction
+        if (!audioContextRef.current) {
+            audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
         }
+
+        setShowConfig(false);
+        setShowTimer(true);
+        setIsRunning(true);
+        setPhase('work');
+        setRound(1);
+        setTimeLeft(Number(workTime));
     };
 
-    /**
-     * Get background color class
-     */
+    const handleStop = () => {
+        setIsRunning(false);
+        setShowTimer(false);
+        setShowConfig(true);
+        setRound(1);
+    };
+
+    const handlePause = () => {
+        setIsRunning(!isRunning);
+    };
+
     const getBackgroundClass = () => {
-        if (phase === 'work') return 'bg-work';
-        if (phase === 'rest' && currentTime <= 4 && currentTime > 0) return 'bg-countdown';
-        if (phase === 'rest' && currentTime === 0) return 'bg-work'; // Green for "GO!"
-        return 'bg-rest';
+        if (phase === 'work') return 'bg-work'; // Green/Orange
+        return 'bg-rest'; // Yellow/Blue
     };
 
-    /**
-     * Get text size class based on content
-     */
     const getTextSizeClass = () => {
-        const rest = parseInt(restTime) || 15;
-
-        if (phase === 'rest' && currentTime <= 4 && currentTime > 0) return 'text-countdown';
-        if (phase === 'rest' && currentTime === 0) return 'text-countdown'; // GO! uses countdown size
-        if (phase === 'rest' && currentTime === rest) return 'text-break'; // BREAK! 
+        if (timeLeft <= 3) return 'text-countdown';
+        if (phase === 'rest') return 'text-break';
         return 'text-timer';
+    };
+
+    const getDisplayText = () => {
+        if (timeLeft <= 3 && timeLeft > 0) return timeLeft; // Big 3, 2, 1
+        if (phase === 'rest' && timeLeft > 3) return 'REST';
+        
+        // Format MM:SS if > 60s, else just seconds
+        if (timeLeft >= 60) {
+            const m = Math.floor(timeLeft / 60);
+            const s = timeLeft % 60;
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+        return timeLeft;
     };
 
     return (
@@ -195,47 +171,29 @@ const IntervalTimer = ({ onClose }) => {
                 <div className="timer-config-modal">
                     <div className="config-content">
                         <div className="config-header">
-                            <div>
-                                <Settings size={32} />
-                                <h2>Interval Timer Setup</h2>
-                                <p>Configure your work and rest intervals</p>
-                            </div>
-                            <button onClick={onClose} className="close-btn" aria-label="Close">
-                                <X size={24} />
-                            </button>
+                            <Settings size={32} />
+                            <h2>Interval Timer</h2>
+                            <button onClick={onClose} className="close-btn"><X size={24} /></button>
                         </div>
 
-                        <div className="config-body">
-                            <div className="time-input-group">
-                                <label htmlFor="work-time">Work Time (seconds)</label>
-                                <input
-                                    id="work-time"
-                                    type="number"
-                                    min="5"
-                                    max="300"
-                                    placeholder="30"
-                                    value={workTime}
+                        <div className="time-inputs">
+                            <div className="input-group">
+                                <label>Work (sec)</label>
+                                <input 
+                                    type="number" 
+                                    value={workTime} 
                                     onChange={(e) => setWorkTime(e.target.value)}
+                                    placeholder="45"
                                 />
                             </div>
-
-                            <div className="time-input-group">
-                                <label htmlFor="rest-time">Rest Time (seconds)</label>
-                                <input
-                                    id="rest-time"
-                                    type="number"
-                                    min="5"
-                                    max="300"
-                                    placeholder="15"
-                                    value={restTime}
+                            <div className="input-group">
+                                <label>Rest (sec)</label>
+                                <input 
+                                    type="number" 
+                                    value={restTime} 
                                     onChange={(e) => setRestTime(e.target.value)}
+                                    placeholder="15"
                                 />
-                            </div>
-
-                            <div className="config-preview">
-                                <p><strong>Work:</strong> {formatTime(parseInt(workTime) || 30)}</p>
-                                <p><strong>Rest:</strong> {formatTime(parseInt(restTime) || 15)}</p>
-                                <p><strong>Total Cycle:</strong> {formatTime((parseInt(workTime) || 30) + (parseInt(restTime) || 15))}</p>
                             </div>
                         </div>
 
