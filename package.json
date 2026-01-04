@@ -14,7 +14,9 @@
     "precommit": "lint-staged",
     "seed:foods": "node scripts/bulk-food-import.js",
     "seed:foods:quick": "node scripts/direct-food-seeder.js",
-    "seed:foods:test": "node scripts/bulk-food-import.js --categories Proteins --max-per-category 5"
+    "seed:foods:test": "node scripts/bulk-food-import.js --categories Proteins --max-per-category 5",
+    "test": "vitest",
+    "test:ci": "vitest run"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

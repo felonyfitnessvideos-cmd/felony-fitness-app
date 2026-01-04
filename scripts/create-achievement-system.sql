@@ -395,23 +395,47 @@ $$ LANGUAGE plpgsql;
 -- Trigger: Update stats when mesocycle is completed
 CREATE OR REPLACE FUNCTION update_stats_on_mesocycle_complete()
 RETURNS TRIGGER AS $$
+DECLARE
+  is_mesocycle_complete BOOLEAN;
+  v_user_id UUID;
 BEGIN
+  -- Get the user_id from the parent mesocycles table
+  SELECT user_id INTO v_user_id
+  FROM mesocycles
+  WHERE id = NEW.mesocycle_id;
+  
+  -- Only proceed if the week is marked as complete, and it wasn't complete before.
   IF NEW.is_complete = true AND (OLD.is_complete IS NULL OR OLD.is_complete = false) THEN
-    -- Update mesocycle count
-    UPDATE user_stats SET
-      mesocycles_completed = user_stats.mesocycles_completed + 1,
-      total_xp = user_stats.total_xp + 500,
-      current_level = calculate_level(user_stats.total_xp + 500),
-      updated_at = NOW()
-    WHERE user_id = NEW.user_id;
     
-    -- Log XP for mesocycle completion
-    INSERT INTO xp_transactions (user_id, amount, source, reference_id)
-    VALUES (NEW.user_id, 500, 'mesocycle_complete', NEW.id);
+    -- Check if all routines for this mesocycle are now complete.
+    -- We exclude rest days from this check.
+    SELECT NOT EXISTS (
+      SELECT 1
+      FROM mesocycle_weeks
+      WHERE mesocycle_id = NEW.mesocycle_id
+        AND day_type != 'rest'
+        AND is_complete = false
+    ) INTO is_mesocycle_complete;
     
-    -- Check mesocycle achievements
-    PERFORM check_and_award_achievements(NEW.user_id, 'mesocycle_complete');
+    -- If the entire mesocycle is complete, then award the achievement.
+    IF is_mesocycle_complete THEN
+      -- Update mesocycle count
+      UPDATE user_stats SET
+        mesocycles_completed = user_stats.mesocycles_completed + 1,
+        total_xp = user_stats.total_xp + 500,
+        current_level = calculate_level(user_stats.total_xp + 500),
+        updated_at = NOW()
+      WHERE user_id = v_user_id;
+      
+      -- Log XP for mesocycle completion
+      INSERT INTO xp_transactions (user_id, amount, source, reference_id)
+      VALUES (v_user_id, 500, 'mesocycle_complete', NEW.mesocycle_id);
+      
+      -- Check mesocycle achievements
+      PERFORM check_and_award_achievements(v_user_id, 'mesocycle_complete');
+    END IF;
   END IF;
+  
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

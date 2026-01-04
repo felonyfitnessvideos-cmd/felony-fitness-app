@@ -163,7 +163,7 @@ export function TrainerClients({ onClientSelect }: TrainerClientsProps) {
   }, [searchTerm, clients]);
 
     return (
-        <div className="trainer-clients">
+        <div className="trainer-clients" data-testid="trainerclients">
             <div className="search-section">
                 <div className="search-container">
                     <Search className="search-icon" size={20} />
