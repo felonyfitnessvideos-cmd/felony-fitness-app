@@ -31,6 +31,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext';
 import useResponsive from '../hooks/useResponsive';
+import useUserRoles from '../hooks/useUserRoles';
 import { Client } from '../types';
 import { getUnreadMessageCount } from '../utils/messagingUtils';
 // import { subscribeToMessages } from '../utils/messagingUtils'; // TEMPORARILY DISABLED - WebSocket causing errors
@@ -47,6 +48,7 @@ import { TrainerClients } from './trainer/TrainerClients';
 import TrainerMessages from './trainer/TrainerMessages';
 import TrainerPrograms from './trainer/TrainerPrograms';
 import TrainerResources from './trainer/TrainerResources';
+import TrainerAdminPanel from './trainer/TrainerAdminPanel';
 import './TrainerDashboard.css';
 
 /**
@@ -81,6 +83,7 @@ import './TrainerDashboard.css';
 const TrainerDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { isAdmin } = useUserRoles();
   const location = useLocation();
   const { isTabletOrLarger } = useResponsive();
 
@@ -373,6 +376,17 @@ const TrainerDashboard = () => {
                 <Calculator size={20} />
                 <span>Calculators</span>
               </button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  className={`tool-item ${location.pathname === '/trainer-dashboard/admin' ? 'active' : ''}`}
+                  onClick={() => navigate('/trainer-dashboard/admin')}
+                  aria-label="Open Admin Panel"
+                >
+                  <FolderOpen size={20} />
+                  <span>Admin</span>
+                </button>
+              )}
               <button
                 type="button"
                 className="tool-item"
@@ -396,6 +410,7 @@ const TrainerDashboard = () => {
                   <Route path="/messages" element={<TrainerMessages />} />
                   <Route path="/resources" element={<TrainerResources />} />
                   <Route path="/calculators" element={<CalculatorDashboard />} />
+                  <Route path="/admin" element={<TrainerAdminPanel />} />
                   <Route path="/onboarding" element={<ClientOnboarding />} />
                 </Routes>
               </main>

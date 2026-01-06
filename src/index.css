@@ -1,5 +1,6 @@
 /* 1. Define color variables for the default (dark) theme */
-:root, [data-theme="dark"] {
+:root,
+[data-theme="dark"] {
   --background-color: #1a202c;
   --card-color: #2d3748;
   --border-color: #4a5568;
@@ -10,7 +11,7 @@
   --color-success: #10b981; /* Green for success states */
   --color-accent-dark: #8d5a21; /* Brown/gold for specific accents */
   --color-white: #ffffff; /* Pure white for text */
-  
+
   /* Additional variables for meal planner components */
   --primary-color: #f97316; /* Use accent color as primary */
   --hover-color: #4a5568; /* Slightly lighter than border for hover states */
@@ -25,76 +26,36 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-display: swap; /* Improve font loading performance */
 }
 
-/* 2. Define the colors for the "light" theme */
 [data-theme="light"] {
-  --background-color: #f7fafc;
-  --card-color: #ffffff;
-  --card-background: #ffffff;
+  --background-color: #ffffff;
+  --card-color: #f7fafc;
   --border-color: #e2e8f0;
-  --text-primary: #1a202c;
-  --text-secondary: #4a5568;
-  --text-color: #1a202c;
-  --accent-color: #f97316;
-  --accent-color-hover: #ea580c;
+  --text-primary: #2d3748;
+  --text-secondary: #718096;
+  --accent-color: #ed8936;
+  --accent-color-hover: #dd6b20;
   --color-success: #10b981;
-  --color-accent-dark: #8d5a21;
+  --color-accent-dark: #c05621;
   --color-white: #ffffff;
-  --error-color: #e53e3e;
-  
-  /* Additional variables for meal planner components */
-  --primary-color: #f97316; /* Keep accent color consistent */
-  --hover-color: #e2e8f0; /* Light gray for hover */
-  --input-bg: #ffffff; /* Input background color for light theme */
-  --primary-rgb: 249, 115, 22; /* RGB values for primary color */
+
+  --primary-color: #ed8936;
+  --hover-color: #edf2f7;
+  --input-bg: #edf2f7;
+  --primary-rgb: 237, 137, 54;
 }
 
-/* 3. Define the colors for the "high-contrast" theme */
-[data-theme="high-contrast"] {
-  --background-color: #000000;
-  --card-color: #1a1a1a;
-  --border-color: #4d4d4d;
-  --text-primary: #ffffff;
-  --text-secondary: #cccccc;
-  --accent-color: #ffc400;
-  --accent-color-hover: #ffdd57;
-  
-  /* Additional variables for meal planner components */
-  --primary-color: #ffc400; /* Use accent color as primary */
-  --hover-color: #4d4d4d; /* Use border color for hover */
-  --input-bg: #1a1a1a; /* Input background color for high contrast */
-  --primary-rgb: 255, 196, 0; /* RGB values for primary color */
-}
-
-
-/* --- Global Styles --- */
-html, body {
+/* Ensure full height for the app container */
+html,
+body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Prevent body from scrolling */
+  overflow: hidden; /* Prevent body scroll, let #root handle it if needed */
 }
 
-/* 
- * Hide scrollbars on specific containers while keeping scroll functionality
- * Note: Maintaining accessibility by only hiding scrollbars on main content areas
- * where overflow is intentional (chat, messages, lists). Users can still scroll
- * with mouse wheel, touch, or keyboard navigation.
- */
-.messages-container,
-.conversation-list,
-.message-list,
-.client-list,
-.workout-list,
-.exercise-list,
-.scrollable-content,
-#root {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
-}
-
+/* Hide scrollbar for Chrome, Safari and Opera */
 .messages-container::-webkit-scrollbar,
 .conversation-list::-webkit-scrollbar,
 .message-list::-webkit-scrollbar,
@@ -103,7 +64,20 @@ html, body {
 .exercise-list::-webkit-scrollbar,
 .scrollable-content::-webkit-scrollbar,
 #root::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.messages-container,
+.conversation-list,
+.message-list,
+.client-list,
+.workout-list,
+.exercise-list,
+.scrollable-content,
+#root {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 body {
@@ -121,27 +95,49 @@ body {
   border-left: 1px solid var(--border-color);
   border-right: 1px solid var(--border-color);
   background-color: var(--background-color);
+  overflow: hidden;
 }
 
 /* Responsive breakpoints for larger screens */
 @media (min-width: 604px) {
   #root {
-    max-width: 100%; /* Tablet: Use full available width */
-    border-left: 1px solid var(--border-color);
-    border-right: 1px solid var(--border-color);
+    max-width: 100%;
+    border: none;
   }
+
+  /* When on desktop, we want the sidebar to be visible and the layout to be row */
+  /* This is handled by App.jsx classes, but we ensure #root allows it */
 }
 
-@media (min-width: 1024px) {
-  #root {
-    max-width: 1200px; /* Desktop: Full-width layout */
-    border: none; /* Remove side borders for desktop */
-  }
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
 }
 
-@media (min-width: 1440px) {
-  #root {
-    max-width: 1400px; /* Wide screens: Constrained max width */
-  }
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
 }
 
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}

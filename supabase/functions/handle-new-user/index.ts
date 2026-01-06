@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,18 +19,6 @@ serve(async (req) => {
     // as it comes from Supabase's auth system directly
     console.log('Processing auth hook request')
     
-    // Create Supabase client with service role key for admin access
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
-
     // Parse the webhook payload
     const payload = await req.json()
     console.log('Webhook payload:', JSON.stringify(payload, null, 2))
@@ -62,79 +49,16 @@ serve(async (req) => {
 
     console.log(`Processing new user: ${userEmail} (${userId})`)
 
-    // Step 1: Insert into users table
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('users')
-      .insert({
-        id: userId,
-        email: userEmail,
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single()
+    // The database trigger handle_new_user() automatically creates the user_profiles entry
+    // No additional processing needed here
+    // This function is kept for logging/auditing purposes
 
-    if (userError) {
-      console.error('Error inserting into users table:', userError)
-      throw userError
-    }
-
-    console.log('Successfully inserted into users table:', userData)
-
-    // Step 2: Insert into user_profiles table with default values
-    const { data: profileData, error: profileError } = await supabaseAdmin
-      .from('user_profiles')
-      .insert({
-        id: userId,
-        user_id: userId,
-        email: userEmail,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single()
-
-    if (profileError) {
-      console.error('Error inserting into user_profiles table:', profileError)
-      throw profileError
-    }
-
-    console.log('Successfully created user profile:', profileData)
-
-    // Step 3: Assign default "User" tag
-    try {
-      // First, get the User tag ID
-      const { data: userTag, error: tagError } = await supabaseAdmin
-        .from('tags')
-        .select('id')
-        .eq('name', 'User')
-        .single()
-
-      if (tagError || !userTag) {
-        console.warn('User tag not found, skipping tag assignment')
-      } else {
-        // Assign the User tag to the new user
-        const { error: userTagError } = await supabaseAdmin
-          .from('user_tags')
-          .insert({
-            user_id: userId,
-            tag_id: userTag.id,
-            assigned_at: new Date().toISOString()
-          })
-
-        if (userTagError) {
-          console.error('Error assigning User tag:', userTagError)
-        } else {
-          console.log('Successfully assigned User tag')
-        }
-      }
-    } catch (tagErr) {
-      console.warn('Failed to assign tag, but user creation succeeded:', tagErr)
-    }
+    console.log(`User profile will be created by database trigger for user: ${userEmail}`)
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'User profile created successfully',
+        message: 'User signup webhook processed',
         userId: userId,
         email: userEmail
       }),

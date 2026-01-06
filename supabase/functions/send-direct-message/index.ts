@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
 
     // Verify recipient exists
     const { data: recipient, error: recipientError } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('id')
       .eq('id', recipient_id)
       .single();

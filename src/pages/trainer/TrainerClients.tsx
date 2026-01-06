@@ -336,4 +336,4 @@ export function TrainerClients({ onClientSelect }: TrainerClientsProps) {
     );
 }
 
-export default TrainerClients;
+

@@ -1,209 +1,31 @@
-/**
- * @fileoverview Meal planner constants and utilities
- * 
- * Provides essential constants, configuration objects, and utility functions
- * for meal planning components throughout the application. Includes meal types,
- * categories, food categorization for shopping lists, and nutrition calculation
- * functions.
- * 
- * @author Felony Fitness App Team
- * @version 1.0.0
- */
-
-/** 
- * @constant {string[]} Available meal types for weekly planning grid
- * IMPORTANT: Database and all logic should use lowercase values
- */
-export const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack1', 'snack2'];
-
-/** @constant {string[]} Days of the week for meal planning grid (Monday-first) */
-export const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-/**
- * Format meal type for display (lowercase → Title Case)
- * 
- * @description Converts internal lowercase meal type identifiers to human-readable
- * Title Case labels for UI display. This is the ONLY place meal types should be
- * converted to Title Case - all logic should use lowercase values.
- * 
- * @param {string} mealType - Internal meal type identifier (lowercase)
- * @returns {string} Human-readable meal type label (Title Case)
- * 
- * @example
- * formatMealType('breakfast'); // Returns "Breakfast"
- * formatMealType('snack1'); // Returns "Snack"
- * formatMealType('invalid'); // Returns "invalid" (fallback)
- * 
- * @see {@link normalizeMealType} - Reverse operation (Title Case → lowercase)
- * @see {@link MEAL_TYPES} - Valid lowercase meal type values
- */
-export const formatMealType = (mealType) => {
-  const typeMap = {
-    breakfast: 'Breakfast',
-    lunch: 'Lunch',
-    dinner: 'Dinner',
-    snack1: 'Snack',
-    snack2: 'Snack 2',
-    snack: 'Snack' // For backward compatibility
-  };
-  return typeMap[mealType] || mealType;
-};
-
-/**
- * Normalize meal type from display format to database format
- * 
- * @description Converts meal type strings from any case (Title Case, UPPERCASE, etc.)
- * to lowercase for consistent database operations. Use this when receiving meal types
- * from UI components or external sources before database queries.
- * 
- * @param {string} displayValue - Meal type in any case ('Breakfast', 'breakfast', 'BREAKFAST')
- * @returns {string} Normalized lowercase meal type for database, or empty string if falsy
- * 
- * @example
- * normalizeMealType('Breakfast'); // Returns "breakfast"
- * normalizeMealType('LUNCH'); // Returns "lunch"
- * normalizeMealType('breakfast'); // Returns "breakfast"
- * normalizeMealType('  Dinner  '); // Returns "dinner" (trimmed)
- * normalizeMealType(null); // Returns ""
- * 
- * @see {@link formatMealType} - Reverse operation (lowercase → Title Case)
- * @see {@link MEAL_TYPES} - Valid meal type values in lowercase
- * 
- * @note Should rarely be needed since state should already use lowercase
- */
-export const normalizeMealType = (displayValue) => {
-  if (!displayValue) return '';
-  return displayValue.toLowerCase().trim();
-};
-
-/** 
- * @constant {Array<Object>} Available meal categories for filtering 
- * Used in dropdowns and filter components throughout the meal system
- */
 export const MEAL_CATEGORIES = [
-  { value: 'all', label: 'All Meals' },
+  { value: 'all', label: 'All Categories' },
   { value: 'breakfast', label: 'Breakfast' },
   { value: 'lunch', label: 'Lunch' },
   { value: 'dinner', label: 'Dinner' },
-  { value: 'snack', label: 'Snacks' }
+  { value: 'snack', label: 'Snack' },
+  { value: 'preworkout', label: 'Pre-Workout' },
+  { value: 'postworkout', label: 'Post-Workout' },
+  { value: 'other', label: 'Other' }
 ];
 
-/** 
- * @constant {Object<string, string[]>} Food categories for organizing shopping list items
- * 
- * Maps grocery store sections to arrays of food keywords for automatic categorization.
- * Used by shopping list generators to group ingredients by store layout.
- * 
- * @example
- * // Check if 'chicken breast' belongs in 'Meat & Seafood'
- * const keywords = FOOD_CATEGORIES['Meat & Seafood']; // ['chicken', 'beef', ...]
- * const hasChicken = keywords.some(keyword => 'chicken breast'.includes(keyword)); // true
- */
-export const FOOD_CATEGORIES = {
-  'Produce': ['fruits', 'vegetables', 'herbs', 'fresh'],
-  'Meat & Seafood': ['chicken', 'beef', 'pork', 'fish', 'salmon', 'turkey', 'bacon'],
-  'Dairy & Eggs': ['milk', 'cheese', 'yogurt', 'eggs', 'butter', 'cream'],
-  'Grains & Bread': ['bread', 'rice', 'quinoa', 'pasta', 'oats', 'tortilla'],
-  'Pantry': ['oil', 'vinegar', 'spices', 'sauce', 'dressing', 'nuts', 'seeds'],
-  'Condiments': ['mayo', 'mustard', 'ketchup', 'salsa', 'honey'],
-  'Frozen': ['frozen'],
-  'Other': [] // Fallback category for unmatched items
-};
-
-/**
- * Generate array of dates for a week starting from Monday
- * 
- * Takes any date and calculates the Monday-Sunday week containing that date.
- * Handles edge cases including when the reference date is a Sunday.
- * 
- * @param {Date} date - Reference date to calculate week from
- * @returns {Date[]} Array of 7 Date objects representing the week (Monday to Sunday)
- * 
- * @example
- * const thisWeek = getWeekDates(new Date()); // Current week
- * const specificWeek = getWeekDates(new Date('2023-12-15')); // Week containing Dec 15
- * 
- * @description
- * Algorithm:
- * 1. Get the day of week (0=Sunday, 1=Monday, etc.)
- * 2. Calculate days to subtract to get to Monday
- * 3. Handle Sunday special case (day 0 becomes -6 to go back to Monday)
- * 4. Generate 7 consecutive dates starting from calculated Monday
- */
-export function getWeekDates(date) {
-  const week = [];
-  const startOfWeek = new Date(date);
-  const day = startOfWeek.getDay();
-  const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
-  startOfWeek.setDate(diff);
-
-  for (let i = 0; i < 7; i++) {
-    const day = new Date(startOfWeek);
-    day.setDate(startOfWeek.getDate() + i);
-    week.push(day);
+export const calculateMealNutrition = (mealFoods) => {
+  if (!mealFoods || !Array.isArray(mealFoods)) {
+    return { calories: 0, protein: 0, carbs: 0, fat: 0 };
   }
-  return week;
-}
 
-/**
- * Calculate total nutrition values for a meal based on its foods
- * 
- * Processes an array of meal_foods relationships and calculates aggregate
- * nutrition values by multiplying each food's base nutrition by its quantity.
- * Handles missing or null foods gracefully with warnings.
- * 
- * @param {Array<Object>} mealFoods - Array of meal_foods with quantities and nutrition data
- * @param {number} mealFoods[].quantity - Serving quantity multiplier
- * @param {Object} mealFoods[].foods - Nutrition data for the food (from foods table)
- * @param {number} mealFoods[].foods.calories - Calories per 100g
- * @param {number} mealFoods[].foods.protein_g - Protein grams per 100g
- * @param {number} mealFoods[].foods.carbs_g - Carbohydrate grams per 100g
- * @param {number} mealFoods[].foods.fat_g - Fat grams per 100g
- * 
- * @returns {Object} Calculated nutrition totals
- * @returns {number} returns.calories - Total calories
- * @returns {number} returns.protein - Total protein in grams
- * @returns {number} returns.carbs - Total carbohydrates in grams
- * @returns {number} returns.fat - Total fat in grams
- * 
- * @remarks
- * If an item quantity is missing, non-finite, or <= 0, a default quantity of 1 is used.
- * This ensures premade meals without explicit quantities still display correct macros.
- * Foods table stores nutrition per 100g, so values are scaled by quantity.
- * 
- * @example
- * const mealFoods = [
- *   { quantity: 2, foods: { calories: 100, protein_g: 20, carbs_g: 5, fat_g: 2 } },
- *   { quantity: 1, foods: { calories: 200, protein_g: 10, carbs_g: 30, fat_g: 8 } }
- * ];
- * const nutrition = calculateMealNutrition(mealFoods);
- * // Returns: { calories: 400, protein: 50, carbs: 40, fat: 12 }
- */
-export function calculateMealNutrition(mealFoods) {
-  if (!mealFoods) return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+  return mealFoods.reduce((acc, mf) => {
+    // Check if food data exists (user_meal_foods -> foods relation)
+    const food = mf.foods;
+    if (!food) return acc;
 
-  return mealFoods.reduce((acc, item) => {
-    // Support both old 'food_servings' and new 'foods' field names for backwards compatibility
-    const food = item.foods || item.food_servings;
-    // Default to 1 when quantity is missing/invalid to ensure premade meals show correct macros
-    const quantity = Number.isFinite(item?.quantity) && item.quantity > 0 ? item.quantity : 1;
-    
-    // Handle null or undefined food data
-    if (!food) {
-      // Missing food data for meal food item - skip calculation
-      return acc;
-    }
+    const ratio = mf.quantity || 1;
     
     return {
-      calories: acc.calories + (food.calories * quantity || 0),
-      protein: acc.protein + (food.protein_g * quantity || 0),
-      carbs: acc.carbs + (food.carbs_g * quantity || 0),
-      fat: acc.fat + (food.fat_g * quantity || 0)
+      calories: acc.calories + (food.calories || 0) * ratio,
+      protein: acc.protein + (food.protein_g || 0) * ratio,
+      carbs: acc.carbs + (food.carbs_g || 0) * ratio,
+      fat: acc.fat + (food.fat_g || 0) * ratio
     };
-  }, {
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0
-  });
-}
+  }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+};
