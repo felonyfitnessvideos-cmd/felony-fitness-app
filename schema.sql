@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict PhLV2vmhUToRNAyBCEWGbhaybg2BejQ36ZD2DqSie4YiQtwuNauvBzzWJeMi3tp
+\restrict BsZgZ4evoCoHGz4suacXbaV4ccWSkzO89BSaQkh7DObCgSQoNJKG4IVnckFTuF9
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.7
@@ -401,18 +401,30 @@ CREATE TYPE storage.buckettype AS ENUM (
 
 CREATE FUNCTION analytics.get_daily_page_views(start_date date, end_date date) RETURNS TABLE(date date, page_path text, views bigint)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        DATE(created_at) as date,
-        page_path,
-        COUNT(*) as views
-    FROM analytics.page_views
-    WHERE DATE(created_at) BETWEEN start_date AND end_date
-    GROUP BY DATE(created_at), page_path
-    ORDER BY date DESC, views DESC;
-END;
+    AS $$
+
+BEGIN
+
+    RETURN QUERY
+
+    SELECT 
+
+        DATE(created_at) as date,
+
+        page_path,
+
+        COUNT(*) as views
+
+    FROM analytics.page_views
+
+    WHERE DATE(created_at) BETWEEN start_date AND end_date
+
+    GROUP BY DATE(created_at), page_path
+
+    ORDER BY date DESC, views DESC;
+
+END;
+
 $$;
 
 
@@ -823,18 +835,30 @@ CREATE FUNCTION pgbouncer.get_auth(p_usename text) RETURNS TABLE(username text, 
 CREATE FUNCTION public.add_tag_to_client(p_client_id uuid, p_tag_id text) RETURNS boolean
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-BEGIN
-    -- Add tag to client's tags array if not already present
-    UPDATE trainer_clients
-    SET tags = array_append(tags, p_tag_id),
-        updated_at = NOW()
-    WHERE client_id = p_client_id
-      AND trainer_id = auth.uid()
-      AND NOT (p_tag_id = ANY(tags)); -- Only add if not already present
-    
-    RETURN FOUND;
-END;
+    AS $$
+
+BEGIN
+
+    -- Add tag to client's tags array if not already present
+
+    UPDATE trainer_clients
+
+    SET tags = array_append(tags, p_tag_id),
+
+        updated_at = NOW()
+
+    WHERE client_id = p_client_id
+
+      AND trainer_id = auth.uid()
+
+      AND NOT (p_tag_id = ANY(tags)); -- Only add if not already present
+
+    
+
+    RETURN FOUND;
+
+END;
+
 $$;
 
 
@@ -844,46 +868,86 @@ $$;
 
 CREATE FUNCTION public.calculate_complexity_score(food_name text) RETURNS integer
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-DECLARE
-  base_score INTEGER := 70;  -- Start at "common"
-  word_count INTEGER;
-  comma_count INTEGER;
-  paren_penalty INTEGER;
-  length_penalty INTEGER;
-  qualifier_penalty INTEGER;
-  final_score INTEGER;
-BEGIN
-  -- Count words (split by spaces/commas)
-  word_count := array_length(regexp_split_to_array(food_name, '[,\s]+'), 1);
-  
-  -- Count commas (complex descriptions)
-  comma_count := LENGTH(food_name) - LENGTH(REPLACE(food_name, ',', ''));
-  
-  -- Parentheses indicate qualifiers
-  paren_penalty := CASE WHEN food_name LIKE '%(%)%' THEN 10 ELSE 0 END;
-  
-  -- Length penalty (very long names = obscure)
-  length_penalty := GREATEST(0, (LENGTH(food_name) - 20) / 3);
-  
-  -- Qualifier words that indicate specialty items
-  qualifier_penalty := 0;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%frozen%' THEN 3 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%canned%' THEN 3 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%dried%' THEN 3 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%powdered%' THEN 5 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%imitation%' THEN 8 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%prepared%' THEN 2 ELSE 0 END;
-  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%restaurant%' THEN 5 ELSE 0 END;
-  
-  -- Calculate final score
-  final_score := base_score - (word_count * 3) - (comma_count * 5) - paren_penalty - length_penalty - qualifier_penalty;
-  
-  -- Clamp to valid range (11-70 for auto-calculated scores)
-  -- Don't go below 11 (reserve 1-10 for manual rare assignments)
-  -- Don't go above 70 (reserve 71-100 for manual staples)
-  RETURN GREATEST(11, LEAST(70, final_score));
-END;
+    AS $$
+
+DECLARE
+
+  base_score INTEGER := 70;  -- Start at "common"
+
+  word_count INTEGER;
+
+  comma_count INTEGER;
+
+  paren_penalty INTEGER;
+
+  length_penalty INTEGER;
+
+  qualifier_penalty INTEGER;
+
+  final_score INTEGER;
+
+BEGIN
+
+  -- Count words (split by spaces/commas)
+
+  word_count := array_length(regexp_split_to_array(food_name, '[,\s]+'), 1);
+
+  
+
+  -- Count commas (complex descriptions)
+
+  comma_count := LENGTH(food_name) - LENGTH(REPLACE(food_name, ',', ''));
+
+  
+
+  -- Parentheses indicate qualifiers
+
+  paren_penalty := CASE WHEN food_name LIKE '%(%)%' THEN 10 ELSE 0 END;
+
+  
+
+  -- Length penalty (very long names = obscure)
+
+  length_penalty := GREATEST(0, (LENGTH(food_name) - 20) / 3);
+
+  
+
+  -- Qualifier words that indicate specialty items
+
+  qualifier_penalty := 0;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%frozen%' THEN 3 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%canned%' THEN 3 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%dried%' THEN 3 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%powdered%' THEN 5 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%imitation%' THEN 8 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%prepared%' THEN 2 ELSE 0 END;
+
+  qualifier_penalty := qualifier_penalty + CASE WHEN food_name ILIKE '%restaurant%' THEN 5 ELSE 0 END;
+
+  
+
+  -- Calculate final score
+
+  final_score := base_score - (word_count * 3) - (comma_count * 5) - paren_penalty - length_penalty - qualifier_penalty;
+
+  
+
+  -- Clamp to valid range (11-70 for auto-calculated scores)
+
+  -- Don't go below 11 (reserve 1-10 for manual rare assignments)
+
+  -- Don't go above 70 (reserve 71-100 for manual staples)
+
+  RETURN GREATEST(11, LEAST(70, final_score));
+
+END;
+
 $$;
 
 
@@ -893,16 +957,26 @@ $$;
 
 CREATE FUNCTION public.calculate_level(xp integer) RETURNS integer
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-BEGIN
-  -- Level formula: sqrt(XP / 100)
-  -- Level 1: 0 XP
-  -- Level 2: 100 XP
-  -- Level 5: 2,500 XP
-  -- Level 10: 10,000 XP
-  -- Level 20: 40,000 XP
-  RETURN GREATEST(1, FLOOR(SQRT(xp / 100.0))::INTEGER + 1);
-END;
+    AS $$
+
+BEGIN
+
+  -- Level formula: sqrt(XP / 100)
+
+  -- Level 1: 0 XP
+
+  -- Level 2: 100 XP
+
+  -- Level 5: 2,500 XP
+
+  -- Level 10: 10,000 XP
+
+  -- Level 20: 40,000 XP
+
+  RETURN GREATEST(1, FLOOR(SQRT(xp / 100.0))::INTEGER + 1);
+
+END;
+
 $$;
 
 
@@ -912,30 +986,54 @@ $$;
 
 CREATE FUNCTION public.calculate_nutrition_from_food() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-DECLARE
-  food_data RECORD;
-BEGIN
-  -- Only calculate if food_id is provided and nutrition fields are NULL
-  IF NEW.food_id IS NOT NULL THEN
-    -- Get food nutrition data
-    SELECT calories, protein_g, carbs_g, fat_g
-    INTO food_data
-    FROM foods
-    WHERE id = NEW.food_id;
-
-    IF FOUND THEN
-      -- Calculate nutrition based on quantity consumed
-      -- Foods table stores per 100g, so multiply by quantity_consumed
-      NEW.calories := ROUND((food_data.calories::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-      NEW.protein_g := ROUND((food_data.protein_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-      NEW.carbs_g := ROUND((food_data.carbs_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-      NEW.fat_g := ROUND((food_data.fat_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
-    END IF;
-  END IF;
-
-  RETURN NEW;
-END;
+    AS $$
+
+DECLARE
+
+  food_data RECORD;
+
+BEGIN
+
+  -- Only calculate if food_id is provided and nutrition fields are NULL
+
+  IF NEW.food_id IS NOT NULL THEN
+
+    -- Get food nutrition data
+
+    SELECT calories, protein_g, carbs_g, fat_g
+
+    INTO food_data
+
+    FROM foods
+
+    WHERE id = NEW.food_id;
+
+
+
+    IF FOUND THEN
+
+      -- Calculate nutrition based on quantity consumed
+
+      -- Foods table stores per 100g, so multiply by quantity_consumed
+
+      NEW.calories := ROUND((food_data.calories::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+
+      NEW.protein_g := ROUND((food_data.protein_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+
+      NEW.carbs_g := ROUND((food_data.carbs_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+
+      NEW.fat_g := ROUND((food_data.fat_g::numeric * NEW.quantity_consumed / 100)::numeric, 1);
+
+    END IF;
+
+  END IF;
+
+
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -945,91 +1043,176 @@ $$;
 
 CREATE FUNCTION public.check_and_award_achievements(p_user_id uuid, p_event_type text) RETURNS TABLE(achievement_id uuid, is_new boolean, achievement_code text)
     LANGUAGE plpgsql
-    AS $$
-DECLARE
-  stats RECORD;
-  achievement RECORD;
-  should_unlock BOOLEAN;
-  target_value INTEGER;
-  metric_name TEXT;
-BEGIN
-  -- Get user stats
-  SELECT * INTO stats FROM user_stats WHERE user_id = p_user_id;
-  
-  -- If no stats record exists, create one
-  IF stats IS NULL THEN
-    INSERT INTO user_stats (user_id) VALUES (p_user_id);
-    SELECT * INTO stats FROM user_stats WHERE user_id = p_user_id;
-  END IF;
-  
-  -- Check achievements that match this event type
-  FOR achievement IN 
-    SELECT a.* FROM achievements a
-    WHERE a.trigger_type = p_event_type
-      AND NOT EXISTS (
-        SELECT 1 FROM user_achievements ua
-        WHERE ua.user_id = p_user_id 
-          AND ua.achievement_id = a.id
-      )
-  LOOP
-    should_unlock := false;
-    metric_name := achievement.trigger_value->>'metric';
-    target_value := (achievement.trigger_value->>'target')::INTEGER;
-    
-    -- Check if conditions are met based on metric type
-    CASE metric_name
-      WHEN 'workout_count' THEN
-        should_unlock := stats.total_workouts >= target_value;
-      
-      WHEN 'workout_streak' THEN
-        should_unlock := stats.current_workout_streak >= target_value;
-      
-      WHEN 'pr_count' THEN
-        should_unlock := stats.total_prs >= target_value;
-      
-      WHEN 'total_volume' THEN
-        should_unlock := stats.total_volume_lbs >= target_value;
-      
-      WHEN 'mesocycle_count' THEN
-        should_unlock := stats.mesocycles_completed >= target_value;
-      
-      WHEN 'nutrition_streak' THEN
-        should_unlock := stats.current_nutrition_streak >= target_value;
-      
-      WHEN 'nutrition_count' THEN
-        should_unlock := stats.nutrition_logs_count >= target_value;
-      
-      WHEN 'set_count' THEN
-        should_unlock := stats.total_sets >= target_value;
-      
-      WHEN 'rep_count' THEN
-        should_unlock := stats.total_reps >= target_value;
-      
-      ELSE
-        should_unlock := false;
-    END CASE;
-    
-    IF should_unlock THEN
-      -- Award achievement
-      INSERT INTO user_achievements (user_id, achievement_id, seen)
-      VALUES (p_user_id, achievement.id, false);
-      
-      -- Award XP
-      UPDATE user_stats SET
-        total_xp = total_xp + achievement.xp_reward,
-        current_level = calculate_level(total_xp + achievement.xp_reward),
-        updated_at = NOW()
-      WHERE user_id = p_user_id;
-      
-      -- Log XP transaction
-      INSERT INTO xp_transactions (user_id, amount, source, reference_id)
-      VALUES (p_user_id, achievement.xp_reward, 'achievement:' || achievement.code, achievement.id);
-      
-      -- Return newly unlocked achievement
-      RETURN QUERY SELECT achievement.id, true, achievement.code;
-    END IF;
-  END LOOP;
-END;
+    AS $$
+
+DECLARE
+
+  stats RECORD;
+
+  achievement RECORD;
+
+  should_unlock BOOLEAN;
+
+  target_value INTEGER;
+
+  metric_name TEXT;
+
+BEGIN
+
+  -- Get user stats
+
+  SELECT * INTO stats FROM user_stats WHERE user_id = p_user_id;
+
+  
+
+  -- If no stats record exists, create one
+
+  IF stats IS NULL THEN
+
+    INSERT INTO user_stats (user_id) VALUES (p_user_id);
+
+    SELECT * INTO stats FROM user_stats WHERE user_id = p_user_id;
+
+  END IF;
+
+  
+
+  -- Check achievements that match this event type
+
+  FOR achievement IN 
+
+    SELECT a.* FROM achievements a
+
+    WHERE a.trigger_type = p_event_type
+
+      AND NOT EXISTS (
+
+        SELECT 1 FROM user_achievements ua
+
+        WHERE ua.user_id = p_user_id 
+
+          AND ua.achievement_id = a.id
+
+      )
+
+  LOOP
+
+    should_unlock := false;
+
+    metric_name := achievement.trigger_value->>'metric';
+
+    target_value := (achievement.trigger_value->>'target')::INTEGER;
+
+    
+
+    -- Check if conditions are met based on metric type
+
+    CASE metric_name
+
+      WHEN 'workout_count' THEN
+
+        should_unlock := stats.total_workouts >= target_value;
+
+      
+
+      WHEN 'workout_streak' THEN
+
+        should_unlock := stats.current_workout_streak >= target_value;
+
+      
+
+      WHEN 'pr_count' THEN
+
+        should_unlock := stats.total_prs >= target_value;
+
+      
+
+      WHEN 'total_volume' THEN
+
+        should_unlock := stats.total_volume_lbs >= target_value;
+
+      
+
+      WHEN 'mesocycle_count' THEN
+
+        should_unlock := stats.mesocycles_completed >= target_value;
+
+      
+
+      WHEN 'nutrition_streak' THEN
+
+        should_unlock := stats.current_nutrition_streak >= target_value;
+
+      
+
+      WHEN 'nutrition_count' THEN
+
+        should_unlock := stats.nutrition_logs_count >= target_value;
+
+      
+
+      WHEN 'set_count' THEN
+
+        should_unlock := stats.total_sets >= target_value;
+
+      
+
+      WHEN 'rep_count' THEN
+
+        should_unlock := stats.total_reps >= target_value;
+
+      
+
+      ELSE
+
+        should_unlock := false;
+
+    END CASE;
+
+    
+
+    IF should_unlock THEN
+
+      -- Award achievement
+
+      INSERT INTO user_achievements (user_id, achievement_id, seen)
+
+      VALUES (p_user_id, achievement.id, false);
+
+      
+
+      -- Award XP
+
+      UPDATE user_stats SET
+
+        total_xp = total_xp + achievement.xp_reward,
+
+        current_level = calculate_level(total_xp + achievement.xp_reward),
+
+        updated_at = NOW()
+
+      WHERE user_id = p_user_id;
+
+      
+
+      -- Log XP transaction
+
+      INSERT INTO xp_transactions (user_id, amount, source, reference_id)
+
+      VALUES (p_user_id, achievement.xp_reward, 'achievement:' || achievement.code, achievement.id);
+
+      
+
+      -- Return newly unlocked achievement
+
+      RETURN QUERY SELECT achievement.id, true, achievement.code;
+
+    END IF;
+
+  END LOOP;
+
+END;
+
 $$;
 
 
@@ -1039,27 +1222,48 @@ $$;
 
 CREATE FUNCTION public.generate_shopping_list(p_plan_id uuid, p_start_date date DEFAULT NULL::date, p_end_date date DEFAULT NULL::date) RETURNS TABLE(food_id bigint, food_name text, total_quantity numeric, category text, days_needed date[], meal_count bigint)
     LANGUAGE sql STABLE
-    AS $$
-  SELECT
-    f.id,
-    f.name::TEXT,
-    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
-    COALESCE(f.category, 'Other')::TEXT,
-    ARRAY_AGG(DISTINCT wmpe.plan_date ORDER BY wmpe.plan_date)::DATE[],
-    COUNT(DISTINCT wmpe.id)::BIGINT
-  FROM weekly_meal_plan_entries wmpe
-  JOIN user_meals um ON wmpe.user_meal_id = um.id
-  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
-  JOIN foods f ON umf.food_id = f.id
-  WHERE 
-    wmpe.plan_id = p_plan_id
-    AND wmpe.user_meal_id IS NOT NULL
-    AND (p_start_date IS NULL OR wmpe.plan_date >= p_start_date)
-    AND (p_end_date IS NULL OR wmpe.plan_date <= p_end_date)
-  GROUP BY f.id
-  ORDER BY 
-    COALESCE(f.category, 'Other'),
-    f.name
+    AS $$
+
+  SELECT
+
+    f.id,
+
+    f.name::TEXT,
+
+    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
+
+    COALESCE(f.category, 'Other')::TEXT,
+
+    ARRAY_AGG(DISTINCT wmpe.plan_date ORDER BY wmpe.plan_date)::DATE[],
+
+    COUNT(DISTINCT wmpe.id)::BIGINT
+
+  FROM weekly_meal_plan_entries wmpe
+
+  JOIN user_meals um ON wmpe.user_meal_id = um.id
+
+  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
+
+  JOIN foods f ON umf.food_id = f.id
+
+  WHERE 
+
+    wmpe.plan_id = p_plan_id
+
+    AND wmpe.user_meal_id IS NOT NULL
+
+    AND (p_start_date IS NULL OR wmpe.plan_date >= p_start_date)
+
+    AND (p_end_date IS NULL OR wmpe.plan_date <= p_end_date)
+
+  GROUP BY f.id
+
+  ORDER BY 
+
+    COALESCE(f.category, 'Other'),
+
+    f.name
+
 $$;
 
 
@@ -1076,32 +1280,58 @@ COMMENT ON FUNCTION public.generate_shopping_list(p_plan_id uuid, p_start_date d
 
 CREATE FUNCTION public.generate_shopping_list_with_nutrition(p_plan_id uuid) RETURNS TABLE(food_id bigint, food_name text, total_quantity numeric, category text, days_needed date[], total_calories numeric, total_protein_g numeric, total_carbs_g numeric, total_fat_g numeric, calories_per_serving numeric, protein_per_serving numeric)
     LANGUAGE sql STABLE
-    AS $$
-  SELECT
-    f.id,
-    f.name::TEXT,
-    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
-    COALESCE(f.category, 'Other')::TEXT,
-    ARRAY_AGG(DISTINCT wmpe.plan_date ORDER BY wmpe.plan_date)::DATE[],
-    -- Total nutrition for all servings
-    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.calories)::NUMERIC(10,2),
-    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.protein_g)::NUMERIC(10,2),
-    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.carbs_g)::NUMERIC(10,2),
-    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.fat_g)::NUMERIC(10,2),
-    -- Reference values
-    f.calories::NUMERIC(10,2),
-    f.protein_g::NUMERIC(10,2)
-  FROM weekly_meal_plan_entries wmpe
-  JOIN user_meals um ON wmpe.user_meal_id = um.id
-  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
-  JOIN foods f ON umf.food_id = f.id
-  WHERE 
-    wmpe.plan_id = p_plan_id
-    AND wmpe.user_meal_id IS NOT NULL
-  GROUP BY f.id
-  ORDER BY 
-    COALESCE(f.category, 'Other'),
-    f.name
+    AS $$
+
+  SELECT
+
+    f.id,
+
+    f.name::TEXT,
+
+    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
+
+    COALESCE(f.category, 'Other')::TEXT,
+
+    ARRAY_AGG(DISTINCT wmpe.plan_date ORDER BY wmpe.plan_date)::DATE[],
+
+    -- Total nutrition for all servings
+
+    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.calories)::NUMERIC(10,2),
+
+    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.protein_g)::NUMERIC(10,2),
+
+    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.carbs_g)::NUMERIC(10,2),
+
+    (SUM(umf.quantity * COALESCE(wmpe.servings, 1)) * f.fat_g)::NUMERIC(10,2),
+
+    -- Reference values
+
+    f.calories::NUMERIC(10,2),
+
+    f.protein_g::NUMERIC(10,2)
+
+  FROM weekly_meal_plan_entries wmpe
+
+  JOIN user_meals um ON wmpe.user_meal_id = um.id
+
+  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
+
+  JOIN foods f ON umf.food_id = f.id
+
+  WHERE 
+
+    wmpe.plan_id = p_plan_id
+
+    AND wmpe.user_meal_id IS NOT NULL
+
+  GROUP BY f.id
+
+  ORDER BY 
+
+    COALESCE(f.category, 'Other'),
+
+    f.name
+
 $$;
 
 
@@ -1118,20 +1348,34 @@ COMMENT ON FUNCTION public.generate_shopping_list_with_nutrition(p_plan_id uuid)
 
 CREATE FUNCTION public.generate_simplified_name(original_name text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-BEGIN
-  -- Convert to lowercase
-  -- Remove punctuation (keep only letters, numbers, spaces)
-  -- Normalize whitespace
-  RETURN lower(
-    trim(
-      regexp_replace(
-        regexp_replace(original_name, '[^a-zA-Z0-9\s]', ' ', 'g'),
-        '\s+', ' ', 'g'
-      )
-    )
-  );
-END;
+    AS $$
+
+BEGIN
+
+  -- Convert to lowercase
+
+  -- Remove punctuation (keep only letters, numbers, spaces)
+
+  -- Normalize whitespace
+
+  RETURN lower(
+
+    trim(
+
+      regexp_replace(
+
+        regexp_replace(original_name, '[^a-zA-Z0-9\s]', ' ', 'g'),
+
+        '\s+', ' ', 'g'
+
+      )
+
+    )
+
+  );
+
+END;
+
 $$;
 
 
@@ -1142,19 +1386,32 @@ $$;
 CREATE FUNCTION public.get_clients_by_tag(p_tag_id text) RETURNS TABLE(client_id uuid, full_name text, email text, tags text[])
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        tc.client_id,
-        tc.full_name,
-        tc.email,
-        tc.tags
-    FROM trainer_clients tc
-    WHERE tc.trainer_id = auth.uid()
-      AND p_tag_id = ANY(tc.tags)
-      AND tc.status = 'active';
-END;
+    AS $$
+
+BEGIN
+
+    RETURN QUERY
+
+    SELECT 
+
+        tc.client_id,
+
+        tc.full_name,
+
+        tc.email,
+
+        tc.tags
+
+    FROM trainer_clients tc
+
+    WHERE tc.trainer_id = auth.uid()
+
+      AND p_tag_id = ANY(tc.tags)
+
+      AND tc.status = 'active';
+
+END;
+
 $$;
 
 
@@ -1164,37 +1421,68 @@ $$;
 
 CREATE FUNCTION public.get_conversations() RETURNS TABLE(conversation_user_id uuid, conversation_user_name text, last_message text, last_message_time timestamp with time zone, unread_count bigint, is_trainer boolean)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    current_user_id UUID;
-BEGIN
-    current_user_id := auth.uid();
-    
-    IF current_user_id IS NULL THEN
-        RAISE EXCEPTION 'Authentication required';
-    END IF;
-    
-    RETURN QUERY
-    WITH conversation_partners AS (
-        SELECT DISTINCT
-            CASE 
-                WHEN dm.sender_id = current_user_id THEN dm.recipient_id
-                ELSE dm.sender_id 
-            END as partner_id
-        FROM direct_messages dm
-        WHERE dm.sender_id = current_user_id OR dm.recipient_id = current_user_id
-    )
-    SELECT 
-        cp.partner_id as conversation_user_id,
-        COALESCE(up.first_name || ' ' || up.last_name, up.email, 'Unknown User') as conversation_user_name,
-        ''::TEXT as last_message,
-        NOW()::TIMESTAMP WITH TIME ZONE as last_message_time,
-        0::BIGINT as unread_count,
-        false as is_trainer
-    FROM conversation_partners cp
-    LEFT JOIN user_profiles up ON up.id = cp.partner_id OR up.user_id = cp.partner_id
-    LIMIT 10;
-END;
+    AS $$
+
+DECLARE
+
+    current_user_id UUID;
+
+BEGIN
+
+    current_user_id := auth.uid();
+
+    
+
+    IF current_user_id IS NULL THEN
+
+        RAISE EXCEPTION 'Authentication required';
+
+    END IF;
+
+    
+
+    RETURN QUERY
+
+    WITH conversation_partners AS (
+
+        SELECT DISTINCT
+
+            CASE 
+
+                WHEN dm.sender_id = current_user_id THEN dm.recipient_id
+
+                ELSE dm.sender_id 
+
+            END as partner_id
+
+        FROM direct_messages dm
+
+        WHERE dm.sender_id = current_user_id OR dm.recipient_id = current_user_id
+
+    )
+
+    SELECT 
+
+        cp.partner_id as conversation_user_id,
+
+        COALESCE(up.first_name || ' ' || up.last_name, up.email, 'Unknown User') as conversation_user_name,
+
+        ''::TEXT as last_message,
+
+        NOW()::TIMESTAMP WITH TIME ZONE as last_message_time,
+
+        0::BIGINT as unread_count,
+
+        false as is_trainer
+
+    FROM conversation_partners cp
+
+    LEFT JOIN user_profiles up ON up.id = cp.partner_id OR up.user_id = cp.partner_id
+
+    LIMIT 10;
+
+END;
+
 $$;
 
 
@@ -1204,19 +1492,32 @@ $$;
 
 CREATE FUNCTION public.get_enrichment_status() RETURNS TABLE(status text, count bigint, avg_quality_before numeric, avg_quality_after numeric, total_improvements bigint)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        q.status,
-        COUNT(*)::BIGINT as count,
-        AVG(q.quality_score_before)::NUMERIC as avg_quality_before,
-        AVG(q.quality_score_after)::NUMERIC as avg_quality_after,
-        COUNT(CASE WHEN q.quality_score_after > q.quality_score_before THEN 1 END)::BIGINT as total_improvements
-    FROM public.nutrition_enrichment_queue q
-    GROUP BY q.status
-    ORDER BY q.status;
-END;
+    AS $$
+
+BEGIN
+
+    RETURN QUERY
+
+    SELECT 
+
+        q.status,
+
+        COUNT(*)::BIGINT as count,
+
+        AVG(q.quality_score_before)::NUMERIC as avg_quality_before,
+
+        AVG(q.quality_score_after)::NUMERIC as avg_quality_after,
+
+        COUNT(CASE WHEN q.quality_score_after > q.quality_score_before THEN 1 END)::BIGINT as total_improvements
+
+    FROM public.nutrition_enrichment_queue q
+
+    GROUP BY q.status
+
+    ORDER BY q.status;
+
+END;
+
 $$;
 
 
@@ -1226,42 +1527,78 @@ $$;
 
 CREATE FUNCTION public.get_quality_distribution() RETURNS TABLE(quality_range text, count bigint, percentage numeric)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    total_foods BIGINT;
-BEGIN
-    -- Get total count
-    SELECT COUNT(*) INTO total_foods FROM public.food_servings;
-    
-    -- Prevent division by zero
-    IF total_foods = 0 THEN
-        total_foods := 1;
-    END IF;
-    
-    RETURN QUERY
-    SELECT 
-        CASE 
-            WHEN f.quality_score = 0 THEN 'Not Scored (0)'
-            WHEN f.quality_score > 0 AND f.quality_score < 50 THEN 'Poor (1-49)'
-            WHEN f.quality_score >= 50 AND f.quality_score < 70 THEN 'Fair (50-69)'
-            WHEN f.quality_score >= 70 AND f.quality_score < 85 THEN 'Good (70-84)'
-            WHEN f.quality_score >= 85 THEN 'Excellent (85-100)'
-            ELSE 'Unknown'
-        END as quality_range,
-        COUNT(*)::BIGINT as count,
-        ROUND((COUNT(*)::NUMERIC / total_foods * 100), 2) as percentage
-    FROM public.food_servings f
-    GROUP BY quality_range
-    ORDER BY 
-        CASE quality_range
-            WHEN 'Excellent (85-100)' THEN 1
-            WHEN 'Good (70-84)' THEN 2
-            WHEN 'Fair (50-69)' THEN 3
-            WHEN 'Poor (1-49)' THEN 4
-            WHEN 'Not Scored (0)' THEN 5
-            ELSE 6
-        END;
-END;
+    AS $$
+
+DECLARE
+
+    total_foods BIGINT;
+
+BEGIN
+
+    -- Get total count
+
+    SELECT COUNT(*) INTO total_foods FROM public.food_servings;
+
+    
+
+    -- Prevent division by zero
+
+    IF total_foods = 0 THEN
+
+        total_foods := 1;
+
+    END IF;
+
+    
+
+    RETURN QUERY
+
+    SELECT 
+
+        CASE 
+
+            WHEN f.quality_score = 0 THEN 'Not Scored (0)'
+
+            WHEN f.quality_score > 0 AND f.quality_score < 50 THEN 'Poor (1-49)'
+
+            WHEN f.quality_score >= 50 AND f.quality_score < 70 THEN 'Fair (50-69)'
+
+            WHEN f.quality_score >= 70 AND f.quality_score < 85 THEN 'Good (70-84)'
+
+            WHEN f.quality_score >= 85 THEN 'Excellent (85-100)'
+
+            ELSE 'Unknown'
+
+        END as quality_range,
+
+        COUNT(*)::BIGINT as count,
+
+        ROUND((COUNT(*)::NUMERIC / total_foods * 100), 2) as percentage
+
+    FROM public.food_servings f
+
+    GROUP BY quality_range
+
+    ORDER BY 
+
+        CASE quality_range
+
+            WHEN 'Excellent (85-100)' THEN 1
+
+            WHEN 'Good (70-84)' THEN 2
+
+            WHEN 'Fair (50-69)' THEN 3
+
+            WHEN 'Poor (1-49)' THEN 4
+
+            WHEN 'Not Scored (0)' THEN 5
+
+            ELSE 6
+
+        END;
+
+END;
+
 $$;
 
 
@@ -1271,21 +1608,36 @@ $$;
 
 CREATE FUNCTION public.get_random_tip() RETURNS TABLE(tip text, category text)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-  tips TEXT[] := ARRAY[
-    'Aim for 0.8-1g of protein per kg of body weight daily',
-    'Drink water before you feel thirsty to stay properly hydrated',
-    'Include colorful vegetables in every meal for maximum nutrients',
-    'Eat protein within 30 minutes after strength training',
-    'Choose whole grains over refined grains for sustained energy'
-  ];
-  categories TEXT[] := ARRAY['Protein', 'Hydration', 'Vegetables', 'Recovery', 'Carbohydrates'];
-  random_index INT;
-BEGIN
-  random_index := floor(random() * array_length(tips, 1)) + 1;
-  RETURN QUERY SELECT tips[random_index], categories[random_index];
-END;
+    AS $$
+
+DECLARE
+
+  tips TEXT[] := ARRAY[
+
+    'Aim for 0.8-1g of protein per kg of body weight daily',
+
+    'Drink water before you feel thirsty to stay properly hydrated',
+
+    'Include colorful vegetables in every meal for maximum nutrients',
+
+    'Eat protein within 30 minutes after strength training',
+
+    'Choose whole grains over refined grains for sustained energy'
+
+  ];
+
+  categories TEXT[] := ARRAY['Protein', 'Hydration', 'Vegetables', 'Recovery', 'Carbohydrates'];
+
+  random_index INT;
+
+BEGIN
+
+  random_index := floor(random() * array_length(tips, 1)) + 1;
+
+  RETURN QUERY SELECT tips[random_index], categories[random_index];
+
+END;
+
 $$;
 
 
@@ -1295,21 +1647,36 @@ $$;
 
 CREATE FUNCTION public.get_shopping_list_category_summary(p_plan_id uuid) RETURNS TABLE(category text, unique_foods bigint, total_items numeric, estimated_calories numeric)
     LANGUAGE sql STABLE
-    AS $$
-  SELECT
-    COALESCE(f.category, 'Other')::TEXT,
-    COUNT(DISTINCT f.id)::BIGINT,
-    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
-    SUM(umf.quantity * COALESCE(wmpe.servings, 1) * f.calories)::NUMERIC(10,2)
-  FROM weekly_meal_plan_entries wmpe
-  JOIN user_meals um ON wmpe.user_meal_id = um.id
-  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
-  JOIN foods f ON umf.food_id = f.id
-  WHERE 
-    wmpe.plan_id = p_plan_id
-    AND wmpe.user_meal_id IS NOT NULL
-  GROUP BY COALESCE(f.category, 'Other')
-  ORDER BY 1
+    AS $$
+
+  SELECT
+
+    COALESCE(f.category, 'Other')::TEXT,
+
+    COUNT(DISTINCT f.id)::BIGINT,
+
+    SUM(umf.quantity * COALESCE(wmpe.servings, 1))::NUMERIC(10,2),
+
+    SUM(umf.quantity * COALESCE(wmpe.servings, 1) * f.calories)::NUMERIC(10,2)
+
+  FROM weekly_meal_plan_entries wmpe
+
+  JOIN user_meals um ON wmpe.user_meal_id = um.id
+
+  JOIN user_meal_foods umf ON um.id = umf.user_meal_id
+
+  JOIN foods f ON umf.food_id = f.id
+
+  WHERE 
+
+    wmpe.plan_id = p_plan_id
+
+    AND wmpe.user_meal_id IS NOT NULL
+
+  GROUP BY COALESCE(f.category, 'Other')
+
+  ORDER BY 1
+
 $$;
 
 
@@ -1326,32 +1693,58 @@ COMMENT ON FUNCTION public.get_shopping_list_category_summary(p_plan_id uuid) IS
 
 CREATE FUNCTION public.get_user_tags(target_user_id uuid DEFAULT NULL::uuid) RETURNS TABLE(tag_id uuid, tag_name character varying, tag_description text, tag_color character varying, assigned_at timestamp with time zone, assigned_by uuid)
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    current_user_id UUID;
-    query_user_id UUID;
-BEGIN
-    current_user_id := auth.uid();
-    
-    IF current_user_id IS NULL THEN
-        RAISE EXCEPTION 'Authentication required';
-    END IF;
-    
-    query_user_id := COALESCE(target_user_id, current_user_id);
-    
-    RETURN QUERY
-    SELECT 
-        t.id as tag_id,
-        t.name as tag_name,
-        t.description as tag_description,
-        t.color as tag_color,
-        ut.assigned_at,
-        ut.assigned_by
-    FROM user_tags ut
-    JOIN tags t ON t.id = ut.tag_id
-    WHERE ut.user_id = query_user_id
-    ORDER BY ut.assigned_at DESC;
-END;
+    AS $$
+
+DECLARE
+
+    current_user_id UUID;
+
+    query_user_id UUID;
+
+BEGIN
+
+    current_user_id := auth.uid();
+
+    
+
+    IF current_user_id IS NULL THEN
+
+        RAISE EXCEPTION 'Authentication required';
+
+    END IF;
+
+    
+
+    query_user_id := COALESCE(target_user_id, current_user_id);
+
+    
+
+    RETURN QUERY
+
+    SELECT 
+
+        t.id as tag_id,
+
+        t.name as tag_name,
+
+        t.description as tag_description,
+
+        t.color as tag_color,
+
+        ut.assigned_at,
+
+        ut.assigned_by
+
+    FROM user_tags ut
+
+    JOIN tags t ON t.id = ut.tag_id
+
+    WHERE ut.user_id = query_user_id
+
+    ORDER BY ut.assigned_at DESC;
+
+END;
+
 $$;
 
 
@@ -1361,20 +1754,34 @@ $$;
 
 CREATE FUNCTION public.get_verification_stats() RETURNS TABLE(total_foods bigint, verified_foods bigint, needs_review_foods bigint, pending_verification_foods bigint, verification_rate numeric)
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  RETURN QUERY
-  SELECT 
-    COUNT(*)::BIGINT as total_foods,
-    COUNT(*) FILTER (WHERE is_verified = TRUE)::BIGINT as verified_foods,
-    COUNT(*) FILTER (WHERE needs_review = TRUE)::BIGINT as needs_review_foods,
-    COUNT(*) FILTER (WHERE enrichment_status IN ('completed', 'verified') AND (is_verified IS NULL OR is_verified = FALSE))::BIGINT as pending_verification_foods,
-    ROUND(
-      (COUNT(*) FILTER (WHERE is_verified = TRUE)::NUMERIC / NULLIF(COUNT(*), 0) * 100),
-      2
-    ) as verification_rate
-  FROM food_servings;
-END;
+    AS $$
+
+BEGIN
+
+  RETURN QUERY
+
+  SELECT 
+
+    COUNT(*)::BIGINT as total_foods,
+
+    COUNT(*) FILTER (WHERE is_verified = TRUE)::BIGINT as verified_foods,
+
+    COUNT(*) FILTER (WHERE needs_review = TRUE)::BIGINT as needs_review_foods,
+
+    COUNT(*) FILTER (WHERE enrichment_status IN ('completed', 'verified') AND (is_verified IS NULL OR is_verified = FALSE))::BIGINT as pending_verification_foods,
+
+    ROUND(
+
+      (COUNT(*) FILTER (WHERE is_verified = TRUE)::NUMERIC / NULLIF(COUNT(*), 0) * 100),
+
+      2
+
+    ) as verification_rate
+
+  FROM food_servings;
+
+END;
+
 $$;
 
 
@@ -1384,12 +1791,19 @@ $$;
 
 CREATE FUNCTION public.handle_new_user() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-  INSERT INTO public.user_profiles (id, user_id, email)
-  VALUES (NEW.id, NEW.id, NEW.email);
-  RETURN NEW;
-END;
+    SET search_path TO 'public'
+    AS $$
+
+BEGIN
+
+  INSERT INTO public.user_profiles (id, user_id, email, created_at, updated_at)
+
+  VALUES (NEW.id, NEW.id, NEW.email, NOW(), NOW());
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1399,18 +1813,30 @@ $$;
 
 CREATE FUNCTION public.increment_food_log_count() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-  -- Increment times_logged for the food that was just logged
-  -- nutrition_logs now has food_id directly (no food_servings table)
-  UPDATE foods
-  SET 
-    times_logged = times_logged + 1,
-    last_logged_at = NEW.created_at
-  WHERE id = NEW.food_id;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Increment times_logged for the food that was just logged
+
+  -- nutrition_logs now has food_id directly (no food_servings table)
+
+  UPDATE foods
+
+  SET 
+
+    times_logged = times_logged + 1,
+
+    last_logged_at = NEW.created_at
+
+  WHERE id = NEW.food_id;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1421,13 +1847,20 @@ $$;
 CREATE FUNCTION public.is_admin() RETURNS boolean
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'public', 'auth'
-    AS $$
-  SELECT EXISTS (
-    SELECT 1 
-    FROM public.user_profiles
-    WHERE id = auth.uid() 
-    AND is_admin = true
-  );
+    AS $$
+
+  SELECT EXISTS (
+
+    SELECT 1 
+
+    FROM public.user_profiles
+
+    WHERE id = auth.uid() 
+
+    AND is_admin = true
+
+  );
+
 $$;
 
 
@@ -1438,13 +1871,20 @@ $$;
 CREATE FUNCTION public.is_trainer() RETURNS boolean
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'public', 'auth'
-    AS $$
-  SELECT EXISTS (
-    SELECT 1 
-    FROM public.user_profiles
-    WHERE id = auth.uid() 
-    AND is_trainer = true
-  );
+    AS $$
+
+  SELECT EXISTS (
+
+    SELECT 1 
+
+    FROM public.user_profiles
+
+    WHERE id = auth.uid() 
+
+    AND is_trainer = true
+
+  );
+
 $$;
 
 
@@ -1455,14 +1895,22 @@ $$;
 CREATE FUNCTION public.is_trainer_for_client(client_id uuid) RETURNS boolean
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'public', 'auth'
-    AS $$
-  SELECT EXISTS (
-    SELECT 1 
-    FROM public.trainer_clients
-    WHERE trainer_id = auth.uid() 
-    AND trainer_clients.client_id = is_trainer_for_client.client_id
-    AND status = 'active'
-  );
+    AS $$
+
+  SELECT EXISTS (
+
+    SELECT 1 
+
+    FROM public.trainer_clients
+
+    WHERE trainer_id = auth.uid() 
+
+    AND trainer_clients.client_id = is_trainer_for_client.client_id
+
+    AND status = 'active'
+
+  );
+
 $$;
 
 
@@ -1472,64 +1920,122 @@ $$;
 
 CREATE FUNCTION public.log_food_item(p_external_food jsonb DEFAULT NULL::jsonb, p_food_serving_id uuid DEFAULT NULL::uuid, p_meal_type text DEFAULT 'Snack'::text, p_quantity_consumed numeric DEFAULT 1.0, p_user_id uuid DEFAULT NULL::uuid, p_log_date date DEFAULT CURRENT_DATE) RETURNS jsonb
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-  v_food_serving_id UUID;
-  v_result JSONB;
-  v_user_id UUID;
-BEGIN
-  v_user_id := COALESCE(p_user_id, auth.uid());
-  
-  IF v_user_id IS NULL THEN
-    RETURN json_build_object('error', 'Authentication required');
-  END IF;
-
-  IF p_external_food IS NOT NULL THEN
-    SELECT f.id INTO v_food_serving_id
-    FROM food_servings f
-    WHERE LOWER(f.food_name) = LOWER(p_external_food->>'name')
-    AND LOWER(f.serving_description) = LOWER(p_external_food->>'serving_description')
-    LIMIT 1;
-    
-    IF v_food_serving_id IS NULL THEN
-      INSERT INTO food_servings (
-        food_name, serving_description, calories, protein_g, carbs_g, fat_g, 
-        fiber_g, sugar_g, sodium_mg, calcium_mg, iron_mg, vitamin_c_mg
-      ) VALUES (
-        p_external_food->>'name',
-        p_external_food->>'serving_description',
-        COALESCE((p_external_food->>'calories')::DECIMAL, 0),
-        COALESCE((p_external_food->>'protein_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'carbs_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'fat_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'fiber_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'sugar_g')::DECIMAL, 0),
-        COALESCE((p_external_food->>'sodium_mg')::DECIMAL, 0),
-        COALESCE((p_external_food->>'calcium_mg')::DECIMAL, 0),
-        COALESCE((p_external_food->>'iron_mg')::DECIMAL, 0),
-        COALESCE((p_external_food->>'vitamin_c_mg')::DECIMAL, 0)
-      ) RETURNING id INTO v_food_serving_id;
-    END IF;
-  ELSE
-    v_food_serving_id := p_food_serving_id;
-  END IF;
-
-  INSERT INTO nutrition_logs (
-    user_id, food_serving_id, meal_type, quantity_consumed, log_date
-  ) VALUES (
-    v_user_id, v_food_serving_id, p_meal_type, p_quantity_consumed, p_log_date
-  );
-
-  RETURN json_build_object(
-    'success', true,
-    'message', 'Food logged successfully',
-    'food_serving_id', v_food_serving_id
-  );
-
-EXCEPTION
-  WHEN OTHERS THEN
-    RETURN json_build_object('error', 'Failed to log food: ' || SQLERRM);
-END;
+    AS $$
+
+DECLARE
+
+  v_food_serving_id UUID;
+
+  v_result JSONB;
+
+  v_user_id UUID;
+
+BEGIN
+
+  v_user_id := COALESCE(p_user_id, auth.uid());
+
+  
+
+  IF v_user_id IS NULL THEN
+
+    RETURN json_build_object('error', 'Authentication required');
+
+  END IF;
+
+
+
+  IF p_external_food IS NOT NULL THEN
+
+    SELECT f.id INTO v_food_serving_id
+
+    FROM food_servings f
+
+    WHERE LOWER(f.food_name) = LOWER(p_external_food->>'name')
+
+    AND LOWER(f.serving_description) = LOWER(p_external_food->>'serving_description')
+
+    LIMIT 1;
+
+    
+
+    IF v_food_serving_id IS NULL THEN
+
+      INSERT INTO food_servings (
+
+        food_name, serving_description, calories, protein_g, carbs_g, fat_g, 
+
+        fiber_g, sugar_g, sodium_mg, calcium_mg, iron_mg, vitamin_c_mg
+
+      ) VALUES (
+
+        p_external_food->>'name',
+
+        p_external_food->>'serving_description',
+
+        COALESCE((p_external_food->>'calories')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'protein_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'carbs_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'fat_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'fiber_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'sugar_g')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'sodium_mg')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'calcium_mg')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'iron_mg')::DECIMAL, 0),
+
+        COALESCE((p_external_food->>'vitamin_c_mg')::DECIMAL, 0)
+
+      ) RETURNING id INTO v_food_serving_id;
+
+    END IF;
+
+  ELSE
+
+    v_food_serving_id := p_food_serving_id;
+
+  END IF;
+
+
+
+  INSERT INTO nutrition_logs (
+
+    user_id, food_serving_id, meal_type, quantity_consumed, log_date
+
+  ) VALUES (
+
+    v_user_id, v_food_serving_id, p_meal_type, p_quantity_consumed, p_log_date
+
+  );
+
+
+
+  RETURN json_build_object(
+
+    'success', true,
+
+    'message', 'Food logged successfully',
+
+    'food_serving_id', v_food_serving_id
+
+  );
+
+
+
+EXCEPTION
+
+  WHEN OTHERS THEN
+
+    RETURN json_build_object('error', 'Failed to log food: ' || SQLERRM);
+
+END;
+
 $$;
 
 
@@ -1539,13 +2045,20 @@ $$;
 
 CREATE FUNCTION public.refresh_meal_plan_nutrition() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-  -- Refresh the materialized view concurrently (non-blocking)
-  -- Only refresh if there are changes to relevant tables
-  REFRESH MATERIALIZED VIEW CONCURRENTLY weekly_meal_plan_nutrition;
-  RETURN NULL;
-END;
+    AS $$
+
+BEGIN
+
+  -- Refresh the materialized view concurrently (non-blocking)
+
+  -- Only refresh if there are changes to relevant tables
+
+  REFRESH MATERIALIZED VIEW CONCURRENTLY weekly_meal_plan_nutrition;
+
+  RETURN NULL;
+
+END;
+
 $$;
 
 
@@ -1555,13 +2068,20 @@ $$;
 
 CREATE FUNCTION public.refresh_weekly_meal_plan_nutrition() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    -- Refresh the materialized view concurrently (non-blocking)
-    -- This allows queries to continue while refresh is in progress
-    REFRESH MATERIALIZED VIEW CONCURRENTLY public.weekly_meal_plan_nutrition;
-    RETURN NULL;
-END;
+    AS $$
+
+BEGIN
+
+    -- Refresh the materialized view concurrently (non-blocking)
+
+    -- This allows queries to continue while refresh is in progress
+
+    REFRESH MATERIALIZED VIEW CONCURRENTLY public.weekly_meal_plan_nutrition;
+
+    RETURN NULL;
+
+END;
+
 $$;
 
 
@@ -1578,42 +2098,78 @@ COMMENT ON FUNCTION public.refresh_weekly_meal_plan_nutrition() IS 'Trigger func
 
 CREATE FUNCTION public.remove_category_prefix(food_name text, food_category text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-DECLARE
-  cleaned_name text;
-  category_singular text;
-BEGIN
-  cleaned_name := food_name;
-  
-  -- Don't process if category is unknown or null
-  IF food_category IS NULL OR food_category IN ('Unknown', '') THEN
-    RETURN cleaned_name;
-  END IF;
-  
-  -- Remove exact category name from start (case insensitive)
-  -- Pattern: "Category, rest of name" → "rest of name"
-  cleaned_name := regexp_replace(
-    cleaned_name, 
-    '^' || food_category || ',\s*', 
-    '', 
-    'i'
-  );
-  
-  -- Remove common category prefixes
-  cleaned_name := regexp_replace(cleaned_name, '^Beverages?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Vegetables?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Fruits?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Meats?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Dairy,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Grains?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Cereals?,\s*', '', 'i');
-  cleaned_name := regexp_replace(cleaned_name, '^Legumes?,\s*', '', 'i');
-  
-  -- Capitalize first letter after cleanup
-  cleaned_name := upper(substring(cleaned_name from 1 for 1)) || substring(cleaned_name from 2);
-  
-  RETURN cleaned_name;
-END;
+    AS $$
+
+DECLARE
+
+  cleaned_name text;
+
+  category_singular text;
+
+BEGIN
+
+  cleaned_name := food_name;
+
+  
+
+  -- Don't process if category is unknown or null
+
+  IF food_category IS NULL OR food_category IN ('Unknown', '') THEN
+
+    RETURN cleaned_name;
+
+  END IF;
+
+  
+
+  -- Remove exact category name from start (case insensitive)
+
+  -- Pattern: "Category, rest of name" → "rest of name"
+
+  cleaned_name := regexp_replace(
+
+    cleaned_name, 
+
+    '^' || food_category || ',\s*', 
+
+    '', 
+
+    'i'
+
+  );
+
+  
+
+  -- Remove common category prefixes
+
+  cleaned_name := regexp_replace(cleaned_name, '^Beverages?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Vegetables?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Fruits?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Meats?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Dairy,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Grains?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Cereals?,\s*', '', 'i');
+
+  cleaned_name := regexp_replace(cleaned_name, '^Legumes?,\s*', '', 'i');
+
+  
+
+  -- Capitalize first letter after cleanup
+
+  cleaned_name := upper(substring(cleaned_name from 1 for 1)) || substring(cleaned_name from 2);
+
+  
+
+  RETURN cleaned_name;
+
+END;
+
 $$;
 
 
@@ -1624,18 +2180,30 @@ $$;
 CREATE FUNCTION public.remove_tag_from_client(p_client_id uuid, p_tag_id text) RETURNS boolean
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-BEGIN
-    -- Remove tag from client's tags array
-    UPDATE trainer_clients
-    SET tags = array_remove(tags, p_tag_id),
-        updated_at = NOW()
-    WHERE client_id = p_client_id
-      AND trainer_id = auth.uid()
-      AND p_tag_id = ANY(tags); -- Only remove if present
-    
-    RETURN FOUND;
-END;
+    AS $$
+
+BEGIN
+
+    -- Remove tag from client's tags array
+
+    UPDATE trainer_clients
+
+    SET tags = array_remove(tags, p_tag_id),
+
+        updated_at = NOW()
+
+    WHERE client_id = p_client_id
+
+      AND trainer_id = auth.uid()
+
+      AND p_tag_id = ANY(tags); -- Only remove if present
+
+    
+
+    RETURN FOUND;
+
+END;
+
 $$;
 
 
@@ -1645,12 +2213,18 @@ $$;
 
 CREATE FUNCTION public.set_start_date_from_created_at() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- On insert, set start_date to the date part of created_at
-  NEW.start_date := (NEW.created_at AT TIME ZONE 'UTC')::date;
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- On insert, set start_date to the date part of created_at
+
+  NEW.start_date := (NEW.created_at AT TIME ZONE 'UTC')::date;
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1660,23 +2234,40 @@ $$;
 
 CREATE FUNCTION public.simplify_fast_food_name(food_name text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $$
-DECLARE
-  cleaned_name text;
-  main_name text;
-BEGIN
-  cleaned_name := food_name;
-  
-  -- Pattern: "Fast foods, item" → "Item (fast food)"
-  IF cleaned_name ~* '^Fast foods?,\s*' THEN
-    main_name := regexp_replace(cleaned_name, '^Fast foods?,\s*', '', 'i');
-    -- Capitalize first letter
-    main_name := upper(substring(main_name from 1 for 1)) || substring(main_name from 2);
-    cleaned_name := main_name || ' (fast food)';
-  END IF;
-  
-  RETURN cleaned_name;
-END;
+    AS $$
+
+DECLARE
+
+  cleaned_name text;
+
+  main_name text;
+
+BEGIN
+
+  cleaned_name := food_name;
+
+  
+
+  -- Pattern: "Fast foods, item" → "Item (fast food)"
+
+  IF cleaned_name ~* '^Fast foods?,\s*' THEN
+
+    main_name := regexp_replace(cleaned_name, '^Fast foods?,\s*', '', 'i');
+
+    -- Capitalize first letter
+
+    main_name := upper(substring(main_name from 1 for 1)) || substring(main_name from 2);
+
+    cleaned_name := main_name || ' (fast food)';
+
+  END IF;
+
+  
+
+  RETURN cleaned_name;
+
+END;
+
 $$;
 
 
@@ -1686,41 +2277,193 @@ $$;
 
 CREATE FUNCTION public.simplify_food_name(original_name text) RETURNS text
     LANGUAGE plpgsql IMMUTABLE
-    AS $_$
-DECLARE
-  cleaned_name text;
-BEGIN
-  cleaned_name := original_name;
-  
-  -- Remove parenthetical geographic qualifiers
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Alaska[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Native[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Indian[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Plains[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Hispanic[^)]*\)', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Mexican[^)]*\)', '', 'gi');
-  
-  -- Remove standalone "wild" when it's the only descriptor before a comma
-  -- Keep "wild" if it's part of a compound name like "wild rice"
-  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*,', ',', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*$', '', 'gi');
-  
-  -- Remove "NFS" (Not Further Specified) - redundant information
-  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*$', '', 'gi');
-  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*,', ',', 'gi');
-  
-  -- Clean up multiple commas and spaces
-  cleaned_name := regexp_replace(cleaned_name, ',\s*,', ',', 'g');
-  cleaned_name := regexp_replace(cleaned_name, '\s+', ' ', 'g');
-  
-  -- Trim leading/trailing whitespace and commas
-  cleaned_name := regexp_replace(cleaned_name, '^\s*,\s*', '', 'g');
-  cleaned_name := regexp_replace(cleaned_name, '\s*,\s*$', '', 'g');
-  cleaned_name := trim(cleaned_name);
-  
-  RETURN cleaned_name;
-END;
+    AS $_$
+
+DECLARE
+
+  cleaned_name text;
+
+BEGIN
+
+  cleaned_name := original_name;
+
+  
+
+  -- Remove parenthetical geographic qualifiers
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Alaska[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Native[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Indian[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Plains[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Hispanic[^)]*\)', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*\([^)]*Mexican[^)]*\)', '', 'gi');
+
+  
+
+  -- Remove standalone "wild" when it's the only descriptor before a comma
+
+  -- Keep "wild" if it's part of a compound name like "wild rice"
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*,', ',', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*wild\s*$', '', 'gi');
+
+  
+
+  -- Remove "NFS" (Not Further Specified) - redundant information
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*$', '', 'gi');
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*NFS\s*,', ',', 'gi');
+
+  
+
+  -- Clean up multiple commas and spaces
+
+  cleaned_name := regexp_replace(cleaned_name, ',\s*,', ',', 'g');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s+', ' ', 'g');
+
+  
+
+  -- Trim leading/trailing whitespace and commas
+
+  cleaned_name := regexp_replace(cleaned_name, '^\s*,\s*', '', 'g');
+
+  cleaned_name := regexp_replace(cleaned_name, '\s*,\s*$', '', 'g');
+
+  cleaned_name := trim(cleaned_name);
+
+  
+
+  RETURN cleaned_name;
+
+END;
+
 $_$;
+
+
+--
+-- Name: sync_duplicate_nutrition_goals(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sync_duplicate_nutrition_goals() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+
+BEGIN
+
+  -- This trigger ensures that the old, unsuffixed nutrition goal columns
+
+  -- are kept in sync with the new, suffixed columns (_g, _oz).
+
+  -- This provides backward compatibility for any parts of the system
+
+  -- that might still rely on the old column names.
+
+  NEW.daily_protein_goal := NEW.daily_protein_goal_g;
+
+  NEW.daily_carb_goal := NEW.daily_carb_goal_g;
+
+  NEW.daily_fat_goal := NEW.daily_fat_goal_g;
+
+  NEW.daily_water_goal := NEW.daily_water_goal_oz;
+
+  RETURN NEW;
+
+END;
+
+$$;
+
+
+--
+-- Name: sync_routine_exercise_details(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sync_routine_exercise_details() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+
+BEGIN
+
+  -- When a row is inserted or updated in routine_exercises, this function
+
+  -- looks up the corresponding exercise details from the exercises table
+
+  -- and copies them into the new denormalized columns.
+
+  SELECT name, thumbnail_url
+
+  INTO NEW.exercise_name, NEW.exercise_thumbnail_url
+
+  FROM public.exercises
+
+  WHERE id = NEW.exercise_id;
+
+  
+
+  RETURN NEW;
+
+END;
+
+$$;
+
+
+--
+-- Name: sync_routine_name_to_mesocycle_week(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.sync_routine_name_to_mesocycle_week() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+
+BEGIN
+
+    -- If a routine_id is present on the new or updated row,
+
+    -- fetch the corresponding routine_name from the workout_routines table.
+
+    IF NEW.routine_id IS NOT NULL THEN
+
+        SELECT routine_name
+
+        INTO NEW.routine_name
+
+        FROM public.workout_routines
+
+        WHERE id = NEW.routine_id;
+
+    -- If the routine_id is being removed (set to NULL),
+
+    -- then also nullify the copied routine_name.
+
+    ELSE
+
+        NEW.routine_name := NULL;
+
+    END IF;
+
+    
+
+    -- Return the modified row to be inserted or updated.
+
+    RETURN NEW;
+
+END;
+
+$$;
+
+
+--
+-- Name: FUNCTION sync_routine_name_to_mesocycle_week(); Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON FUNCTION public.sync_routine_name_to_mesocycle_week() IS 'Copies the routine_name from workout_routines into mesocycle_weeks on insert/update to denormalize data for faster reads.';
 
 
 --
@@ -1729,17 +2472,28 @@ $_$;
 
 CREATE FUNCTION public.sync_scheduled_routine_client_info() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Get client info from trainer_clients
-  SELECT full_name, email
-  INTO NEW.client_name, NEW.client_email
-  FROM trainer_clients
-  WHERE client_id = NEW.user_id
-  LIMIT 1;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Get client info from trainer_clients
+
+  SELECT full_name, email
+
+  INTO NEW.client_name, NEW.client_email
+
+  FROM trainer_clients
+
+  WHERE client_id = NEW.user_id
+
+  LIMIT 1;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1749,19 +2503,32 @@ $$;
 
 CREATE FUNCTION public.sync_scheduled_routine_client_info_on_trainer_client_update() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Update all scheduled_routines when trainer_clients data changes
-  IF NEW.full_name IS DISTINCT FROM OLD.full_name OR NEW.email IS DISTINCT FROM OLD.email THEN
-    UPDATE scheduled_routines
-    SET 
-      client_name = NEW.full_name,
-      client_email = NEW.email
-    WHERE user_id = NEW.client_id;
-  END IF;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Update all scheduled_routines when trainer_clients data changes
+
+  IF NEW.full_name IS DISTINCT FROM OLD.full_name OR NEW.email IS DISTINCT FROM OLD.email THEN
+
+    UPDATE scheduled_routines
+
+    SET 
+
+      client_name = NEW.full_name,
+
+      client_email = NEW.email
+
+    WHERE user_id = NEW.client_id;
+
+  END IF;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1771,15 +2538,24 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_email() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Get email from user_profiles and set it
-  SELECT email INTO NEW.email
-  FROM user_profiles
-  WHERE id = NEW.client_id;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Get email from user_profiles and set it
+
+  SELECT email INTO NEW.email
+
+  FROM user_profiles
+
+  WHERE id = NEW.client_id;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1789,17 +2565,28 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_email_on_profile_update() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Update all trainer_clients records when user_profiles.email changes
-  IF NEW.email IS DISTINCT FROM OLD.email THEN
-    UPDATE trainer_clients
-    SET email = NEW.email
-    WHERE client_id = NEW.id;
-  END IF;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Update all trainer_clients records when user_profiles.email changes
+
+  IF NEW.email IS DISTINCT FROM OLD.email THEN
+
+    UPDATE trainer_clients
+
+    SET email = NEW.email
+
+    WHERE client_id = NEW.id;
+
+  END IF;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1809,16 +2596,26 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_full_name() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Get full_name from user_profiles for the client_id
-  SELECT CONCAT(first_name, ' ', last_name)
-  INTO NEW.full_name
-  FROM user_profiles
-  WHERE id = NEW.client_id;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Get full_name from user_profiles for the client_id
+
+  SELECT CONCAT(first_name, ' ', last_name)
+
+  INTO NEW.full_name
+
+  FROM user_profiles
+
+  WHERE id = NEW.client_id;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1828,15 +2625,24 @@ $$;
 
 CREATE FUNCTION public.sync_trainer_client_on_profile_update() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Update all trainer_clients records for this user
-  UPDATE trainer_clients
-  SET full_name = CONCAT(NEW.first_name, ' ', NEW.last_name)
-  WHERE client_id = NEW.id;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Update all trainer_clients records for this user
+
+  UPDATE trainer_clients
+
+  SET full_name = CONCAT(NEW.first_name, ' ', NEW.last_name)
+
+  WHERE client_id = NEW.id;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1846,15 +2652,24 @@ $$;
 
 CREATE FUNCTION public.sync_user_profile_email_from_auth() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-  -- Get email from auth.users and set it
-  SELECT email INTO NEW.email
-  FROM auth.users
-  WHERE id = NEW.id;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Get email from auth.users and set it
+
+  SELECT email INTO NEW.email
+
+  FROM auth.users
+
+  WHERE id = NEW.id;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1864,17 +2679,28 @@ $$;
 
 CREATE FUNCTION public.sync_user_profile_email_on_auth_update() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-  -- Update user_profiles when auth.users.email changes
-  IF NEW.email IS DISTINCT FROM OLD.email THEN
-    UPDATE user_profiles
-    SET email = NEW.email
-    WHERE id = NEW.id;
-  END IF;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Update user_profiles when auth.users.email changes
+
+  IF NEW.email IS DISTINCT FROM OLD.email THEN
+
+    UPDATE user_profiles
+
+    SET email = NEW.email
+
+    WHERE id = NEW.id;
+
+  END IF;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1884,31 +2710,56 @@ $$;
 
 CREATE FUNCTION public.unsubscribe_from_trainer_emails(p_email text) RETURNS json
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-  v_updated_count INTEGER;
-BEGIN
-  -- Update all trainer_clients records with this email
-  UPDATE trainer_clients
-  SET 
-    is_unsubscribed = TRUE,
-    updated_at = NOW()
-  WHERE email = p_email;
-  
-  GET DIAGNOSTICS v_updated_count = ROW_COUNT;
-  
-  RETURN json_build_object(
-    'success', TRUE,
-    'message', 'Successfully unsubscribed from trainer emails',
-    'updated_count', v_updated_count
-  );
-EXCEPTION
-  WHEN OTHERS THEN
-    RETURN json_build_object(
-      'success', FALSE,
-      'error', SQLERRM
-    );
-END;
+    AS $$
+
+DECLARE
+
+  v_updated_count INTEGER;
+
+BEGIN
+
+  -- Update all trainer_clients records with this email
+
+  UPDATE trainer_clients
+
+  SET 
+
+    is_unsubscribed = TRUE,
+
+    updated_at = NOW()
+
+  WHERE email = p_email;
+
+  
+
+  GET DIAGNOSTICS v_updated_count = ROW_COUNT;
+
+  
+
+  RETURN json_build_object(
+
+    'success', TRUE,
+
+    'message', 'Successfully unsubscribed from trainer emails',
+
+    'updated_count', v_updated_count
+
+  );
+
+EXCEPTION
+
+  WHEN OTHERS THEN
+
+    RETURN json_build_object(
+
+      'success', FALSE,
+
+      'error', SQLERRM
+
+    );
+
+END;
+
 $$;
 
 
@@ -1925,13 +2776,20 @@ COMMENT ON FUNCTION public.unsubscribe_from_trainer_emails(p_email text) IS 'Uns
 
 CREATE FUNCTION public.update_bug_report_timestamp() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    UPDATE bug_reports
-    SET updated_at = now()
-    WHERE id = NEW.bug_report_id;
-    RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+    UPDATE bug_reports
+
+    SET updated_at = now()
+
+    WHERE id = NEW.bug_report_id;
+
+    RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1941,11 +2799,16 @@ $$;
 
 CREATE FUNCTION public.update_scheduled_routines_updated_at() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  NEW.updated_at = NOW();
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1955,12 +2818,18 @@ $$;
 
 CREATE FUNCTION public.update_search_helpers() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  NEW.name_simplified := generate_simplified_name(NEW.name);
-  NEW.search_tokens := NEW.name_simplified;
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  NEW.name_simplified := generate_simplified_name(NEW.name);
+
+  NEW.search_tokens := NEW.name_simplified;
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -1970,37 +2839,68 @@ $$;
 
 CREATE FUNCTION public.update_stats_on_mesocycle_complete() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-DECLARE
-  v_user_id UUID;
-BEGIN
-  -- Check if the is_complete flag was just flipped to true
-  IF NEW.is_complete = true AND (OLD.is_complete IS NULL OR OLD.is_complete = false) THEN
-    -- Get the user_id from the parent mesocycle
-    SELECT user_id INTO v_user_id
-    FROM public.mesocycles
-    WHERE id = NEW.mesocycle_id;
-
-    -- Proceed only if we found a user_id
-    IF v_user_id IS NOT NULL THEN
-      -- Update mesocycle count in user_stats
-      UPDATE public.user_stats SET
-        mesocycles_completed = user_stats.mesocycles_completed + 1,
-        total_xp = user_stats.total_xp + 500,
-        current_level = calculate_level(user_stats.total_xp + 500),
-        updated_at = NOW()
-      WHERE user_id = v_user_id;
-      
-      -- Log XP for mesocycle completion
-      INSERT INTO public.xp_transactions (user_id, amount, source, reference_id)
-      VALUES (v_user_id, 500, 'mesocycle_complete', NEW.id);
-      
-      -- Check mesocycle achievements
-      PERFORM public.check_and_award_achievements(v_user_id, 'mesocycle_complete');
-    END IF;
-  END IF;
-  RETURN NEW;
-END;
+    AS $$
+
+DECLARE
+
+  v_user_id UUID;
+
+BEGIN
+
+  -- Check if the is_complete flag was just flipped to true
+
+  IF NEW.is_complete = true AND (OLD.is_complete IS NULL OR OLD.is_complete = false) THEN
+
+    -- Get the user_id from the parent mesocycle
+
+    SELECT user_id INTO v_user_id
+
+    FROM public.mesocycles
+
+    WHERE id = NEW.mesocycle_id;
+
+
+
+    -- Proceed only if we found a user_id
+
+    IF v_user_id IS NOT NULL THEN
+
+      -- Update mesocycle count in user_stats
+
+      UPDATE public.user_stats SET
+
+        mesocycles_completed = user_stats.mesocycles_completed + 1,
+
+        total_xp = user_stats.total_xp + 500,
+
+        current_level = calculate_level(user_stats.total_xp + 500),
+
+        updated_at = NOW()
+
+      WHERE user_id = v_user_id;
+
+      
+
+      -- Log XP for mesocycle completion
+
+      INSERT INTO public.xp_transactions (user_id, amount, source, reference_id)
+
+      VALUES (v_user_id, 500, 'mesocycle_complete', NEW.id);
+
+      
+
+      -- Check mesocycle achievements
+
+      PERFORM public.check_and_award_achievements(v_user_id, 'mesocycle_complete');
+
+    END IF;
+
+  END IF;
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -2010,53 +2910,100 @@ $$;
 
 CREATE FUNCTION public.update_stats_on_nutrition_log() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Update or create nutrition stats
-  INSERT INTO user_stats (
-    user_id,
-    nutrition_logs_count,
-    last_nutrition_log_date,
-    current_nutrition_streak,
-    longest_nutrition_streak
-  )
-  VALUES (
-    NEW.user_id,
-    1,
-    NEW.log_date,
-    1,
-    1
-  )
-  ON CONFLICT (user_id) DO UPDATE SET
-    nutrition_logs_count = user_stats.nutrition_logs_count + 1,
-    last_nutrition_log_date = NEW.log_date,
-    current_nutrition_streak = CASE
-      WHEN user_stats.last_nutrition_log_date = NEW.log_date - INTERVAL '1 day' 
-        THEN user_stats.current_nutrition_streak + 1
-      WHEN user_stats.last_nutrition_log_date = NEW.log_date 
-        THEN user_stats.current_nutrition_streak
-      ELSE 1
-    END,
-    longest_nutrition_streak = GREATEST(
-      user_stats.longest_nutrition_streak,
-      CASE
-        WHEN user_stats.last_nutrition_log_date = NEW.log_date - INTERVAL '1 day' 
-          THEN user_stats.current_nutrition_streak + 1
-        ELSE 1
-      END
-    ),
-    total_xp = user_stats.total_xp + 50,
-    current_level = calculate_level(user_stats.total_xp + 50),
-    updated_at = NOW();
-  
-  -- Log XP for nutrition log
-  INSERT INTO xp_transactions (user_id, amount, source, reference_id)
-  VALUES (NEW.user_id, 50, 'nutrition_log', NEW.id);
-  
-  -- Check nutrition achievements
-  PERFORM check_and_award_achievements(NEW.user_id, 'nutrition_log');
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  -- Update or create nutrition stats
+
+  INSERT INTO user_stats (
+
+    user_id,
+
+    nutrition_logs_count,
+
+    last_nutrition_log_date,
+
+    current_nutrition_streak,
+
+    longest_nutrition_streak
+
+  )
+
+  VALUES (
+
+    NEW.user_id,
+
+    1,
+
+    NEW.log_date,
+
+    1,
+
+    1
+
+  )
+
+  ON CONFLICT (user_id) DO UPDATE SET
+
+    nutrition_logs_count = user_stats.nutrition_logs_count + 1,
+
+    last_nutrition_log_date = NEW.log_date,
+
+    current_nutrition_streak = CASE
+
+      WHEN user_stats.last_nutrition_log_date = NEW.log_date - INTERVAL '1 day' 
+
+        THEN user_stats.current_nutrition_streak + 1
+
+      WHEN user_stats.last_nutrition_log_date = NEW.log_date 
+
+        THEN user_stats.current_nutrition_streak
+
+      ELSE 1
+
+    END,
+
+    longest_nutrition_streak = GREATEST(
+
+      user_stats.longest_nutrition_streak,
+
+      CASE
+
+        WHEN user_stats.last_nutrition_log_date = NEW.log_date - INTERVAL '1 day' 
+
+          THEN user_stats.current_nutrition_streak + 1
+
+        ELSE 1
+
+      END
+
+    ),
+
+    total_xp = user_stats.total_xp + 50,
+
+    current_level = calculate_level(user_stats.total_xp + 50),
+
+    updated_at = NOW();
+
+  
+
+  -- Log XP for nutrition log
+
+  INSERT INTO xp_transactions (user_id, amount, source, reference_id)
+
+  VALUES (NEW.user_id, 50, 'nutrition_log', NEW.id);
+
+  
+
+  -- Check nutrition achievements
+
+  PERFORM check_and_award_achievements(NEW.user_id, 'nutrition_log');
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -2066,75 +3013,144 @@ $$;
 
 CREATE FUNCTION public.update_stats_on_set_logged() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-DECLARE
-  is_pr BOOLEAN;
-  current_pr JSONB;
-  workout_user_id UUID;
-BEGIN
-  -- Get user_id from workout_logs
-  SELECT user_id INTO workout_user_id 
-  FROM workout_logs 
-  WHERE id = NEW.workout_log_id;
-  
-  -- Update totals
-  INSERT INTO user_stats (
-    user_id,
-    total_sets,
-    total_reps,
-    total_volume_lbs
-  )
-  VALUES (
-    workout_user_id,
-    1,
-    NEW.reps_completed,
-    NEW.weight_lbs * NEW.reps_completed
-  )
-  ON CONFLICT (user_id) DO UPDATE SET
-    total_sets = user_stats.total_sets + 1,
-    total_reps = user_stats.total_reps + NEW.reps_completed,
-    total_volume_lbs = user_stats.total_volume_lbs + (NEW.weight_lbs * NEW.reps_completed),
-    updated_at = NOW();
-  
-  -- Check if this is a PR
-  SELECT prs_by_exercise->NEW.exercise_id::TEXT INTO current_pr
-  FROM user_stats
-  WHERE user_id = workout_user_id;
-  
-  is_pr := (current_pr IS NULL) OR 
-           (NEW.weight_lbs > (current_pr->>'weight')::NUMERIC) OR
-           (NEW.weight_lbs = (current_pr->>'weight')::NUMERIC AND 
-            NEW.reps_completed > (current_pr->>'reps')::INTEGER);
-  
-  IF is_pr THEN
-    -- Update PR record
-    UPDATE user_stats SET
-      total_prs = total_prs + 1,
-      prs_by_exercise = jsonb_set(
-        COALESCE(prs_by_exercise, '{}'::jsonb),
-        ARRAY[NEW.exercise_id::TEXT],
-        jsonb_build_object(
-          'weight', NEW.weight_lbs,
-          'reps', NEW.reps_completed,
-          'date', CURRENT_DATE,
-          'log_entry_id', NEW.id
-        )
-      ),
-      total_xp = user_stats.total_xp + 200,
-      current_level = calculate_level(user_stats.total_xp + 200),
-      updated_at = NOW()
-    WHERE user_id = workout_user_id;
-    
-    -- Log XP for PR
-    INSERT INTO xp_transactions (user_id, amount, source, reference_id)
-    VALUES (workout_user_id, 200, 'pr_set', NEW.id);
-    
-    -- Check PR achievements
-    PERFORM check_and_award_achievements(workout_user_id, 'pr_set');
-  END IF;
-  
-  RETURN NEW;
-END;
+    AS $$
+
+DECLARE
+
+  is_pr BOOLEAN;
+
+  current_pr JSONB;
+
+  workout_user_id UUID;
+
+BEGIN
+
+  -- Get user_id from workout_logs
+
+  SELECT user_id INTO workout_user_id 
+
+  FROM workout_logs 
+
+  WHERE id = NEW.workout_log_id;
+
+  
+
+  -- Update totals
+
+  INSERT INTO user_stats (
+
+    user_id,
+
+    total_sets,
+
+    total_reps,
+
+    total_volume_lbs
+
+  )
+
+  VALUES (
+
+    workout_user_id,
+
+    1,
+
+    NEW.reps_completed,
+
+    NEW.weight_lbs * NEW.reps_completed
+
+  )
+
+  ON CONFLICT (user_id) DO UPDATE SET
+
+    total_sets = user_stats.total_sets + 1,
+
+    total_reps = user_stats.total_reps + NEW.reps_completed,
+
+    total_volume_lbs = user_stats.total_volume_lbs + (NEW.weight_lbs * NEW.reps_completed),
+
+    updated_at = NOW();
+
+  
+
+  -- Check if this is a PR
+
+  SELECT prs_by_exercise->NEW.exercise_id::TEXT INTO current_pr
+
+  FROM user_stats
+
+  WHERE user_id = workout_user_id;
+
+  
+
+  is_pr := (current_pr IS NULL) OR 
+
+           (NEW.weight_lbs > (current_pr->>'weight')::NUMERIC) OR
+
+           (NEW.weight_lbs = (current_pr->>'weight')::NUMERIC AND 
+
+            NEW.reps_completed > (current_pr->>'reps')::INTEGER);
+
+  
+
+  IF is_pr THEN
+
+    -- Update PR record
+
+    UPDATE user_stats SET
+
+      total_prs = total_prs + 1,
+
+      prs_by_exercise = jsonb_set(
+
+        COALESCE(prs_by_exercise, '{}'::jsonb),
+
+        ARRAY[NEW.exercise_id::TEXT],
+
+        jsonb_build_object(
+
+          'weight', NEW.weight_lbs,
+
+          'reps', NEW.reps_completed,
+
+          'date', CURRENT_DATE,
+
+          'log_entry_id', NEW.id
+
+        )
+
+      ),
+
+      total_xp = user_stats.total_xp + 200,
+
+      current_level = calculate_level(user_stats.total_xp + 200),
+
+      updated_at = NOW()
+
+    WHERE user_id = workout_user_id;
+
+    
+
+    -- Log XP for PR
+
+    INSERT INTO xp_transactions (user_id, amount, source, reference_id)
+
+    VALUES (workout_user_id, 200, 'pr_set', NEW.id);
+
+    
+
+    -- Check PR achievements
+
+    PERFORM check_and_award_achievements(workout_user_id, 'pr_set');
+
+  END IF;
+
+  
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -2144,60 +3160,114 @@ $$;
 
 CREATE FUNCTION public.update_stats_on_workout_complete() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  IF NEW.is_complete = true AND (OLD.is_complete IS NULL OR OLD.is_complete = false) THEN
-    -- Update or create user stats
-    INSERT INTO user_stats (
-      user_id, 
-      total_workouts, 
-      last_workout_date,
-      current_workout_streak,
-      longest_workout_streak
-    )
-    VALUES (
-      NEW.user_id, 
-      1, 
-      CURRENT_DATE,
-      1,
-      1
-    )
-    ON CONFLICT (user_id) DO UPDATE SET
-      total_workouts = user_stats.total_workouts + 1,
-      last_workout_date = CURRENT_DATE,
-      current_workout_streak = CASE
-        WHEN user_stats.last_workout_date = CURRENT_DATE - INTERVAL '1 day' 
-          THEN user_stats.current_workout_streak + 1
-        WHEN user_stats.last_workout_date = CURRENT_DATE 
-          THEN user_stats.current_workout_streak
-        ELSE 1
-      END,
-      longest_workout_streak = GREATEST(
-        user_stats.longest_workout_streak,
-        CASE
-          WHEN user_stats.last_workout_date = CURRENT_DATE - INTERVAL '1 day' 
-            THEN user_stats.current_workout_streak + 1
-          ELSE 1
-        END
-      ),
-      updated_at = NOW();
-    
-    -- Award XP for completing workout
-    UPDATE user_stats SET
-      total_xp = user_stats.total_xp + 100,
-      current_level = calculate_level(user_stats.total_xp + 100),
-      updated_at = NOW()
-    WHERE user_id = NEW.user_id;
-    
-    -- Log XP transaction
-    INSERT INTO xp_transactions (user_id, amount, source, reference_id)
-    VALUES (NEW.user_id, 100, 'workout_complete', NEW.id);
-    
-    -- Check for workout achievements
-    PERFORM check_and_award_achievements(NEW.user_id, 'workout_complete');
-  END IF;
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  IF NEW.is_complete = true AND (OLD.is_complete IS NULL OR OLD.is_complete = false) THEN
+
+    -- Update or create user stats
+
+    INSERT INTO user_stats (
+
+      user_id, 
+
+      total_workouts, 
+
+      last_workout_date,
+
+      current_workout_streak,
+
+      longest_workout_streak
+
+    )
+
+    VALUES (
+
+      NEW.user_id, 
+
+      1, 
+
+      CURRENT_DATE,
+
+      1,
+
+      1
+
+    )
+
+    ON CONFLICT (user_id) DO UPDATE SET
+
+      total_workouts = user_stats.total_workouts + 1,
+
+      last_workout_date = CURRENT_DATE,
+
+      current_workout_streak = CASE
+
+        WHEN user_stats.last_workout_date = CURRENT_DATE - INTERVAL '1 day' 
+
+          THEN user_stats.current_workout_streak + 1
+
+        WHEN user_stats.last_workout_date = CURRENT_DATE 
+
+          THEN user_stats.current_workout_streak
+
+        ELSE 1
+
+      END,
+
+      longest_workout_streak = GREATEST(
+
+        user_stats.longest_workout_streak,
+
+        CASE
+
+          WHEN user_stats.last_workout_date = CURRENT_DATE - INTERVAL '1 day' 
+
+            THEN user_stats.current_workout_streak + 1
+
+          ELSE 1
+
+        END
+
+      ),
+
+      updated_at = NOW();
+
+    
+
+    -- Award XP for completing workout
+
+    UPDATE user_stats SET
+
+      total_xp = user_stats.total_xp + 100,
+
+      current_level = calculate_level(user_stats.total_xp + 100),
+
+      updated_at = NOW()
+
+    WHERE user_id = NEW.user_id;
+
+    
+
+    -- Log XP transaction
+
+    INSERT INTO xp_transactions (user_id, amount, source, reference_id)
+
+    VALUES (NEW.user_id, 100, 'workout_complete', NEW.id);
+
+    
+
+    -- Check for workout achievements
+
+    PERFORM check_and_award_achievements(NEW.user_id, 'workout_complete');
+
+  END IF;
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -2207,11 +3277,16 @@ $$;
 
 CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+    NEW.updated_at = NOW();
+
+    RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -2221,11 +3296,16 @@ $$;
 
 CREATE FUNCTION public.update_user_meals_updated_at() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
+    AS $$
+
+BEGIN
+
+  NEW.updated_at = NOW();
+
+  RETURN NEW;
+
+END;
+
 $$;
 
 
@@ -2235,27 +3315,48 @@ $$;
 
 CREATE FUNCTION public.update_user_preference_boost() RETURNS void
     LANGUAGE plpgsql
-    AS $$
-BEGIN
-  -- Calculate boost based on times_logged (0-25 point boost)
-  -- Logarithmic scale: popular items get boost without overwhelming base score
-  UPDATE foods
-  SET user_boost_score = CASE
-    WHEN times_logged >= 1000 THEN 25  -- Very popular
-    WHEN times_logged >= 500 THEN 20
-    WHEN times_logged >= 250 THEN 15
-    WHEN times_logged >= 100 THEN 12
-    WHEN times_logged >= 50 THEN 10
-    WHEN times_logged >= 25 THEN 8
-    WHEN times_logged >= 10 THEN 5
-    WHEN times_logged >= 5 THEN 3
-    WHEN times_logged >= 1 THEN 1
-    ELSE 0
-  END
-  WHERE times_logged > 0;
-  
-  RAISE NOTICE '✅ Updated user preference boosts based on logging frequency';
-END;
+    AS $$
+
+BEGIN
+
+  -- Calculate boost based on times_logged (0-25 point boost)
+
+  -- Logarithmic scale: popular items get boost without overwhelming base score
+
+  UPDATE foods
+
+  SET user_boost_score = CASE
+
+    WHEN times_logged >= 1000 THEN 25  -- Very popular
+
+    WHEN times_logged >= 500 THEN 20
+
+    WHEN times_logged >= 250 THEN 15
+
+    WHEN times_logged >= 100 THEN 12
+
+    WHEN times_logged >= 50 THEN 10
+
+    WHEN times_logged >= 25 THEN 8
+
+    WHEN times_logged >= 10 THEN 5
+
+    WHEN times_logged >= 5 THEN 3
+
+    WHEN times_logged >= 1 THEN 1
+
+    ELSE 0
+
+  END
+
+  WHERE times_logged > 0;
+
+  
+
+  RAISE NOTICE '✅ Updated user preference boosts based on logging frequency';
+
+END;
+
 $$;
 
 
@@ -5317,7 +6418,8 @@ CREATE TABLE public.mesocycle_weeks (
     is_complete boolean DEFAULT false,
     completed_at timestamp with time zone,
     day_type text,
-    skipped boolean DEFAULT false
+    skipped boolean DEFAULT false,
+    routine_name text
 );
 
 
@@ -5583,6 +6685,8 @@ CREATE TABLE public.routine_exercises (
     drop_set boolean,
     superset_id uuid,
     drop_set_percentage numeric,
+    exercise_name text,
+    exercise_thumbnail_url text,
     CONSTRAINT routine_exercises_target_intensity_pct_check CHECK (((target_intensity_pct >= 0) AND (target_intensity_pct <= 100)))
 );
 
@@ -5805,6 +6909,8 @@ CREATE TABLE public.trainer_clients (
     calculated_carbs_g integer DEFAULT 100,
     lean_body_mass_lbs integer DEFAULT 0,
     tdee bigint DEFAULT '0'::bigint,
+    additional_programs text DEFAULT 'Null'::text,
+    CONSTRAINT trainer_clients_additional_programs_check CHECK (((additional_programs IS NULL) OR (additional_programs = ANY (ARRAY['personal-training'::text, 'small-group-training'::text, 'online-coaching'::text, 'hybrid-in-person-and-online'::text, 'None'::text])))),
     CONSTRAINT trainer_clients_status_check CHECK (((status)::text = ANY (ARRAY[('active'::character varying)::text, ('inactive'::character varying)::text, ('pending'::character varying)::text, ('blocked'::character varying)::text])))
 );
 
@@ -5992,7 +7098,7 @@ CREATE TABLE public.user_profiles (
     daily_fat_goal numeric(6,2),
     daily_water_goal_oz integer,
     daily_water_goal integer,
-    theme character varying(20) DEFAULT '''dark''::character varying'::character varying,
+    theme character varying(20) DEFAULT 'dark'::character varying,
     timezone character varying(50) DEFAULT 'UTC'::character varying,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
@@ -9424,6 +10530,21 @@ CREATE TRIGGER set_logged_stats_trigger AFTER INSERT ON public.workout_log_entri
 
 
 --
+-- Name: user_profiles sync_nutrition_goals_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+-- DISABLED: This trigger was causing issues during user signup
+-- CREATE TRIGGER sync_nutrition_goals_trigger BEFORE INSERT OR UPDATE ON public.user_profiles FOR EACH ROW EXECUTE FUNCTION public.sync_duplicate_nutrition_goals();
+
+
+--
+-- Name: routine_exercises sync_routine_exercise_details_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER sync_routine_exercise_details_trigger BEFORE INSERT OR UPDATE ON public.routine_exercises FOR EACH ROW EXECUTE FUNCTION public.sync_routine_exercise_details();
+
+
+--
 -- Name: trainer_clients sync_trainer_client_full_name_trigger; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -9473,6 +10594,20 @@ CREATE TRIGGER trigger_refresh_meal_plan_nutrition_on_food_update AFTER UPDATE O
 
 
 --
+-- Name: mesocycle_weeks trigger_sync_routine_name; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trigger_sync_routine_name BEFORE INSERT OR UPDATE ON public.mesocycle_weeks FOR EACH ROW EXECUTE FUNCTION public.sync_routine_name_to_mesocycle_week();
+
+
+--
+-- Name: TRIGGER trigger_sync_routine_name ON mesocycle_weeks; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TRIGGER trigger_sync_routine_name ON public.mesocycle_weeks IS 'Keeps the denormalized routine_name in sync with the routine_id.';
+
+
+--
 -- Name: scheduled_routines trigger_sync_scheduled_routine_client_info_on_insert; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -9503,8 +10638,8 @@ CREATE TRIGGER trigger_sync_trainer_client_email_on_profile_update AFTER UPDATE 
 --
 -- Name: user_profiles trigger_sync_user_profile_email_on_insert; Type: TRIGGER; Schema: public; Owner: -
 --
-
-CREATE TRIGGER trigger_sync_user_profile_email_on_insert BEFORE INSERT ON public.user_profiles FOR EACH ROW WHEN ((new.email IS NULL)) EXECUTE FUNCTION public.sync_user_profile_email_from_auth();
+-- DISABLED: This trigger conflicts with handle_new_user() which already populates email
+-- CREATE TRIGGER trigger_sync_user_profile_email_on_insert BEFORE INSERT ON public.user_profiles FOR EACH ROW WHEN ((new.email IS NULL)) EXECUTE FUNCTION public.sync_user_profile_email_from_auth();
 
 
 --
@@ -10640,6 +11775,27 @@ CREATE POLICY "Clients can view own relationships" ON public.trainer_clients FOR
 
 
 --
+-- Name: trainer_group_tags Trainers can create own tags; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Trainers can create own tags" ON public.trainer_group_tags FOR INSERT WITH CHECK ((auth.uid() = trainer_id));
+
+
+--
+-- Name: trainer_group_tags Trainers can delete own tags; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Trainers can delete own tags" ON public.trainer_group_tags FOR DELETE USING ((auth.uid() = trainer_id));
+
+
+--
+-- Name: programs Trainers can manage their own programs; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Trainers can manage their own programs" ON public.programs USING ((auth.uid() = trainer_id)) WITH CHECK ((auth.uid() = trainer_id));
+
+
+--
 -- Name: trainer_clients Trainers can update own relationships; Type: POLICY; Schema: public; Owner: -
 --
 
@@ -10699,6 +11855,13 @@ CREATE POLICY "Trainers can view client profiles" ON public.user_profiles FOR SE
 --
 
 CREATE POLICY "Trainers can view own relationships" ON public.trainer_clients FOR SELECT USING ((trainer_id = ( SELECT auth.uid() AS uid)));
+
+
+--
+-- Name: trainer_group_tags Trainers can view own tags; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Trainers can view own tags" ON public.trainer_group_tags FOR SELECT USING ((auth.uid() = trainer_id));
 
 
 --
@@ -11235,5 +12398,5 @@ CREATE EVENT TRIGGER pgrst_drop_watch ON sql_drop
 -- PostgreSQL database dump complete
 --
 
-\unrestrict PhLV2vmhUToRNAyBCEWGbhaybg2BejQ36ZD2DqSie4YiQtwuNauvBzzWJeMi3tp
+\unrestrict BsZgZ4evoCoHGz4suacXbaV4ccWSkzO89BSaQkh7DObCgSQoNJKG4IVnckFTuF9
 
