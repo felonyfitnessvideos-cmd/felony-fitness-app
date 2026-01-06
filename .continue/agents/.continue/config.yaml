@@ -1,0 +1,21 @@
+name: Default Config
+version: 1.0.4
+schema: v1
+models:
+  - uses: anthropic/claude-sonnet-4-5
+    with:
+      ANTHROPIC_API_KEY: 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
+    override:
+      roles:
+        - chat
+        - edit
+        - autocomplete
+        - apply
+        - autocomplete
+        - embed
+        - rerank
+
+context:
+  - uses: continuedev/diff-context
+  - uses: continuedev/terminal-context
+  - uses: continuedev/file-context
