@@ -46,7 +46,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { supabase } from '../supabaseClient.js';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 import './MesocycleLogPage.css';
 
 function formatDateShort(d) {

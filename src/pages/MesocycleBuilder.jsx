@@ -40,7 +40,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 import CycleWeekEditor from '../components/CycleWeekEditor.jsx';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import SuccessModal from '../components/SuccessModal.jsx';
