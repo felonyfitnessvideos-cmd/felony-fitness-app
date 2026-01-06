@@ -180,7 +180,7 @@ import { formatMealType } from '../constants/mealPlannerConstants.js';
  *   for state and database operations. Use formatMealType() for display only.
  */
 import { Apple, Droplets, Loader2, Search, Trash2, X } from 'lucide-react';
-import { useAuth } from '../useAuth';
+import { useAuth } from '../AuthContext.jsx';
 import './NutritionLogPage.css';
 
 
