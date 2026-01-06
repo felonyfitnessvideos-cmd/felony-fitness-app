@@ -107,7 +107,7 @@ const EndOfDayChecklist = () => {
   };
 
   return (
-    <div style={{
+    <div data-testid="endofdaychecklist" style={{
       maxWidth: '800px',
       margin: '20px auto',
       padding: '20px',

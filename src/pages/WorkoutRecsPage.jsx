@@ -18,7 +18,7 @@ import React, { useState } from 'react';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { Dumbbell, Zap, Lightbulb } from 'lucide-react';
-import { useAuth } from '../AuthContext.jsx'; 
+import { useAuth } from '../useAuth'; 
 import './WorkoutRecsPage.css';
 
 /**

@@ -14,13 +14,12 @@
  * - Real-time updates via Supabase subscriptions
  */
 
-import { AlertCircle, Bug, ChevronDown, ChevronUp, MessageSquare, Send } from 'lucide-react';
+import { AlertCircle, Bug, ChevronDown, ChevronUp, Send } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { supabase } from '../supabaseClient.js';
 import {
-    BUG_CATEGORY,
     BUG_PRIORITY,
     BUG_STATUS,
     getAllBugReports,

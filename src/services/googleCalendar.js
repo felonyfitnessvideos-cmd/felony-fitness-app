@@ -167,7 +167,7 @@ class GoogleCalendarService {
         new Promise((resolve) => {
           this.gapi.load('client', resolve);
         }),
-        30000, // Increased from 10s to 30s
+        60000, // Increased from 30s to 60s
         'GAPI client load timeout'
       );
 
@@ -177,7 +177,7 @@ class GoogleCalendarService {
           discoveryDocs: [DISCOVERY_DOC]
           // Note: No API key here - we'll rely on OAuth token for authenticated requests
         }),
-        30000, // Increased from 15s to 30s
+        60000, // Increased from 30s to 60s
         'GAPI client initialization timeout'
       );
 

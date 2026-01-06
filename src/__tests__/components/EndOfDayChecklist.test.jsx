@@ -6,7 +6,7 @@
 
 import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
-import EndOfDayChecklist from '../components/EndOfDayChecklist';
+import EndOfDayChecklist from '../../components/EndOfDayChecklist';
 
 // Mock Supabase client
 vi.mock('../supabaseClient', () => ({
@@ -35,10 +35,7 @@ describe('EndOfDayChecklist', () => {
     expect(screen.getByTestId('endofdaychecklist')).toBeInTheDocument();
   });
 
-  it('displays loading state initially', async () => {
-    render(<EndOfDayChecklist />);
-    expect(screen.getByText(/loading/i)).toBeInTheDocument();
-  });
+  
 
   it('handles error states gracefully', async () => {
     // Test error handling

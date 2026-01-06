@@ -31,7 +31,7 @@ import { ArrowDownCircle, ArrowUpCircle, Dumbbell, Loader2, Trash2 } from 'lucid
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Modal from 'react-modal';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../useAuth';
 import SubPageHeader from '../components/SubPageHeader';
 import { supabase } from '../supabaseClient.js';
 import { Tables } from '../database.types.js';

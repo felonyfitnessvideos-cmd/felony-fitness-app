@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 import { supabase } from '../supabaseClient.js';
 import './CycleWeekEditor.css';
 

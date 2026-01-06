@@ -12,7 +12,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 import { supabase } from '../supabaseClient.js';
 import userRoleUtils from '../utils/userRoleUtils.js';
 

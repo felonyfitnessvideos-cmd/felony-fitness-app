@@ -108,7 +108,7 @@
 import { ClipboardList, Copy, Diamond, DollarSign, Eye, EyeOff, Key, Settings, ShieldCheck, X, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Modal from 'react-modal';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { supabase } from '../supabaseClient.js';

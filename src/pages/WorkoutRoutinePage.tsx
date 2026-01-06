@@ -31,7 +31,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader';
 import { Dumbbell, PlusCircle, Trash2, Edit, ToggleLeft, ToggleRight, Zap, Copy } from 'lucide-react';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../useAuth';
 import { Tables } from '../database.types.js';
 import './WorkoutRoutinePage.css';
 

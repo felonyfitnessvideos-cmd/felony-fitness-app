@@ -59,13 +59,13 @@ const toLocalDateString = (date) => {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { supabase } from '../supabaseClient.js';
 import './MesocycleDetail.css';
 import { useNavigate } from 'react-router-dom';
 import { Check, ArrowUp, ArrowDown } from 'lucide-react';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 
 function MesocycleDetail() {
   const { mesocycleId } = useParams();
@@ -376,13 +376,13 @@ function MesocycleDetail() {
               else if (entry.notes) label = entry.notes;
 
               // 🔍 COMPREHENSIVE DEBUG LOGGING
-              console.log(`===== DAY ${dayIndex} DEBUG =====`);
-              console.log('Entry data:', JSON.stringify(entry, null, 2));
-              console.log('routineId:', routineId);
-              console.log('label:', label);
-              console.log('isDeload:', isDeload);
+              console.warn(`===== DAY ${dayIndex} DEBUG =====`);
+              console.warn('Entry data:', JSON.stringify(entry, null, 2));
+              console.warn('routineId:', routineId);
+              console.warn('label:', label);
+              console.warn('isDeload:', isDeload);
 
-              console.log('===========================');
+              console.warn('===========================');
 
               // compute scheduled date for this week/day if we have a start date
               let scheduledDateStr = null;
@@ -403,7 +403,7 @@ function MesocycleDetail() {
               const completed = Boolean(entry.is_complete);
               const skipped = Boolean(entry.skipped);
 
-              console.log(`Day ${dayIndex} RENDER - Label: "${label}", Completed: ${completed}, Skipped: ${skipped}, RoutineId: ${routineId}`);
+              console.warn(`Day ${dayIndex} RENDER - Label: "${label}", Completed: ${completed}, Skipped: ${skipped}, RoutineId: ${routineId}`);
 
               return (
                 <div

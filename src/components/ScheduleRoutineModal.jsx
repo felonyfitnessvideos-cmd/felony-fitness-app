@@ -22,7 +22,7 @@
 
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../useAuth';
 import './ScheduleRoutineModal.css';
 
 /**

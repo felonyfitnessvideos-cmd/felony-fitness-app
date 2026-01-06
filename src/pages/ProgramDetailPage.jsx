@@ -19,7 +19,7 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../useAuth';
 import ScheduleRoutineModal from '../components/ScheduleRoutineModal';
 import SubPageHeader from '../components/SubPageHeader';
 import { supabase } from '../supabaseClient';

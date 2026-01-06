@@ -42,7 +42,7 @@ import { Outlet, NavLink } from 'react-router-dom';
 import { Home, Dumbbell, Apple, TrendingUp, User, UserCog } from 'lucide-react';
 import { useResponsive } from './hooks/useResponsive';
 import { initPerformanceOptimizations } from './utils/performance.js';
-import { useAuth } from './AuthContext.jsx';
+import { useAuth } from './useAuth';
 import { useAchievements } from './hooks/useAchievements';
 import AchievementUnlocked from './components/achievements/AchievementUnlocked';
 import './App.css';

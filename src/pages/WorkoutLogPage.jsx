@@ -13,7 +13,7 @@
 import { Check, Dumbbell, Edit2, Trash2, X } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 import LazyRecharts from '../components/LazyRecharts.jsx';
 import RestTimerModal from '../components/RestTimerModal.jsx';
 import RpeRatingModal from '../components/RpeRatingModal.jsx';

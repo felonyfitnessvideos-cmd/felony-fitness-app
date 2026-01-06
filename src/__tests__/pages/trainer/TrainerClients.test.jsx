@@ -6,7 +6,9 @@
 
 import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
-import TrainerClients from '../pages/trainer/TrainerClients';
+import { MemoryRouter } from 'react-router-dom';
+import TrainerClients from '../../../pages/trainer/TrainerClients';
+import { AuthProvider } from '../../../AuthContext';
 
 // Mock Supabase client
 vi.mock('../supabaseClient', () => ({
@@ -20,24 +22,35 @@ vi.mock('../supabaseClient', () => ({
     auth: {
       getUser: vi.fn(() => Promise.resolve({
         data: { user: { id: 'test-user-id', email: 'test@example.com' } }
-      }))
+      })),
+      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } }))
     }
   }
 }));
+
+const renderComponent = () => {
+  return render(
+    <MemoryRouter>
+      <AuthProvider>
+        <TrainerClients />
+      </AuthProvider>
+    </MemoryRouter>
+  );
+};
 
 describe('TrainerClients', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders without crashing', () => {
-    render(<TrainerClients />);
-    expect(screen.getByTestId('trainerclients')).toBeInTheDocument();
+  it('renders without crashing', async () => {
+    renderComponent();
+    expect(await screen.findByTestId('trainerclients')).toBeInTheDocument();
   });
 
   it('displays loading state initially', async () => {
-    render(<TrainerClients />);
-    expect(screen.getByText(/loading/i)).toBeInTheDocument();
+    renderComponent();
+    expect(await screen.findByText(/Loading clients/i)).toBeInTheDocument();
   });
 
   it('handles error states gracefully', async () => {

@@ -18,7 +18,7 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { Tables } from '../database.types';
 import googleCalendarService from '../services/googleCalendar.js';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../useAuth';
 import { supabase } from '../supabaseClient.js';
 import { Client } from '../types';
 import './SmartScheduling.css';

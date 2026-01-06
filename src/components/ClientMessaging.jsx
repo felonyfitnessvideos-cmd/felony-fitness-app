@@ -6,7 +6,7 @@
 
 import { ChevronDown, ChevronUp, MessageSquare, Send } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { supabase } from '../supabaseClient.js';
 import { getUnreadMessageCount } from '../utils/messagingUtils';

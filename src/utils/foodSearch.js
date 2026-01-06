@@ -11,10 +11,42 @@
 import { supabase } from '../supabaseClient.js';
 
 /**
+ * @typedef {Object} Portion
+ * @property {string} id
+ * @property {string} portion_description
+ * @property {number} gram_weight
+ */
+
+/**
+ * @typedef {Object} FoodSearchResult
+ * @property {string} id
+ * @property {string} fdc_id
+ * @property {string} name
+ * @property {string} [brand_owner]
+ * @property {number} calories
+ * @property {number} protein_g
+ * @property {number} carbs_g
+ * @property {number} fat_g
+ * @property {Array<Portion>} portions
+ */
+
+/**
+ * @typedef {Object} FormattedFood
+ * @property {string} name
+ * @property {string} brand
+ * @property {number} calories
+ * @property {number} protein_g
+ * @property {number} carbs_g
+ * @property {number} fat_g
+ * @property {string} serving
+ * @property {number} serving_grams
+ */
+
+/**
  * Search foods table with portions
  * 
  * @param {string} searchTerm - Search query (minimum 2 characters)
- * @returns {Promise<Array>} Array of food objects with portions
+ * @returns {Promise<Array<FoodSearchResult>>} Array of food objects with portions
  * 
  * @example
  * const results = await searchFoods('chicken breast');
@@ -54,9 +86,9 @@ export const searchFoods = async (searchTerm) => {
 /**
  * Format food result for display in UI
  * 
- * @param {Object} food - Food object from database
- * @param {Object} selectedPortion - Selected portion object
- * @returns {Object} Formatted food data for display
+ * @param {FoodSearchResult} food - Food object from database
+ * @param {Portion} [selectedPortion] - Selected portion object
+ * @returns {FormattedFood} Formatted food data for display
  * 
  * @example
  * const formatted = formatFoodForDisplay(food, portion);

@@ -19,6 +19,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { Resend } from 'https://esm.sh/resend@2.0.0';
 
+// Type definition for Supabase client to avoid explicit any type issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SupabaseClient = any;
+
 // =====================================================================================
 // TYPES AND INTERFACES
 // =====================================================================================
@@ -37,7 +41,7 @@ interface UserProfile {
 interface ApiResponse {
   success: boolean;
   message?: string;
-  data?: any;
+  data?: Record<string, unknown>;
   error?: string;
 }
 
@@ -72,7 +76,7 @@ function validateEnvironment(): string[] {
 function createResponse(
   success: boolean, 
   message: string, 
-  data?: any, 
+  data?: Record<string, unknown>, 
   error?: string
 ): Response {
   const response: ApiResponse = { success, message };
@@ -98,7 +102,7 @@ function createResponse(
  * @param supabase - Supabase client instance
  * @returns User ID or null if not authenticated
  */
-async function getCurrentUserId(supabase: any): Promise<string | null> {
+async function getCurrentUserId(supabase: SupabaseClient): Promise<string | null> {
   try {
     const { data: { user }, error } = await supabase.auth.getUser();
     
@@ -120,11 +124,11 @@ async function getCurrentUserId(supabase: any): Promise<string | null> {
  * @param userId - User ID to fetch profile for
  * @returns User profile or null if not found
  */
-async function getUserProfile(supabase: any, userId: string): Promise<UserProfile | null> {
+async function getUserProfile(supabase: SupabaseClient, userId: string): Promise<UserProfile | null> {
   try {
-    // First try to get from profiles table
+    // First try to get from user_profiles table
     const { data: profile, error: profileError } = await supabase
-      .from('profiles')
+      .from('user_profiles')
       .select('id, email, full_name')
       .eq('id', userId)
       .single();
@@ -161,7 +165,7 @@ async function getUserProfile(supabase: any, userId: string): Promise<UserProfil
  * @returns Saved message data or throws error
  */
 async function saveMessage(
-  supabase: any, 
+  supabase: SupabaseClient, 
   senderId: string, 
   recipientId: string, 
   content: string

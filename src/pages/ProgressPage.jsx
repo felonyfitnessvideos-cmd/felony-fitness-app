@@ -27,7 +27,7 @@ import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { TrendingUp, Dumbbell, Flame, BarChart3, Apple as AppleIcon } from 'lucide-react';
 import LazyRecharts from '../components/LazyRecharts.jsx';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 import './ProgressPage.css';
 
 /**
