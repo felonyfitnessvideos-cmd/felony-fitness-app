@@ -14,7 +14,7 @@
 import { Bot, Plus, Save, Search, Trash2, X } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { useState } from 'react';
-import { useAuth } from '../../AuthContext';
+import { useAuth } from '../../useAuth';
 import { supabase } from '../../supabaseClient';
 import './ProgramBuilderModal.css';
 

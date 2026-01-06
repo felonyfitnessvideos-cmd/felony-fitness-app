@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../useAuth';
 import useResponsive from '../hooks/useResponsive';
 import useUserRoles from '../hooks/useUserRoles';
 import { Client } from '../types';

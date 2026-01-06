@@ -26,7 +26,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Client } from '../../types';
 import { updateClientNotes } from '../../services/trainerService.js';
-import { useAuth } from '../../AuthContext.jsx';
+import { useAuth } from '../../useAuth';
 import { supabase } from '../../supabaseClient.js';
 import './TrainerClients.css';
 

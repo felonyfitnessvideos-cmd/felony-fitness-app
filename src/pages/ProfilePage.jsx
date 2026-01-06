@@ -38,7 +38,7 @@ import { Edit2 as EditIcon, HeartPulse, User, X } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import Modal from 'react-modal';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { supabase } from '../supabaseClient.js';
 import './ProfilePage.css';

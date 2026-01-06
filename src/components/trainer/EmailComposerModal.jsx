@@ -18,7 +18,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
 import Modal from 'react-modal';
-import { useAuth } from '../../AuthContext';
+import { useAuth } from '../../useAuth';
 import { supabase } from '../../supabaseClient';
 import './EmailComposerModal.css';
 
@@ -57,7 +57,7 @@ const EmailComposerModal = ({ tag, clients, onClose }) => {
 
   // Debug: Log TinyMCE API key on mount
   useEffect(() => {
-    console.log('🔑 TinyMCE API Key:', import.meta.env.VITE_TINYMCE_API_KEY ? 'Loaded' : 'Missing');
+    console.warn('🔑 TinyMCE API Key:', import.meta.env.VITE_TINYMCE_API_KEY ? 'Loaded' : 'Missing');
   }, []);
 
   /**
@@ -152,7 +152,7 @@ const EmailComposerModal = ({ tag, clients, onClose }) => {
       setFeedback(`Campaign sent successfully to ${successfulCount} users!`);
       setFeedbackType('success');
       
-      console.log('✅ Campaign sent:', data);
+      console.warn('✅ Campaign sent:', data);
 
       // Clear form after 3 seconds
       setTimeout(() => {

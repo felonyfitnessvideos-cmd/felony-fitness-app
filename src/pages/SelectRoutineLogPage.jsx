@@ -27,7 +27,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { Dumbbell, ChevronRight } from 'lucide-react';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 import './SelectRoutineLogPage.css';
 
 /**

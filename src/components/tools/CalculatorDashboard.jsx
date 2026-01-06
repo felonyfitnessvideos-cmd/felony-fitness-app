@@ -133,7 +133,7 @@
 
 import { Activity, Calculator, Dumbbell, Heart, Utensils } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../AuthContext';
+import { useAuth } from '../../useAuth';
 import { updateClientMetrics } from '../../services/trainerService';
 import { supabase } from '../../supabaseClient';
 import {

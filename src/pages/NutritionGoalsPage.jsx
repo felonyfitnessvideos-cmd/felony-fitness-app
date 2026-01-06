@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient.js';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { Apple, Flame, Droplets, Beef, Wheat, Wind } from 'lucide-react';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 import Modal from 'react-modal'; // <-- 1. IMPORTED Modal
 import './NutritionGoalsPage.css';
 

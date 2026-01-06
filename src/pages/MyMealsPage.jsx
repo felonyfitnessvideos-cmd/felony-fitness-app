@@ -1,7 +1,7 @@
 import { ChefHat, Clock, Copy, Edit, Filter, Heart, Plus, Search, Star, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../useAuth';
 import MealBuilder from '../components/MealBuilder';
 import { MEAL_CATEGORIES, calculateMealNutrition } from '../constants/mealPlannerConstants';
 import { supabase } from '../supabaseClient';

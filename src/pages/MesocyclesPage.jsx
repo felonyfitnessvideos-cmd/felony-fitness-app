@@ -55,7 +55,7 @@ import { Link } from 'react-router-dom';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import './MesocyclesPage.css';
 import { supabase } from '../supabaseClient.js';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 
 function MesocyclesPage() {
   // Placeholder state; will be replaced by Supabase fetch in next iteration

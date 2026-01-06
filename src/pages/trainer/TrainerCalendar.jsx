@@ -23,7 +23,7 @@
 
 import { AlertCircle, Calendar, CheckCircle, Edit, RefreshCw, Trash2 } from 'lucide-react';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useAuth } from '../../AuthContext';
+import { useAuth } from '../../useAuth';
 import { supabase } from '../../supabaseClient';
 import useGoogleCalendar from '../../hooks/useGoogleCalendar.jsx';
 import EditEventModal from '../../components/trainer/EditEventModal';

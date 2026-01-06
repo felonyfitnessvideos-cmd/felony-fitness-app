@@ -11,7 +11,7 @@
 import { Dumbbell, Edit2, Trash2, Trophy } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import Modal from 'react-modal';
-import { useAuth } from '../AuthContext.jsx';
+import { useAuth } from '../useAuth';
 import SubPageHeader from '../components/SubPageHeader.jsx';
 import { supabase } from '../supabaseClient.js';
 import './WorkoutGoalsPage.css';

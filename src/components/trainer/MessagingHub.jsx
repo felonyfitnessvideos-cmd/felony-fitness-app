@@ -14,7 +14,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '../../AuthContext';
+import { useAuth } from '../../useAuth';
 import { supabase } from '../../supabaseClient';
 import EmailComposerModal from './EmailComposerModal';
 import './MessagingHub.css';
@@ -113,7 +113,7 @@ const MessagingHub = () => {
       }));
 
       setClients(formattedClients);
-      console.log('✅ Loaded clients:', formattedClients);
+      console.warn('✅ Loaded clients:', formattedClients);
     } catch (err) {
       console.error('Error loading clients:', err);
       setError('Failed to load clients');
@@ -187,7 +187,7 @@ const MessagingHub = () => {
       setNewGroupName('');
       setSelectedClientIds([]);
       
-      console.log('✅ Group created with clients:', newGroup.name);
+      console.warn('✅ Group created with clients:', newGroup.name);
       alert(`Group "${newGroup.name}" created with ${selectedClientIds.length} client(s)!`);
     } catch (err) {
       console.error('Error creating group:', err);

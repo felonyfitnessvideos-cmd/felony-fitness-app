@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../AuthContext';
+import { useAuth } from '../../useAuth';
 import ProgramBuilderModal from '../../components/trainer/ProgramBuilderModal';
 import ProgramEditorModal from '../../components/trainer/ProgramEditorModal';
 import CustomMuscleMap from '../../components/workout-builder/CustomMuscleMap';

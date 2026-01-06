@@ -20,7 +20,7 @@
 
 import { AlertCircle, ChevronDown, ChevronUp, Loader, MessageSquare, Send } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAuth } from '../../AuthContext';
+import { useAuth } from '../../useAuth';
 import {
     getConversationMessages,
     getConversations,

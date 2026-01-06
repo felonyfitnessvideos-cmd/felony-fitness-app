@@ -67,4 +67,4 @@ remaining-nulls.json
 # USDA data files (large CSV files, already imported)
 FoodData_Central_csv_*/
 
-.env.local
+.env.local.continue/
