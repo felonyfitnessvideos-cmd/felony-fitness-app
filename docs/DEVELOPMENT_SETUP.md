@@ -1,6 +1,7 @@
 # Felony Fitness App - Development Setup
 
 ## Prerequisites
+
 - Node.js 20+
 - npm 10+
 - Git
@@ -23,11 +24,13 @@ npm run test:run
 This project uses Husky and lint-staged to enforce quality standards before commits.
 
 ### What Runs on Commit:
+
 1. **ESLint** - Automatically fixes linting issues
 2. **Vitest** - Runs tests for changed files
 3. **Prettier** - Formats code consistently (JSON, MD, CSS)
 
 ### Bypassing Hooks (Emergency Only)
+
 ```bash
 git commit --no-verify -m "Emergency fix"
 ```
@@ -37,6 +40,7 @@ git commit --no-verify -m "Emergency fix"
 ## Development Workflow
 
 ### Making Changes
+
 1. Create feature branch: `git checkout -b feature/your-feature`
 2. Make changes
 3. Run tests: `npm run test`
@@ -44,6 +48,7 @@ git commit --no-verify -m "Emergency fix"
 5. Push: `git push origin feature/your-feature`
 
 ### Testing
+
 ```bash
 # Watch mode (re-runs on file changes)
 npm run test
@@ -59,6 +64,7 @@ npm run test:ui
 ```
 
 ### Linting
+
 ```bash
 # Check for errors
 npm run lint
@@ -70,6 +76,7 @@ npm run lint:fix
 ### Quality Standards
 
 All code must:
+
 - ✅ Pass ESLint with zero errors
 - ✅ Have JSDoc documentation
 - ✅ Include unit tests for utils/hooks
@@ -79,14 +86,17 @@ All code must:
 ## Common Issues
 
 ### "Husky not found"
+
 ```bash
 npm run prepare
 ```
 
 ### "Tests timing out"
+
 Check that no background processes are holding locks.
 
 ### "ESLint cache issues"
+
 ```bash
 rm -rf node_modules/.cache
 npm run lint
