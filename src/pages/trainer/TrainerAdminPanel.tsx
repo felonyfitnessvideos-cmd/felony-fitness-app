@@ -127,7 +127,7 @@ const TrainerAdminPanel = () => {
   // Workout logs state
   const [users, setUsers] = useState<Array<{ id: string; email: string; first_name?: string; last_name?: string }>>([]);
   const [workoutRoutines, setWorkoutRoutines] = useState<Array<{ id: string; routine_name: string }>>([]);
-  const [_allExercises, _setAllExercises] = useState<Array<{ id: string; name: string; primary_muscle?: string }>>([]);
+  const [allExercises, setAllExercises] = useState<Array<{ id: string; name: string; primary_muscle?: string; thumbnail_url?: string }>>([]);
   const [workoutLogForm, setWorkoutLogForm] = useState<WorkoutLog>({
     user_id: '',
     routine_id: '',
@@ -237,8 +237,23 @@ const TrainerAdminPanel = () => {
       }
     };
 
+    const fetchAllExercises = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('exercises')
+          .select('id, name, primary_muscle, thumbnail_url')
+          .order('name');
+
+        if (error) throw error;
+        setAllExercises(data || []);
+      } catch (err) {
+        console.error('Error fetching exercises:', err);
+      }
+    };
+
     if (activeTab === 'workoutlogs') {
       fetchUsers();
+      fetchAllExercises();
     }
   }, [activeTab]);
 
@@ -557,21 +572,6 @@ const TrainerAdminPanel = () => {
     setLogEntries(logEntries.filter(entry => entry._tempId !== tempId));
   };
 
-  // Update a log entry and persist weight/reps for next set
-  const handleUpdateLogEntry = (tempId: string | undefined, field: string, value: string | number) => {
-    setLogEntries(logEntries.map(entry => 
-      entry._tempId === tempId ? { ...entry, [field]: value } : entry
-    ));
-    
-    // Persist weight and reps for next set
-    if (field === 'weight_lbs') {
-      setLastWeight(value);
-    }
-    if (field === 'reps_completed') {
-      setLastReps(value);
-    }
-  };
-
   if (!isAdmin) {
     return (
       <div className="trainer-admin-panel">
@@ -583,8 +583,6 @@ const TrainerAdminPanel = () => {
 
   return (
     <div className="trainer-admin-panel">
-      <h1>Admin Management Panel</h1>
-
       {error && <p className="error-message">{error}</p>}
       {successMessage && <p className="success-message">{successMessage}</p>}
 
@@ -1179,178 +1177,176 @@ const TrainerAdminPanel = () => {
                 <label htmlFor="log-complete">Completed</label>
               </div>
             </div>
-
             {/* Mini Workout Log for Exercise Entries */}
-            <div style={{ 
-              marginTop: '2em', 
-              padding: '1.5em', 
-              border: '2px solid #444', 
-              borderRadius: '8px',
-              backgroundColor: 'rgba(60, 60, 60, 0.3)'
-            }}>
-              <h3 style={{ marginTop: 0, marginBottom: '1em' }}>📋 Add Exercise Entries from Paper Log</h3>
-              {!workoutLogForm.routine_id ? (
-                <p style={{ fontSize: '0.9em', color: '#f87171', marginBottom: '1em' }}>
-                  ⚠️ Please select a routine above to load its exercises
-                </p>
-              ) : (
-                <p style={{ fontSize: '0.9em', color: '#aaa', marginBottom: '1em' }}>
-                  Log individual exercises from the selected routine. This recreates their paper log in the app.
-                </p>
-              )}
+            <div style={{ marginTop: '2em' }}>
+              <h3 style={{ marginTop: 0, marginBottom: '1.5em' }}>Add Exercise Entries</h3>
 
-              {/* Exercise Selector and Add Button */}
-              <div className="form-row" style={{ marginBottom: '1em' }}>
-                <div className="form-group" style={{ flex: 2 }}>
-                  <label htmlFor="log-exercise-select">Select Exercise from Routine</label>
-                  <select
-                    id="log-exercise-select"
-                    value={selectedExerciseForLog}
-                    onChange={(e) => setSelectedExerciseForLog(e.target.value)}
-                    disabled={!workoutLogForm.routine_id || routineExercises.length === 0}
+              {/* Horizontal Exercise Scroller */}
+              <div style={{
+                display: 'flex',
+                gap: '0.5rem',
+                overflowX: 'auto',
+                paddingBottom: '0.75rem',
+                marginBottom: '1.5rem',
+                msOverflowStyle: 'none',
+                scrollbarWidth: 'none'
+              } as React.CSSProperties}>
+                {allExercises.map((ex) => (
+                  <button
+                    key={ex.id}
+                    type="button"
+                    onClick={() => setSelectedExerciseForLog(ex.id)}
+                    style={{
+                      background: 'none',
+                      border: selectedExerciseForLog === ex.id ? '2px solid #f97316' : '2px solid #4a5568',
+                      borderRadius: '8px',
+                      padding: '2px',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      transition: 'border-color 0.2s'
+                    }}
                   >
-                    <option value="">
-                      {!workoutLogForm.routine_id 
-                        ? 'Select routine first...' 
-                        : routineExercises.length === 0
-                        ? 'No exercises in this routine'
-                        : 'Choose an exercise...'}
-                    </option>
-                    {routineExercises.map((ex, idx) => (
-                      <option key={`${ex.id}-${idx}`} value={ex.id}>
-                        {ex.name} {ex.primary_muscle ? `(${ex.primary_muscle})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'flex-end', flex: 1 }}>
-                  <button 
+                    <img
+                      src={ex.thumbnail_url || 'https://placehold.co/50x50/4a5568/ffffff?text=IMG'}
+                      alt={ex.name}
+                      width="50"
+                      height="50"
+                      style={{
+                        borderRadius: '6px',
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
+                      loading="lazy"
+                      title={ex.name}
+                    />
+                  </button>
+                ))}
+              </div>
+
+              {/* Selected Exercise Display */}
+              {selectedExerciseForLog && (
+                <>
+                  <h4 style={{ textAlign: 'center', fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '1.5em', color: '#fde68a' }}>
+                    {allExercises.find(ex => ex.id === selectedExerciseForLog)?.name}
+                  </h4>
+
+                  {/* Weight and Reps Input */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '0.75rem',
+                    marginBottom: '1rem'
+                  }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '600', color: '#a0aec0', fontSize: '0.8rem' }}>Weight (lbs)</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        placeholder="Weight"
+                        value={lastWeight}
+                        onChange={(e) => setLastWeight(e.target.value)}
+                        style={{
+                          width: '100%',
+                          backgroundColor: '#2d3748',
+                          border: '1px solid #4a5568',
+                          borderRadius: '8px',
+                          padding: '0.6rem',
+                          color: 'white',
+                          fontSize: '1.5rem',
+                          fontWeight: 'bold',
+                          textAlign: 'center',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '600', color: '#a0aec0', fontSize: '0.8rem' }}>Reps</label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Reps"
+                        value={lastReps}
+                        onChange={(e) => setLastReps(e.target.value)}
+                        style={{
+                          width: '100%',
+                          backgroundColor: '#2d3748',
+                          border: '1px solid #4a5568',
+                          borderRadius: '8px',
+                          padding: '0.6rem',
+                          color: 'white',
+                          fontSize: '1.5rem',
+                          fontWeight: 'bold',
+                          textAlign: 'center',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <button
                     type="button"
                     onClick={handleAddSetToLog}
-                    disabled={!selectedExerciseForLog}
                     style={{
-                      padding: '0.75em 1.5em',
-                      backgroundColor: selectedExerciseForLog ? '#4CAF50' : '#666',
+                      width: '100%',
+                      padding: '0.75em',
+                      backgroundColor: '#4CAF50',
                       color: 'white',
                       border: 'none',
-                      borderRadius: '4px',
-                      cursor: selectedExerciseForLog ? 'pointer' : 'not-allowed',
-                      width: '100%'
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '1rem',
+                      marginBottom: '1.5rem'
                     }}
                   >
                     + Add Set
                   </button>
-                </div>
-              </div>
+                </>
+              )}
 
-              {/* Log Entries Table */}
+              {/* Log Entries Summary */}
               {logEntries.length > 0 && (
-                <div style={{ marginTop: '1.5em', overflowX: 'auto' }}>
-                  <table style={{
-                    width: '100%',
-                    borderCollapse: 'collapse',
-                    fontSize: '0.9em'
-                  }}>
-                    <thead>
-                      <tr style={{ borderBottom: '2px solid #555', backgroundColor: 'rgba(0, 0, 0, 0.3)' }}>
-                        <th style={{ padding: '0.75em', textAlign: 'left' }}>Exercise</th>
-                        <th style={{ padding: '0.75em', textAlign: 'center' }}>Set</th>
-                        <th style={{ padding: '0.75em', textAlign: 'center' }}>Reps</th>
-                        <th style={{ padding: '0.75em', textAlign: 'center' }}>Weight (lbs)</th>
-                        <th style={{ padding: '0.75em', textAlign: 'center' }}>RPE</th>
-                        <th style={{ padding: '0.75em', textAlign: 'center' }}>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {logEntries.map((entry) => (
-                        <tr key={entry._tempId} style={{ borderBottom: '1px solid #444' }}>
-                          <td style={{ padding: '0.75em' }}>{entry.exercise_name}</td>
-                          <td style={{ padding: '0.75em', textAlign: 'center' }}>{entry.set_number}</td>
-                          <td style={{ padding: '0.75em', textAlign: 'center' }}>
-                            <input 
-                              type="number"
-                              min="0"
-                              value={entry.reps_completed}
-                              onChange={(e) => handleUpdateLogEntry(entry._tempId, 'reps_completed', e.target.value)}
-                              placeholder="Reps"
-                              style={{
-                                width: '50px',
-                                padding: '0.5em',
-                                textAlign: 'center',
-                                backgroundColor: '#333',
-                                color: '#fff',
-                                border: '1px solid #555',
-                                borderRadius: '4px'
-                              }}
-                            />
-                          </td>
-                          <td style={{ padding: '0.75em', textAlign: 'center' }}>
-                            <input 
-                              type="number"
-                              step="0.5"
-                              min="0"
-                              value={entry.weight_lbs}
-                              onChange={(e) => handleUpdateLogEntry(entry._tempId, 'weight_lbs', e.target.value)}
-                              placeholder="Weight"
-                              style={{
-                                width: '60px',
-                                padding: '0.5em',
-                                textAlign: 'center',
-                                backgroundColor: '#333',
-                                color: '#fff',
-                                border: '1px solid #555',
-                                borderRadius: '4px'
-                              }}
-                            />
-                          </td>
-                          <td style={{ padding: '0.75em', textAlign: 'center' }}>
-                            <select
-                              value={entry.rpe_rating || 5}
-                              onChange={(e) => handleUpdateLogEntry(entry._tempId, 'rpe_rating', parseInt(e.target.value))}
-                              style={{
-                                width: '50px',
-                                padding: '0.5em',
-                                backgroundColor: '#333',
-                                color: '#fff',
-                                border: '1px solid #555',
-                                borderRadius: '4px'
-                              }}
-                            >
-                              <option value="">-</option>
-                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
-                                <option key={n} value={n}>{n}</option>
-                              ))}
-                            </select>
-                          </td>
-                          <td style={{ padding: '0.75em', textAlign: 'center' }}>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveSetFromLog(entry._tempId)}
-                              style={{
-                                padding: '0.5em 1em',
-                                backgroundColor: '#f44336',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '0.85em'
-                              }}
-                            >
-                              Remove
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <p style={{ 
-                    marginTop: '0.75em', 
-                    fontSize: '0.85em', 
-                    color: '#4CAF50',
-                    fontWeight: 'bold'
-                  }}>
-                    ✓ {logEntries.length} {logEntries.length === 1 ? 'set' : 'sets'} ready to save
-                  </p>
+                <div style={{ 
+                  marginTop: '1.5em', 
+                  padding: '1em',
+                  backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                  border: '1px solid #4CAF50',
+                  borderRadius: '8px'
+                }}>
+                  <h4 style={{ marginTop: 0, marginBottom: '1em' }}>Exercise Sets ({logEntries.length})</h4>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {logEntries.map((entry) => (
+                      <li key={entry._tempId} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.75em',
+                        borderBottom: '1px solid rgba(255,255,255,0.1)',
+                        marginBottom: '0.5em'
+                      }}>
+                        <span style={{ flex: 1 }}>
+                          <strong>{entry.exercise_name}</strong> - Set {entry.set_number}: {entry.weight_lbs} lbs × {entry.reps_completed} reps
+                          {entry.rpe_rating && <span style={{ marginLeft: '0.5em', color: '#fde68a' }}>RPE {entry.rpe_rating}</span>}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSetFromLog(entry._tempId)}
+                          style={{
+                            padding: '0.4em 0.8em',
+                            backgroundColor: '#f44336',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.85em'
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>

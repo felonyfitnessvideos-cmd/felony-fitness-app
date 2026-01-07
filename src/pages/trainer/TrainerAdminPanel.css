@@ -248,3 +248,7 @@
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   }
 }
+/* Horizontal Scrollbar Hiding */
+div[style*="overflowX: auto"]::-webkit-scrollbar {
+  display: none;
+}
