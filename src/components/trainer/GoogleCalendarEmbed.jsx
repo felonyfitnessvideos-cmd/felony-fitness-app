@@ -35,6 +35,7 @@ const GoogleCalendarEmbed = ({ trainerId }) => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [calendarColor, setCalendarColor] = useState('#2196f3');
   const { isAuthenticated: isGoogleAuthenticated } = useGoogleCalendar();
 
   /**
@@ -103,7 +104,13 @@ const GoogleCalendarEmbed = ({ trainerId }) => {
           loadScheduledRoutines();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          // Calendar subscribed to real-time updates
+        } else if (status === 'CHANNEL_ERROR') {
+          // Calendar subscription error - will retry
+        }
+      });
 
     return () => {
       subscription.unsubscribe();
@@ -295,21 +302,35 @@ const GoogleCalendarEmbed = ({ trainerId }) => {
 
       <div className="calendar-header">
         <h2>Trainer Calendar</h2>
-        <button
-          className="btn-create-event"
-          onClick={() => {
-            setSelectedDate(new Date().toISOString().split('T')[0]);
-            setShowCreateModal(true);
-          }}
-        >
-          <Plus size={18} />
-          New Event
-        </button>
+        <div className="header-controls">
+          <div className="color-picker-group">
+            <label htmlFor="calendar-color">Theme Color:</label>
+            <input
+              id="calendar-color"
+              type="color"
+              value={calendarColor}
+              onChange={(e) => setCalendarColor(e.target.value)}
+              title="Change calendar primary color"
+            />
+          </div>
+          <button
+            className="btn-create-event"
+            onClick={() => {
+              setSelectedDate(new Date().toISOString().split('T')[0]);
+              setShowCreateModal(true);
+            }}
+          >
+            <Plus size={18} />
+            New Event
+          </button>
+        </div>
       </div>
 
       {/* Main calendar view */}
       <div className="calendar-container">
-        <div className="calendar-main">{renderCalendar()}</div>
+        <div className="calendar-main" style={{ '--calendar-color': calendarColor, '--calendar-light': calendarColor + '1a' }}>
+          {renderCalendar()}
+        </div>
 
         {/* Selected day sidebar */}
         {selectedDate && (
@@ -388,21 +409,25 @@ const GoogleCalendarEmbed = ({ trainerId }) => {
 
       {/* Modals */}
       {showCreateModal && (
-        <CreateEventModal
-          trainerId={trainerId}
-          defaultDate={selectedDate}
-          onCreate={handleCreateEvent}
-          onClose={() => setShowCreateModal(false)}
-        />
+        <div style={{ '--calendar-color': calendarColor }}>
+          <CreateEventModal
+            trainerId={trainerId}
+            defaultDate={selectedDate}
+            onCreate={handleCreateEvent}
+            onClose={() => setShowCreateModal(false)}
+          />
+        </div>
       )}
 
       {showViewModal && selectedEvent && (
-        <ViewEventModal
-          event={selectedEvent}
-          onUpdate={handleUpdateEvent}
-          onDelete={handleDeleteEvent}
-          onClose={() => setShowViewModal(false)}
-        />
+        <div style={{ '--calendar-color': calendarColor }}>
+          <ViewEventModal
+            event={selectedEvent}
+            onUpdate={handleUpdateEvent}
+            onDelete={handleDeleteEvent}
+            onClose={() => setShowViewModal(false)}
+          />
+        </div>
       )}
 
       {!isGoogleAuthenticated && (

@@ -152,13 +152,13 @@
 }
 
 .btn-save {
-  background-color: #2196f3;
+  background-color: var(--calendar-color, #2196f3);
   color: white;
 }
 
 .btn-save:hover {
-  background-color: #1976d2;
-  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+  opacity: 0.9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Responsive */
