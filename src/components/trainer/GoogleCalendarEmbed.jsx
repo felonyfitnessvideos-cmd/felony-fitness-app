@@ -24,9 +24,11 @@ import './GoogleCalendarEmbed.css';
  * 
  * @param {Object} props
  * @param {string} props.trainerId - Trainer's user ID
+ * @param {string} props.calendarView - Current calendar view ('fullcalendar' or 'classic')
+ * @param {Function} props.onCalendarViewChange - Callback to change calendar view
  * @returns {React.ReactElement}
  */
-const GoogleCalendarEmbed = ({ trainerId }) => {
+const GoogleCalendarEmbed = ({ trainerId, calendarView, onCalendarViewChange }) => {
   const [scheduledRoutines, setScheduledRoutines] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [dayEvents, setDayEvents] = useState([]);
@@ -36,6 +38,7 @@ const GoogleCalendarEmbed = ({ trainerId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [calendarColor, setCalendarColor] = useState('#2196f3');
+  const [calendarMode, setCalendarMode] = useState('classic');
   const { isAuthenticated: isGoogleAuthenticated } = useGoogleCalendar();
 
   /**
@@ -301,7 +304,42 @@ const GoogleCalendarEmbed = ({ trainerId }) => {
       )}
 
       <div className="calendar-header">
-        <h2>Trainer Calendar</h2>
+        <div className="header-title-section">
+          <div className="header-switches">
+            <div className="calendar-mode-switch">
+              <label className="switch-label">
+                <input
+                  type="checkbox"
+                  checked={calendarMode === 'connected'}
+                  onChange={(e) => setCalendarMode(e.target.checked ? 'connected' : 'classic')}
+                  disabled={!isGoogleAuthenticated}
+                  className="switch-input"
+                />
+                <span className="switch-slider"></span>
+                <span className="switch-text">
+                  {calendarMode === 'classic' ? 'Classic' : 'Connected'}
+                </span>
+              </label>
+            </div>
+            {calendarMode === 'classic' && onCalendarViewChange && (
+              <div className="calendar-view-switch">
+                <label className="switch-label">
+                  <input
+                    type="checkbox"
+                    checked={calendarView === 'fullcalendar'}
+                    onChange={(e) => onCalendarViewChange(e.target.checked ? 'fullcalendar' : 'classic')}
+                    className="switch-input"
+                  />
+                  <span className="switch-slider"></span>
+                  <span className="switch-text">
+                    {calendarView === 'fullcalendar' ? 'Full Calendar' : 'Classic View'}
+                  </span>
+                </label>
+              </div>
+            )}
+          </div>
+          <h2>Trainer Calendar</h2>
+        </div>
         <div className="header-controls">
           <div className="color-picker-group">
             <label htmlFor="calendar-color">Theme Color:</label>
@@ -327,85 +365,153 @@ const GoogleCalendarEmbed = ({ trainerId }) => {
       </div>
 
       {/* Main calendar view */}
-      <div className="calendar-container">
-        <div className="calendar-main" style={{ '--calendar-color': calendarColor, '--calendar-light': calendarColor + '1a' }}>
-          {renderCalendar()}
-        </div>
+      {calendarMode === 'classic' ? (
+        <div className="calendar-container">
+          <div className="calendar-main" style={{ '--calendar-color': calendarColor, '--calendar-light': calendarColor + '1a' }}>
+            {renderCalendar()}
+          </div>
 
-        {/* Selected day sidebar */}
-        {selectedDate && (
-          <div className="calendar-sidebar">
-            <div className="sidebar-header">
-              <h3>
-                {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </h3>
-              <button
-                className="btn-close"
-                onClick={() => {
-                  setSelectedDate(null);
-                  setDayEvents([]);
-                }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {dayEvents.length === 0 ? (
-              <div className="no-events">
-                <p>No events scheduled</p>
+          {/* Selected day sidebar */}
+          {selectedDate && (
+            <div className="calendar-sidebar">
+              <div className="sidebar-header">
+                <h3>
+                  {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </h3>
                 <button
-                  className="btn-add-event"
-                  onClick={() => setShowCreateModal(true)}
+                  className="btn-close"
+                  onClick={() => {
+                    setSelectedDate(null);
+                    setDayEvents([]);
+                  }}
                 >
-                  <Plus size={16} />
-                  Add Event
+                  <X size={20} />
                 </button>
               </div>
-            ) : (
-              <div className="events-list">
-                {dayEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className={`event-item ${event.is_completed ? 'completed' : ''}`}
-                    onClick={() => handleEventClick(event)}
+
+              {dayEvents.length === 0 ? (
+                <div className="no-events">
+                  <p>No events scheduled</p>
+                  <button
+                    className="btn-add-event"
+                    onClick={() => setShowCreateModal(true)}
                   >
-                    <div className="event-time">
-                      <Clock size={16} />
-                      {event.scheduled_time || '09:00'}
+                    <Plus size={16} />
+                    Add Event
+                  </button>
+                </div>
+              ) : (
+                <div className="events-list">
+                  {dayEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className={`event-item ${event.is_completed ? 'completed' : ''}`}
+                      onClick={() => handleEventClick(event)}
+                    >
+                      <div className="event-time">
+                        <Clock size={16} />
+                        {event.scheduled_time || '09:00'}
+                      </div>
+                      <div className="event-title">
+                        {event.workout_routines?.name || 'Workout'}
+                      </div>
+                      {event.client_name && (
+                        <div className="event-client">
+                          <Users size={14} />
+                          {event.client_name}
+                        </div>
+                      )}
+                      {event.notes && (
+                        <div className="event-notes">
+                          <FileText size={14} />
+                          {event.notes}
+                        </div>
+                      )}
+                      <div className="event-status">
+                        {event.is_completed ? (
+                          <span className="status-badge completed">Completed</span>
+                        ) : (
+                          <span className="status-badge pending">Pending</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="event-title">
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="calendar-list-view">
+          <div className="list-header">
+            <h3>Upcoming Events</h3>
+            <p className="list-subtitle">
+              {scheduledRoutines.length} event{scheduledRoutines.length !== 1 ? 's' : ''} scheduled
+            </p>
+          </div>
+          {scheduledRoutines.length === 0 ? (
+            <div className="no-events">
+              <p>No events scheduled</p>
+              <button
+                className="btn-add-event"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <Plus size={16} />
+                Add Event
+              </button>
+            </div>
+          ) : (
+            <div className="events-list-view">
+              {scheduledRoutines.map((event) => (
+                <div
+                  key={event.id}
+                  className={`list-event-item ${event.is_completed ? 'completed' : ''}`}
+                  onClick={() => handleEventClick(event)}
+                >
+                  <div className="list-event-date">
+                    {new Date(event.scheduled_date + 'T00:00:00').toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: new Date(event.scheduled_date + 'T00:00:00').getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
+                    })}
+                  </div>
+                  <div className="list-event-details">
+                    <div className="list-event-title">
                       {event.workout_routines?.name || 'Workout'}
                     </div>
-                    {event.client_name && (
-                      <div className="event-client">
-                        <Users size={14} />
-                        {event.client_name}
-                      </div>
-                    )}
-                    {event.notes && (
-                      <div className="event-notes">
-                        <FileText size={14} />
-                        {event.notes}
-                      </div>
-                    )}
-                    <div className="event-status">
-                      {event.is_completed ? (
-                        <span className="status-badge completed">Completed</span>
-                      ) : (
-                        <span className="status-badge pending">Pending</span>
+                    <div className="list-event-meta">
+                      <span className="event-time">
+                        <Clock size={14} />
+                        {event.scheduled_time || '09:00'}
+                      </span>
+                      {event.client_name && (
+                        <span className="event-client">
+                          <Users size={14} />
+                          {event.client_name}
+                        </span>
                       )}
                     </div>
+                    {event.notes && (
+                      <div className="list-event-notes">{event.notes}</div>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+                  <div className="list-event-status">
+                    {event.is_completed ? (
+                      <span className="status-badge completed">Completed</span>
+                    ) : (
+                      <span className="status-badge pending">Pending</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modals */}
       {showCreateModal && (

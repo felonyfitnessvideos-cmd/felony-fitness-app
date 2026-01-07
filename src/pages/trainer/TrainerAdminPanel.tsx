@@ -5,8 +5,9 @@
  * @project Felony Fitness
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
+// @ts-expect-error - CSS imports are handled by Vite
 import './TrainerAdminPanel.css';
 
 interface Meal {
@@ -184,7 +185,7 @@ const TrainerAdminPanel = () => {
     fat_g: number;
     portions?: Array<{ id: string; portion_description: string; gram_weight: number }>;
   }>>([]);
-  const [isSearchingFoods, setIsSearchingFoods] = useState(false);
+  const foodSearchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-clear success message after 5 seconds
   useEffect(() => {
@@ -315,7 +316,11 @@ const TrainerAdminPanel = () => {
 
         // Flatten the nested exercise data
         const exercises = data
-          ?.map((item: { exercise: { id: string; name: string; primary_muscle?: string; thumbnail_url?: string } }) => item.exercise)
+          ?.map((item: { exercise?: Record<string, unknown> | Record<string, unknown>[] }) => {
+            // Handle both single exercise and array of exercises
+            const exercise = Array.isArray(item.exercise) ? item.exercise[0] : item.exercise;
+            return exercise as { id: string; name: string; primary_muscle?: string };
+          })
           .filter(Boolean) || [];
 
         setRoutineExercises(exercises);
@@ -331,44 +336,50 @@ const TrainerAdminPanel = () => {
   }, [workoutLogForm.routine_id]);
 
   /**
-   * Search foods table with debouncing
+   * Search foods table with debouncing (300ms)
+   * Debouncing prevents the input from being disabled on every keystroke
    */
-  const handleFoodSearch = async (searchTerm: string) => {
+  const handleFoodSearch = (searchTerm: string) => {
     setFoodSearch(searchTerm);
+
+    // Clear existing timeout
+    if (foodSearchDebounceRef.current) {
+      clearTimeout(foodSearchDebounceRef.current);
+    }
 
     if (!searchTerm.trim()) {
       setFoodSearchResults([]);
       return;
     }
 
-    setIsSearchingFoods(true);
-    try {
-      const sanitizedTerm = searchTerm.replace(/,/g, ' ').toLowerCase();
-      const { data: results, error } = await supabase
-        .from('foods')
-        .select(`
-          id,
-          name,
-          brand_owner,
-          calories,
-          protein_g,
-          carbs_g,
-          fat_g,
-          portions (id, portion_description, gram_weight)
-        `)
-        .or(`name_simplified.ilike.%${sanitizedTerm}%,brand_owner.ilike.%${sanitizedTerm}%`)
-        .order('commonness_score', { ascending: false })
-        .order('name')
-        .limit(20);
+    // Set debounced search with 300ms delay
+    foodSearchDebounceRef.current = setTimeout(async () => {
+      try {
+        const sanitizedTerm = searchTerm.replace(/,/g, ' ').toLowerCase();
+        const { data: results, error } = await supabase
+          .from('foods')
+          .select(`
+            id,
+            name,
+            brand_owner,
+            calories,
+            protein_g,
+            carbs_g,
+            fat_g,
+            portions (id, portion_description, gram_weight)
+          `)
+          .or(`name_simplified.ilike.%${sanitizedTerm}%,brand_owner.ilike.%${sanitizedTerm}%`)
+          .order('commonness_score', { ascending: false })
+          .order('name')
+          .limit(20);
 
-      if (error) throw error;
-      setFoodSearchResults(results || []);
-    } catch (err) {
-      console.error('Error searching foods:', err);
-      setError('Failed to search foods');
-    } finally {
-      setIsSearchingFoods(false);
-    }
+        if (error) throw error;
+        setFoodSearchResults(results || []);
+      } catch (err) {
+        console.error('Error searching foods:', err);
+        setError('Failed to search foods');
+      }
+    }, 300); // 300ms debounce delay
   };
 
   /**
@@ -906,7 +917,6 @@ const TrainerAdminPanel = () => {
                   placeholder="Search for foods, ingredients..."
                   value={foodSearch}
                   onChange={(e) => handleFoodSearch(e.target.value)}
-                  disabled={isSearchingFoods}
                 />
               </div>
 
@@ -1529,7 +1539,7 @@ const TrainerAdminPanel = () => {
                     }}
                   >
                     <img
-                      src={ex.thumbnail_url || 'https://placehold.co/50x50/4a5568/ffffff?text=IMG'}
+                      src={(ex as { id: string; name: string; thumbnail_url?: string }).thumbnail_url || 'https://placehold.co/50x50/4a5568/ffffff?text=IMG'}
                       alt={ex.name}
                       width="50"
                       height="50"

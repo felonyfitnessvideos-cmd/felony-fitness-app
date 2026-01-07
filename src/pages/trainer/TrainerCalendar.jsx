@@ -28,6 +28,7 @@ import { supabase } from '../../supabaseClient';
 import useGoogleCalendar from '../../hooks/useGoogleCalendar.jsx';
 import EditEventModal from '../../components/trainer/EditEventModal';
 import GoogleCalendarEmbed from '../../components/trainer/GoogleCalendarEmbed';
+import FullCalendarIntegration from '../../components/trainer/FullCalendarIntegration';
 import './TrainerCalendar.css';
 
 /**
@@ -878,40 +879,23 @@ const TrainerCalendar = memo(() => {
       )}
 
       <div className="calendar-layout">
-        {/* Calendar View Switcher */}
-        <div className="calendar-view-switcher">
-          <button
-            onClick={() => setCalendarView('fullcalendar')}
-            className={`view-btn ${calendarView === 'fullcalendar' ? 'active' : ''}`}
-            aria-label="Switch to Full Calendar view"
-            aria-pressed={calendarView === 'fullcalendar'}
-          >
-            Full Calendar
-          </button>
-          <button
-            onClick={() => setCalendarView('classic')}
-            className={`view-btn ${calendarView === 'classic' ? 'active' : ''}`}
-            aria-label="Switch to Classic calendar view"
-            aria-pressed={calendarView === 'classic'}
-          >
-            Classic View
-          </button>
-        </div>
-
         <div className="calendar-main-fullwidth">
           {/* Full Calendar View */}
           {calendarView === 'fullcalendar' && user && (
-            <GoogleCalendarEmbed
+            <FullCalendarIntegration
               trainerId={user.id}
             />
           )}
 
           {/* Classic Calendar View */}
           {calendarView === 'classic' && isAuthenticated ? (
-            <div className="weekly-calendar">
-              {/* Current Week Display - Always shows current week */}
-
-
+            <GoogleCalendarEmbed
+              trainerId={user.id}
+              calendarView={calendarView}
+              onCalendarViewChange={setCalendarView}
+            />
+          ) : calendarView === 'classic' ? (
+            <>
               {/* Calendar Grid */}
               <div
                 className="calendar-grid-container"
@@ -1071,7 +1055,7 @@ const TrainerCalendar = memo(() => {
                   </div>
                 </div>
               </div>
-            </div>
+            </>
           ) : null}
         </div>
       </div>

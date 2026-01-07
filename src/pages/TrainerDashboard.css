@@ -1,3 +1,22 @@
+/* Add for tool-item-relative (replaces inline style) */
+.tool-item-relative {
+  position: relative;
+}
+
+/* Add for unread-badge (replaces inline style) */
+.unread-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: #dc2626;
+  color: white;
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: bold;
+  min-width: 20px;
+  text-align: center;
+}
 /* ===== TRAINER DASHBOARD - SIMPLIFIED RESPONSIVE LAYOUT ===== */
 
 /* Global overrides for trainer dashboard page - work within App layout */
@@ -25,10 +44,10 @@
 /* 🚨 CRITICAL: This class enables the 70/30 flexbox split */
 /* DO NOT MODIFY without reading TRAINER_DASHBOARD_LAYOUT.md */
 .trainer-main-content {
-  flex: 1;                    /* Takes all space after header - CRITICAL */
+  flex: 1; /* Takes all space after header - CRITICAL */
   display: flex;
   flex-direction: column;
-  min-height: 0;             /* Allows flexbox shrinking - REQUIRED */
+  min-height: 0; /* Allows flexbox shrinking - REQUIRED */
   overflow: hidden;
 }
 
@@ -119,7 +138,7 @@
   flex: 1;
   gap: 0.75rem; /* Reduced from 1rem */
   padding: 0.75rem; /* Reduced from 1rem */
-  min-height: 0;             /* REQUIRED for flexbox children */
+  min-height: 0; /* REQUIRED for flexbox children */
   width: 100%;
   height: calc(100% - 70px); /* Reduced from 80px due to smaller header */
   box-sizing: border-box;
@@ -167,13 +186,17 @@
   justify-content: flex-start;
   position: relative;
   border: 1px solid transparent;
-  background: linear-gradient(135deg, var(--card-color) 0%, rgba(249, 115, 22, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--card-color) 0%,
+    rgba(249, 115, 22, 0.05) 100%
+  );
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
 .tool-item::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -185,7 +208,11 @@
 }
 
 .tool-item:hover {
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(249, 115, 22, 0.15) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(249, 115, 22, 0.1) 0%,
+    rgba(249, 115, 22, 0.15) 100%
+  );
   color: var(--text-primary);
   border-color: rgba(249, 115, 22, 0.3);
   transform: translateX(4px) translateY(-2px);
@@ -229,12 +256,20 @@
 /* Home button styling */
 .tool-item.home-btn {
   margin-top: 0.75rem;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.15));
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.1),
+    rgba(37, 99, 235, 0.15)
+  );
   border-color: rgba(59, 130, 246, 0.3);
 }
 
 .tool-item.home-btn:hover {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.2));
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.15),
+    rgba(37, 99, 235, 0.2)
+  );
   border-color: rgba(59, 130, 246, 0.5);
   color: #3b82f6;
 }
@@ -305,7 +340,7 @@
 }
 
 .workspace-tool::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 50%;
@@ -328,7 +363,11 @@
 }
 
 .workspace-tool.active {
-  background: linear-gradient(180deg, rgba(249, 115, 22, 0.15) 0%, rgba(249, 115, 22, 0.05) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(249, 115, 22, 0.15) 0%,
+    rgba(249, 115, 22, 0.05) 100%
+  );
   color: var(--accent-color);
   border-bottom-color: var(--accent-color);
   font-weight: 600;
@@ -360,27 +399,27 @@
   .dashboard-layout {
     height: calc(100vh - 100px);
   }
-  
+
   .dashboard-top-section {
     max-height: 75vh;
   }
-  
+
   .quick-tools-sidebar {
     padding: 1.5rem;
     gap: 0.75rem;
   }
-  
+
   .tool-item {
     padding: 0.75rem 1rem;
-    min-height: auto;
+    min-height: 0;
   }
-  
+
   .core-tools-workspace {
     height: 20vh;
     min-height: 160px;
     max-height: 300px;
   }
-  
+
   .workspace-tool {
     padding: 0.6rem 1rem;
   }
@@ -395,34 +434,32 @@
     align-items: center;
     padding: 0.5rem 0.25rem;
   }
-  
-  
-  
+
   .content-container {
     max-width: 90vw;
   }
-  
+
   .tool-item span {
     display: none;
   }
-  
+
   .tool-item {
     justify-content: center;
     padding: 0.5rem 0.25rem;
     min-height: 40px;
   }
-  
+
   .core-tools-workspace {
     height: 20vh;
     min-height: 140px;
     max-height: 180px;
   }
-  
+
   .workspace-tool {
     padding: 0.5rem 0.75rem;
     font-size: 0.8rem;
   }
-  
+
   .workspace-tool span {
     display: none;
   }
@@ -436,7 +473,7 @@
     height: calc(100% - 80px);
     padding: 0.75rem;
   }
-  
+
   .dashboard-top-section {
     flex-direction: row !important; /* Keep sidebar and content side-by-side */
     gap: 0.75rem;
@@ -444,7 +481,7 @@
     min-height: 0;
     overflow: hidden; /* Prevent content from expanding beyond bounds */
   }
-  
+
   .quick-tools-sidebar {
     width: 25% !important; /* 25% width as shown in diagram */
     max-width: 25% !important;
@@ -454,30 +491,30 @@
     height: auto !important;
     flex-shrink: 0;
   }
-  
+
   .content-container {
     width: 75% !important; /* 75% width as shown in diagram */
     max-width: 75% !important;
     flex: 1;
     min-width: 0;
   }
-  
+
   .router-content-area {
     flex: 1;
     min-height: 300px; /* Increased minimum height */
   }
-  
+
   .tool-item {
     justify-content: flex-start !important;
     padding: 0.6rem 0.75rem !important;
     gap: 0.5rem !important;
     width: 100%;
   }
-  
+
   .tool-item span {
     font-size: 0.85rem;
   }
-  
+
   /* Core tools workspace - flexible height using flexbox */
   .core-tools-workspace {
     flex: 1 !important; /* Take 1/3 of available space */
@@ -495,35 +532,35 @@
     height: calc(100vh - 100px); /* Smaller header on mobile */
     gap: 0.25rem;
   }
-  
+
   .dashboard-top-section {
     gap: 0.25rem;
   }
-  
+
   .quick-tools-sidebar {
     min-height: 50px;
     padding: 0.25rem;
   }
-  
+
   .tool-item {
     padding: 0.25rem 0.125rem;
   }
-  
+
   .tool-item span {
     font-size: 0.7rem;
   }
-  
+
   .router-content-area {
     padding: 1rem;
     min-height: 150px;
   }
-  
+
   .core-tools-workspace {
     height: 30vh;
     min-height: 180px;
     max-height: 250px;
   }
-  
+
   .workspace-tool {
     padding: 0.3rem 0.4rem;
     font-size: 0.7rem;
@@ -535,18 +572,16 @@
   .trainer-header {
     padding: 0.75rem 1rem;
   }
-  
- 
-  
+
   .trainer-header h1 {
     font-size: 1.5rem;
   }
-  
+
   .dashboard-layout {
     padding: 0.5rem;
     gap: 0.25rem;
   }
-  
+
   .core-tools-workspace {
     height: 20vh;
     min-height: 120px;
@@ -576,7 +611,11 @@
 }
 
 .tool-card {
-  background: linear-gradient(135deg, var(--card-color) 0%, rgba(249, 115, 22, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--card-color) 0%,
+    rgba(249, 115, 22, 0.05) 100%
+  );
   border: 1px solid rgba(249, 115, 22, 0.1);
   border-radius: 12px;
   padding: 0.5rem; /* More compact padding */
@@ -592,7 +631,7 @@
 }
 
 .tool-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -620,8 +659,8 @@
   color: var(--text-primary);
   font-weight: 700;
   background: linear-gradient(135deg, var(--accent-color), #ea580c);
-  background-clip: text;
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 

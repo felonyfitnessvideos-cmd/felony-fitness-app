@@ -49,6 +49,7 @@ import TrainerMessages from './trainer/TrainerMessages';
 import TrainerPrograms from './trainer/TrainerPrograms';
 import TrainerResources from './trainer/TrainerResources';
 import TrainerAdminPanel from './trainer/TrainerAdminPanel';
+// @ts-expect-error - CSS import for side-effect styling
 import './TrainerDashboard.css';
 
 /**
@@ -336,24 +337,12 @@ const TrainerDashboard = () => {
                 className={`tool-item ${location.pathname === '/trainer-dashboard/messages' ? 'active' : ''}`}
                 onClick={navigateToMessages}
                 aria-label="Open Messages"
-                style={{ position: 'relative' }}
+                // Style moved to CSS: .tool-item-relative
               >
                 <MessageSquare size={20} />
                 <span>Messages</span>
                 {unreadCount > 0 && (
-                  <span style={{
-                    position: 'absolute',
-                    top: '8px',
-                    right: '8px',
-                    backgroundColor: '#dc2626',
-                    color: 'white',
-                    borderRadius: '10px',
-                    padding: '2px 6px',
-                    fontSize: '11px',
-                    fontWeight: 'bold',
-                    minWidth: '20px',
-                    textAlign: 'center'
-                  }}>
+                  <span className="unread-badge">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -423,7 +412,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'scheduling' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('scheduling')}
-                aria-pressed={activeWorkspaceTool === 'scheduling'}
+                aria-pressed="true"
                 aria-label="Smart Scheduling Tool"
               >
                 <Calendar size={16} />
@@ -433,7 +422,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'progress' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('progress')}
-                aria-pressed={activeWorkspaceTool === 'progress'}
+                aria-pressed={activeWorkspaceTool === 'progress' ? 'true' : 'false'}
                 aria-label="Progress Tracker Tool"
               >
                 <TrendingUp size={16} />
@@ -443,7 +432,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'workout' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('workout')}
-                aria-pressed={activeWorkspaceTool === 'workout'}
+                aria-pressed={activeWorkspaceTool === 'workout' ? 'true' : 'false'}
                 aria-label="Workout Builder Tool"
               >
                 <Dumbbell size={16} />
@@ -453,7 +442,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'nutrition' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('nutrition')}
-                aria-pressed={activeWorkspaceTool === 'nutrition'}
+                aria-pressed={activeWorkspaceTool === 'nutrition' ? 'true' : 'false'}
                 aria-label="Nutrition Planner Tool"
               >
                 <Apple size={16} />
@@ -463,7 +452,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'messaging' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('messaging')}
-                aria-pressed={activeWorkspaceTool === 'messaging'}
+                aria-pressed={activeWorkspaceTool === 'messaging' ? 'true' : 'false'}
                 aria-label="Messaging Hub Tool"
               >
                 <MessageSquare size={16} />
@@ -476,7 +465,6 @@ const TrainerDashboard = () => {
           </div>
         </div>
       </div>
-
       {/* Interval Timer Modal */}
       {showIntervalTimer && (
         <IntervalTimer onClose={() => setShowIntervalTimer(false)} />

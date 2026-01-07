@@ -98,17 +98,10 @@ function ProgressPage() {
   const fetchProgressData = useCallback(async (userId) => {
     try {
       const [workoutLogsRes, nutritionLogsRes, goalsRes] = await Promise.all([
-        // Fetch only completed workouts to ensure accurate statistics.
+        // Fetch all workouts (even those with 0 duration) to ensure accurate statistics
         supabase.from('workout_logs')
           .select('duration_minutes, created_at, calories_burned')
-          .eq('user_id', userId)
-  /**
-   * ProgressPage — visualizes user progress and historical metrics.
-   *
-   * This page renders charts and summarized data. It prefers cached data and
-   * avoids heavy queries on mount; charts are lazy-loaded when visible.
-   */
-          .gt('duration_minutes', 0),
+          .eq('user_id', userId),
         
         // --- 1. THIS QUERY IS FIXED ---
         // Changed from 'v_nutrition_log_details' to the 'nutrition_logs' table

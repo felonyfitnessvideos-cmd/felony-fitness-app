@@ -218,7 +218,6 @@ function WorkoutLogPage() {
         .select('id')
         .eq('user_id', userId)
         .eq('routine_id', routineId)
-        .eq('is_complete', true)
         .order('ended_at', { ascending: false })
         .limit(1)
         .maybeSingle();
