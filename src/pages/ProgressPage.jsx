@@ -98,7 +98,7 @@ function ProgressPage() {
   const fetchProgressData = useCallback(async (userId) => {
     try {
       const [workoutLogsRes, nutritionLogsRes, goalsRes] = await Promise.all([
-        // Fetch all workouts (even those with 0 duration) to ensure accurate statistics
+        // Fetch all workouts to ensure accurate statistics
         supabase.from('workout_logs')
           .select('duration_minutes, created_at, calories_burned')
           .eq('user_id', userId),
