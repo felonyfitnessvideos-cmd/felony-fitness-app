@@ -180,19 +180,48 @@ const ProgramLibrary = () => {
 
       /**
        * Normalize muscle names to match CustomMuscleMap format
-       * Converts variations like "Anterior Deltoid", "Front Deltoid", etc. to standard names
+       * Converts variations like "Anterior Deltoid", "Pectoralis", etc. to standard names
        */
       const normalizeMuscle = (muscleName) => {
         if (!muscleName) return null;
         const lower = muscleName.toLowerCase().trim();
+        
+        // Chest variations
+        if (lower.includes('chest') || lower.includes('pec')) return 'Chest';
+        if (lower.includes('upper chest')) return 'Upper Chest';
+        if (lower.includes('lower chest')) return 'Lower Chest';
+        if (lower.includes('middle chest')) return 'Middle Chest';
         
         // Shoulder/Deltoid variations
         if (lower.includes('anterior') || lower.includes('front delt')) return 'Front Delts';
         if (lower.includes('lateral') || lower.includes('side delt')) return 'Side Delts';
         if (lower.includes('posterior') || lower.includes('rear delt')) return 'Rear Delts';
         if (lower.includes('delt') && !lower.includes('anterior') && !lower.includes('lateral') && !lower.includes('posterior')) {
-          return 'Shoulders'; // Generic delts
+          return 'Shoulders';
         }
+        
+        // Arm variations
+        if (lower.includes('bicep')) return 'Biceps';
+        if (lower.includes('tricep')) return 'Triceps';
+        if (lower.includes('forearm')) return 'Forearms';
+        
+        // Back/Lat variations
+        if (lower.includes('lats') || lower.includes('latissimus')) return 'Lats';
+        if (lower.includes('upper back')) return 'Upper Back';
+        if (lower.includes('back')) return 'Back';
+        
+        // Trap variations
+        if (lower.includes('trap')) return 'Traps';
+        
+        // Leg variations
+        if (lower.includes('quad') || lower.includes('front thigh')) return 'Quads';
+        if (lower.includes('hamstring') || lower.includes('ham') || lower.includes('back thigh')) return 'Hamstrings';
+        if (lower.includes('glute') || lower.includes('butt')) return 'Glutes';
+        if (lower.includes('calf') || lower.includes('soleus')) return 'Calves';
+        
+        // Core variations
+        if (lower.includes('abs') || lower.includes('abdominal') || lower.includes('core')) return 'Abs';
+        if (lower.includes('oblique')) return 'Obliques';
         
         // Return as-is if no normalization needed
         return muscleName;
