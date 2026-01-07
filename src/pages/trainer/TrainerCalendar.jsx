@@ -21,12 +21,13 @@
  * }
  */
 
-import { AlertCircle, Calendar, CheckCircle, Edit, RefreshCw, Trash2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, Edit, RefreshCw, Trash2 } from 'lucide-react';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../useAuth';
 import { supabase } from '../../supabaseClient';
 import useGoogleCalendar from '../../hooks/useGoogleCalendar.jsx';
 import EditEventModal from '../../components/trainer/EditEventModal';
+import FullCalendarIntegration from '../../components/trainer/FullCalendarIntegration';
 import './TrainerCalendar.css';
 
 /**
@@ -93,6 +94,9 @@ const TrainerCalendar = memo(() => {
 
   /** @type {[Date, Function]} Current week being displayed */
   const [currentWeek, setCurrentWeek] = useState(new Date());
+
+  /** @type {[string, Function]} Calendar view type - 'classic' or 'fullcalendar' */
+  const [calendarView, setCalendarView] = useState('fullcalendar');
 
   /** @type {[number, Function]} Number of weeks to show - static view */
   const [weeksToShow] = useState(12); // Show 12 weeks (3 months) in static view
@@ -874,8 +878,37 @@ const TrainerCalendar = memo(() => {
       )}
 
       <div className="calendar-layout">
+        {/* Calendar View Switcher */}
+        <div className="calendar-view-switcher">
+          <button
+            onClick={() => setCalendarView('fullcalendar')}
+            className={`view-btn ${calendarView === 'fullcalendar' ? 'active' : ''}`}
+            aria-label="Switch to Full Calendar view"
+            aria-pressed={calendarView === 'fullcalendar'}
+          >
+            Full Calendar
+          </button>
+          <button
+            onClick={() => setCalendarView('classic')}
+            className={`view-btn ${calendarView === 'classic' ? 'active' : ''}`}
+            aria-label="Switch to Classic calendar view"
+            aria-pressed={calendarView === 'classic'}
+          >
+            Classic View
+          </button>
+        </div>
+
         <div className="calendar-main-fullwidth">
-          {isAuthenticated ? (
+          {/* Full Calendar View */}
+          {calendarView === 'fullcalendar' && user && (
+            <FullCalendarIntegration
+              trainerId={user.id}
+              onEventSelect={(event) => setEditingEvent(event)}
+            />
+          )}
+
+          {/* Classic Calendar View */}
+          {calendarView === 'classic' && isAuthenticated ? (
             <div className="weekly-calendar">
               {/* Current Week Display - Always shows current week */}
 
@@ -1040,40 +1073,7 @@ const TrainerCalendar = memo(() => {
                 </div>
               </div>
             </div>
-          ) : (
-            <div
-              className="calendar-placeholder"
-              role="region"
-              aria-labelledby="placeholder-title"
-              aria-describedby="placeholder-description"
-            >
-              <Calendar size={48} aria-hidden="true" />
-              <h5 id="placeholder-title">Connect Google Calendar</h5>
-              <p id="placeholder-description">
-                Sync your appointments and manage your schedule with Google Calendar integration
-              </p>
-              <button
-                onClick={handleGoogleCalendarSync}
-                className="connect-button"
-                disabled={isLoading || !isConfigured}
-                aria-label={
-                  !isConfigured
-                    ? 'Google Calendar not configured. Please set up API credentials first.'
-                    : isLoading
-                      ? 'Connecting to Google Calendar...'
-                      : 'Connect to Google Calendar now'
-                }
-                type="button"
-              >
-                {isLoading ? 'Connecting...' : 'Connect Now'}
-              </button>
-              {!isConfigured && (
-                <p className="placeholder-note">
-                  <small>Configuration required - see setup instructions above</small>
-                </p>
-              )}
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
       {editingEvent && (
