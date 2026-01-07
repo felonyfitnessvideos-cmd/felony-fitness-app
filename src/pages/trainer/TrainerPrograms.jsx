@@ -178,6 +178,26 @@ const ProgramLibrary = () => {
         exerciseMap.set(ex.id, ex);
       });
 
+      /**
+       * Normalize muscle names to match CustomMuscleMap format
+       * Converts variations like "Anterior Deltoid", "Front Deltoid", etc. to standard names
+       */
+      const normalizeMuscle = (muscleName) => {
+        if (!muscleName) return null;
+        const lower = muscleName.toLowerCase().trim();
+        
+        // Shoulder/Deltoid variations
+        if (lower.includes('anterior') || lower.includes('front delt')) return 'Front Delts';
+        if (lower.includes('lateral') || lower.includes('side delt')) return 'Side Delts';
+        if (lower.includes('posterior') || lower.includes('rear delt')) return 'Rear Delts';
+        if (lower.includes('delt') && !lower.includes('anterior') && !lower.includes('lateral') && !lower.includes('posterior')) {
+          return 'Shoulders'; // Generic delts
+        }
+        
+        // Return as-is if no normalization needed
+        return muscleName;
+      };
+
       // Process programs and hydrate exercise data
       const processedPrograms = programsData.map(program => {
         const exercisePool = program.exercise_pool || [];
@@ -198,25 +218,28 @@ const ProgramLibrary = () => {
           // Always upgrade to higher priority if muscle appears in multiple exercises
           muscles.primary?.forEach(m => {
             if (m) {
+              const normalizedMuscle = normalizeMuscle(m);
               // Always set as primary (upgrade from secondary/tertiary if needed)
-              muscleGroupsMap.set(m, 'primary');
+              muscleGroupsMap.set(normalizedMuscle, 'primary');
             }
           });
           
           muscles.secondary?.forEach(m => {
             if (m) {
-              const currentPriority = muscleGroupsMap.get(m);
+              const normalizedMuscle = normalizeMuscle(m);
+              const currentPriority = muscleGroupsMap.get(normalizedMuscle);
               // Only set as secondary if not already primary
               if (!currentPriority || currentPriority === 'tertiary') {
-                muscleGroupsMap.set(m, 'secondary');
+                muscleGroupsMap.set(normalizedMuscle, 'secondary');
               }
             }
           });
           
           muscles.tertiary?.forEach(m => {
-            if (m && !muscleGroupsMap.has(m)) {
+            if (m && !muscleGroupsMap.has(normalizeMuscle(m))) {
               // Only set as tertiary if not already in map
-              muscleGroupsMap.set(m, 'tertiary');
+              const normalizedMuscle = normalizeMuscle(m);
+              muscleGroupsMap.set(normalizedMuscle, 'tertiary');
             }
           });
 
