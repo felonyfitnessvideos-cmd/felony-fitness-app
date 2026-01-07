@@ -796,6 +796,10 @@ const CalculatorDashboard = () => {
                     <span className="result-value">{bodyCompResults.bmr} cal</span>
                   </div>
                   <div className="result-highlight">
+                    <span className="result-label">BMI:</span>
+                    <span className="result-value">{bodyCompResults.bmi}</span>
+                  </div>
+                  <div className="result-highlight">
                     <span className="result-label">TDEE:</span>
                     <span className="result-value">{bodyCompResults.tdee} cal</span>
                   </div>

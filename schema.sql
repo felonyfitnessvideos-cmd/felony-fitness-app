@@ -3013,6 +3013,8 @@ $$;
 
 CREATE FUNCTION public.update_stats_on_set_logged() RETURNS trigger
     LANGUAGE plpgsql
+    SECURITY DEFINER
+    SET search_path TO 'public'
     AS $$
 
 DECLARE
@@ -3160,6 +3162,8 @@ $$;
 
 CREATE FUNCTION public.update_stats_on_workout_complete() RETURNS trigger
     LANGUAGE plpgsql
+    SECURITY DEFINER
+    SET search_path TO 'public'
     AS $$
 
 BEGIN
@@ -11912,6 +11916,12 @@ CREATE POLICY "Users can insert their own achievements" ON public.user_achieveme
 
 CREATE POLICY "Users can insert their own stats" ON public.user_stats FOR INSERT WITH CHECK ((auth.uid() = user_id));
 
+--
+-- Name: user_stats Trainers can insert stats for their clients; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Trainers can insert stats for their clients" ON public.user_stats FOR INSERT WITH CHECK (public.is_trainer_for_client(user_id));
+
 
 --
 -- Name: user_meal_foods Users can manage own meal foods; Type: POLICY; Schema: public; Owner: -
@@ -11991,6 +12001,12 @@ CREATE POLICY "Users can update their own achievement seen status" ON public.use
 --
 
 CREATE POLICY "Users can update their own stats" ON public.user_stats FOR UPDATE USING ((auth.uid() = user_id)) WITH CHECK ((auth.uid() = user_id));
+
+--
+-- Name: user_stats Trainers can update stats for their clients; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Trainers can update stats for their clients" ON public.user_stats FOR UPDATE USING (public.is_trainer_for_client(user_id)) WITH CHECK (public.is_trainer_for_client(user_id));
 
 
 --

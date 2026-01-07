@@ -127,6 +127,7 @@ const TrainerAdminPanel = () => {
   // Workout logs state
   const [users, setUsers] = useState<Array<{ id: string; email: string; first_name?: string; last_name?: string }>>([]);
   const [workoutRoutines, setWorkoutRoutines] = useState<Array<{ id: string; routine_name: string }>>([]);
+  const [_allExercises, _setAllExercises] = useState<Array<{ id: string; name: string; primary_muscle?: string }>>([]);
   const [workoutLogForm, setWorkoutLogForm] = useState<WorkoutLog>({
     user_id: '',
     routine_id: '',
@@ -142,6 +143,32 @@ const TrainerAdminPanel = () => {
     notes: '',
     mood_rating: 3,
   });
+
+  // Mini workout log entries state
+  const [logEntries, setLogEntries] = useState<Array<{
+    _tempId?: string;
+    exercise_id: string;
+    exercise_name?: string;
+    set_number: number;
+    reps_completed: number | string;
+    weight_lbs: number | string;
+    rpe_rating?: number;
+  }>>([]);
+  const [selectedExerciseForLog, setSelectedExerciseForLog] = useState('');
+  const [nextSetNumber, setNextSetNumber] = useState(1);
+  const [routineExercises, setRoutineExercises] = useState<Array<{ id: string; name: string; primary_muscle?: string }>>([]);
+  const [lastWeight, setLastWeight] = useState<number | string>('');
+  const [lastReps, setLastReps] = useState<number | string>('');
+
+  // Auto-clear success message after 5 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   // Check if user is admin on mount
   useEffect(() => {
@@ -194,9 +221,9 @@ const TrainerAdminPanel = () => {
     }
   }, [activeTab]);
 
-  // Fetch users and routines for workout logs
+  // Fetch users when workoutlogs tab is active
   useEffect(() => {
-    const fetchUsersAndRoutines = async () => {
+    const fetchUsers = async () => {
       try {
         const { data: usersData, error: usersError } = await supabase
           .from('user_profiles')
@@ -205,23 +232,77 @@ const TrainerAdminPanel = () => {
 
         if (usersError) throw usersError;
         setUsers(usersData || []);
-
-        const { data: routinesData, error: routinesError } = await supabase
-          .from('workout_routines')
-          .select('id, routine_name')
-          .order('routine_name');
-
-        if (routinesError) throw routinesError;
-        setWorkoutRoutines(routinesData || []);
       } catch (err) {
-        console.error('Error fetching users/routines:', err);
+        console.error('Error fetching users:', err);
       }
     };
 
     if (activeTab === 'workoutlogs') {
-      fetchUsersAndRoutines();
+      fetchUsers();
     }
   }, [activeTab]);
+
+  // Load user's routines when user is selected
+  useEffect(() => {
+    const loadUserRoutines = async () => {
+      if (!workoutLogForm.user_id) {
+        setWorkoutRoutines([]);
+        setWorkoutLogForm(prev => ({ ...prev, routine_id: '' }));
+        return;
+      }
+
+      try {
+        const { data: routinesData, error: routinesError } = await supabase
+          .from('workout_routines')
+          .select('id, routine_name')
+          .eq('user_id', workoutLogForm.user_id)
+          .order('routine_name');
+
+        if (routinesError) throw routinesError;
+        setWorkoutRoutines(routinesData || []);
+        setWorkoutLogForm(prev => ({ ...prev, routine_id: '' }));
+      } catch (err) {
+        console.error('Error fetching user routines:', err);
+      }
+    };
+
+    loadUserRoutines();
+  }, [workoutLogForm.user_id]);
+
+  // Load exercises from selected routine
+  useEffect(() => {
+    const loadRoutineExercises = async () => {
+      if (!workoutLogForm.routine_id) {
+        setRoutineExercises([]);
+        setSelectedExerciseForLog('');
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('routine_exercises')
+          .select('exercise:exercises(id, name, primary_muscle)')
+          .eq('routine_id', workoutLogForm.routine_id)
+          .order('exercise_order');
+
+        if (error) throw error;
+
+        // Flatten the nested exercise data
+        const exercises = data
+          ?.map((item: { exercise: { id: string; name: string; primary_muscle?: string } }) => item.exercise)
+          .filter(Boolean) || [];
+
+        setRoutineExercises(exercises);
+        setSelectedExerciseForLog('');
+        setLogEntries([]);
+        setNextSetNumber(1);
+      } catch (err) {
+        console.error('Error fetching routine exercises:', err);
+      }
+    };
+
+    loadRoutineExercises();
+  }, [workoutLogForm.routine_id]);
 
   const handleMealSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -361,16 +442,68 @@ const TrainerAdminPanel = () => {
         return;
       }
 
-      const { error: insertError } = await supabase.from('workout_logs').insert([
-        {
-          ...workoutLogForm,
-          user_id: workoutLogForm.user_id,
-        },
-      ]);
+      // Only send fields that exist in the database
+      const workoutLogData = {
+        user_id: workoutLogForm.user_id,
+        routine_id: workoutLogForm.routine_id || null,
+        workout_name: workoutLogForm.workout_name || null,
+        log_date: workoutLogForm.log_date,
+        started_at: workoutLogForm.started_at || null,
+        ended_at: workoutLogForm.ended_at || null,
+        duration_minutes: workoutLogForm.duration_minutes || null,
+        is_complete: workoutLogForm.is_complete,
+        notes: workoutLogForm.notes || null,
+        mood_rating: workoutLogForm.mood_rating || null,
+      };
 
-      if (insertError) throw insertError;
+      const { data: logData, error: insertError } = await supabase.from('workout_logs').insert([
+        workoutLogData,
+      ]).select();
 
-      setSuccessMessage('Workout log created successfully!');
+      if (insertError) {
+        console.error('❌ Workout log insert error:', {
+          message: insertError.message,
+          code: insertError.code,
+          hint: (insertError as { hint?: string }).hint,
+          details: (insertError as { details?: string }).details,
+          fullError: insertError,
+        });
+        throw insertError;
+      }
+      if (!logData || logData.length === 0) throw new Error('Failed to create workout log');
+
+      const workoutLogId = logData[0].id;
+      console.log('✅ Workout log created successfully:', { workoutLogId, user_id: workoutLogForm.user_id, routine_id: workoutLogForm.routine_id });
+
+      // Insert log entries if any were added
+      if (logEntries.length > 0) {
+        const entriesToInsert = logEntries.map(entry => ({
+          workout_log_id: workoutLogId,
+          exercise_id: entry.exercise_id,
+          set_number: entry.set_number,
+          reps_completed: entry.reps_completed ? parseInt(String(entry.reps_completed)) : 0,
+          weight_lbs: entry.weight_lbs ? parseFloat(String(entry.weight_lbs)) : 0,
+          rpe_rating: entry.rpe_rating || null,
+          completed: true,
+        }));
+
+        const { error: entriesError } = await supabase.from('workout_log_entries').insert(entriesToInsert);
+        if (entriesError) {
+          console.error('❌ Workout log entries insert error:', {
+            message: entriesError.message,
+            code: entriesError.code,
+            hint: (entriesError as { hint?: string }).hint,
+            details: (entriesError as { details?: string }).details,
+            fullError: entriesError,
+            entriesToInsert,
+            workoutLogId,
+          });
+          throw entriesError;
+        }
+        console.log('✅ Workout log entries inserted successfully:', { count: entriesToInsert.length, workoutLogId });
+      }
+
+      setSuccessMessage(`Workout log created successfully with ${logEntries.length} exercise entries!`);
       setWorkoutLogForm({
         user_id: '',
         routine_id: '',
@@ -386,11 +519,56 @@ const TrainerAdminPanel = () => {
         notes: '',
         mood_rating: 3,
       });
+      setLogEntries([]);
+      setNextSetNumber(1);
+      setSelectedExerciseForLog('');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(`Failed to create workout log: ${errorMessage}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Add a new set to the mini log
+  const handleAddSetToLog = () => {
+    if (!selectedExerciseForLog) {
+      setError('Please select an exercise');
+      return;
+    }
+
+    const exercise = routineExercises.find(ex => ex.id === selectedExerciseForLog);
+    const newEntry = {
+      _tempId: `${Date.now()}-${Math.random()}`,
+      exercise_id: selectedExerciseForLog,
+      exercise_name: exercise?.name || '',
+      set_number: nextSetNumber,
+      reps_completed: lastReps,
+      weight_lbs: lastWeight,
+      rpe_rating: 5,
+    };
+
+    setLogEntries([...logEntries, newEntry]);
+    setNextSetNumber(nextSetNumber + 1);
+  };
+
+  // Remove a set from the mini log
+  const handleRemoveSetFromLog = (tempId: string | undefined) => {
+    setLogEntries(logEntries.filter(entry => entry._tempId !== tempId));
+  };
+
+  // Update a log entry and persist weight/reps for next set
+  const handleUpdateLogEntry = (tempId: string | undefined, field: string, value: string | number) => {
+    setLogEntries(logEntries.map(entry => 
+      entry._tempId === tempId ? { ...entry, [field]: value } : entry
+    ));
+    
+    // Persist weight and reps for next set
+    if (field === 'weight_lbs') {
+      setLastWeight(value);
+    }
+    if (field === 'reps_completed') {
+      setLastReps(value);
     }
   };
 
@@ -1000,6 +1178,181 @@ const TrainerAdminPanel = () => {
                 />
                 <label htmlFor="log-complete">Completed</label>
               </div>
+            </div>
+
+            {/* Mini Workout Log for Exercise Entries */}
+            <div style={{ 
+              marginTop: '2em', 
+              padding: '1.5em', 
+              border: '2px solid #444', 
+              borderRadius: '8px',
+              backgroundColor: 'rgba(60, 60, 60, 0.3)'
+            }}>
+              <h3 style={{ marginTop: 0, marginBottom: '1em' }}>📋 Add Exercise Entries from Paper Log</h3>
+              {!workoutLogForm.routine_id ? (
+                <p style={{ fontSize: '0.9em', color: '#f87171', marginBottom: '1em' }}>
+                  ⚠️ Please select a routine above to load its exercises
+                </p>
+              ) : (
+                <p style={{ fontSize: '0.9em', color: '#aaa', marginBottom: '1em' }}>
+                  Log individual exercises from the selected routine. This recreates their paper log in the app.
+                </p>
+              )}
+
+              {/* Exercise Selector and Add Button */}
+              <div className="form-row" style={{ marginBottom: '1em' }}>
+                <div className="form-group" style={{ flex: 2 }}>
+                  <label htmlFor="log-exercise-select">Select Exercise from Routine</label>
+                  <select
+                    id="log-exercise-select"
+                    value={selectedExerciseForLog}
+                    onChange={(e) => setSelectedExerciseForLog(e.target.value)}
+                    disabled={!workoutLogForm.routine_id || routineExercises.length === 0}
+                  >
+                    <option value="">
+                      {!workoutLogForm.routine_id 
+                        ? 'Select routine first...' 
+                        : routineExercises.length === 0
+                        ? 'No exercises in this routine'
+                        : 'Choose an exercise...'}
+                    </option>
+                    {routineExercises.map((ex, idx) => (
+                      <option key={`${ex.id}-${idx}`} value={ex.id}>
+                        {ex.name} {ex.primary_muscle ? `(${ex.primary_muscle})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', flex: 1 }}>
+                  <button 
+                    type="button"
+                    onClick={handleAddSetToLog}
+                    disabled={!selectedExerciseForLog}
+                    style={{
+                      padding: '0.75em 1.5em',
+                      backgroundColor: selectedExerciseForLog ? '#4CAF50' : '#666',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: selectedExerciseForLog ? 'pointer' : 'not-allowed',
+                      width: '100%'
+                    }}
+                  >
+                    + Add Set
+                  </button>
+                </div>
+              </div>
+
+              {/* Log Entries Table */}
+              {logEntries.length > 0 && (
+                <div style={{ marginTop: '1.5em', overflowX: 'auto' }}>
+                  <table style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    fontSize: '0.9em'
+                  }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #555', backgroundColor: 'rgba(0, 0, 0, 0.3)' }}>
+                        <th style={{ padding: '0.75em', textAlign: 'left' }}>Exercise</th>
+                        <th style={{ padding: '0.75em', textAlign: 'center' }}>Set</th>
+                        <th style={{ padding: '0.75em', textAlign: 'center' }}>Reps</th>
+                        <th style={{ padding: '0.75em', textAlign: 'center' }}>Weight (lbs)</th>
+                        <th style={{ padding: '0.75em', textAlign: 'center' }}>RPE</th>
+                        <th style={{ padding: '0.75em', textAlign: 'center' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logEntries.map((entry) => (
+                        <tr key={entry._tempId} style={{ borderBottom: '1px solid #444' }}>
+                          <td style={{ padding: '0.75em' }}>{entry.exercise_name}</td>
+                          <td style={{ padding: '0.75em', textAlign: 'center' }}>{entry.set_number}</td>
+                          <td style={{ padding: '0.75em', textAlign: 'center' }}>
+                            <input 
+                              type="number"
+                              min="0"
+                              value={entry.reps_completed}
+                              onChange={(e) => handleUpdateLogEntry(entry._tempId, 'reps_completed', e.target.value)}
+                              placeholder="Reps"
+                              style={{
+                                width: '50px',
+                                padding: '0.5em',
+                                textAlign: 'center',
+                                backgroundColor: '#333',
+                                color: '#fff',
+                                border: '1px solid #555',
+                                borderRadius: '4px'
+                              }}
+                            />
+                          </td>
+                          <td style={{ padding: '0.75em', textAlign: 'center' }}>
+                            <input 
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              value={entry.weight_lbs}
+                              onChange={(e) => handleUpdateLogEntry(entry._tempId, 'weight_lbs', e.target.value)}
+                              placeholder="Weight"
+                              style={{
+                                width: '60px',
+                                padding: '0.5em',
+                                textAlign: 'center',
+                                backgroundColor: '#333',
+                                color: '#fff',
+                                border: '1px solid #555',
+                                borderRadius: '4px'
+                              }}
+                            />
+                          </td>
+                          <td style={{ padding: '0.75em', textAlign: 'center' }}>
+                            <select
+                              value={entry.rpe_rating || 5}
+                              onChange={(e) => handleUpdateLogEntry(entry._tempId, 'rpe_rating', parseInt(e.target.value))}
+                              style={{
+                                width: '50px',
+                                padding: '0.5em',
+                                backgroundColor: '#333',
+                                color: '#fff',
+                                border: '1px solid #555',
+                                borderRadius: '4px'
+                              }}
+                            >
+                              <option value="">-</option>
+                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                                <option key={n} value={n}>{n}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td style={{ padding: '0.75em', textAlign: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSetFromLog(entry._tempId)}
+                              style={{
+                                padding: '0.5em 1em',
+                                backgroundColor: '#f44336',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '0.85em'
+                              }}
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p style={{ 
+                    marginTop: '0.75em', 
+                    fontSize: '0.85em', 
+                    color: '#4CAF50',
+                    fontWeight: 'bold'
+                  }}>
+                    ✓ {logEntries.length} {logEntries.length === 1 ? 'set' : 'sets'} ready to save
+                  </p>
+                </div>
+              )}
             </div>
 
             <button type="submit" disabled={loading} className="submit-button">

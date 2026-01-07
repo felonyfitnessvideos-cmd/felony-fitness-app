@@ -99,8 +99,11 @@ export const calculateBodyComp = (weightLbs, heightInches, gender, activityMult,
   const lbmLbs = Math.round(lbmKg * 2.20462);
   const bmr = 370 + (21.6 * lbmKg); // Katch-McArdle uses LBM
   const tdee = Math.round(bmr * activityMult);
+  
+  // BMI = (weight in lbs / (height in inches)²) × 703
+  const bmi = ((weightLbs / (heightInches * heightInches)) * 703).toFixed(1);
 
-  return { lbmLbs, bmr: Math.round(bmr), tdee, method };
+  return { lbmLbs, bmr: Math.round(bmr), tdee, bmi, method };
 };
 
 /**

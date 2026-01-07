@@ -124,6 +124,20 @@ serve(async (req) => {
       );
     }
 
+    // Verify the target user exists
+    const { data: userData, error: userCheckError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", target_user_id)
+      .single();
+
+    if (userCheckError || !userData) {
+      return new Response(
+        JSON.stringify({ error: `User '${target_user_id}' not found` }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Look up the tag by name
     const { data: tagData, error: tagError } = await supabase
       .from("tags")
@@ -139,7 +153,7 @@ serve(async (req) => {
     }
 
     // Check if user already has this tag
-    const { data: existingTag, error: checkError } = await supabase
+    const { data: existingTag, error: _checkError } = await supabase
       .from("user_tags")
       .select("id")
       .eq("user_id", target_user_id)
@@ -179,10 +193,11 @@ serve(async (req) => {
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Catch-all error handler
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: err?.message || "Unknown error" }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

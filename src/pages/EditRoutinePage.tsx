@@ -217,13 +217,14 @@ function EditRoutinePage() {
   const handleAddExercise = (exerciseToAdd) => {
     const newExercise = {
       ...exerciseToAdd,
-      sets: '',
-      reps: '',
+      sets: 3,
+      reps: '10',
       is_warmup: false,
       negative: false,
       drop_set: false,
       drop_set_percentage: null,
       superset_id: null,
+      _uniqueKey: `${exerciseToAdd.id || exerciseToAdd.name}-${Date.now()}-${Math.random()}`,
     };
     setRoutineExercises([...routineExercises, newExercise]);
     setSearchTerm('');
@@ -319,7 +320,7 @@ function EditRoutinePage() {
         // Map to valid database value, default to 'Bodyweight'
         exerciseType = validExerciseTypes[exerciseType] || 'Bodyweight';
 
-        // Insert new exercise with all fields from AI-generated data
+        // Insert new exercise using Edge Function (bypasses RLS restrictions)
         const exerciseData = {
           name: ex.name,
           description: ex.description || null,
@@ -334,20 +335,23 @@ function EditRoutinePage() {
           video_url: ex.video_url || null
         };
 
-        const { data: newExercise, error: insertError } = await supabase
-          .from('exercises')
-          .insert(exerciseData)
-          .select('id')
-          .single();
+        const { data: edgeFunctionResponse, error: functionError } = await supabase.functions.invoke('create-exercise', {
+          body: exerciseData
+        });
 
-        if (insertError) {
-          console.error('Exercise insert error:', insertError);
+        if (functionError) {
+          console.error('Exercise insert error:', functionError);
           console.error('Failed exercise data:', JSON.stringify(exerciseData, null, 2));
           console.error('Specifically exercise_type was:', exerciseData.exercise_type);
-          throw insertError;
+          throw functionError;
         }
 
-        return { ...ex, id: newExercise.id };
+        if (edgeFunctionResponse?.error) {
+          console.error('Edge Function error response:', JSON.stringify(edgeFunctionResponse, null, 2));
+          throw new Error(edgeFunctionResponse.error);
+        }
+
+        return { ...ex, id: edgeFunctionResponse.exercise_id };
       })
     );
 
@@ -490,7 +494,7 @@ function EditRoutinePage() {
           const supersetOptions = Array.from(new Set(routineExercises.filter(e => e.superset_id && e.superset_id !== null).map(e => e.superset_id)));
           const isInSuperset = !!ex.superset_id;
           return (
-            <div key={ex.id || ex.name || index} className={`exercise-card${ex.negative ? ' negative-exercise' : ''}${isInSuperset ? ' superset-exercise' : ''}`}>
+            <div key={ex._uniqueKey || `${ex.id}-${index}` || index} className={`exercise-card${ex.negative ? ' negative-exercise' : ''}${isInSuperset ? ' superset-exercise' : ''}`}>
               <div className="reorder-controls">
                 <button onClick={() => moveExercise(index, 'up')} disabled={index === 0}><ArrowUpCircle size={24} /></button>
                 <button onClick={() => moveExercise(index, 'down')} disabled={index === routineExercises.length - 1}><ArrowDownCircle size={24} /></button>
