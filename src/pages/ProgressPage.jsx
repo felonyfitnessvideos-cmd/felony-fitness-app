@@ -100,7 +100,7 @@ function ProgressPage() {
       const [workoutLogsRes, nutritionLogsRes, goalsRes] = await Promise.all([
         // Fetch all workouts to ensure accurate statistics
         supabase.from('workout_logs')
-          .select('duration_minutes, created_at, calories_burned')
+          .select('duration_minutes, log_date, calories_burned')
           .eq('user_id', userId),
         
         // --- 1. THIS QUERY IS FIXED ---
@@ -124,7 +124,7 @@ function ProgressPage() {
       const durationMap = new Map();
       const burnMap = new Map();
       workoutLogs.forEach(log => {
-        const dt = new Date(log.created_at); // Creates date in local timezone
+        const dt = new Date(log.log_date); // Creates date in local timezone
 
         // --- TIMEZONE FIX: Group by local date, not UTC date ---
         const year = dt.getFullYear();
