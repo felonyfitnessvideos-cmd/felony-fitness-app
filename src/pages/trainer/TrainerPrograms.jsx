@@ -234,18 +234,6 @@ const ProgramLibrary = () => {
           priority
         }));
 
-        // DEBUG: Log muscle aggregation
-        if (programsData && programsData.length > 0 && targetMusclesWithPriority.length > 0) {
-          const idx = processedPrograms.length;
-          if (idx === 0) {
-            console.warn('[DEBUG] First program muscle aggregation:', {
-              program_name: program.name,
-              muscles: targetMusclesWithPriority,
-              exercise_count: hydratedExercises.length
-            });
-          }
-        }
-
         return {
           ...program,
           exercise_pool: hydratedExercises,
