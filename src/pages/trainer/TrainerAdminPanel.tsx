@@ -159,6 +159,33 @@ const TrainerAdminPanel = () => {
   const [lastWeight, setLastWeight] = useState<number | string>('');
   const [lastReps, setLastReps] = useState<number | string>('');
 
+  // Meal foods state (for food search and ingredient management)
+  interface MealFood {
+    id: string;
+    food_id: string;
+    food_name: string;
+    quantity: number;
+    serving_size: number;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  }
+
+  const [mealFoods, setMealFoods] = useState<MealFood[]>([]);
+  const [foodSearch, setFoodSearch] = useState('');
+  const [foodSearchResults, setFoodSearchResults] = useState<Array<{
+    id: string;
+    name: string;
+    brand_owner?: string;
+    calories: number;
+    protein_g: number;
+    carbs_g: number;
+    fat_g: number;
+    portions?: Array<{ id: string; portion_description: string; gram_weight: number }>;
+  }>>([]);
+  const [isSearchingFoods, setIsSearchingFoods] = useState(false);
+
   // Auto-clear success message after 5 seconds
   useEffect(() => {
     if (successMessage) {
@@ -303,6 +330,115 @@ const TrainerAdminPanel = () => {
     loadRoutineExercises();
   }, [workoutLogForm.routine_id]);
 
+  /**
+   * Search foods table with debouncing
+   */
+  const handleFoodSearch = async (searchTerm: string) => {
+    setFoodSearch(searchTerm);
+
+    if (!searchTerm.trim()) {
+      setFoodSearchResults([]);
+      return;
+    }
+
+    setIsSearchingFoods(true);
+    try {
+      const sanitizedTerm = searchTerm.replace(/,/g, ' ').toLowerCase();
+      const { data: results, error } = await supabase
+        .from('foods')
+        .select(`
+          id,
+          name,
+          brand_owner,
+          calories,
+          protein_g,
+          carbs_g,
+          fat_g,
+          portions (id, portion_description, gram_weight)
+        `)
+        .or(`name_simplified.ilike.%${sanitizedTerm}%,brand_owner.ilike.%${sanitizedTerm}%`)
+        .order('commonness_score', { ascending: false })
+        .order('name')
+        .limit(20);
+
+      if (error) throw error;
+      setFoodSearchResults(results || []);
+    } catch (err) {
+      console.error('Error searching foods:', err);
+      setError('Failed to search foods');
+    } finally {
+      setIsSearchingFoods(false);
+    }
+  };
+
+  /**
+   * Add food to meal with default portion
+   */
+  const handleAddFoodToMeal = (food: typeof foodSearchResults[number]) => {
+    const defaultPortion = food.portions?.[0] || {
+      gram_weight: 100,
+      portion_description: '100g'
+    };
+
+    const newMealFood: MealFood = {
+      id: `temp-${Date.now()}`,
+      food_id: food.id,
+      food_name: food.name,
+      quantity: 1,
+      serving_size: defaultPortion.gram_weight || 100,
+      calories: Math.round((food.calories || 0) * ((defaultPortion.gram_weight || 100) / 100)),
+      protein: Math.round((food.protein_g || 0) * ((defaultPortion.gram_weight || 100) / 100) * 10) / 10,
+      carbs: Math.round((food.carbs_g || 0) * ((defaultPortion.gram_weight || 100) / 100) * 10) / 10,
+      fat: Math.round((food.fat_g || 0) * ((defaultPortion.gram_weight || 100) / 100) * 10) / 10,
+    };
+
+    setMealFoods([...mealFoods, newMealFood]);
+    setFoodSearch('');
+    setFoodSearchResults([]);
+  };
+
+  /**
+   * Update quantity for a meal food
+   */
+  const handleUpdateMealFoodQuantity = (index: number, newQuantity: string) => {
+    const quantity = parseFloat(newQuantity) || 1;
+    const updatedFoods = [...mealFoods];
+    const food = updatedFoods[index];
+
+    updatedFoods[index] = {
+      ...food,
+      quantity,
+      calories: Math.round(food.calories * quantity),
+      protein: Math.round(food.protein * quantity * 10) / 10,
+      carbs: Math.round(food.carbs * quantity * 10) / 10,
+      fat: Math.round(food.fat * quantity * 10) / 10,
+    };
+
+    setMealFoods(updatedFoods);
+  };
+
+  /**
+   * Remove food from meal
+   */
+  const handleRemoveMealFood = (index: number) => {
+    setMealFoods(mealFoods.filter((_, i) => i !== index));
+  };
+
+  /**
+   * Calculate total macros for meal
+   */
+  const calculateMealTotals = () => {
+    return mealFoods.reduce(
+      (totals, food) => ({
+        calories: totals.calories + food.calories,
+        protein: Math.round((totals.protein + food.protein) * 10) / 10,
+        carbs: Math.round((totals.carbs + food.carbs) * 10) / 10,
+        fat: Math.round((totals.fat + food.fat) * 10) / 10,
+      }),
+      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    );
+  };
+
   const handleMealSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -310,16 +446,40 @@ const TrainerAdminPanel = () => {
     setSuccessMessage(null);
 
     try {
-      const { error: insertError } = await supabase.from('meals').insert([
-        {
-          ...mealForm,
-          user_id: user?.id,
-        },
-      ]);
+      // First, insert the meal
+      const { data: insertedMeal, error: insertError } = await supabase
+        .from('meals')
+        .insert([
+          {
+            ...mealForm,
+            user_id: user?.id,
+          },
+        ])
+        .select()
+        .single();
 
       if (insertError) throw insertError;
+      if (!insertedMeal?.id) throw new Error('Failed to get meal ID');
 
-      setSuccessMessage('Meal created successfully!');
+      // Then, insert all meal foods
+      if (mealFoods.length > 0) {
+        const mealFoodsData = mealFoods.map((food) => ({
+          meal_id: insertedMeal.id,
+          food_id: food.food_id,
+          quantity: food.quantity,
+          serving_size_grams: food.serving_size,
+        }));
+
+        const { error: foodsError } = await supabase
+          .from('meal_foods')
+          .insert(mealFoodsData);
+
+        if (foodsError) throw foodsError;
+      }
+
+      setSuccessMessage(`Meal created successfully${mealFoods.length > 0 ? ` with ${mealFoods.length} ingredient(s)` : ''}!`);
+      
+      // Reset forms
       setMealForm({
         name: '',
         description: '',
@@ -335,6 +495,9 @@ const TrainerAdminPanel = () => {
         is_premade: true,
         tags: [],
       });
+      setMealFoods([]);
+      setFoodSearch('');
+      setFoodSearchResults([]);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(`Failed to create meal: ${errorMessage}`);
@@ -730,6 +893,166 @@ const TrainerAdminPanel = () => {
                 />
                 <label htmlFor="meal-favorite">Favorite</label>
               </div>
+            </div>
+
+            <div style={{ borderTop: '2px solid #ddd', marginTop: '24px', paddingTop: '24px' }}>
+              <h3 style={{ marginBottom: '12px' }}>Add Ingredients</h3>
+              
+              <div className="form-group">
+                <label htmlFor="food-search">Search Foods</label>
+                <input
+                  id="food-search"
+                  type="text"
+                  placeholder="Search for foods, ingredients..."
+                  value={foodSearch}
+                  onChange={(e) => handleFoodSearch(e.target.value)}
+                  disabled={isSearchingFoods}
+                />
+              </div>
+
+              {/* Food Search Results */}
+              {foodSearchResults.length > 0 && (
+                <div style={{ 
+                  border: '1px solid #ccc', 
+                  borderRadius: '4px', 
+                  maxHeight: '300px', 
+                  overflowY: 'auto',
+                  marginBottom: '16px'
+                }}>
+                  {foodSearchResults.map((food) => (
+                    <div
+                      key={food.id}
+                      style={{
+                        padding: '12px',
+                        borderBottom: '1px solid #eee',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        backgroundColor: '#fafafa'
+                      }}
+                      onClick={() => handleAddFoodToMeal(food)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleAddFoodToMeal(food);
+                      }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                          {food.name}
+                        </div>
+                        {food.brand_owner && (
+                          <div style={{ fontSize: '12px', color: '#666' }}>
+                            {food.brand_owner}
+                          </div>
+                        )}
+                        <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
+                          P: {food.protein_g}g | C: {food.carbs_g}g | F: {food.fat_g}g | {food.calories} cal
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddFoodToMeal(food);
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: '#4CAF50',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        Add
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Selected Meal Foods List */}
+              {mealFoods.length > 0 && (
+                <div style={{ marginBottom: '16px' }}>
+                  <h4 style={{ marginBottom: '12px' }}>Ingredients ({mealFoods.length})</h4>
+                  <div style={{ border: '1px solid #ddd', borderRadius: '4px' }}>
+                    {mealFoods.map((food, index) => (
+                      <div
+                        key={food.id}
+                        style={{
+                          padding: '12px',
+                          borderBottom: index < mealFoods.length - 1 ? '1px solid #eee' : 'none',
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 100px 30px',
+                          gap: '12px',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                            {food.food_name}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#666' }}>
+                            {food.calories} cal | P: {food.protein}g | C: {food.carbs}g | F: {food.fat}g
+                          </div>
+                        </div>
+                        <input
+                          type="number"
+                          min="0.1"
+                          step="0.1"
+                          max="999"
+                          value={food.quantity}
+                          onChange={(e) => handleUpdateMealFoodQuantity(index, e.target.value)}
+                          style={{
+                            padding: '6px',
+                            border: '1px solid #ccc',
+                            borderRadius: '4px',
+                            width: '100%'
+                          }}
+                          placeholder="Qty"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMealFood(index)}
+                          style={{
+                            padding: '6px 8px',
+                            backgroundColor: '#f44336',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px'
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Macro Totals */}
+                  {(() => {
+                    const totals = calculateMealTotals();
+                    return (
+                      <div style={{
+                        marginTop: '12px',
+                        padding: '12px',
+                        backgroundColor: '#f5f5f5',
+                        borderRadius: '4px',
+                        fontWeight: 'bold'
+                      }}>
+                        <div>Total Macros:</div>
+                        <div style={{ fontSize: '14px', marginTop: '6px', color: '#333' }}>
+                          {totals.calories} cal | P: {totals.protein}g | C: {totals.carbs}g | F: {totals.fat}g
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
 
             <button type="submit" disabled={loading} className="submit-button">
