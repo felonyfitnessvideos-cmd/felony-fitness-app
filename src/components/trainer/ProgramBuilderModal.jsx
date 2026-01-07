@@ -58,7 +58,7 @@ const ProgramBuilderModal = ({ onClose, onSave }) => {
     try {
       const { data, error } = await supabase
         .from('exercises')
-        .select('id, name, primary_muscle, secondary_muscle, difficulty_level, equipment_needed')
+        .select('id, name, primary_muscle, secondary_muscle, tertiary_muscle, difficulty_level, equipment_needed')
         .ilike('name', `%${query}%`)
         .limit(20);
 
@@ -97,7 +97,7 @@ const ProgramBuilderModal = ({ onClose, onSave }) => {
       muscle_groups: {
         primary: exercise.primary_muscle ? [exercise.primary_muscle] : [],
         secondary: exercise.secondary_muscle ? [exercise.secondary_muscle] : [],
-        tertiary: []
+        tertiary: exercise.tertiary_muscle ? [exercise.tertiary_muscle] : []
       }
     };
 
