@@ -27,7 +27,7 @@ import { useAuth } from '../../useAuth';
 import { supabase } from '../../supabaseClient';
 import useGoogleCalendar from '../../hooks/useGoogleCalendar.jsx';
 import EditEventModal from '../../components/trainer/EditEventModal';
-import FullCalendarIntegration from '../../components/trainer/FullCalendarIntegration';
+import GoogleCalendarEmbed from '../../components/trainer/GoogleCalendarEmbed';
 import './TrainerCalendar.css';
 
 /**
@@ -901,9 +901,8 @@ const TrainerCalendar = memo(() => {
         <div className="calendar-main-fullwidth">
           {/* Full Calendar View */}
           {calendarView === 'fullcalendar' && user && (
-            <FullCalendarIntegration
+            <GoogleCalendarEmbed
               trainerId={user.id}
-              onEventSelect={(event) => setEditingEvent(event)}
             />
           )}
 
