@@ -127,7 +127,6 @@ const TrainerAdminPanel = () => {
   // Workout logs state
   const [users, setUsers] = useState<Array<{ id: string; email: string; first_name?: string; last_name?: string }>>([]);
   const [workoutRoutines, setWorkoutRoutines] = useState<Array<{ id: string; routine_name: string }>>([]);
-  const [allExercises, setAllExercises] = useState<Array<{ id: string; name: string; primary_muscle?: string; thumbnail_url?: string }>>([]);
   const [workoutLogForm, setWorkoutLogForm] = useState<WorkoutLog>({
     user_id: '',
     routine_id: '',
@@ -237,23 +236,8 @@ const TrainerAdminPanel = () => {
       }
     };
 
-    const fetchAllExercises = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('exercises')
-          .select('id, name, primary_muscle, thumbnail_url')
-          .order('name');
-
-        if (error) throw error;
-        setAllExercises(data || []);
-      } catch (err) {
-        console.error('Error fetching exercises:', err);
-      }
-    };
-
     if (activeTab === 'workoutlogs') {
       fetchUsers();
-      fetchAllExercises();
     }
   }, [activeTab]);
 
@@ -296,7 +280,7 @@ const TrainerAdminPanel = () => {
       try {
         const { data, error } = await supabase
           .from('routine_exercises')
-          .select('exercise:exercises(id, name, primary_muscle)')
+          .select('exercise:exercises(id, name, primary_muscle, thumbnail_url)')
           .eq('routine_id', workoutLogForm.routine_id)
           .order('exercise_order');
 
@@ -304,7 +288,7 @@ const TrainerAdminPanel = () => {
 
         // Flatten the nested exercise data
         const exercises = data
-          ?.map((item: { exercise: { id: string; name: string; primary_muscle?: string } }) => item.exercise)
+          ?.map((item: { exercise: { id: string; name: string; primary_muscle?: string; thumbnail_url?: string } }) => item.exercise)
           .filter(Boolean) || [];
 
         setRoutineExercises(exercises);
@@ -1177,7 +1161,22 @@ const TrainerAdminPanel = () => {
                 <label htmlFor="log-complete">Completed</label>
               </div>
             </div>
+
             {/* Mini Workout Log for Exercise Entries */}
+            {!workoutLogForm.routine_id ? (
+              <div style={{ 
+                marginTop: '2em', 
+                padding: '2em', 
+                backgroundColor: 'rgba(100, 100, 100, 0.2)',
+                border: '1px solid #666',
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <p style={{ color: '#f87171', fontSize: '1.1rem', fontWeight: '500' }}>
+                  ⚠️ Select a routine above to add exercise entries
+                </p>
+              </div>
+            ) : (
             <div style={{ marginTop: '2em' }}>
               <h3 style={{ marginTop: 0, marginBottom: '1.5em' }}>Add Exercise Entries</h3>
 
@@ -1191,7 +1190,7 @@ const TrainerAdminPanel = () => {
                 msOverflowStyle: 'none',
                 scrollbarWidth: 'none'
               } as React.CSSProperties}>
-                {allExercises.map((ex) => (
+                {routineExercises.map((ex) => (
                   <button
                     key={ex.id}
                     type="button"
@@ -1227,7 +1226,7 @@ const TrainerAdminPanel = () => {
               {selectedExerciseForLog && (
                 <>
                   <h4 style={{ textAlign: 'center', fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '1.5em', color: '#fde68a' }}>
-                    {allExercises.find(ex => ex.id === selectedExerciseForLog)?.name}
+                    {routineExercises.find(ex => ex.id === selectedExerciseForLog)?.name}
                   </h4>
 
                   {/* Weight and Reps Input */}
@@ -1350,6 +1349,7 @@ const TrainerAdminPanel = () => {
                 </div>
               )}
             </div>
+            )}
 
             <button type="submit" disabled={loading} className="submit-button">
               {loading ? 'Creating...' : 'Create Workout Log'}
