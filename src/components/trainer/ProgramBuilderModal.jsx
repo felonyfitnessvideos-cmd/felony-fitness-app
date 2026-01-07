@@ -101,6 +101,16 @@ const ProgramBuilderModal = ({ onClose, onSave }) => {
       }
     };
 
+    // DEBUG: Log muscle data for shoulder exercises
+    if (exercise.name.toLowerCase().includes('delt') || exercise.name.toLowerCase().includes('shoulder')) {
+      console.warn(`[DEBUG] Added ${exercise.name}:`, {
+        primary: exercise.primary_muscle,
+        secondary: exercise.secondary_muscle,
+        tertiary: exercise.tertiary_muscle,
+        muscle_groups: newExercise.muscle_groups
+      });
+    }
+
     setFormData(prev => ({
       ...prev,
       exercise_pool: [...prev.exercise_pool, newExercise]
