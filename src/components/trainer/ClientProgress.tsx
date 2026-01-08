@@ -238,20 +238,23 @@ const ClientProgress = ({ client }: ClientProgressProps) => {
               <h4>Workout Duration (Minutes)</h4>
               {workoutDurationTrends.length > 0 ? (
                 <LazyRecharts>
-                  {({ LineChart: _LineChart, Line: _Line, XAxis: _XAxis, YAxis: _YAxis, CartesianGrid: _CartesianGrid, Tooltip: _Tooltip, ResponsiveContainer: _ResponsiveContainer }) => (
-                    <_ResponsiveContainer width="100%" height="100%">
-                      <_LineChart data={workoutDurationTrends} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                        <_CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                        <_XAxis dataKey="date" stroke="#888" />
-                        <_YAxis stroke="#888" />
-                        <_Tooltip 
-                          contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', fontSize: '11px' }}
-                          labelStyle={{ color: '#fff' }}
-                        />
-                        <_Line type="monotone" dataKey="duration" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 3 }} />
-                      </_LineChart>
-                    </_ResponsiveContainer>
-                  )}
+                  {(rechartsLib: Record<string, unknown>) => {
+                    const { LineChart: _LineChart, Line: _Line, XAxis: _XAxis, YAxis: _YAxis, CartesianGrid: _CartesianGrid, Tooltip: _Tooltip, ResponsiveContainer: _ResponsiveContainer } = rechartsLib as Record<string, React.ComponentType<Record<string, unknown>>>;
+                    return (
+                      <_ResponsiveContainer width="100%" height="100%">
+                        <_LineChart data={workoutDurationTrends} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                          <_CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                          <_XAxis dataKey="date" stroke="#888" />
+                          <_YAxis stroke="#888" />
+                          <_Tooltip 
+                            contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', fontSize: '11px' }}
+                            labelStyle={{ color: '#fff' }}
+                          />
+                          <_Line type="monotone" dataKey="duration" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 3 }} />
+                        </_LineChart>
+                      </_ResponsiveContainer>
+                    );
+                  }}  
                 </LazyRecharts>
               ) : (
                 <p className="no-data">No workout data yet</p>
@@ -262,20 +265,23 @@ const ClientProgress = ({ client }: ClientProgressProps) => {
               <h4>Nutrition Trends (Calories Eaten)</h4>
               {nutritionTrends.length > 0 ? (
                 <LazyRecharts>
-                  {({ LineChart: _LineChart, Line: _Line, XAxis: _XAxis, YAxis: _YAxis, CartesianGrid: _CartesianGrid, Tooltip: _Tooltip, ResponsiveContainer: _ResponsiveContainer }) => (
-                    <_ResponsiveContainer width="100%" height="100%">
-                      <_LineChart data={nutritionTrends} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                        <_CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                        <_XAxis dataKey="date" stroke="#888" />
-                        <_YAxis stroke="#888" />
-                        <_Tooltip 
-                          contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', fontSize: '11px' }}
-                          labelStyle={{ color: '#fff' }}
-                        />
-                        <_Line type="monotone" dataKey="calories" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', r: 3 }} />
-                      </_LineChart>
-                    </_ResponsiveContainer>
-                  )}
+                  {(rechartsLib: Record<string, unknown>) => {
+                    const { LineChart: _LineChart, Line: _Line, XAxis: _XAxis, YAxis: _YAxis, CartesianGrid: _CartesianGrid, Tooltip: _Tooltip, ResponsiveContainer: _ResponsiveContainer } = rechartsLib as Record<string, React.ComponentType<Record<string, unknown>>>;
+                    return (
+                      <_ResponsiveContainer width="100%" height="100%">
+                        <_LineChart data={nutritionTrends} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                          <_CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                          <_XAxis dataKey="date" stroke="#888" />
+                          <_YAxis stroke="#888" />
+                          <_Tooltip 
+                            contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', fontSize: '11px' }}
+                            labelStyle={{ color: '#fff' }}
+                          />
+                          <_Line type="monotone" dataKey="calories" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', r: 3 }} />
+                        </_LineChart>
+                      </_ResponsiveContainer>
+                    );
+                  }}
                 </LazyRecharts>
               ) : (
                 <p className="no-data">No nutrition data yet</p>
@@ -304,7 +310,7 @@ const ClientProgress = ({ client }: ClientProgressProps) => {
                         <span className="goal-values">{currentValue} / {targetValue}</span>
                       </div>
                       <div className="goal-progress-bar">
-                        <div className="goal-progress-fill" style={{ '--progress-width': `${progress}%` } as React.CSSProperties}></div>
+                        <div className="goal-progress-fill" data-progress={progress}></div>
                       </div>
                     </div>
                   );
