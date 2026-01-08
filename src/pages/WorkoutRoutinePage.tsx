@@ -155,13 +155,16 @@ function WorkoutRoutinePage() {
 
     try {
       // Step 1: Fetch the full routine with exercises
-      const { data: fullRoutine, error: fetchError } = await supabase
+      const { data: fullRoutineData, error: fetchError } = await supabase
         .from('workout_routines')
         .select('*, routine_exercises(*)')
         .eq('id', routine.id)
         .single();
 
       if (fetchError) throw fetchError;
+
+      // Type the routine exercises array
+      const fullRoutine = fullRoutineData as unknown as Routine & { routine_exercises: RoutineExercise[] };
 
       // Step 2: Create new routine with "(Copy)" appended to name
       const newRoutineName = `${fullRoutine.routine_name} (Copy)`;

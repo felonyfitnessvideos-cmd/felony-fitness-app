@@ -46,7 +46,7 @@ const DEVICE_TYPES = {
 /**
  * Screen size state interface
  */
-interface ScreenSize {
+export interface ScreenSize {
   width: number;
   height: number;
 }
@@ -54,7 +54,7 @@ interface ScreenSize {
 /**
  * Return type for useResponsive hook
  */
-interface UseResponsiveReturn {
+export interface UseResponsiveReturn {
   // Screen dimensions
   width: number;
   height: number;

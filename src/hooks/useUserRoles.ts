@@ -19,7 +19,7 @@ import userRoleUtils from '../utils/userRoleUtils';
 /**
  * Permissions object interface
  */
-interface Permissions {
+export interface Permissions {
   isTrainer: boolean;
   isClient: boolean;
   isAdmin: boolean;
@@ -30,7 +30,7 @@ interface Permissions {
 /**
  * Role object from database
  */
-interface Role {
+export interface Role {
   tag_name: string;
   color?: string;
 }
@@ -38,7 +38,7 @@ interface Role {
 /**
  * Return type for useUserRoles hook
  */
-interface UseUserRolesReturn {
+export interface UseUserRolesReturn {
   // State
   roles: Role[];
   loading: boolean;
