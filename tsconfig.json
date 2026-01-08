@@ -15,6 +15,14 @@
     "lib": ["ES2022", "DOM"],
     "types": ["vite/client"]
   },
-  "include": ["src/**/*", "scripts/**/*"],
-  "exclude": ["node_modules", "dist", "supabase/functions/**"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "scripts/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "supabase/functions/**",
+    "**/*.md",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "**/*`*"
+  ]
 }
