@@ -215,6 +215,25 @@
   height: 100%;
   background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);
   transition: width 0.3s ease;
+  width: var(--progress-width, 0%);
+}
+
+/* Recharts styling */
+.recharts-axis-tick {
+  font-size: 9px;
+}
+
+.recharts-tooltip-wrapper {
+  font-size: 11px;
+}
+
+.recharts-default-tooltip {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+}
+
+.recharts-tooltip-label {
+  color: #fff;
 }
 
 /* Responsive adjustments for smaller widths */
@@ -222,7 +241,7 @@
   .compact-charts-row {
     grid-template-columns: 1fr;
   }
-  
+
   .compact-chart {
     height: 150px;
   }

@@ -207,6 +207,7 @@ h3 {
   cursor: pointer;
   font-size: 0.85rem;
   color: #a0aec0;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -389,6 +390,7 @@ body.ReactModal__Body--open {
 }
 
 .exercise-advanced-controls label span {
+  -webkit-user-select: none;
   user-select: none;
 }
 

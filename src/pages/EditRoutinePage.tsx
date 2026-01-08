@@ -497,8 +497,22 @@ function EditRoutinePage() {
           return (
             <div key={ex._uniqueKey || `${ex.id}-${index}` || index} className={`exercise-card${ex.negative ? ' negative-exercise' : ''}${isInSuperset ? ' superset-exercise' : ''}`}>
               <div className="reorder-controls">
-                <button onClick={() => moveExercise(index, 'up')} disabled={index === 0}><ArrowUpCircle size={24} /></button>
-                <button onClick={() => moveExercise(index, 'down')} disabled={index === routineExercises.length - 1}><ArrowDownCircle size={24} /></button>
+                <button 
+                  onClick={() => moveExercise(index, 'up')} 
+                  disabled={index === 0}
+                  title="Move exercise up"
+                  aria-label="Move exercise up"
+                >
+                  <ArrowUpCircle size={24} />
+                </button>
+                <button 
+                  onClick={() => moveExercise(index, 'down')} 
+                  disabled={index === routineExercises.length - 1}
+                  title="Move exercise down"
+                  aria-label="Move exercise down"
+                >
+                  <ArrowDownCircle size={24} />
+                </button>
               </div>
               <img
                 src={ex.thumbnail_url || 'https://placehold.co/50x50/4a5568/ffffff?text=IMG'}

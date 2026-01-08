@@ -242,8 +242,8 @@ const ClientProgress = ({ client }: ClientProgressProps) => {
                     <_ResponsiveContainer width="100%" height="100%">
                       <_LineChart data={workoutDurationTrends} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                         <_CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                        <_XAxis dataKey="date" stroke="#888" style={{ fontSize: '9px' }} />
-                        <_YAxis stroke="#888" style={{ fontSize: '9px' }} />
+                        <_XAxis dataKey="date" stroke="#888" />
+                        <_YAxis stroke="#888" />
                         <_Tooltip 
                           contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', fontSize: '11px' }}
                           labelStyle={{ color: '#fff' }}
@@ -266,8 +266,8 @@ const ClientProgress = ({ client }: ClientProgressProps) => {
                     <_ResponsiveContainer width="100%" height="100%">
                       <_LineChart data={nutritionTrends} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                         <_CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                        <_XAxis dataKey="date" stroke="#888" style={{ fontSize: '9px' }} />
-                        <_YAxis stroke="#888" style={{ fontSize: '9px' }} />
+                        <_XAxis dataKey="date" stroke="#888" />
+                        <_YAxis stroke="#888" />
                         <_Tooltip 
                           contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', fontSize: '11px' }}
                           labelStyle={{ color: '#fff' }}
@@ -304,7 +304,7 @@ const ClientProgress = ({ client }: ClientProgressProps) => {
                         <span className="goal-values">{currentValue} / {targetValue}</span>
                       </div>
                       <div className="goal-progress-bar">
-                        <div className="goal-progress-fill" style={{ width: `${progress}%` }}></div>
+                        <div className="goal-progress-fill" style={{ '--progress-width': `${progress}%` } as React.CSSProperties}></div>
                       </div>
                     </div>
                   );
