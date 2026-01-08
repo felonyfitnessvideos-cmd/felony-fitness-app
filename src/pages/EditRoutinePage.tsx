@@ -29,6 +29,7 @@
  */
 import { ArrowDownCircle, ArrowUpCircle, Dumbbell, Loader2, Trash2 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+// @ts-expect-error - react-modal has no type definitions
 import Modal from 'react-modal';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../useAuth';
@@ -39,6 +40,7 @@ import './EditRoutinePage.css';
 
 // Modal styling moved to CSS (.custom-modal-overlay, .custom-modal-content)
 type MuscleGroup = Tables<'muscle_groups'>;
+type SearchDebounceTimer = ReturnType<typeof setTimeout>;
 
 interface ExerciseInRoutine {
   id: string; // exercise_id
@@ -89,7 +91,7 @@ function EditRoutinePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<ExerciseInRoutine[]>([]);
   const searchAbortControllerRef = useRef<AbortController | null>(null);
-  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const searchDebounceRef = useRef<SearchDebounceTimer | null>(null);
 
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [customExerciseName, setCustomExerciseName] = useState('');
@@ -115,8 +117,8 @@ function EditRoutinePage() {
         if (data) {
           setRoutineName(data.routine_name);
           const rawItems = Array.isArray(data.routine_exercises) ? data.routine_exercises : [];
-          const sortedExercises = rawItems.sort((a, b) => (a.exercise_order || 0) - (b.exercise_order || 0));
-          const formattedExercises = sortedExercises.map(item => ({
+          const sortedExercises = rawItems.sort((a: {exercise_order?: number}, b: {exercise_order?: number}) => (a.exercise_order || 0) - (b.exercise_order || 0));
+          const formattedExercises = sortedExercises.map((item: {exercise_id: string; exercise_name: string; exercise_thumbnail_url: string | null; target_sets: number; target_reps?: string; is_warmup?: boolean}) => ({
             id: item.exercise_id,
             name: item.exercise_name,
             thumbnail_url: item.exercise_thumbnail_url,
@@ -156,7 +158,7 @@ function EditRoutinePage() {
     };
   }, []);
 
-  const handleSearch = useCallback((e) => {
+  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value;
     setSearchTerm(term);
 
@@ -196,16 +198,17 @@ function EditRoutinePage() {
 
         if (controller.signal.aborted) return;
 
-        const results = (data?.results || []).map(item => ({
+        const results = (data?.results || []).map((item: Record<string, unknown>) => ({
           ...item,
           is_external: data?.source === 'external',
         }));
         setSearchResults(results);
-      } catch (error) {
-        if (error?.name === 'AbortError') {
+      } catch (err) {
+        const error = err instanceof Error ? err : { name: '', message: String(err) };
+        if (error.name === 'AbortError') {
           // Request was aborted, ignore
         } else {
-          console.error('Error searching exercises:', error?.message || error);
+          console.error('Error searching exercises:', error.message);
           setSearchResults([]);
         }
       } finally {
@@ -215,7 +218,7 @@ function EditRoutinePage() {
     }, 300);
   }, []);
 
-  const handleAddExercise = (exerciseToAdd) => {
+  const handleAddExercise = (exerciseToAdd: ExerciseInRoutine) => {
     const newExercise = {
       ...exerciseToAdd,
       sets: 3,
@@ -232,36 +235,52 @@ function EditRoutinePage() {
     setSearchResults([]);
   };
 
-  const handleExerciseChange = (index, field, value) => {
+  const handleExerciseChange = (index: number, field: string, value: unknown) => {
     const updatedExercises = [...routineExercises];
-    if (field === 'sets') {
-      updatedExercises[index][field] = value === '' ? '' : Number(value);
-    } else if (field === 'negative') {
-      updatedExercises[index].negative = value;
-      if (value) {
-        updatedExercises[index].drop_set = false;
-        updatedExercises[index].drop_set_percentage = null;
-      }
-    } else if (field === 'drop_set') {
-      updatedExercises[index].drop_set = value;
-      if (!value) {
-        updatedExercises[index].drop_set_percentage = null;
-      }
-      if (value) {
-        updatedExercises[index].negative = false;
-      }
-    } else if (field === 'drop_set_percentage') {
-      updatedExercises[index].drop_set_percentage = value;
-    } else if (field === 'superset_id') {
-      updatedExercises[index].superset_id = value;
-    } else {
-      updatedExercises[index][field] = value;
+    const exerciseToUpdate = updatedExercises[index];
+    
+    switch (field) {
+      case 'sets':
+        exerciseToUpdate.sets = value === '' ? '' : Number(value);
+        break;
+      case 'negative':
+        exerciseToUpdate.negative = value as boolean;
+        if (value) {
+          exerciseToUpdate.drop_set = false;
+          exerciseToUpdate.drop_set_percentage = null;
+        }
+        break;
+      case 'drop_set':
+        exerciseToUpdate.drop_set = value as boolean;
+        if (!value) {
+          exerciseToUpdate.drop_set_percentage = null;
+        }
+        if (value) {
+          exerciseToUpdate.negative = false;
+        }
+        break;
+      case 'drop_set_percentage':
+        exerciseToUpdate.drop_set_percentage = value as (number | string | null);
+        break;
+      case 'superset_id':
+        exerciseToUpdate.superset_id = value as (string | null);
+        break;
+      case 'reps':
+        exerciseToUpdate.reps = String(value);
+        break;
+      case 'is_warmup':
+        exerciseToUpdate.is_warmup = value as boolean;
+        break;
+      case 'name':
+        exerciseToUpdate.name = String(value);
+        break;
     }
+    
     setRoutineExercises(updatedExercises);
   };
 
 
-  const handleRemoveExercise = (index) => {
+  const handleRemoveExercise = (index: number) => {
     const updatedExercises = routineExercises.filter((_, i) => i !== index);
     setRoutineExercises(updatedExercises);
   };
@@ -319,7 +338,7 @@ function EditRoutinePage() {
         let exerciseType = (ex.exercise_type || ex.type || 'bodyweight').toLowerCase().trim();
         
         // Map to valid database value, default to 'Bodyweight'
-        exerciseType = validExerciseTypes[exerciseType] || 'Bodyweight';
+        exerciseType = validExerciseTypes[exerciseType as keyof typeof validExerciseTypes] || 'Bodyweight';
 
         // Insert new exercise using Edge Function (bypasses RLS restrictions)
         const exerciseData = {
@@ -388,12 +407,13 @@ function EditRoutinePage() {
         }
       }
       navigate('/workouts/routines');
-    } catch (error) {
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error(String(err));
       alert(`Error saving routine: ${error.message}`);
     }
   };
 
-  const moveExercise = (index, direction) => {
+  const moveExercise = (index: number, direction: 'up' | 'down') => {
     if ((direction === 'up' && index === 0) || (direction === 'down' && index === routineExercises.length - 1)) return;
     const newIndex = direction === 'up' ? index - 1 : index + 1;
     const items = [...routineExercises];
@@ -408,7 +428,7 @@ function EditRoutinePage() {
 
   const closeCustomExerciseModal = () => setIsCustomModalOpen(false);
 
-  const handleSaveCustomExercise = async (e) => {
+  const handleSaveCustomExercise = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!customExerciseName || !selectedMuscleGroupId) return alert("Please provide a name and select a muscle group.");
     try {
@@ -433,7 +453,8 @@ function EditRoutinePage() {
       closeCustomExerciseModal();
 
     } catch (error) {
-      alert(`Error creating custom exercise: ${error.message}`);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      alert(`Error creating custom exercise: ${errorMsg}`);
     }
   };
 
@@ -465,7 +486,7 @@ function EditRoutinePage() {
           <div className="search-results">
             {isSearching && <div className="search-loading"><Loader2 className="animate-spin" /></div>}
             {!isSearching && searchResults.map(ex => {
-              const muscleGroup = (ex as unknown as Record<string, unknown>).exercise_muscle_groups?.[0]?.muscle_groups?.name || ex.primary_muscle || 'Core';
+              const muscleGroup = ((ex as unknown as Record<string, unknown>)?.exercise_muscle_groups as Array<{muscle_groups: {name: string}}> | undefined)?.[0]?.muscle_groups?.name || ex.primary_muscle || 'Core';
               return (
                 <div key={ex.id || ex.name} className="search-result-item">
                   <div className="exercise-info">
@@ -598,8 +619,8 @@ function EditRoutinePage() {
                       }}
                     >
                       <option value="">None</option>
-                      {supersetOptions.map(id => (
-                        <option key={id} value={id}>{id.slice(0, 8)}...</option>
+                      {supersetOptions.map((id) => (
+                        <option key={id || 'none'} value={id ?? ''}>{(id || '').slice(0, 8)}...</option>
                       ))}
                       <option value="__new__">New Superset</option>
                     </select>
