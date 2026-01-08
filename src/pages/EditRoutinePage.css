@@ -360,3 +360,71 @@ h3 {
 body.ReactModal__Body--open {
   overflow: hidden;
 }
+
+/* Loading container styles */
+.loading-container {
+  color: white;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+}
+
+.loading-container p {
+  margin-top: 1rem;
+}
+
+/* Exercise advanced controls */
+.exercise-advanced-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-right: 1em;
+}
+
+.exercise-advanced-controls label:last-of-type {
+  margin-left: 1em;
+}
+
+.exercise-advanced-controls label span {
+  user-select: none;
+}
+
+.exercise-advanced-controls .negative-text {
+  color: #f87171;
+}
+
+.exercise-advanced-controls .drop-set-text {
+  color: #fbbf24;
+}
+
+.exercise-advanced-controls .drop-set-input {
+  width: 5em;
+  margin-left: 0.5em;
+}
+
+.exercise-advanced-controls select {
+  margin-left: 0.5em;
+}
+
+/* Exercise status labels */
+.negative-label {
+  color: #f87171;
+  font-weight: bold;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  display: inline-block;
+}
+
+.superset-label {
+  color: #38bdf8;
+  font-weight: bold;
+  margin-top: 0.5rem;
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  display: inline-block;
+}

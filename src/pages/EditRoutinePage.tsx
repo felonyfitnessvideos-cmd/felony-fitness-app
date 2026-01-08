@@ -440,14 +440,14 @@ function EditRoutinePage() {
   // Guard against missing or invalid routineId
   if (!routineId) {
     return (
-      <div className="loading-container" style={{ color: 'white', padding: '2rem' }}>
+      <div className="loading-container">
         <Loader2 className="spinner" />
         <p>Loading routine...</p>
       </div>
     );
   }
 
-  if (loading) return <div style={{ color: 'white', padding: '2rem' }}>Loading routine...</div>;
+  if (loading) return <div className="loading-container"><p>Loading routine...</p></div>;
 
   return (
     <div className="edit-routine-page-container">
@@ -541,23 +541,23 @@ function EditRoutinePage() {
                   </label>
                 </div>
                 <div className="exercise-advanced-controls">
-                  <label style={{ marginRight: '1em' }}>
+                  <label>
                     <input
                       type="checkbox"
                       checked={ex.negative || false}
                       onChange={e => handleExerciseChange(index, 'negative', e.target.checked)}
                       disabled={ex.drop_set}
                     />
-                    <span style={{ color: ex.negative ? '#f87171' : undefined }}>Negative</span>
+                    <span className={ex.negative ? 'negative-text' : ''}>Negative</span>
                   </label>
-                  <label style={{ marginRight: '1em' }}>
+                  <label>
                     <input
                       type="checkbox"
                       checked={ex.drop_set || false}
                       onChange={e => handleExerciseChange(index, 'drop_set', e.target.checked)}
                       disabled={ex.negative}
                     />
-                    <span style={{ color: ex.drop_set ? '#fbbf24' : undefined }}>Drop Set</span>
+                    <span className={ex.drop_set ? 'drop-set-text' : ''}>Drop Set</span>
                   </label>
                   {ex.drop_set && !ex.negative && (
                     <input
@@ -567,10 +567,10 @@ function EditRoutinePage() {
                       value={ex.drop_set_percentage || ''}
                       onChange={e => handleExerciseChange(index, 'drop_set_percentage', e.target.value)}
                       placeholder="Drop %"
-                      style={{ width: '5em', marginLeft: '0.5em' }}
+                      className="drop-set-input"
                     />
                   )}
-                  <label style={{ marginLeft: '1em' }}>
+                  <label>
                     <span>Superset:</span>
                     <select
                       value={ex.superset_id || ''}
@@ -582,7 +582,6 @@ function EditRoutinePage() {
                           handleExerciseChange(index, 'superset_id', newValue);
                         }
                       }}
-                      style={{ marginLeft: '0.5em' }}
                     >
                       <option value="">None</option>
                       {supersetOptions.map(id => (
@@ -593,10 +592,10 @@ function EditRoutinePage() {
                   </label>
                 </div>
                 {ex.negative && (
-                  <div className="negative-label" style={{ color: '#f87171', fontWeight: 'bold' }}>Negative</div>
+                  <div className="negative-label">Negative</div>
                 )}
                 {isInSuperset && (
-                  <div className="superset-label" style={{ color: '#38bdf8', fontWeight: 'bold' }}>Superset</div>
+                  <div className="superset-label">Superset</div>
                 )}
               </div>
               <button 
