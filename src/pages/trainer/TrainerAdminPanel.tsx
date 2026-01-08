@@ -7,7 +7,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
-// @ts-expect-error - CSS imports are handled by Vite
 import './TrainerAdminPanel.css';
 
 interface Meal {
@@ -185,7 +184,7 @@ const TrainerAdminPanel = () => {
     fat_g: number;
     portions?: Array<{ id: string; portion_description: string; gram_weight: number }>;
   }>>([]);
-  const foodSearchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const foodSearchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-clear success message after 5 seconds
   useEffect(() => {
@@ -906,8 +905,8 @@ const TrainerAdminPanel = () => {
               </div>
             </div>
 
-            <div style={{ borderTop: '2px solid #ddd', marginTop: '24px', paddingTop: '24px' }}>
-              <h3 style={{ marginBottom: '12px' }}>Add Ingredients</h3>
+            <div className="ingredients-section">
+              <h3>Add Ingredients</h3>
               
               <div className="form-group">
                 <label htmlFor="food-search">Search Foods</label>
@@ -922,42 +921,30 @@ const TrainerAdminPanel = () => {
 
               {/* Food Search Results */}
               {foodSearchResults.length > 0 && (
-                <div style={{ 
-                  border: '1px solid #ccc', 
-                  borderRadius: '4px', 
-                  maxHeight: '300px', 
-                  overflowY: 'auto',
-                  marginBottom: '16px'
-                }}>
+                <div className="food-search-results">
                   {foodSearchResults.map((food) => (
                     <div
                       key={food.id}
-                      style={{
-                        padding: '12px',
-                        borderBottom: '1px solid #eee',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        cursor: 'pointer',
-                        backgroundColor: '#fafafa'
-                      }}
-                      onClick={() => handleAddFoodToMeal(food)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleAddFoodToMeal(food);
-                      }}
-                      role="button"
-                      tabIndex={0}
+                      className="food-search-item"
                     >
-                      <div>
-                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                      <div 
+                        className="food-item-info"
+                        onClick={() => handleAddFoodToMeal(food)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleAddFoodToMeal(food);
+                        }}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <div className="food-item-name">
                           {food.name}
                         </div>
                         {food.brand_owner && (
-                          <div style={{ fontSize: '12px', color: '#666' }}>
+                          <div className="food-item-brand">
                             {food.brand_owner}
                           </div>
                         )}
-                        <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
+                        <div className="food-item-macros">
                           P: {food.protein_g}g | C: {food.carbs_g}g | F: {food.fat_g}g | {food.calories} cal
                         </div>
                       </div>
@@ -967,15 +954,7 @@ const TrainerAdminPanel = () => {
                           e.stopPropagation();
                           handleAddFoodToMeal(food);
                         }}
-                        style={{
-                          padding: '6px 12px',
-                          backgroundColor: '#4CAF50',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '12px'
-                        }}
+                        className="food-add-button"
                       >
                         Add
                       </button>
@@ -986,26 +965,19 @@ const TrainerAdminPanel = () => {
 
               {/* Selected Meal Foods List */}
               {mealFoods.length > 0 && (
-                <div style={{ marginBottom: '16px' }}>
-                  <h4 style={{ marginBottom: '12px' }}>Ingredients ({mealFoods.length})</h4>
-                  <div style={{ border: '1px solid #ddd', borderRadius: '4px' }}>
+                <div className="meal-foods-container">
+                  <h4 className="meal-foods-header">Ingredients ({mealFoods.length})</h4>
+                  <div className="meal-foods-list">
                     {mealFoods.map((food, index) => (
                       <div
                         key={food.id}
-                        style={{
-                          padding: '12px',
-                          borderBottom: index < mealFoods.length - 1 ? '1px solid #eee' : 'none',
-                          display: 'grid',
-                          gridTemplateColumns: '1fr 100px 30px',
-                          gap: '12px',
-                          alignItems: 'center'
-                        }}
+                        className="meal-food-item"
                       >
-                        <div>
-                          <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                        <div className="meal-food-info">
+                          <div className="meal-food-name">
                             {food.food_name}
                           </div>
-                          <div style={{ fontSize: '12px', color: '#666' }}>
+                          <div className="meal-food-macros">
                             {food.calories} cal | P: {food.protein}g | C: {food.carbs}g | F: {food.fat}g
                           </div>
                         </div>
@@ -1016,26 +988,13 @@ const TrainerAdminPanel = () => {
                           max="999"
                           value={food.quantity}
                           onChange={(e) => handleUpdateMealFoodQuantity(index, e.target.value)}
-                          style={{
-                            padding: '6px',
-                            border: '1px solid #ccc',
-                            borderRadius: '4px',
-                            width: '100%'
-                          }}
+                          className="meal-food-quantity-input"
                           placeholder="Qty"
                         />
                         <button
                           type="button"
                           onClick={() => handleRemoveMealFood(index)}
-                          style={{
-                            padding: '6px 8px',
-                            backgroundColor: '#f44336',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px'
-                          }}
+                          className="meal-food-remove-button"
                         >
                           ✕
                         </button>
@@ -1047,15 +1006,9 @@ const TrainerAdminPanel = () => {
                   {(() => {
                     const totals = calculateMealTotals();
                     return (
-                      <div style={{
-                        marginTop: '12px',
-                        padding: '12px',
-                        backgroundColor: '#f5f5f5',
-                        borderRadius: '4px',
-                        fontWeight: 'bold'
-                      }}>
-                        <div>Total Macros:</div>
-                        <div style={{ fontSize: '14px', marginTop: '6px', color: '#333' }}>
+                      <div className="meal-totals">
+                        <div className="meal-totals-label">Total Macros:</div>
+                        <div className="meal-totals-values">
                           {totals.calories} cal | P: {totals.protein}g | C: {totals.carbs}g | F: {totals.fat}g
                         </div>
                       </div>
@@ -1497,57 +1450,30 @@ const TrainerAdminPanel = () => {
 
             {/* Mini Workout Log for Exercise Entries */}
             {!workoutLogForm.routine_id ? (
-              <div style={{ 
-                marginTop: '2em', 
-                padding: '2em', 
-                backgroundColor: 'rgba(100, 100, 100, 0.2)',
-                border: '1px solid #666',
-                borderRadius: '8px',
-                textAlign: 'center'
-              }}>
-                <p style={{ color: '#f87171', fontSize: '1.1rem', fontWeight: '500' }}>
+              <div className="no-routine-warning">
+                <p>
                   ⚠️ Select a routine above to add exercise entries
                 </p>
               </div>
             ) : (
-            <div style={{ marginTop: '2em' }}>
-              <h3 style={{ marginTop: 0, marginBottom: '1.5em' }}>Add Exercise Entries</h3>
+            <div className="exercise-entries-section">
+              <h3 className="exercise-entries-header">Add Exercise Entries</h3>
 
               {/* Horizontal Exercise Scroller */}
-              <div style={{
-                display: 'flex',
-                gap: '0.5rem',
-                overflowX: 'auto',
-                paddingBottom: '0.75rem',
-                marginBottom: '1.5rem',
-                msOverflowStyle: 'none',
-                scrollbarWidth: 'none'
-              } as React.CSSProperties}>
+              <div className="exercise-scroller">
                 {routineExercises.map((ex) => (
                   <button
                     key={ex.id}
                     type="button"
                     onClick={() => setSelectedExerciseForLog(ex.id)}
-                    style={{
-                      background: 'none',
-                      border: selectedExerciseForLog === ex.id ? '2px solid #f97316' : '2px solid #4a5568',
-                      borderRadius: '8px',
-                      padding: '2px',
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                      transition: 'border-color 0.2s'
-                    }}
+                    className={`exercise-thumbnail-button ${selectedExerciseForLog === ex.id ? 'selected' : ''}`}
                   >
                     <img
                       src={(ex as { id: string; name: string; thumbnail_url?: string }).thumbnail_url || 'https://placehold.co/50x50/4a5568/ffffff?text=IMG'}
                       alt={ex.name}
                       width="50"
                       height="50"
-                      style={{
-                        borderRadius: '6px',
-                        objectFit: 'cover',
-                        display: 'block'
-                      }}
+                      className="exercise-thumbnail"
                       loading="lazy"
                       title={ex.name}
                     />
@@ -1558,19 +1484,14 @@ const TrainerAdminPanel = () => {
               {/* Selected Exercise Display */}
               {selectedExerciseForLog && (
                 <>
-                  <h4 style={{ textAlign: 'center', fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '1.5em', color: '#fde68a' }}>
+                  <h4 className="selected-exercise-header">
                     {routineExercises.find(ex => ex.id === selectedExerciseForLog)?.name}
                   </h4>
 
                   {/* Weight and Reps Input */}
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: '0.75rem',
-                    marginBottom: '1rem'
-                  }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '600', color: '#a0aec0', fontSize: '0.8rem' }}>Weight (lbs)</label>
+                  <div className="weight-reps-grid">
+                    <div className="input-field-container">
+                      <label className="input-field-label">Weight (lbs)</label>
                       <input
                         type="number"
                         step="0.5"
@@ -1578,40 +1499,18 @@ const TrainerAdminPanel = () => {
                         placeholder="Weight"
                         value={lastWeight}
                         onChange={(e) => setLastWeight(e.target.value)}
-                        style={{
-                          width: '100%',
-                          backgroundColor: '#2d3748',
-                          border: '1px solid #4a5568',
-                          borderRadius: '8px',
-                          padding: '0.6rem',
-                          color: 'white',
-                          fontSize: '1.5rem',
-                          fontWeight: 'bold',
-                          textAlign: 'center',
-                          boxSizing: 'border-box'
-                        }}
+                        className="large-input"
                       />
                     </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '600', color: '#a0aec0', fontSize: '0.8rem' }}>Reps</label>
+                    <div className="input-field-container">
+                      <label className="input-field-label">Reps</label>
                       <input
                         type="number"
                         min="0"
                         placeholder="Reps"
                         value={lastReps}
                         onChange={(e) => setLastReps(e.target.value)}
-                        style={{
-                          width: '100%',
-                          backgroundColor: '#2d3748',
-                          border: '1px solid #4a5568',
-                          borderRadius: '8px',
-                          padding: '0.6rem',
-                          color: 'white',
-                          fontSize: '1.5rem',
-                          fontWeight: 'bold',
-                          textAlign: 'center',
-                          boxSizing: 'border-box'
-                        }}
+                        className="large-input"
                       />
                     </div>
                   </div>
@@ -1619,18 +1518,7 @@ const TrainerAdminPanel = () => {
                   <button
                     type="button"
                     onClick={handleAddSetToLog}
-                    style={{
-                      width: '100%',
-                      padding: '0.75em',
-                      backgroundColor: '#4CAF50',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '1rem',
-                      marginBottom: '1.5rem'
-                    }}
+                    className="add-set-button"
                   >
                     + Add Set
                   </button>
@@ -1639,40 +1527,19 @@ const TrainerAdminPanel = () => {
 
               {/* Log Entries Summary */}
               {logEntries.length > 0 && (
-                <div style={{ 
-                  marginTop: '1.5em', 
-                  padding: '1em',
-                  backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                  border: '1px solid #4CAF50',
-                  borderRadius: '8px'
-                }}>
-                  <h4 style={{ marginTop: 0, marginBottom: '1em' }}>Exercise Sets ({logEntries.length})</h4>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                <div className="log-entries-container">
+                  <h4 className="log-entries-header">Exercise Sets ({logEntries.length})</h4>
+                  <ul className="log-entries-list">
                     {logEntries.map((entry) => (
-                      <li key={entry._tempId} style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '0.75em',
-                        borderBottom: '1px solid rgba(255,255,255,0.1)',
-                        marginBottom: '0.5em'
-                      }}>
-                        <span style={{ flex: 1 }}>
+                      <li key={entry._tempId} className="log-entry-item">
+                        <span className="log-entry-details">
                           <strong>{entry.exercise_name}</strong> - Set {entry.set_number}: {entry.weight_lbs} lbs × {entry.reps_completed} reps
-                          {entry.rpe_rating && <span style={{ marginLeft: '0.5em', color: '#fde68a' }}>RPE {entry.rpe_rating}</span>}
+                          {entry.rpe_rating && <span className="log-entry-rpe">RPE {entry.rpe_rating}</span>}
                         </span>
                         <button
                           type="button"
                           onClick={() => handleRemoveSetFromLog(entry._tempId)}
-                          style={{
-                            padding: '0.4em 0.8em',
-                            backgroundColor: '#f44336',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '0.85em'
-                          }}
+                          className="log-entry-remove-button"
                         >
                           Remove
                         </button>

@@ -36,13 +36,8 @@ interface SearchRequest {
   category?: string
 }
 
-interface SearchResult {
-  id: string
-  fdc_id: number
-  description: string
-  brand_owner: string | null
-  brand_name: string | null
-  data_type: string
+// Food result type for reference (may be used for type documentation)
+interface _FoodResult {
   category: string
   
   // Serving info

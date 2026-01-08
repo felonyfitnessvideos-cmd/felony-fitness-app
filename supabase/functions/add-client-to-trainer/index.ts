@@ -88,7 +88,7 @@ const corsHeaders = {
  * @param tagName Name of the tag to assign
  * @returns Promise<boolean> True if successful
  */
-async function assignRoleTag(supabase: any, userId: string, tagName: string): Promise<boolean> {
+async function assignRoleTag(supabase: unknown, userId: string, tagName: string): Promise<boolean> {
   try {
     // Look up the tag by name
     const { data: tagData, error: tagError } = await supabase
@@ -405,13 +405,13 @@ serve(async (req) => {
       JSON.stringify({ relationship_id, message }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Catch-all error handler
     console.error("Unexpected error in add-client-to-trainer:", err);
     return new Response(
       JSON.stringify({
-        error: err?.message || "Unknown error",
-        details: err?.toString() || "No additional details"
+        error: (err as { message?: string })?.message || "Unknown error",
+        details: (err as { toString?: () => string })?.toString?.() || "No additional details"
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

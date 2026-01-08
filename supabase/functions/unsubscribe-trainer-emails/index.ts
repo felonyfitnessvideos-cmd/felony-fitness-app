@@ -37,7 +37,7 @@ serve(async (req: Request) => {
     try {
       const body = await req.json();
       email = body.email;
-    } catch (error) {
+    } catch {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid JSON in request body' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

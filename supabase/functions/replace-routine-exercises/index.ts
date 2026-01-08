@@ -124,19 +124,19 @@ serve(async (req: Request) => {
 
     // Step 2: Prepare new exercises for insertion
     // Map items BEFORE deleting to ensure data is valid
-    let itemsToInsert: any[] = [];
+    let itemsToInsert: unknown[] = [];
     if (p_items.length > 0) {
-      itemsToInsert = p_items.map((item: any) => ({
+      itemsToInsert = p_items.map((item: unknown) => ({
         routine_id: p_routine_id,
-        exercise_id: item.exercise_id,
-        target_sets: item.target_sets,
-        target_reps: item.target_reps || '8-12',
-        exercise_order: item.exercise_order,
-        is_warmup: item.is_warmup || false,
-        negative: item.negative || false,
-        drop_set: item.drop_set || false,
-        drop_set_percentage: item.drop_set_percentage ?? null,
-        superset_id: item.superset_id ?? null
+        exercise_id: (item as { exercise_id?: string })?.exercise_id,
+        target_sets: (item as { target_sets?: number })?.target_sets,
+        target_reps: (item as { target_reps?: string })?.target_reps || '8-12',
+        exercise_order: (item as { exercise_order?: number })?.exercise_order,
+        is_warmup: (item as { is_warmup?: boolean })?.is_warmup || false,
+        negative: (item as { negative?: boolean })?.negative || false,
+        drop_set: (item as { drop_set?: boolean })?.drop_set || false,
+        drop_set_percentage: (item as { drop_set_percentage?: number | null })?.drop_set_percentage ?? null,
+        superset_id: (item as { superset_id?: string | null })?.superset_id ?? null
       }));
     }
 
@@ -244,10 +244,10 @@ serve(async (req: Request) => {
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Catch-all error handler for unexpected errors (JSON parsing, network issues, etc.)
     return new Response(
-      JSON.stringify({ error: err?.message || "Unknown error" }),
+      JSON.stringify({ error: (err as { message?: string })?.message || "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

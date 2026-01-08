@@ -35,7 +35,7 @@
  *   }}
  * </LazyRecharts>
  */
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 // Simple in-memory cache to avoid duplicate dynamic imports when multiple
 // chart components mount simultaneously.

@@ -55,7 +55,7 @@ const corsHeaders = {
 function createResponse(
   success: boolean,
   message: string,
-  data: any = null,
+  data: unknown = null,
   error: string | null = null,
   status?: number
 ) {
@@ -92,7 +92,7 @@ function validateEnvironment(): string[] {
  * Fetch clients with specific tag
  */
 async function getClientsByTag(
-  supabase: any,
+  supabase: unknown,
   trainerId: string,
   tagId: string
 ): Promise<ClientRecipient[]> {
@@ -121,10 +121,10 @@ async function getClientsByTag(
     
     // Filter out clients without email and format for Resend
     const recipients = clients
-      .filter((client: any) => client.email && client.email.trim() !== '')
-      .map((client: any) => ({
-        email: client.email,
-        name: client.full_name || client.email.split('@')[0] || 'Client'
+      .filter((client: unknown) => (client as { email?: string })?.email && (client as { email?: string })?.email?.trim() !== '')
+      .map((client: unknown) => ({
+        email: (client as { email?: string; full_name?: string })?.email,
+        name: (client as { full_name?: string })?.full_name || (client as { email?: string })?.email?.split('@')[0] || 'Client'
       }));
     
     console.log(`Found ${recipients.length} clients with valid emails`);
@@ -196,7 +196,7 @@ async function sendBulkEmail(
   recipients: ClientRecipient[],
   subject: string,
   htmlBody: string
-): Promise<any> {
+): Promise<unknown> {
   try {
     console.log(`Sending email to ${recipients.length} recipients`);
     

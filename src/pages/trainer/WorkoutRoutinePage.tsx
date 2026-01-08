@@ -1,0 +1,1 @@
+import type { Tables as _Tables } from '../../database.types';

@@ -147,13 +147,13 @@ serve(async (req) => {
     }
 
     // Create a map of user profiles for quick lookup
-    const profileMap: Record<string, any> = {};
+    const profileMap: Record<string, unknown> = {};
     for (const profile of userProfiles || []) {
       profileMap[profile.user_id] = profile;
     }
 
     // Group messages by conversation partner
-    const conversationsMap: Record<string, any> = {};
+    const conversationsMap: Record<string, unknown> = {};
 
     for (const message of messages || []) {
       // Determine the other user in the conversation
@@ -180,8 +180,8 @@ serve(async (req) => {
     }
 
     // Convert map to array and sort by last message time
-    const conversations = Object.values(conversationsMap).sort((a: any, b: any) => {
-      return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+    const conversations = Object.values(conversationsMap).sort((a: unknown, b: unknown) => {
+      return new Date((b as { last_message_at?: string })?.last_message_at || '').getTime() - new Date((a as { last_message_at?: string })?.last_message_at || '').getTime();
     });
 
     // Return the conversations array
@@ -189,10 +189,10 @@ serve(async (req) => {
       JSON.stringify({ conversations }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Catch-all error handler
     return new Response(
-      JSON.stringify({ error: err?.message || "Unknown error" }),
+      JSON.stringify({ error: (err as { message?: string })?.message || "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

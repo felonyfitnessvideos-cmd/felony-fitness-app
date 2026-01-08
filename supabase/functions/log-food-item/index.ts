@@ -242,7 +242,7 @@ Deno.serve(async (req) => {
  * @param {Object} nutritionData - Nutrition data to validate
  * @returns {Object} Validation result with errors and warnings
  */
-function validateNutritionData(nutritionData: any) {
+function validateNutritionData(nutritionData: unknown) {
   const limits = {
     calories: { min: 0, max: 2000 },
     protein_g: { min: 0, max: 100 },

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
-import { ShoppingCart, Check, X, Plus, Edit, Save, Trash2, Download, Calendar } from 'lucide-react';
+import { ShoppingCart, Check, X, Plus, Trash2, Download, Calendar } from 'lucide-react';
 import { FOOD_CATEGORIES } from '../constants/mealPlannerConstants';
 import './ShoppingListGenerator.css';
 

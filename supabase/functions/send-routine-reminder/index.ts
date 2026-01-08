@@ -34,19 +34,6 @@ interface ReminderRequest {
   scheduled_routine_id: string;
 }
 
-interface ScheduledRoutineData {
-  id: string;
-  client_id: string;
-  routine_name: string;
-  start_time: string;
-  trainer_id: string;
-}
-
-interface UserProfile {
-  full_name: string;
-  email: string;
-}
-
 /**
  * Generate custom HTML email template for routine reminder
  */

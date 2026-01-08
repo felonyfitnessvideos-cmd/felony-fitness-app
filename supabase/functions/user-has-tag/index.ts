@@ -127,7 +127,7 @@ serve(async (req) => {
     }
 
     // Check if user has this tag
-    const { data: userTagData, error: userTagError } = await supabase
+    const { error: userTagError } = await supabase
       .from("user_tags")
       .select("id")
       .eq("user_id", target_user_id)
@@ -151,10 +151,10 @@ serve(async (req) => {
       JSON.stringify({ has_tag: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Catch-all error handler
     return new Response(
-      JSON.stringify({ error: err?.message || "Unknown error" }),
+      JSON.stringify({ error: (err as { message?: string })?.message || "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

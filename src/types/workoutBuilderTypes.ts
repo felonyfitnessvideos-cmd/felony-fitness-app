@@ -323,26 +323,26 @@ export const ENGAGEMENT_WEIGHTS = {
 // TYPE GUARDS
 // ===============================================
 
-export const isExercise = (obj: any): obj is Exercise => {
-  return obj && typeof obj === 'object' && typeof obj.id === 'number' && typeof obj.name === 'string';
+export const isExercise = (obj: unknown): obj is Exercise => {
+  return obj && typeof obj === 'object' && typeof (obj as Exercise).id === 'number' && typeof (obj as Exercise).name === 'string';
 };
 
-export const isMuscleGroup = (obj: any): obj is MuscleGroup => {
-  return obj && typeof obj === 'object' && typeof obj.id === 'number' && typeof obj.name === 'string';
+export const isMuscleGroup = (obj: unknown): obj is MuscleGroup => {
+  return obj && typeof obj === 'object' && typeof (obj as MuscleGroup).id === 'number' && typeof (obj as MuscleGroup).name === 'string';
 };
 
-export const isProgram = (obj: any): obj is Program => {
-  return obj && typeof obj === 'object' && typeof obj.name === 'string' && 
-         (Array.isArray(obj.routines) || Array.isArray(obj.program_routines));
+export const isProgram = (obj: unknown): obj is Program => {
+  return !!(obj && typeof obj === 'object' && typeof (obj as Program).name === 'string' && 
+           (Array.isArray((obj as Program).routines) || Array.isArray((obj as Program).program_routines)));
 };
 
-export const isProgramEngagementResult = (obj: any): obj is ProgramEngagementResult => {
-  return obj && typeof obj === 'object' && 
-         obj.engagementScores && 
-         obj.muscleDetails && 
-         Array.isArray(obj.sortedMuscles) &&
-         obj.balanceAnalysis &&
-         obj.programStats;
+export const isProgramEngagementResult = (obj: unknown): obj is ProgramEngagementResult => {
+  return !!(obj && typeof obj === 'object' && 
+           (obj as ProgramEngagementResult).engagementScores && 
+           (obj as ProgramEngagementResult).muscleDetails && 
+           Array.isArray((obj as ProgramEngagementResult).sortedMuscles) &&
+           (obj as ProgramEngagementResult).balanceAnalysis &&
+           (obj as ProgramEngagementResult).programStats);
 };
 
 // ===============================================

@@ -62,7 +62,7 @@
  * }
  */
 
-// @ts-nocheck
+// @ts-check
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? Deno.env.get('VITE_SUPABASE_URL');
@@ -264,7 +264,7 @@ Deno.serve(async (req) => {
             created_at: start.toISOString(),
             cycle_session_id: row.id,
           };
-          const { data: newLog, error: newLogErr } = await supabase.from('workout_logs').insert(payload).select().single();
+          const { error: newLogErr } = await supabase.from('workout_logs').insert(payload).select().single();
           if (!newLogErr) createdLogs += 1;
           else console.warn('could not create starter log', newLogErr.message || newLogErr);
         }

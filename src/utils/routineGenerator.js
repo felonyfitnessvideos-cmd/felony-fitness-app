@@ -21,7 +21,7 @@
 const BIG_MUSCLES = ['Chest', 'Back', 'Latissimus Dorsi', 'Trapezius', 'Rhomboids', 
                       'Quadriceps', 'Hamstrings', 'Glutes', 'Erector Spinae'];
 
-const LITTLE_MUSCLES = ['Biceps', 'Triceps', 'Forearms', 'Brachialis',
+const _LITTLE_MUSCLES = ['Biceps', 'Triceps', 'Forearms', 'Brachialis',
                         'Front Deltoids', 'Side Deltoids', 'Rear Deltoids',
                         'Upper Abdominals', 'Lower Abdominals', 'Obliques'];
 

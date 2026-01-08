@@ -62,7 +62,8 @@ interface ExerciseInRoutine {
   difficulty_level?: string | null,
   exercise_type?: string | null,
   type?: string,
-  video_url?: string | null
+  video_url?: string | null,
+  _uniqueKey?: string; // for internal key generation
 }
 
 
@@ -464,7 +465,7 @@ function EditRoutinePage() {
           <div className="search-results">
             {isSearching && <div className="search-loading"><Loader2 className="animate-spin" /></div>}
             {!isSearching && searchResults.map(ex => {
-              const muscleGroup = ex.exercise_muscle_groups?.[0]?.muscle_groups?.name || ex.primary_muscle || 'Core';
+              const muscleGroup = (ex as unknown as Record<string, unknown>).exercise_muscle_groups?.[0]?.muscle_groups?.name || ex.primary_muscle || 'Core';
               return (
                 <div key={ex.id || ex.name} className="search-result-item">
                   <div className="exercise-info">
@@ -573,7 +574,14 @@ function EditRoutinePage() {
                     <span>Superset:</span>
                     <select
                       value={ex.superset_id || ''}
-                      onChange={e => handleExerciseChange(index, 'superset_id', e.target.value === '' ? null : e.target.value)}
+                      onChange={e => {
+                        const newValue = e.target.value === '' ? null : e.target.value;
+                        if (newValue === '__new__') {
+                          handleExerciseChange(index, 'superset_id', generateUUID());
+                        } else {
+                          handleExerciseChange(index, 'superset_id', newValue);
+                        }
+                      }}
                       style={{ marginLeft: '0.5em' }}
                     >
                       <option value="">None</option>
@@ -583,8 +591,6 @@ function EditRoutinePage() {
                       <option value="__new__">New Superset</option>
                     </select>
                   </label>
-                  {/* If user selects New Superset, assign a new UUID */}
-                  {ex.superset_id === '__new__' && handleExerciseChange(index, 'superset_id', generateUUID())}
                 </div>
                 {ex.negative && (
                   <div className="negative-label" style={{ color: '#f87171', fontWeight: 'bold' }}>Negative</div>
@@ -593,7 +599,14 @@ function EditRoutinePage() {
                   <div className="superset-label" style={{ color: '#38bdf8', fontWeight: 'bold' }}>Superset</div>
                 )}
               </div>
-              <button onClick={() => handleRemoveExercise(index)} className="remove-exercise-button"><Trash2 size={20} /></button>
+              <button 
+                onClick={() => handleRemoveExercise(index)} 
+                className="remove-exercise-button"
+                title="Remove exercise"
+                aria-label="Remove exercise"
+              >
+                <Trash2 size={20} />
+              </button>
             </div>
           );
         })}

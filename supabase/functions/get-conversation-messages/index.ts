@@ -152,7 +152,7 @@ serve(async (req) => {
     }
 
     // Transform messages to match expected format
-    const messages = (messagesData || []).map((message: any) => ({
+    const messages = (messagesData || []).map((message: unknown) => ({
       id: message.id,
       sender_id: message.sender_id,
       recipient_id: message.recipient_id,
@@ -171,10 +171,10 @@ serve(async (req) => {
       JSON.stringify({ messages }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Catch-all error handler
     return new Response(
-      JSON.stringify({ error: err?.message || "Unknown error" }),
+      JSON.stringify({ error: (err as { message?: string })?.message || "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

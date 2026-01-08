@@ -211,13 +211,14 @@ serve(async (req) => {
     console.log(`[get-last-session-entries] Found ${entries?.length || 0} total sets for ${exerciseIdsArray.length} exercises`);
 
     // Group entries by exercise_id for easy lookup on client
-    const groupedByExercise = (entries || []).reduce((acc: any, entry: any) => {
-      if (!acc[entry.exercise_id]) {
-        acc[entry.exercise_id] = [];
+    const groupedByExercise = (entries || []).reduce((acc: Record<string, unknown>, entry: unknown) => {
+      const entryData = entry as { exercise_id?: string };
+      if (!acc[entryData.exercise_id || '']) {
+        acc[entryData.exercise_id || ''] = [];
       }
-      acc[entry.exercise_id].push(entry);
+      (acc[entryData.exercise_id || ''] as unknown[]).push(entry);
       return acc;
-    }, {});
+    }, {} as Record<string, unknown>);
 
     // Return grouped entries (backward compatible: if single exercise, return entries array)
     // If multiple exercises requested, return object keyed by exercise_id
@@ -234,10 +235,10 @@ serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Catch-all error handler for unexpected errors
     return new Response(
-      JSON.stringify({ error: err?.message || "Unknown error" }),
+      JSON.stringify({ error: (err as { message?: string })?.message || "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

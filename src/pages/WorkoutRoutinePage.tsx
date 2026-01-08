@@ -197,14 +197,6 @@ function WorkoutRoutinePage() {
         routine_name: newRoutineName,
         is_active: false,
         created_at: new Date().toISOString(),
-        user_id: userId,
-        description: null,
-        difficulty_level: null,
-        estimated_duration_minutes: null,
-        is_public: false,
-        name: null,
-        routine_type: null,
-        updated_at: null,
       };
       setRoutines(prev => [newRoutineDisplay, ...prev]);
     } catch (error) {

@@ -197,9 +197,8 @@ Deno.serve(async (req) => {
       throw new Error(`AI API request failed: ${errorText}`);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const aiData: any = await aiResponse.json();
-    const recommendations = JSON.parse(aiData.choices[0].message.content);
+    const aiData: unknown = await aiResponse.json();
+    const recommendations = JSON.parse((aiData as { choices?: Array<{ message?: { content?: string } }> }).choices?.[0]?.message?.content || '{}');
 
     return new Response(JSON.stringify(recommendations), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

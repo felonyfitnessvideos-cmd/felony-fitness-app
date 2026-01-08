@@ -88,13 +88,13 @@ type MetricType = typeof VALID_METRICS[number];
  * Calculate weight volume for a workout session
  * Formula: SUM(weight_lbs × reps_completed) for all sets
  * 
- * @param {any} supabase - Supabase client instance
+ * @param {unknown} supabase - Supabase client instance
  * @param {string} userId - User ID
  * @param {string} exerciseId - Exercise ID
  * @param {number} limit - Maximum data points
  * @returns {Promise<Array>} Array of {log_date, value} objects
  */
-async function calculateWeightVolume(supabase: any, userId: string, exerciseId: string, limit: number) {
+async function calculateWeightVolume(supabase: unknown, userId: string, exerciseId: string, limit: number) {
   const { data, error } = await supabase
     .from("workout_log_entries")
     .select(`
@@ -119,7 +119,7 @@ async function calculateWeightVolume(supabase: any, userId: string, exerciseId: 
   // Group by log_date and calculate total volume
   const volumeByDate: Record<string, number> = {};
 
-  data?.forEach((entry: any) => {
+  data?.forEach((entry: unknown) => {
     const date = entry.workout_logs.log_date;
     const volume = (entry.weight_lbs || 0) * (entry.reps_completed || 0);
     volumeByDate[date] = (volumeByDate[date] || 0) + volume;
@@ -136,13 +136,13 @@ async function calculateWeightVolume(supabase: any, userId: string, exerciseId: 
  * Calculate set volume for a workout session
  * Formula: COUNT(sets) per workout
  * 
- * @param {any} supabase - Supabase client instance
+ * @param {unknown} supabase - Supabase client instance
  * @param {string} userId - User ID
  * @param {string} exerciseId - Exercise ID
  * @param {number} limit - Maximum data points
  * @returns {Promise<Array>} Array of {log_date, value} objects
  */
-async function calculateSetVolume(supabase: any, userId: string, exerciseId: string, limit: number) {
+async function calculateSetVolume(supabase: unknown, userId: string, exerciseId: string, limit: number) {
   const { data, error } = await supabase
     .from("workout_log_entries")
     .select(`
@@ -163,7 +163,7 @@ async function calculateSetVolume(supabase: any, userId: string, exerciseId: str
   // Group by log_date and count sets
   const setsByDate: Record<string, number> = {};
 
-  data?.forEach((entry: any) => {
+  data?.forEach((entry: unknown) => {
     const date = entry.workout_logs.log_date;
     setsByDate[date] = (setsByDate[date] || 0) + 1;
   });
@@ -179,13 +179,13 @@ async function calculateSetVolume(supabase: any, userId: string, exerciseId: str
  * Calculate estimated 1RM (one-rep max) for a workout session
  * Formula: MAX(weight_lbs × (1 + reps_completed/30)) - Epley formula
  * 
- * @param {any} supabase - Supabase client instance
+ * @param {unknown} supabase - Supabase client instance
  * @param {string} userId - User ID
  * @param {string} exerciseId - Exercise ID
  * @param {number} limit - Maximum data points
  * @returns {Promise<Array>} Array of {log_date, value} objects
  */
-async function calculate1RM(supabase: any, userId: string, exerciseId: string, limit: number) {
+async function calculate1RM(supabase: unknown, userId: string, exerciseId: string, limit: number) {
   const { data, error } = await supabase
     .from("workout_log_entries")
     .select(`
@@ -210,7 +210,7 @@ async function calculate1RM(supabase: any, userId: string, exerciseId: string, l
   // Group by log_date and find max 1RM
   const oneRMByDate: Record<string, number> = {};
 
-  data?.forEach((entry: any) => {
+  data?.forEach((entry: unknown) => {
     const date = entry.workout_logs.log_date;
     const weight = entry.weight_lbs || 0;
     const reps = entry.reps_completed || 0;
@@ -315,10 +315,10 @@ serve(async (req) => {
       JSON.stringify({ data: chartData }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     // Catch-all error handler
     return new Response(
-      JSON.stringify({ error: err?.message || "Unknown error" }),
+      JSON.stringify({ error: (err as { message?: string })?.message || "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient.js';
-import { Plus, Save, X, Dumbbell, User, Calendar, Target } from 'lucide-react';
+import { Plus, Save, X, Dumbbell, Target } from 'lucide-react';
 import './WorkoutBuilder.css';
 
 /**
