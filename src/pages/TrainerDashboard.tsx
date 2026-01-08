@@ -156,8 +156,8 @@ const TrainerDashboard = () => {
   useEffect(() => {
     if (!user) return;
 
-    let subscription: { unsubscribe: () => void } | null = null;
-
+    // Note: subscription assignment is currently disabled due to WebSocket issues
+    // When re-enabling, update this to properly type the subscription
     const loadUnreadCount = async () => {
       try {
         const count = await getUnreadMessageCount();
@@ -179,10 +179,9 @@ const TrainerDashboard = () => {
 
     setupSubscription();
 
+    // Cleanup is not needed since subscription assignment is disabled
     return () => {
-      if (subscription) {
-        subscription.unsubscribe();
-      }
+      // Placeholder for future subscription cleanup
     };
   }, [user]);
 
