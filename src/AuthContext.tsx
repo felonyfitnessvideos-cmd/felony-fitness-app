@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { supabase } from './supabaseClient';
-import { AuthContext } from './authContext';
+import { AuthContext, type AuthContextValue } from './authContext';
 
-export function AuthProvider({ children }) {
-  const [session, setSession] = useState(null);
-  const [user, setUser] = useState(null);
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [session, setSession] = useState<AuthContextValue['session']>(null);
+  const [user, setUser] = useState<AuthContextValue['user']>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,11 +53,11 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const value = { session, user, loading };
+  const value: AuthContextValue = { session, user, loading };
 
   return (
     <AuthContext.Provider value={value}>
-      <div style={{ height: '100%' }}>
+      <div className="auth-provider-wrapper">
         {!loading && children}
       </div>
     </AuthContext.Provider>

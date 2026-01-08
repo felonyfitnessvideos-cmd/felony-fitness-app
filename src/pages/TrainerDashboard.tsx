@@ -411,7 +411,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'scheduling' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('scheduling')}
-                aria-pressed={activeWorkspaceTool === 'scheduling' ? 'true' : 'false'}
+                aria-pressed={String(activeWorkspaceTool === 'scheduling')}
                 aria-label="Smart Scheduling Tool"
               >
                 <Calendar size={16} />
@@ -421,7 +421,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'progress' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('progress')}
-                aria-pressed={activeWorkspaceTool === 'progress' ? 'true' : 'false'}
+                aria-pressed={String(activeWorkspaceTool === 'progress')}
                 aria-label="Progress Tracker Tool"
               >
                 <TrendingUp size={16} />
@@ -431,7 +431,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'workout' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('workout')}
-                aria-pressed={activeWorkspaceTool === 'workout' ? 'true' : 'false'}
+                aria-pressed={String(activeWorkspaceTool === 'workout')}
                 aria-label="Workout Builder Tool"
               >
                 <Dumbbell size={16} />
@@ -441,7 +441,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'nutrition' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('nutrition')}
-                aria-pressed={activeWorkspaceTool === 'nutrition' ? 'true' : 'false'}
+                aria-pressed={String(activeWorkspaceTool === 'nutrition')}
                 aria-label="Nutrition Planner Tool"
               >
                 <Apple size={16} />
@@ -451,7 +451,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'messaging' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('messaging')}
-                aria-pressed={activeWorkspaceTool === 'messaging' ? 'true' : 'false'}
+                aria-pressed={String(activeWorkspaceTool === 'messaging')}
                 aria-label="Messaging Hub Tool"
               >
                 <MessageSquare size={16} />

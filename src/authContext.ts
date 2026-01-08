@@ -4,7 +4,7 @@ import type { AuthUser, Session } from '@supabase/supabase-js';
 /**
  * Authentication context value structure
  */
-interface AuthContextValue {
+export interface AuthContextValue {
   user: AuthUser | null;
   session: Session | null;
   loading: boolean;
