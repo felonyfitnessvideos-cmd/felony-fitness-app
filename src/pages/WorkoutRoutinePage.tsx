@@ -36,7 +36,17 @@ import { Tables } from '../database.types.js';
 import './WorkoutRoutinePage.css';
 
 type Routine = Tables<'workout_routines'>;
-type RoutineExercise = Tables<'routine_exercises'>;
+
+// Define RoutineExercise type for join queries
+interface RoutineExercise {
+  id: number;
+  routine_id: string;
+  exercise_id: number;
+  target_sets: number;
+  exercise_order: number;
+  is_warmup: boolean;
+  created_at: string;
+}
 
 /**
  * WorkoutRoutinePage
@@ -182,7 +192,8 @@ function WorkoutRoutinePage() {
 
       // Step 3: Copy all exercises with their settings
       if (fullRoutine.routine_exercises && fullRoutine.routine_exercises.length > 0) {
-        const exercisesToInsert = fullRoutine.routine_exercises.map((ex: RoutineExercise) => ({
+        const exercises = fullRoutine.routine_exercises as RoutineExercise[];
+        const exercisesToInsert = exercises.map((ex: RoutineExercise) => ({
           routine_id: newRoutine.id,
           exercise_id: ex.exercise_id,
           target_sets: ex.target_sets,

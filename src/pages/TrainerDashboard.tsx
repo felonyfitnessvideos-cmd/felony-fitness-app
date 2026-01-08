@@ -180,7 +180,7 @@ const TrainerDashboard = () => {
     setupSubscription();
 
     return () => {
-      if (subscription?.unsubscribe) {
+      if (subscription) {
         subscription.unsubscribe();
       }
     };
