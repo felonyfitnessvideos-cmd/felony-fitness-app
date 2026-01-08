@@ -1012,3 +1012,42 @@
     border-radius: 0;
   }
 }
+/* Client Card Header Styles */
+.client-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.client-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expand-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-right: 4px;
+}
+
+.expand-arrow {
+  display: inline-block;
+  transition: transform 0.2s;
+}
+
+.expand-arrow.open {
+  transform: rotate(90deg);
+}
+
+.client-name {
+  margin: 0;
+}
+
+.client-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}

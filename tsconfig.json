@@ -15,7 +15,7 @@
     "lib": ["ES2022", "DOM"],
     "types": ["vite/client"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "scripts/**/*.ts"],
+  "include": ["src/**/*", "scripts/**/*.ts"],
   "exclude": [
     "node_modules",
     "dist",

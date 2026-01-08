@@ -16,8 +16,9 @@ import './WorkoutBuilder.css';
  * Features exercise selection by muscle group and visual muscle map
  * 
  * @component
- * @param {Object} props
- * @param {Object} props.client - Selected client object
+ * @typedef {Object} WorkoutBuilderProps
+ * @property {Object|null} [client] - Selected client object or null
+ * @param {WorkoutBuilderProps} props
  * @returns {JSX.Element} Workout builder interface
  */
 const WorkoutBuilder = ({ client }) => {
@@ -67,7 +68,6 @@ const WorkoutBuilder = ({ client }) => {
    */
   useEffect(() => {
     const fetchExercises = async () => {
-      console.log('🏋️ Fetching exercises from exercises table...');
       const { data, error } = await supabase
         .from('exercises')
         .select('id, name, primary_muscle, secondary_muscle, tertiary_muscle, equipment_needed, difficulty_level')
@@ -79,8 +79,6 @@ const WorkoutBuilder = ({ client }) => {
         return;
       }
 
-      console.log('✅ Exercises fetched:', data?.length);
-      console.log('Sample exercise:', data?.[0]);
       if (data) {
         setExercises(data);
         // Don't set filteredExercises here, let the filter useEffect handle it
@@ -95,23 +93,19 @@ const WorkoutBuilder = ({ client }) => {
    */
   useEffect(() => {
     if (!exercises || exercises.length === 0) {
-      console.log('⏳ No exercises loaded yet');
       return;
     }
 
     if (!selectedMuscle) {
-      console.log('📋 No muscle selected, showing all');
       setFilteredExercises(exercises.slice(0, 10));
       return;
     }
 
-    console.log('🔍 Filtering exercises for muscle:', selectedMuscle);
     const filtered = exercises.filter(ex => {
       const match = ex.primary_muscle?.toLowerCase() === selectedMuscle.toLowerCase();
       return match;
     });
 
-    console.log('✅ Filtered exercises:', filtered.length);
     setFilteredExercises(filtered);
   }, [selectedMuscle, exercises]);
 

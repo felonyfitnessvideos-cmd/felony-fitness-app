@@ -5,7 +5,7 @@ import type { Client } from '../types';
  * Props for SmartScheduling component
  */
 interface SmartSchedulingProps {
-  selectedClient?: Client;
+  selectedClient?: Client | null;
 }
 
 /**

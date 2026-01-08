@@ -15,8 +15,9 @@ import './NutritionPlanner.css';
  * Allows trainers to build custom meal plans for clients using food search
  * 
  * @component
- * @param {Object} props
- * @param {Object} props.client - Selected client object
+ * @typedef {Object} NutritionPlannerProps
+ * @property {Object|null} [client] - Selected client object or null
+ * @param {NutritionPlannerProps} props
  * @returns {JSX.Element} Nutrition planner interface
  */
 const NutritionPlanner = ({ client }) => {

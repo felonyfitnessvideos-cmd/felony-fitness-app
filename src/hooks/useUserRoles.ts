@@ -1,5 +1,5 @@
 /**
- * @file useUserRoles.js
+ * @file useUserRoles.ts
  * @description React hook for managing user roles and permissions
  * @author Felony Fitness Development Team
  * @version 1.0.0
@@ -13,23 +13,78 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../useAuth';
-import { supabase } from '../supabaseClient.js';
-import userRoleUtils from '../utils/userRoleUtils.js';
+import { supabase } from '../supabaseClient';
+import userRoleUtils from '../utils/userRoleUtils';
+
+/**
+ * Permissions object interface
+ */
+interface Permissions {
+  isTrainer: boolean;
+  isClient: boolean;
+  isAdmin: boolean;
+  hasPremium: boolean;
+  isUser: boolean;
+}
+
+/**
+ * Role object from database
+ */
+interface Role {
+  tag_name: string;
+  color?: string;
+}
+
+/**
+ * Return type for useUserRoles hook
+ */
+interface UseUserRolesReturn {
+  // State
+  roles: Role[];
+  loading: boolean;
+  error: string | null;
+  
+  // Permissions (cached for performance)
+  permissions: Permissions;
+  
+  // Role checking functions
+  hasRole: (roleName: string) => boolean;
+  hasAnyRole: (roleNames: string[]) => boolean;
+  hasAllRoles: (roleNames: string[]) => boolean;
+  getPrimaryRole: () => string;
+  getRoleColor: (roleName: string) => string;
+  
+  // Role management
+  addRole: (roleName: string) => Promise<boolean>;
+  removeRole: (roleName: string) => Promise<boolean>;
+  refreshRoles: () => Promise<void>;
+  
+  // Convenience getters
+  isTrainer: boolean;
+  isClient: boolean;
+  isAdmin: boolean;
+  hasPremium: boolean;
+  isUser: boolean;
+  
+  // Role counts
+  roleCount: number;
+  roleNames: string[];
+}
 
 /**
  * Custom hook for managing user roles and permissions
- * @returns {Object} Role management functions and state
+ * @returns {UseUserRolesReturn} Role management functions and state
  */
-export const useUserRoles = () => {
+export const useUserRoles = (): UseUserRolesReturn => {
     const { user } = useAuth();
     
     // State
-    const [roles, setRoles] = useState([]);
+    const [roles, setRoles] = useState<Role[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState<string | null>(null);
     
     // Cached permissions to avoid repeated API calls
-    const [permissions, setPermissions] = useState({
+    const [permissions, setPermissions] = useState<Permissions>({
         isTrainer: false,
         isClient: false,
         isAdmin: false,
@@ -42,7 +97,7 @@ export const useUserRoles = () => {
      * Note: is_admin and is_trainer are stored as booleans in user_profiles table
      * user_tags is a separate system for email/admin console functionality
      */
-    const loadRoles = useCallback(async () => {
+    const loadRoles = useCallback(async (): Promise<void> => {
         if (!user) {
             setRoles([]);
             setPermissions({
@@ -70,7 +125,7 @@ export const useUserRoles = () => {
             if (profileError) throw profileError;
             
             // Build roles array from boolean flags
-            const userRoles = [];
+            const userRoles: Role[] = [];
             if (profile?.is_admin) userRoles.push({ tag_name: 'Admin' });
             if (profile?.is_trainer) userRoles.push({ tag_name: 'Trainer' });
             
@@ -86,8 +141,9 @@ export const useUserRoles = () => {
             });
             
         } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
             console.error('Error loading user roles:', err);
-            setError(err.message);
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -103,7 +159,7 @@ export const useUserRoles = () => {
      * @param {string} roleName - Name of the role to check
      * @returns {boolean} True if user has the role
      */
-    const hasRole = useCallback((roleName) => {
+    const hasRole = useCallback((roleName: string): boolean => {
         return roles.some(role => role.tag_name === roleName);
     }, [roles]);
 
@@ -112,7 +168,7 @@ export const useUserRoles = () => {
      * @param {string[]} roleNames - Array of role names to check
      * @returns {boolean} True if user has any of the roles
      */
-    const hasAnyRole = useCallback((roleNames) => {
+    const hasAnyRole = useCallback((roleNames: string[]): boolean => {
         return roleNames.some(roleName => hasRole(roleName));
     }, [hasRole]);
 
@@ -121,7 +177,7 @@ export const useUserRoles = () => {
      * @param {string[]} roleNames - Array of role names to check
      * @returns {boolean} True if user has all of the roles
      */
-    const hasAllRoles = useCallback((roleNames) => {
+    const hasAllRoles = useCallback((roleNames: string[]): boolean => {
         return roleNames.every(roleName => hasRole(roleName));
     }, [hasRole]);
 
@@ -129,7 +185,7 @@ export const useUserRoles = () => {
      * Get the user's primary role for display purposes
      * @returns {string} Primary role name
      */
-    const getPrimaryRole = useCallback(() => {
+    const getPrimaryRole = useCallback((): string => {
         const rolePriority = ['Admin', 'Trainer', 'Client', 'Premium', 'User'];
         
         for (const priority of rolePriority) {
@@ -144,7 +200,7 @@ export const useUserRoles = () => {
      * @param {string} roleName - Name of the role
      * @returns {string} Hex color code
      */
-    const getRoleColor = useCallback((roleName) => {
+    const getRoleColor = useCallback((roleName: string): string => {
         const role = roles.find(r => r.tag_name === roleName);
         return role?.color || '#3b82f6';
     }, [roles]);
@@ -154,7 +210,7 @@ export const useUserRoles = () => {
      * @param {string} roleName - Name of the role to add
      * @returns {Promise<boolean>} True if successful
      */
-    const addRole = useCallback(async (roleName) => {
+    const addRole = useCallback(async (roleName: string): Promise<boolean> => {
         if (!user) return false;
         
         try {
@@ -164,8 +220,9 @@ export const useUserRoles = () => {
             }
             return success;
         } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
             console.error('Error adding role:', err);
-            setError(err.message);
+            setError(errorMessage);
             return false;
         }
     }, [user, loadRoles]);
@@ -175,7 +232,7 @@ export const useUserRoles = () => {
      * @param {string} roleName - Name of the role to remove
      * @returns {Promise<boolean>} True if successful
      */
-    const removeRole = useCallback(async (roleName) => {
+    const removeRole = useCallback(async (roleName: string): Promise<boolean> => {
         if (!user) return false;
         
         try {
@@ -185,8 +242,9 @@ export const useUserRoles = () => {
             }
             return success;
         } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
             console.error('Error removing role:', err);
-            setError(err.message);
+            setError(errorMessage);
             return false;
         }
     }, [user, loadRoles]);
@@ -194,7 +252,7 @@ export const useUserRoles = () => {
     /**
      * Refresh roles from the database
      */
-    const refreshRoles = useCallback(() => {
+    const refreshRoles = useCallback(async (): Promise<void> => {
         return loadRoles();
     }, [loadRoles]);
 
@@ -221,18 +279,16 @@ export const useUserRoles = () => {
         refreshRoles,
         
         // Convenience getters
-        get isTrainer() { return permissions.isTrainer; },
-        get isClient() { return permissions.isClient; },
-        get isAdmin() { return permissions.isAdmin; },
-        get hasPremium() { return permissions.hasPremium; },
-        get isUser() { return permissions.isUser; },
+        isTrainer: permissions.isTrainer,
+        isClient: permissions.isClient,
+        isAdmin: permissions.isAdmin,
+        hasPremium: permissions.hasPremium,
+        isUser: permissions.isUser,
         
         // Role counts
-        get roleCount() { return roles.length; },
-        get roleNames() { return roles.map(r => r.tag_name); }
+        roleCount: roles.length,
+        roleNames: roles.map(r => r.tag_name)
     };
 };
-
-// Note: JSX components have been moved to separate files to avoid build issues
 
 export default useUserRoles;

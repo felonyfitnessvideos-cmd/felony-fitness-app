@@ -324,11 +324,11 @@ export const ENGAGEMENT_WEIGHTS = {
 // ===============================================
 
 export const isExercise = (obj: unknown): obj is Exercise => {
-  return obj && typeof obj === 'object' && typeof (obj as Exercise).id === 'number' && typeof (obj as Exercise).name === 'string';
+  return !!(obj && typeof obj === 'object' && typeof (obj as Exercise).id === 'number' && typeof (obj as Exercise).name === 'string');
 };
 
 export const isMuscleGroup = (obj: unknown): obj is MuscleGroup => {
-  return obj && typeof obj === 'object' && typeof (obj as MuscleGroup).id === 'number' && typeof (obj as MuscleGroup).name === 'string';
+  return !!(obj && typeof obj === 'object' && typeof (obj as MuscleGroup).id === 'number' && typeof (obj as MuscleGroup).name === 'string');
 };
 
 export const isProgram = (obj: unknown): obj is Program => {

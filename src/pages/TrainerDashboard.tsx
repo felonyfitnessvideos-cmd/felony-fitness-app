@@ -87,6 +87,9 @@ const TrainerDashboard = () => {
   const location = useLocation();
   const { isTabletOrLarger } = useResponsive();
 
+  // Accessibility helper: Converts boolean to ARIA-compliant string
+  const toAriaPressed = (value: boolean): 'true' | 'false' => value ? 'true' : 'false';
+
   /** @type {[boolean, Function]} Loading state for trainer dashboard */
   const [isLoading, setIsLoading] = useState(true);
 
@@ -153,7 +156,7 @@ const TrainerDashboard = () => {
   useEffect(() => {
     if (!user) return;
 
-    let subscription: { unsubscribe: () => void; } | null = null;
+    let subscription: { unsubscribe: () => void } | null = null;
 
     const loadUnreadCount = async () => {
       try {
@@ -177,7 +180,7 @@ const TrainerDashboard = () => {
     setupSubscription();
 
     return () => {
-      if (subscription) {
+      if (subscription?.unsubscribe) {
         subscription.unsubscribe();
       }
     };
@@ -411,7 +414,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'scheduling' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('scheduling')}
-                aria-pressed={String(activeWorkspaceTool === 'scheduling')}
+                aria-pressed={toAriaPressed(activeWorkspaceTool === 'scheduling')}
                 aria-label="Smart Scheduling Tool"
               >
                 <Calendar size={16} />
@@ -421,7 +424,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'progress' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('progress')}
-                aria-pressed={String(activeWorkspaceTool === 'progress')}
+                aria-pressed={toAriaPressed(activeWorkspaceTool === 'progress')}
                 aria-label="Progress Tracker Tool"
               >
                 <TrendingUp size={16} />
@@ -431,7 +434,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'workout' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('workout')}
-                aria-pressed={String(activeWorkspaceTool === 'workout')}
+                aria-pressed={toAriaPressed(activeWorkspaceTool === 'workout')}
                 aria-label="Workout Builder Tool"
               >
                 <Dumbbell size={16} />
@@ -441,7 +444,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'nutrition' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('nutrition')}
-                aria-pressed={String(activeWorkspaceTool === 'nutrition')}
+                aria-pressed={toAriaPressed(activeWorkspaceTool === 'nutrition')}
                 aria-label="Nutrition Planner Tool"
               >
                 <Apple size={16} />
@@ -451,7 +454,7 @@ const TrainerDashboard = () => {
                 type="button"
                 className={`workspace-tool ${activeWorkspaceTool === 'messaging' ? 'active' : ''}`}
                 onClick={() => setActiveWorkspaceTool('messaging')}
-                aria-pressed={String(activeWorkspaceTool === 'messaging')}
+                aria-pressed={toAriaPressed(activeWorkspaceTool === 'messaging')}
                 aria-label="Messaging Hub Tool"
               >
                 <MessageSquare size={16} />

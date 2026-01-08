@@ -36,6 +36,7 @@ import { Tables } from '../database.types.js';
 import './WorkoutRoutinePage.css';
 
 type Routine = Tables<'workout_routines'>;
+type RoutineExercise = Tables<'routine_exercises'>;
 
 /**
  * WorkoutRoutinePage
@@ -105,7 +106,8 @@ function WorkoutRoutinePage() {
         fetchRoutines(userId);
         throw error;
       }
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
       alert(`Error: ${error.message}`);
     }
   };
@@ -137,7 +139,8 @@ function WorkoutRoutinePage() {
         ));
         throw error;
       }
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
       alert(`Error: ${error.message}`);
     }
   };
@@ -176,7 +179,7 @@ function WorkoutRoutinePage() {
 
       // Step 3: Copy all exercises with their settings
       if (fullRoutine.routine_exercises && fullRoutine.routine_exercises.length > 0) {
-        const exercisesToInsert = fullRoutine.routine_exercises.map(ex => ({
+        const exercisesToInsert = fullRoutine.routine_exercises.map((ex: RoutineExercise) => ({
           routine_id: newRoutine.id,
           exercise_id: ex.exercise_id,
           target_sets: ex.target_sets,
@@ -199,7 +202,8 @@ function WorkoutRoutinePage() {
         created_at: new Date().toISOString(),
       };
       setRoutines(prev => [newRoutineDisplay, ...prev]);
-    } catch (error) {
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
       console.error('Error duplicating routine:', error);
       alert(`Error duplicating routine: ${error.message}`);
     }

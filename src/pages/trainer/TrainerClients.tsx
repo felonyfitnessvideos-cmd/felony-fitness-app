@@ -58,7 +58,7 @@ export function TrainerClients({ onClientSelect }: TrainerClientsProps) {
   const [clientNotes, setClientNotes] = useState('');
   const [notesSaving, setNotesSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -205,8 +205,8 @@ export function TrainerClients({ onClientSelect }: TrainerClientsProps) {
                                 key={client.clientId}
                                 className={`client-card${isExpanded ? ' expanded' : ''}`}
                             >
-                                <div className="client-card-header" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-                                    <div style={{display:'flex',alignItems:'center',gap:8}}>
+                                <div className="client-card-header">
+                                    <div className="client-header-left">
                                         <button
                                             className="expand-toggle-btn"
                                             aria-label={isExpanded ? 'Collapse client details' : 'Expand client details'}
@@ -215,13 +215,12 @@ export function TrainerClients({ onClientSelect }: TrainerClientsProps) {
                                                 setExpandedClient(isExpanded ? null : client.relationshipId);
                                                 if (onClientSelect) onClientSelect(!isExpanded ? client : null);
                                             }}
-                                            style={{background:'none',border:'none',cursor:'pointer',padding:0,marginRight:4}}
                                         >
-                                            <span style={{display:'inline-block',transition:'transform 0.2s',transform:isExpanded?'rotate(90deg)':'rotate(0deg)'}}>
+                                            <span className={`expand-arrow${isExpanded ? ' open' : ''}`}>
                                                 ▶
                                             </span>
                                         </button>
-                                        <h3 style={{margin:0}}>{client.name}</h3>
+                                        <h3 className="client-name">{client.name}</h3>
                                     </div>
                                     <button
                                         className="message-btn"
@@ -304,7 +303,7 @@ export function TrainerClients({ onClientSelect }: TrainerClientsProps) {
                                                 placeholder="Add notes about this client (injuries, preferences, progress cues)..."
                                                 onClick={e => e.stopPropagation()}
                                             />
-                                            <div style={{display:'flex', gap:8, marginTop:8}}>
+                                            <div className="client-actions">
                                                 <button
                                                     className="save-notes-btn"
                                                     onClick={async (e) => {
