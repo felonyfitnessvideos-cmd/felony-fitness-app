@@ -213,28 +213,57 @@ function WorkoutLogPage() {
       }
       setTodaysLog(todaysLogMap);
 
-      const { data: prevLog } = await supabase
+      // --- DIAGNOSTIC: Fetch previous completed workout ---
+      console.log('[DIAGNOSTIC] Starting previous log fetch for userId:', userId, 'routineId:', routineId);
+      
+      const { data: prevLog, error: prevLogError } = await supabase
         .from('workout_logs')
-        .select('id')
+        .select('id, created_at, ended_at, log_date')
         .eq('user_id', userId)
         .eq('routine_id', routineId)
-        .order('ended_at', { ascending: false })
+        .eq('is_complete', true)
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      console.log('[DIAGNOSTIC] Previous log query result:', {
+        error: prevLogError,
+        data: prevLog,
+        hasId: !!prevLog?.id
+      });
+
       let previousLogMap = {};
       if (prevLog?.id) {
-        const { data: prevEntries } = await supabase
+        console.log('[DIAGNOSTIC] Found previous log with id:', prevLog.id, 'from date:', prevLog.log_date);
+        
+        const { data: prevEntries, error: prevEntriesError } = await supabase
           .from('workout_log_entries')
           .select('*')
           .eq('workout_log_id', prevLog.id);
-        for (const entry of prevEntries) {
-          if (!previousLogMap[entry.exercise_id]) previousLogMap[entry.exercise_id] = [];
-          previousLogMap[entry.exercise_id].push(entry);
+
+        console.log('[DIAGNOSTIC] Previous entries query result:', {
+          error: prevEntriesError,
+          entryCount: prevEntries?.length || 0,
+          entries: prevEntries
+        });
+
+        if (prevEntriesError) {
+          console.error('[ERROR] Failed to fetch previous entries:', prevEntriesError);
+        } else if (Array.isArray(prevEntries) && prevEntries.length > 0) {
+          for (const entry of prevEntries) {
+            const exId = String(entry.exercise_id);
+            if (!previousLogMap[exId]) previousLogMap[exId] = [];
+            previousLogMap[exId].push(entry);
+          }
+          console.log('[SUCCESS] Loaded previous session with', Object.keys(previousLogMap).length, 'exercises');
+        } else {
+          console.warn('[WARNING] Previous log exists but has no entries');
         }
+      } else {
+        console.warn('[WARNING] No previous completed log found');
       }
-      if (Object.keys(previousLogMap).length > 0) {
-        setPreviousLog(previousLogMap);
-      }
+
+      setPreviousLog(previousLogMap);
 
       if (log?.cycle_session_id || options.mesocycleSessionId) {
         const sessionId = log?.cycle_session_id || options.mesocycleSessionId;
@@ -695,7 +724,7 @@ function WorkoutLogPage() {
                 reps_completed: newReps
               };
             }
-            return entry;
+            return entry
           });
         });
         return updatedLog;
